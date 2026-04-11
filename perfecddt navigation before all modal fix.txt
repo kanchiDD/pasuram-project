@@ -1,0 +1,141 @@
+import { state, pushState, goBack, goHome } from "./state.js";
+import { render } from "./render/layout.js";
+import {
+  fetchThousand,
+  fetchSections,
+  fetchThaniyan,
+  fetchPasuram,
+  fetchMadal,
+  fetchKootrirukkai
+} from "./api.js";
+
+// ✅ STATIC IMPORTS
+import { openStandaloneSelector } from "./render/standaloneSelector.js";
+import { openPathuSelector } from "./render/pathuSelector.js";
+
+
+export function initNavigation() {
+
+  document.getElementById("backBtn").onclick = () => {
+
+    state.madalData = null;
+    state.kootrirukkaiData = null;
+
+    goBack();
+    render();
+  };
+
+  document.getElementById("homeBtn").onclick = () => {
+
+    state.madalData = null;
+    state.kootrirukkaiData = null;
+
+    goHome();
+    render();
+  };
+
+  render();
+}
+
+
+/* ACTIONS */
+
+export function startTree() {
+  pushState();
+  state.level = "START";
+  render();
+}
+
+export function loadThousand() {
+  pushState();
+  state.level = "THOUSAND";
+  render();
+  fetchThousand();
+}
+
+export function selectThousand(id) {
+  pushState();
+  state.level = "THOUSAND_OPTIONS";
+  state.selectedThousandId = id;
+  render();
+}
+
+export function loadSections() {
+  pushState();
+  state.level = "SECTION";
+  render();
+  fetchSections();
+}
+
+
+/* 🔥 MAIN SECTION CLICK */
+
+export function selectSection(id, name) {
+
+  console.log("SECTION CLICK:", id, name);
+
+  pushState();
+  state.level = "PASURAM";
+
+  state.selectedSectionId = id;
+  state.selectedSectionName = name || "Thirumozhi";
+
+  // RESET
+  state.pasuramData = null;
+  state.thaniyanData = null;
+  state.madalData = null;
+  state.kootrirukkaiData = null;
+
+  state.selectedPathu = null;           // ✅ IMPORTANT
+  state.filteredPasuram = null;         // ✅ IMPORTANT
+
+  const sectionId = Number(id);
+
+  // 🔶 MADAL
+  if ([22, 23, 2673, 2674].includes(sectionId)) {
+
+    fetchThaniyan();
+    fetchMadal();
+    return;
+  }
+
+  // 🔶 KOOTRIRUKKAI
+  if ([21, 2672].includes(sectionId)) {
+
+    fetchThaniyan();
+    fetchKootrirukkai();
+    return;
+  }
+
+  // 🔶 STANDALONE
+  const standaloneSections = [4, 5];
+
+  if (standaloneSections.includes(sectionId)) {
+
+    state.isStandaloneSelection = true;
+
+    fetchThaniyan();
+
+    fetchPasuram().then(() => {
+      openStandaloneSelector(
+        sectionId,
+        state.selectedSectionName,
+        state.pasuramData
+      );
+    });
+
+    return;
+  }
+
+  // 🔶 🔥 PATHU FLOW (FINAL)
+
+  fetchThaniyan();
+
+  fetchPasuram().then(() => {
+
+    console.log("PASURAM DATA READY:", state.pasuramData);
+
+    // 👉 Directly open selector (NO grouping here)
+    openPathuSelector();
+  });
+}

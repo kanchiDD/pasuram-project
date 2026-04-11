@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Naalayiram Tree</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/css/main.css?v=860">
+<style>
+.container{
+    max-width:600px;
+    margin:30px auto;
+    text-align:center;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 15px;
+    font-size:16px;
+}
+
+.topbar div{
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div id="header"></div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="topbar" style="display:none;">
+  <div id="backBtn">⬅ Back</div>
+  <div id="homeBtn">🏠 Home</div>
+</div>
+
+<!-- APP -->
+<div class="container" id="app"></div>
+
+<!-- ✅ ADD THIS LINE HERE -->
+<div id="modalRoot"></div>
+
+<!-- FOOTER -->
+<div id="footer"></div>
+
+<!-- ✅ HEADER / FOOTER BUILDER (MUST LOAD FIRST) -->
+<script src="js/layout.js"></script>
+<script>
+  loadLayout();
+</script>
+
+<!-- ✅ APP LOGIC -->
+<script type="module">
+  import { initNavigation } from './js/navigation.js?v=11';
+
+  initNavigation();
+</script>
+<div id="pathuModal" class="overlay" style="display:none;"></div></body>
+</html>

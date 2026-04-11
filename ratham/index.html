@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thiruvezhukootrarikkai Ratham</title>
+<script>
+(function() {
+  if (window.innerWidth > 768) {
+    window.location.href = "desktop.html";
+  }
+})();
+</script>
+
+<style>
+body {
+  margin: 0;
+  background: #f5f1e6;
+  font-family: "Noto Sans Tamil", sans-serif;
+  text-align: center;
+}
+
+#startBtn {
+  margin-top: 20px;
+  padding: 12px 24px;
+  font-size: 18px;
+  background: maroon;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* ===== FIXED DESKTOP LAYOUT ===== */
+
+#rathamWrapper {
+  position: relative;
+  width: 350px;
+  
+  margin: 0 auto;
+}
+
+
+.square {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.number {
+  font-size: 3px;
+  fill: #8b0000;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.structure-img {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ===== SCROLL STRIP ===== */
+
+#thiruScrollStrip {
+  position: absolute;
+  width: 350px;
+  left: 0;
+  top: 480px;   /* adjust this number */
+  overflow: hidden;
+  background: #f4ede2;
+  border-top: 2px solid maroon;
+  border-bottom: 2px solid maroon;
+  padding: 6px 0;
+}
+
+#thiruScrollContent {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 14px;              /* slightly smaller for mobile */
+  color: #5a0000;
+  padding-left: 100%;
+  animation: scrollThiru 220s linear infinite;
+}
+
+@keyframes scrollThiru {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+#clickHint {
+  font-size: 14px;
+  color: #6b0000;
+  margin-top: 8px;
+  opacity: 0.85;
+}
+
+</style>
+</head>
+
+<body>
+
+<button id="startBtn">
+திருவெழுகூற்றறிக்கை ரதம் செய்வோம் வாரீர்
+</button>
+<p id="clickHint">⬆ Click above to begin the divine build ⬆</p>
+
+<div id="rathamWrapper">
+  <svg id="ratham" width="350" height="800"></svg>
+
+</div>
+
+<div id="thiruScrollStrip">
+  <div id="thiruScrollContent"></div>
+</div>
+
+<script>
+
+// ===== GEOMETRY =====
+const layout = [3,5,7,9,11,13,13,13,13,11,9,7,5,3];
+const squareSize = 22;
+const gap = 2;
+const centerX = 175;
+const startY = 70;
+const plateauGap = 45;
+
+// ===== COLORS =====
+function getRowColor(rowIndex) {
+  if (rowIndex <= 1) return "#fff4dc";
+  if (rowIndex <= 4) return "#dff3e3";
+  if (rowIndex <= 8) return "#ffe6cc";
+  if (rowIndex <= 12) return "#dff3e3";
+  return "#e6e0f8";
+}
+
+// ===== YOUR 122 TEXT UNITS =====
+let unitTexts = [
+"ஒருபேருந்தி","இருமலர்த்தவிசில்","ஒருமுறைஅயனையீன்றனை",
+"ஒருமுறை","இருசுடர் மீதினிலியங்கா","மும்மதிளிலங்கை","இருகால்வளைய","ஒருசிலை",
+"ஒன்றிய","ஈரெயிற்றழல்வாய் வாளியின்அட்டனை","மூவடி","நானிலம்வேண்டி","முப்புரிநூலொடு மானுரி இலங்குமார்வினின்","இருபிறப்பு","ஓருமாணாகி",
+"ஒருமுறை","ஈரடி","மூவுலகளந்தனை","நால்திசைநடுங்க","அஞ்சிறைப்பறவையேறி","நால்வாய்","மும்மதத்து","இருசெவி","ஓருதனி வேழத்தரந்தையை",
+"ஒருநாள்","இருநீர் மடூவுள்தீர்த்தனை","முத்தீ","நான்மறை","ஐவகைவேள்வி","அறுதொழிலந்தணர் வணங்கும்தன்மையை","ஐம்புலன் அகத்தினுள்செறுத்து","நான்குடனடக்கி","முக்குணத்து","இரண்டவையகற்றி","ஒன்றினில்",
+"ஒன்றிநின்றுஆங்கு","இருபிறப்பறுப்போர் அறியும்தன்மையை","முக்கண்","நால்தோள்","ஐவாயரவோடு","ஆறுபொதிசடையோன் அறிவரும்தன்மைப் பெருமையுள்நின்றனை","ஏழுலகு எயிற்றினில்கொண்டனைகூறிய","அறுசுவைப் பயனுமாயினைசுடர்விடும்","ஐம்படை அங்கையுள் அமர்ந்தனைசுந்தர","நால்தோள்","முந்நீர்வண்ணநின்","ஈரடி","ஒன்றிய மனத்தால்",
+"ஒருமதிமுகத்து மங்கையர்","இரிருவரும் மலரன அங்கையின்","முப்பொழுதும் வருட அறிதுயிலமர்ந்தனைநெறிமுறை","நால்வகை வருணமுமாயினைமேதகும்","ஐம்பெரும் பூதமும்நீயே","அறுபதமுரலும் கூந்தல்காரணம்","ஏழ்விடை அடங்கச்செற்றனை","அறுவகைச்சமயமும் அறிவருநிலையினை","ஐம்பாலோதியை ஆகத்திருத்தினைஅறம்முதல்","நான்கவையாய்மூர்த்தி","மூன்றாய்","இருவகைப்பயனாய்","ஒன்றாய் விரிந்துநின்றனை",
+"ஒருமதிமுகத்து மங்கையர்","இரிருவரும் மலரன அங்கையின்","முப்பொழுதும் வருட அறிதுயிலமர்ந்தனைநெறிமுறை","நால்வகை வருணமுமாயினைமேதகும்","ஐம்பெரும் பூதமும்நீயே","அறுபதமுரலும் கூந்தல்காரணம்","ஏழ்விடை அடங்கச்செற்றனை","அறுவகைச்சமயமும் அறிவருநிலையினை","ஐம்பாலோதியை ஆகத்திருத்தினைஅறம்முதல்","நான்கவையாய்மூர்த்தி","மூன்றாய்","இருவகைப்பயனாய்","ஒன்றாய் விரிந்துநின்றனை",
+"ஒன்றிநின்றுஆங்கு","இருபிறப்பறுப்போர் அறியும்தன்மையை","முக்கண்","நால்தோள்","ஐவாயரவோடு","ஆறுபொதிசடையோன் அறிவரும்தன்மைப் பெருமையுள்நின்றனை","ஏழுலகு எயிற்றினில்கொண்டனைகூறிய","அறுசுவைப் பயனுமாயினைசுடர்விடும்","ஐம்படை அங்கையுள் அமர்ந்தனைசுந்தர","நால்தோள்","முந்நீர்வண்ணநின்","ஈரடி","ஒன்றிய மனத்தால்",
+"ஒருநாள்","இருநீர் மடூவுள்தீர்த்தனை","முத்தீ","நான்மறை","ஐவகைவேள்வி","அறுதொழிலந்தணர் வணங்கும்தன்மையை","ஐம்புலன் அகத்தினுள்செறுத்து","நான்குடனடக்கி","முக்குணத்து","இரண்டவையகற்றி","ஒன்றினில்",
+"ஒருமுறை","ஈரடி","மூவுலகளந்தனை","நால்திசைநடுங்க","அஞ்சிறைப்பறவையேறி","நால்வாய்","மும்மதத்து","இருசெவி","ஓருதனி வேழத்தரந்தையை",
+"ஒன்றிய","ஈரெயிற்றழல்வாய் வாளியின்அட்டனை","மூவடி","நானிலம்வேண்டி","முப்புரிநூலொடு மானுரி இலங்குமார்வினின்","இருபிறப்பு","ஓருமாணாகி",
+"ஒருமுறை","இருசுடர் மீதினிலியங்கா","மும்மதிளிலங்கை","இருகால்வளைய","ஒருசிலை",
+"ஒருபேருந்தி","இருமலர்த்தவிசில்","ஒருமுறை அயனையீன்றனை"
+];
+
+// ===== BUILD =====
+const svg = document.getElementById("ratham");
+let squares = [];
+let textIndex = 0;
+
+layout.forEach((cols, rowIndex) => {
+
+let extraY = rowIndex >= 7 ? plateauGap : 0;
+const rowWidth = cols * squareSize + (cols - 1) * gap;
+const startX = centerX - rowWidth / 2;
+const y = startY + rowIndex * (squareSize + gap) + extraY;
+
+const peak = Math.ceil(cols / 2);
+let numbers = [];
+for (let i = 1; i <= peak; i++) numbers.push(i);
+for (let i = peak - 1; i >= 1; i--) numbers.push(i);
+
+for (let col = 0; col < cols; col++) {
+
+const x = startX + col * (squareSize + gap);
+
+const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+g.setAttribute("class", "square");
+
+const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+rect.setAttribute("x", x);
+rect.setAttribute("y", y);
+rect.setAttribute("width", squareSize);
+rect.setAttribute("height", squareSize);
+rect.setAttribute("fill", getRowColor(rowIndex));
+rect.setAttribute("stroke", "maroon");
+rect.setAttribute("stroke-width", "2");
+g.appendChild(rect);
+
+const number = document.createElementNS("http://www.w3.org/2000/svg", "text");
+number.setAttribute("x", x + squareSize / 2);
+number.setAttribute("y", y + 8);   // move number up
+number.setAttribute("class", "number");
+number.textContent = numbers[col];
+g.appendChild(number);
+
+const foreign = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+foreign.setAttribute("x", x + 2);
+foreign.setAttribute("y", y + 9);  // move text up
+foreign.setAttribute("width", squareSize - 4);
+foreign.setAttribute("height", squareSize - 11);
+
+const div = document.createElement("div");
+div.style.width = "100%";
+div.style.height = "100%";
+div.style.fontSize = "6px";
+div.style.opacity = "0.85";
+div.style.color = "#1b2a5b";
+div.style.textAlign = "center";
+div.style.display = "flex";
+div.style.alignItems = "center";
+div.style.justifyContent = "center";
+div.style.wordBreak = "break-all";
+div.style.hyphens = "auto";
+div.style.lineHeight = "1.05";
+div.style.padding = "1px";
+div.style.overflow = "hidden";
+div.innerText = unitTexts[textIndex];
+
+foreign.appendChild(div);
+g.appendChild(foreign);
+
+svg.appendChild(g);
+squares.push(g);
+textIndex++;
+}
+});
+// ===== STRUCTURE LAYER =====
+function addStructure() {
+
+const wrapper = document.getElementById("rathamWrapper");
+const S = squareSize;
+
+// ==== Calculate Gap Position ====
+const topSectionBottom =
+  startY + 6 * (squareSize + gap) + squareSize;
+
+const gapTop = topSectionBottom;
+
+// =============================
+// 1️⃣ Mandapa Composite Image
+// =============================
+const mandapa = document.createElement("img");
+mandapa.src = "mandapa.png";
+mandapa.className = "structure-img";
+mandapa.style.width = "300px";
+mandapa.style.height = "45px";
+mandapa.style.left = "25px";
+mandapa.style.top = (gapTop +4) + "px";
+mandapa.style.opacity = 0;
+mandapa.style.transition = "opacity 1s ease";
+
+wrapper.appendChild(mandapa);
+
+// =============================
+// 2️⃣ Real Image Wheels
+// =============================
+function addWheel(cx) {
+
+  const wheel = document.createElement("img");
+  wheel.src = "wheel.png";
+  wheel.className = "structure-img";
+
+  const size = 35;
+  wheel.style.width = size + "px";
+  wheel.style.height = size + "px";
+  wheel.style.opacity = 0;
+
+  wheel.style.left = (cx - size / 2) + "px";
+
+  const lastRowIndex = layout.length - 1;
+  const lastRowY =
+    startY + lastRowIndex * (squareSize + gap);
+  const bottomOfLastRow = lastRowY + squareSize;
+
+  const wheelOverlap = -20;
+
+  wheel.style.top =
+    (bottomOfLastRow - wheelOverlap) + "px";
+
+  wrapper.appendChild(wheel);
+  return wheel;
+}
+
+const bottomRowCount = layout[layout.length - 1];
+
+const bottomRowWidth =
+  bottomRowCount * squareSize +
+  (bottomRowCount - 1) * gap;
+
+const halfBottomWidth = bottomRowWidth / 2;
+const wheelSize = 35;
+
+const leftWheel = addWheel(
+  centerX - halfBottomWidth - wheelSize / 2
+);
+
+const rightWheel = addWheel(
+  centerX + halfBottomWidth + wheelSize / 2
+);
+
+// =============================
+// 🔱 Kalasam
+// =============================
+const kalasamHeight = 70;
+const kalasamWidth = 70;
+
+const kalasam = document.createElement("img");
+kalasam.src = "kalasam.png";
+kalasam.className = "structure-img";
+
+kalasam.style.position = "absolute";
+kalasam.style.height = kalasamHeight + "px";
+kalasam.style.width = kalasamWidth + "px";
+kalasam.style.opacity = 0;
+
+kalasam.style.left =
+  (centerX - kalasamWidth / 2) + "px";
+
+const firstRowY = startY;
+const kalasamGap = -5;
+
+kalasam.style.top =
+  (firstRowY - kalasamHeight - kalasamGap) + "px";
+
+wrapper.appendChild(kalasam);
+
+// =============================
+// Reveal Sequence (ORDER FIXED)
+// =============================
+setTimeout(()=> {
+  mandapa.style.opacity = 1;
+}, 800);
+
+setTimeout(()=> {
+  leftWheel.style.opacity = 1;
+  rightWheel.style.opacity = 1;
+}, 1300);
+
+setTimeout(()=> {
+  kalasam.style.opacity = 1;
+}, 1700);
+
+setTimeout(function() {
+
+  var scrollDiv = document.getElementById("thiruScrollContent");
+  if (!scrollDiv) return;
+
+  var separator =
+    '<img src="thiruman-mini.png" ' +
+    'style="height:18px; vertical-align:middle; margin:0 14px;">';
+
+  scrollDiv.innerHTML = unitTexts.join(separator);
+
+}, 2000);
+
+}   // ← CLOSE addStructure()
+
+
+// =============================
+// Side Azhwars (OUTSIDE)
+// =============================
+
+// ===== ANIMATION =====
+let current = 0;
+
+document.getElementById("startBtn").addEventListener("click", () => {
+
+document.getElementById("startBtn").style.display = "none";
+document.getElementById("clickHint").style.display = "none";
+
+
+// 🔊 START AUDIO HERE
+const music = document.getElementById("bgMusic");
+music.currentTime = 0;
+music.volume = 0.45;   // you can adjust later
+music.play();
+const interval = setInterval(() => {
+
+if (current < squares.length) {
+  squares[current].style.opacity = 1;
+  current++;
+} else {
+  clearInterval(interval);
+  addStructure();
+  
+}
+
+}, 450);
+
+});
+
+</script>
+<audio id="bgMusic" preload="auto">
+  <source src="thiruvezhukootrarikkai.mp3" type="audio/mpeg">
+</audio>
+
+</body>
+</html>

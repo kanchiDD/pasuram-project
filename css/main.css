@@ -1,0 +1,914 @@
+
+
+/* KEEP EVERYTHING SAME — YOUR CSS UNCHANGED */
+
+body{
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.tamil-text {
+  font-family: "Noto Sans Tamil", "Latha", sans-serif;
+  line-height: 1.8;
+}
+/* HEADER */
+.header{
+    background:#f5c242;
+    padding:10px;
+    text-align:center;
+    position:relative;
+}
+
+.center-block{text-align:center;}
+.center-block img{height:80px;}
+.sri{font-size:18px;font-weight:bold;}
+.site-title{margin-top:5px;font-size:18px;font-weight:600;color:#7a4d00;}
+
+.hamburger{
+    position:absolute;
+    right:15px;
+    top:15px;
+    font-size:22px;
+    cursor:pointer;
+    display:none;
+}
+
+/* ================= NAV ================= */
+
+.nav{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    padding:10px 12px;
+
+    background:#f5c242;              /* 🔥 match header */
+    border-top:1px solid #e0b030;
+    border-bottom:1px solid #e0b030;
+
+    flex-wrap:wrap;
+}
+
+/* LINKS */
+.nav a{
+    text-decoration:none !important;
+    color:#5a3a00 !important;
+
+    font-weight:600;
+    font-size:14px;
+
+    padding:6px 10px;
+    border-radius:6px;
+
+    transition:0.2s ease;
+}
+
+/* HOVER */
+.nav a:hover{
+    background:rgba(0,0,0,0.08);
+}
+
+
+/* ================= MOBILE MENU ================= */
+
+.mobile-menu{
+    position:fixed;
+    top:0;                  /* 🔥 FULL TOP */
+    right:-100%;
+    width:75%;
+    height:100vh;
+
+    background:#f5c242;
+
+    display:flex;
+    flex-direction:column;
+
+    padding-top:20px;       /* 🔥 SMALL ONLY */
+    padding-bottom:40px;    /* 🔥 bottom space */
+
+    transition:0.3s ease;
+
+    z-index:3000;           /* 🔥 ABOVE HEADER */
+    overflow-y:auto;
+}
+
+.mobile-menu.show{
+    right:0;
+}
+
+/* MOBILE LINKS */
+.mobile-menu a{
+    padding:16px;
+    border-bottom:1px solid rgba(0,0,0,0.1);
+
+    text-decoration:none;
+    color:#5a3a00;
+
+    font-weight:600;
+    font-size:15px;
+}
+
+
+/* ================= MOBILE ================= */
+
+@media(max-width:768px){
+
+    /* HIDE DESKTOP NAV */
+    .nav{
+        display:none;
+    }
+
+    /* SHOW HAMBURGER */
+    .hamburger{
+        display:block;
+    }
+
+    /* 🔥 DO NOT FORCE DISPLAY HERE */
+    /* REMOVE THIS LINE:
+       .mobile-menu{ display:flex; }
+    */
+
+    /* SMALL HEADER ADJUSTMENTS */
+    .site-title{
+        font-size:16px;
+    }
+
+    .center-block img{
+        height:60px;
+    }
+}
+
+/* ================= LANGUAGE ================= */
+
+.lang-switch{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:8px;
+    padding:8px 10px;
+    max-width:500px;
+    margin:0 auto;
+}
+
+.lang-item{
+    text-align:center;
+    font-size:14px;
+}
+
+.lang-item span{
+    font-size:9px;
+}
+
+
+/* ================= CONTENT ================= */
+
+.content{
+    max-width:800px;
+    margin:20px auto;
+    padding:0 15px;
+    line-height:1.8;
+}
+
+
+/* ================= FOOTER ================= */
+
+.footer{
+    background:#f5c242;
+    text-align:center;
+    padding:15px 10px;
+    font-size:13px;
+}
+
+.footer-text{
+    font-size:13px;
+    line-height:1.6;
+}
+
+.footer-links{
+    margin-top:8px;
+}
+
+.footer-links a{
+    margin:0 8px;
+    font-size:12px;
+    color:#000;
+    text-decoration:none;
+}
+
+.social-icons{
+    margin-top:10px;
+}
+
+.social-icons a{
+    margin:0 10px;
+    font-size:18px;
+    color:#333;
+    transition:0.3s;
+}
+
+.social-icons a:hover{
+    color:#b8860b;
+    transform:scale(1.2);
+}
+
+
+/* ================= TREE ================= */
+
+.tree-list{
+  margin-top:20px;
+}
+
+.tree-item{
+  padding:14px 12px;
+  margin:8px 0;
+  font-size:17px;
+  color:#5a3a00;
+  cursor:pointer;
+
+  background:#fff8e1;
+  border-radius:8px;
+
+  transition:all 0.2s ease;
+}
+
+.tree-item:hover{
+  background:#fde8a3;
+  transform:translateX(4px);
+}
+
+.tree-item:active{
+  background:#f5c242;
+  color:#000;
+}
+
+.tree-btn{
+  background:#f5c242;
+  border:none;
+  padding:14px 18px;
+  border-radius:8px;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+
+/* ================= META ================= */
+
+.meta-text{
+  font-size:11px;
+  color:#777;
+  line-height:1.4;
+  margin-top:2px;
+}
+
+.meta-inline{
+  font-size:11px;
+  color:#666;
+  margin-top:6px;
+}
+
+.meta-center{
+  font-size:11px;
+  color:#777;
+  text-align:center;
+  margin-top:12px;
+}
+
+/* ============================= */
+/* 🔥 THANIYAN STYLES (NEW) */
+/* ============================= */
+
+/* Container */
+.thaniyan-container {
+  max-width: 500px;
+  margin: 0 auto 30px auto;
+  padding: 0 10px;
+}
+
+/* Title (Main Heading) */
+.thaniyan-title {
+  text-align: center;
+  font-weight: 700;
+  margin: 20px 0;
+  font-size: 18px;
+}
+
+/* SUBHEAD → CENTER */
+.thaniyan-subhead {
+  text-align: center;        /* ✅ changed */
+  font-weight: 500;
+  margin: 10px 0 6px;
+}
+/* Group block (controls breathing space) */
+.thaniyan-group {
+  margin-bottom: 15px;
+}
+
+/* LINE → LEFT */
+.thaniyan-line {
+  text-align: left;          /* ✅ ensure left */
+  margin-left: 8px;          /* slight indent for readability */
+  line-height: 1.9;
+  margin-bottom: 4px;
+}
+
+/* Prosody (small, subtle) */
+.thaniyan-prosody {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.display-block {
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: center;
+  margin: 6px 0 2px 0;
+}
+
+.display-item {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+.pasuram-local {
+  text-align: right;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+
+.pathu-header {
+  margin-top: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.thirumozhi-header {
+  margin-top: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+
+.prabandham-header {
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.line1 {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.line2 {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.line3-bold {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 8px 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.prabandham-header,
+.line1,
+.line2,
+.line3-bold {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.line {
+  margin-bottom: 6px;
+  line-height: 1.8;
+}
+
+.line {
+  margin-bottom: 6px;
+  line-height: 1.8;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+/* ================= SECTION HEADER ================= */
+
+.section-header {
+  text-align: center;
+  font-weight: 600;
+  margin: 20px 0 10px;
+}
+
+/* ================= GLOBAL NUMBER ================= */
+
+.global-no {
+  text-align: left;
+  font-weight: 600;
+  margin: 5px 0 10px;
+}
+
+/* ================= CONTAINERS ================= */
+
+.madal-container,
+.kootrirukkai-container {
+  text-align: left;
+}
+
+/* ================= LINE ================= */
+
+.line {
+  text-align: left;
+  padding: 4px 6px;
+  margin-bottom: 6px;
+  line-height: 1.8;
+  border-radius: 4px;
+}
+
+/* ================= COUPLET ================= */
+
+.couplet {
+  margin-bottom: 10px;
+}
+
+/* ================= ALIGN NUMBER ================= */
+
+.line-with-no {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 4px 6px;
+}
+
+/* ================= COUPLET NUMBER ================= */
+
+.couplet-no {
+  font-size: 12px;
+  color: #666;
+  margin-left: 10px;
+}
+
+/* ================= DUAL BLOCK ================= */
+
+.dual-block {
+  background: #fff9d6 !important;
+  padding: 6px 6px;
+  border-radius: 4px;
+}
+
+/* ================= LINE DUAL ================= */
+
+.dual-line {
+  background: #fffdf0 !important;
+}
+
+.recital-float {
+  position: fixed;
+  top: 80px;
+  right: 15px;
+
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f5c242;
+  border-radius: 50%;
+
+  font-size: 20px;
+  cursor: pointer;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 999;
+}
+
+.recital-float:hover {
+  background: #e0ad30;
+}/* ================= OVERLAY ================= */
+
+#overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+
+  background:rgba(0,0,0,0.4);
+
+  display:none;
+  pointer-events:none;
+
+  z-index:2500;   /* 🔥 FIXED */
+}
+
+#overlay.show{
+  display:block;
+  pointer-events:auto;
+}
+/* 🔥 FORCE NAV STYLE — FINAL OVERRIDE */
+.nav a,
+.nav a:visited,
+.nav a:active {
+  color: #5a3a00 !important;
+  text-decoration: none !important;
+}
+
+.nav {
+  background: #f5c242 !important;
+}
+
+body{
+  margin:0;
+}
+
+/* 🔥 HEADER ALWAYS ON TOP */
+.header{
+  position:relative;
+  z-index:2000;
+}
+
+/* 🔥 HAMBURGER ABOVE EVERYTHING */
+.hamburger{
+  position:absolute;   /* ✅ REQUIRED */
+  z-index:2100;
+}
+
+/* 🔥 FINAL COLOR STANDARDIZATION (SAFE OVERRIDE) */
+
+.dual-block,
+.dual-line,
+.tree-item {
+  background:#fff8e1 !important;
+}
+
+/* 🔥 FORCE CLICK PRIORITY */
+.hamburger{
+  position:absolute;
+  z-index:9999 !important;
+}
+
+.mobile-menu a:first-child{
+  margin-top:10px;
+}
+
+/* 🔥 LANGUAGE SWITCH */
+.lang-switch{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+    padding:10px;
+    border-bottom:1px solid #eee;
+}
+
+.lang-item{
+    text-align:center;
+    cursor:pointer;
+    padding:4px 6px;
+    border-radius:6px;
+    min-width:45px;
+    font-size:16px;
+}
+
+.lang-item span{
+    display:block;
+    font-size:9px;
+    margin-top:2px;
+}
+
+.lang-item:hover{
+    background:#f5c24233;
+}
+
+/* MOBILE */
+@media (max-width:600px){
+    .lang-item{
+        width:22%;
+        font-size:18px;
+    }
+}
+
+/* 🔹 Display items (song_reference, carnatic, etc) */
+.display-item {
+  font-size: 12px;
+  opacity: 0.85;
+  margin: 3px 0;
+}
+
+/* 🔹 If inside block */
+.display-block .display-item {
+  font-size: 12px;
+  text-align: center;   /* for pasuram-level */
+}
+
+/* 🔹 Section-level display */
+.section-display .display-item {
+  text-align: center;
+}
+
+/* 🔹 Prosody line */
+.prosody {
+  font-size: 12px;
+  text-align: center;
+  font-style: italic;
+  margin: 8px 0;
+  opacity: 0.8;
+}
+
+.section-close {
+  margin-top: 6px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ✅ CARNATIC (ALIGN LIKE PROSODY) */
+.display-item {
+  text-align: center;
+  margin: 4px 0;
+  font-style: italic;
+}
+
+.section-header,
+.display-item,
+.prosody {
+  text-align: center;
+  margin: 6px 0;
+}
+
+.content-box {
+  margin-top: 10px;
+  padding: 8px 10px;
+}
+
+.content-box .global-no {
+  text-align: left;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 2px; /* VERY IMPORTANT */
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* 🔥 OVERLAY */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* 🔥 MODAL BOX */
+.adiyen-modal {
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  font-size: 14px;
+}
+
+/* 🔥 HEADER */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+/* 🔥 CLOSE BUTTON */
+#closeModal {
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* 🔥 QUESTION */
+.adiyen-question {
+  margin: 10px 0;
+  font-weight: 500;
+}
+
+/* 🔥 OPTIONS */
+.adiyen-options label {
+  display: block;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+/* 🔥 RADIO */
+.adiyen-options input[type="radio"] {
+  margin-right: 8px;
+}
+
+/* 🔥 BACK BUTTON */
+#backModal {
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.adiyen-options {
+  text-align: left;
+}
+
+.adiyen-sub {
+  font-size: 12px;
+  color: #666;
+  margin: 5px 0 10px 2px;
+}
+
+.adiyen-sub-divider {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin: 10px 0;
+}
+
+/* ===============================
+   PASURAM ONLY (SAFE SCOPED)
+   =============================== */
+
+/* ONLY pasuram blocks */
+.pasuram-item {
+  margin-bottom: 24px;
+}
+
+/* Global number */
+.pasuram-item > b {
+  display: block;
+  text-align: left;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+
+/* Pasuram lines */
+.pasuram-item .pasuram-line {
+  text-align: left;
+  font-size: 20px;
+  line-height: 1.8;
+  word-break: keep-all;
+}
+
+/* 🔥 ONLY group change spacing */
+.pasuram-item .group-gap {
+  height: 10px;
+}
+
+/* Dual mark */
+.pasuram-item .dual-mark {
+  color: #2e7d32;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* Local number */
+.pasuram-item .pasuram-local {
+  text-align: right;
+  font-size: 14px;
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+/* ===============================
+   FLOATING MIC (SAFE)
+   =============================== */
+
+.mic-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 18px;
+  width: 54px;
+  height: 54px;
+  background: #f5c242;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  z-index: 9999;
+}
+
+@media (max-width: 768px) {
+  .mic-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    bottom: 70px;
+    right: 14px;
+  }
+}
+
+/* ===============================
+   PASURAM ONLY STYLES (SAFE)
+   =============================== */
+
+/* 🔥 Only pasuram container */
+.pasuram-item {
+  background: #ffffff;   /* pure white */
+  border-radius: 8px;
+}
+
+/* 🔥 Increase gap between group 1 & 2 */
+.pasuram-item .group-gap {
+  height: 15px;   /* adjust: 16–22 as per taste */
+}
+
+/* 🔥 Ensure lines clean */
+.pasuram-item .pasuram-line {
+  line-height: 1.8;
+}
+
+/* 🔥 Dual mark inline styling */
+.pasuram-item .dual-mark-inline {
+  color: #2e7d32;
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+/* ===============================
+   PASURAM FINAL FIX (FORCE OVERRIDE)
+   =============================== */
+
+/* 🔥 FORCE WHITE (override old yellow) */
+.tree-item.pasuram-item {
+  background: #fffaf0 !important;
+}
+
+/* 🔥 Slightly smaller font */
+.pasuram-item .pasuram-line {
+  font-size: 18px;     /* reduce from ~20 */
+  line-height: 1.8;
+}
+
+/* 🔥 Optional: global number slightly smaller */
+.pasuram-item > b {
+  font-size: 16px;
+}
+
+/* 🔥 Keep good spacing */
+.pasuram-item .group-gap {
+  height: 18px;
+}
+
+.pasuram-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.pasuram-text {
+  flex: 1;
+}
+
+.pasuram-localno {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.pasuram-item {
+  position: relative;
+}
+
+.pasuram-local {
+  position: absolute;
+  right: 12px;
+  bottom: 18px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.pasuram-content {
+  padding-bottom: 18px; /* prevents overlap */
+}

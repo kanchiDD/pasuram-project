@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Naalayiram - Full Book</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/css/main.css?v=860">
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div id="header"></div>
+
+<!-- OPTIONAL TOPBAR -->
+<div class="topbar" id="topbar" style="display:none;">
+  <div id="backBtn">⬅ Back</div>
+  <div id="homeBtn">🏠 Home</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container" id="app">
+  Loading book...
+</div>
+
+<!-- MODAL ROOT -->
+<div id="modalRoot"></div>
+
+<!-- FOOTER -->
+<div id="footer"></div>
+
+<!-- LAYOUT SYSTEM -->
+<script src="js/layout.js"></script>
+<script>
+  loadLayout();
+</script>
+
+<!-- RENDERER -->
+<script type="module">
+
+import { renderFull4000 } from './js/fullThousandRenderer.js';
+
+const params = new URLSearchParams(window.location.search);
+const thousandId = params.get("thousand");
+const view4000 = params.get("view");
+
+fetch("https://cdnaalayiram-api.kanchitrust.workers.dev/api/full?view=4000")
+  .then(res => res.json())
+  .then(data => {
+
+  console.log("API DATA:", data);
+
+  let finalData = data;
+
+  // ✅ FILTER ONLY SELECTED THOUSAND
+  if (thousandId) {
+    finalData = {
+      ...data,
+      thousands: (data.thousands || []).filter(t =>
+        String(t.id) === String(thousandId)
+      )
+    };
+  }
+
+  // ✅ FULL 4000 → NO FILTER
+  if (view4000 === "4000") {
+    finalData = data;
+  }
+
+  const html = renderFull4000(finalData);
+
+  document.getElementById("app").innerHTML = html;
+
+})
+  .catch(err => {
+    console.error("API ERROR:", err);
+    document.getElementById("app").innerHTML = "Error loading book";
+  });
+
+</script>
+
+</body>
+</html>

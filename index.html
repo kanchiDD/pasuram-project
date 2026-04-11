@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Arulicheyal.org</title>
+
+<!-- FONT AWESOME -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- YOUR MAIN CSS -->
+<link rel="stylesheet" href="/css/main.css?v=860">
+
+
+</head>
+
+<body class="tamil-text">
+
+<!-- HEADER (DO NOT TOUCH) -->
+<div id="header"></div>
+
+<!-- ✅ LANGUAGE SWITCH (INDEX ONLY) -->
+<div class="lang-switch">
+
+  <div class="lang-item" onclick="changeLang('ta')">அ<span>Tamil</span></div>
+  <div class="lang-item" onclick="changeLang('roman')">a<span>Roman</span></div>
+  <div class="lang-item" onclick="changeLang('hi')">अ<span>Devanagari</span></div>
+  <div class="lang-item" onclick="changeLang('te')">అ<span>Telugu</span></div>
+  <div class="lang-item" onclick="changeLang('kn')">ಅ<span>Kannada</span></div>
+  <div class="lang-item" onclick="changeLang('ml')">അ<span>Malayalam</span></div>
+  <div class="lang-item" onclick="changeLang('bn')">অ<span>Bengali</span></div>
+  <div class="lang-item" onclick="changeLang('gu')">અ<span>Gujarati</span></div>
+
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent">
+Loading...
+</div>
+
+<!-- FOOTER -->
+<div id="footer"></div>
+
+<!-- 🔥 LOAD HEADER/FOOTER ONLY ONCE -->
+<script src="/js/layout.js?v=520"></script>
+
+<script>
+async function loadIndex(lang = "ta"){
+    try{
+        const res = await fetch(
+            "https://cdnaalayiram-api.kanchitrust.workers.dev/api/index?lang=" + lang
+        );
+
+        const data = await res.json();
+
+        let html = "";
+
+        // INTRO
+        if (data.intro) {
+            data.intro.forEach(p => {
+                html += `<p>${p}</p>`;
+            });
+        }
+
+        // SIGNATURE
+        if (data.signature) {
+            html += `<div class="signature">`;
+            data.signature.forEach(line => {
+                html += `${line}<br>`;
+            });
+            html += `</div>`;
+        }
+
+        // CREDITS HEADING
+        if (data.credits_heading && data.credits_heading.length > 0) {
+            html += `<h3 style="margin-top:25px;">${data.credits_heading[0]}</h3>`;
+        }
+
+        // CREDITS
+        if (data.credits) {
+            data.credits.forEach(p => {
+                html += `<p>${p}</p>`;
+            });
+        }
+
+        document.getElementById("mainContent").innerHTML = html;
+
+    } catch(e){
+        console.error(e);
+        document.getElementById("mainContent").innerHTML = "Error loading content";
+    }
+}
+
+/* LANGUAGE CLICK */
+function changeLang(lang){
+    loadIndex(lang);
+}
+
+/* 🔥 SAFE LOAD ORDER */
+document.addEventListener("DOMContentLoaded", function () {
+    loadLayout();      // header + hamburger (unchanged)
+    loadIndex("ta");   // Tamil default (MANDATORY)
+});
+</script>
+
+</body>
+</html>

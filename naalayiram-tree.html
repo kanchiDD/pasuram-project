@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naalayiram Tree | Arulicheyal</title>
+
+<style>
+body{
+    margin:0;
+    font-family:"Noto Sans Tamil", system-ui, sans-serif;
+    background:#fffdf6;
+}
+
+/* Header */
+.sri{
+    text-align:center;
+    font-size:16px;
+    margin:10px 0 5px 0;
+}
+
+.header-strip{
+    background:#f5c242;
+    padding:8px 0;
+    text-align:center;
+}
+
+.header-strip img{
+    width:90%;
+    max-width:500px;
+    height:auto;
+}
+
+.nav{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    padding:12px 10px;
+    border-bottom:1px solid #eee;
+    font-size:14px;
+}
+
+.nav a{
+    text-decoration:none;
+    color:#5a3a00;
+    font-weight:600;
+}
+
+/* Dynamic Tree Container */
+.container{
+    max-width:800px;
+    margin:30px auto;
+    padding:0 15px;
+}
+
+/* Items */
+.item{
+    padding:14px;
+    border-bottom:1px solid #eee;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.item:hover{
+    background:#f5c24222;
+}
+
+.back{
+    font-weight:600;
+    margin-bottom:10px;
+    cursor:pointer;
+    color:#5a3a00;
+}
+
+/* Mobile */
+@media (max-width:600px){
+    .item{
+        font-size:17px;
+        padding:16px 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="sri">ஸ்ரீ</div>
+
+<div class="header-strip">
+    <img src="/assets/images/vaishnava_transparent.png">
+</div>
+
+<div class="nav">
+    <a href="/index.html">Home</a>
+    <a href="#">Voice Search</a>
+    <a href="#">Sevakalam</a>
+</div>
+
+<div class="container">
+    <div id="navigation"></div>
+</div>
+
+<script>
+
+const API_BASE = "https://pasuram-api.kanchitrust.workers.dev";
+let historyStack = [];
+
+// ROOT
+async function loadRoot() {
+  const res = await fetch(`${API_BASE}/tree?level=root`);
+  const data = await res.json();
+  render("Arulicheyal", data, "root");
+}
+
+// LOAD NAALAYIRAM
+async function loadNaalayiram() {
+  const res = await fetch(`${API_BASE}/tree?level=thousand`);
+  const data = await res.json();
+  render("Naalayiram", data, "thousand");
+}
+
+// LOAD OTHER
+async function loadOther() {
+  const res = await fetch(`${API_BASE}/tree?level=other`);
+  const data = await res.json();
+  render("Other Prabandhams", data, "section");
+}
+
+// LOAD SECTIONS
+async function loadSections(thousandId, title) {
+  const res = await fetch(`${API_BASE}/tree?level=section&thousand_id=${thousandId}`);
+  const data = await res.json();
+  render(title, data, "section");
+}
+
+// LOAD PATHU OR DIRECT THIRUMOZHI
+async function loadPathu(sectionId, title) {
+  const res = await fetch(`${API_BASE}/tree?level=pathu&section_id=${sectionId}`);
+  const data = await res.json();
+
+  // If backend returns thirumozhi directly, it will still work
+  render(title, data, "pathu");
+}
+
+// LOAD THIRUMOZHI
+async function loadThirumozhi(pathuId, title) {
+  const res = await fetch(`${API_BASE}/tree?level=thirumozhi&pathu_id=${pathuId}`);
+  const data = await res.json();
+  render(title, data, null);
+}
+
+// RENDER FUNCTION
+function render(title, items, nextLevel) {
+
+  const container = document.getElementById("navigation");
+  container.innerHTML = "";
+
+  if (historyStack.length > 0) {
+    const back = document.createElement("div");
+    back.className = "back";
+    back.innerText = "← Back";
+    back.onclick = goBack;
+    container.appendChild(back);
+  }
+
+  const heading = document.createElement("div");
+  heading.className = "item";
+  heading.style.fontWeight = "700";
+  heading.innerText = title;
+  container.appendChild(heading);
+
+  items.forEach(item => {
+
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerText = item.name;
+
+    div.onclick = () => {
+
+      historyStack.push({ title, nextLevel });
+
+      if (item.id === "naalayiram") return loadNaalayiram();
+      if (item.id === "other") return loadOther();
+
+      if (nextLevel === "thousand") return loadSections(item.id, item.name);
+      if (nextLevel === "section") return loadPathu(item.id, item.name);
+      if (nextLevel === "pathu") return loadThirumozhi(item.id, item.name);
+
+    };
+
+    container.appendChild(div);
+  });
+}
+
+// BACK
+function goBack() {
+  historyStack.pop();
+  loadRoot();
+}
+
+// INITIAL LOAD
+loadRoot();
+
+</script>
+
+</body>
+</html>
