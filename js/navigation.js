@@ -8,7 +8,6 @@ import {
   fetchMadal,
   fetchKootrirukkai
 } from "./api.js";
-
 // ✅ STATIC IMPORTS
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
 import { openPathuSelector } from "./render/pathuSelector.js";
@@ -180,3 +179,4 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
 window.selectThousand = selectThousand;
 window.goBack = goBack;
 window.loadThousand = loadThousand;
+

@@ -21,8 +21,7 @@ function renderHeader() {
 
   let html = "";
 
-  if (state.thaniyanData) {
-
+if (state.thaniyanData && !state.isFullRender) {
   const data =
     state.thaniyanData?.data ||
     state.thaniyanData?.rows ||
@@ -30,24 +29,33 @@ function renderHeader() {
 
   let toRender = data;
 
-  // 🔥 ONLY DURING FULL RENDER → remove global
+  // 🔥 FULL MODE → only section thaniyan
   if (state.isFullRender) {
     toRender = data.filter(t => t.type === "section");
   }
 
- 
+  // ✅ RENDER THANIYAN
+  html += renderThaniyan(toRender);
 }
 
   
 
-
-
-
 /* Section Title */
-  const sectionName = state.selectedSectionName || "";
-  if (sectionName) {
-    
-  }
+  /* Section Title */
+const sectionName = state.selectedSectionName || "";
+
+if (sectionName) {
+  const title =
+    sectionHeaderMap[sectionName] ||
+    sectionName;
+
+  html += `
+    <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
+      ${title}
+    </div>
+  `;
+}
+
 
   /* Carnatic */
   if (state.displayMap && state.displayMap.section) {

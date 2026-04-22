@@ -45,7 +45,7 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
   if (!state) return "";
 
   let html = "";
-
+ 
   // 🔥 SAFE STANDALONE FILTER (NON-DESTRUCTIVE)
   let originalData = state.pasuramData;
 
@@ -145,13 +145,21 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
 
   if (Array.isArray(state.pasuramData) && state.pasuramData.length > 0) {
 
+ // 🔥 ADD HERE (ONLY ONCE PER RENDER)
+  window._sectionClosingDone = {};
+
     window._lastPathu = null;
     window._lastThiru = null;
 
     let currentProsody = null;
 
     state.pasuramData.forEach(function(p, index) {
-    
+    // 🔥 ADD THIS LINE (FIRST LINE INSIDE LOOP)
+  console.log(
+    "SEC:", p.section_id,
+    "THIRU:", p.thirumozhi_id,
+    "LAST:", window._lastThiru
+  );
       
       const key = String(p.global_no);
 
@@ -171,13 +179,24 @@ if (p.pathu_id !== null && p.pathu_id !== undefined) {
   }
 
   if (
-    p.thirumozhi_heading &&
-    window._lastThiruHeading !== p.thirumozhi_heading
-  ) {
-    window._lastThiruHeading = p.thirumozhi_heading;
+  p.thirumozhi_heading &&
+  window._lastThiruHeading !== p.thirumozhi_heading
+) {
+  window._lastThiruHeading = p.thirumozhi_heading;
 
-    // ✅ ORIGINAL (RESTORED)
-    html += '<div class="line3-bold">' + p.thirumozhi_heading + '</div>';
+  
+  // ✅ ORIGINAL (KEEP)
+  const headingText = p.thirumozhi_heading || "";
+
+  const safeHeading = String(headingText)
+    .replace(/\s+/g, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+
+  const thiruId = `thiru-${p.section_id}-${safeHeading}`;
+
+  html += `<div id="${thiruId}" class="line3-bold">
+    ${headingText}
+  </div>`;
 
     const pathuKey = String(p.pathu_id);
 
@@ -205,7 +224,15 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
   if (window._lastThiru !== p.thirumozhi_id) {
 
+    // 🔥 CLOSE previous thirumozhi (IMPORTANT FIX)
+    if (window._lastThiru !== null) {
+      html += `</div>`;
+    }
+
     window._lastThiru = p.thirumozhi_id;
+
+    // ✅ START thirumozhi wrapper
+    html += `<div class="thirumozhi-unit">`;
 
     html += '<div class="prabandham-header">';
     html += '<div class="line1">' + (p.section_name || '') + '</div>';
@@ -213,14 +240,24 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
     html += '</div>';
 
     // ✅ ORIGINAL (RESTORED)
-    html += '<div class="line3-bold">' + (p.thirumozhi_heading || '') + '</div>';
+    const headingText = p.thirumozhi_heading || "";
+
+    const safeHeading = String(headingText)
+      .replace(/\s+/g, "")
+      .replace(/[^\p{L}\p{N}]/gu, "");
+
+    const thiruId = `thiru-${p.section_id}-${safeHeading}`;
+
+    html += `<div id="${thiruId}" class="line3-bold">
+      ${headingText}
+    </div>`;
 
     const thiruKey = String(p.thirumozhi_id);
 
     if (
       state.displayMap &&
       state.displayMap.thirumozhi &&
-      displayMap.thirumozhi[thiruKey] &&
+      state.displayMap.thirumozhi[thiruKey] &&
       state.displayMap.thirumozhi[thiruKey].items
     ) {
       html += '<div class="display-block">';
@@ -319,6 +356,8 @@ html += '</div>';
       /* ===== END DETECTION (UNCHANGED) ===== */
 
       const next = state.pasuramData[index + 1];
+      const isLastOfSection =
+  !next || next.section_id !== p.section_id;
 
       const isLastOfPathu =
         p.pathu_id &&
@@ -342,61 +381,90 @@ html += '</div>';
         }
       }
 
-      if (isLastOfThirumozhi) {
-        const thiruKey = String(p.thirumozhi_id);
+     
 
-        ((state.displayMap &&
-          state.displayMap.thirumozhi &&
-          state.displayMap.thirumozhi[thiruKey] &&
-          state.displayMap.thirumozhi[thiruKey].items) || [])
-          .filter(d => d && d.text && d.text.includes("அடிவரவு"))
-          .forEach(function(d) {
-            html += '<div class="display-item">' + d.text + '</div>';
-          });
+if (isLastOfThirumozhi) {
 
-        if (closingText) {
-          html += '<div class="section-close">' + closingText + '</div>';
-        }
-      }
+  const thiruKey = String(p.thirumozhi_id);
 
-      const hasPathuData =
-        state.displayMap &&
-        displayMap.pathu &&
-        Object.keys(state.displayMap.pathu).length > 0;
-
-      const hasThiruData =
-        state.displayMap &&
-        displayMap.thirumozhi &&
-        Object.keys(state.displayMap.thirumozhi).length > 0;
-
-      const isLastStandalone =
-        !hasPathuData &&
-        !hasThiruData &&
-        (!next || next.section_id !== p.section_id);
-
-      if (isLastStandalone) {
-
-        ((state.displayMap && displayMap.section) || [])
-          .filter(d => d && d.text && d.text.includes("அடிவரவு"))
-          .forEach(function(d) {
-            html += '<div class="display-item">' + d.text + '</div>';
-          });
-
-        if (closingText) {
-          html += '<div class="section-close">' + closingText + '</div>';
-        }
-      }
-
+  ((state.displayMap &&
+    state.displayMap.thirumozhi &&
+    state.displayMap.thirumozhi[thiruKey] &&
+    state.displayMap.thirumozhi[thiruKey].items) || [])
+    .filter(d => d && d.text && d.text.includes("அடிவரவு"))
+    .forEach(function(d) {
+      html += '<div class="display-item">' + d.text + '</div>';
     });
+
+  if (closingText) {
+    html += '<div class="section-close">' + closingText + '</div>';
   }
 
+}
+
+
+// 🔥 END DETECTION
+const isTrueSectionEnd =
+  !next || next.section_id !== p.section_id;
+// 🔥 CLOSE FINAL THIRUMOZHI AT SECTION END
+if (isTrueSectionEnd && window._lastThiru !== null) {
+  html += `</div>`;
+  window._lastThiru = null;
+}
+
+const hasPathuData =
+  state.displayMap &&
+  state.displayMap.pathu &&
+  Object.keys(state.displayMap.pathu).length > 0;
+
+const hasThiruData =
+  state.displayMap &&
+  state.displayMap.thirumozhi &&
+  Object.keys(state.displayMap.thirumozhi).length > 0;
+
+const isLastStandalone =
+  !hasPathuData &&
+  !hasThiruData &&
+  (!next || next.section_id !== p.section_id);
+
+
+// ✅ HANDLE STANDALONE SECTION END CONTENT
+if (isLastStandalone && isTrueSectionEnd) {
+
+  ((state.displayMap && state.displayMap.section) || [])
+    .filter(d => d && d.text && d.text.includes("அடிவரவு"))
+    .forEach(function(d) {
+      html += '<div class="display-item">' + d.text + '</div>';
+    });
+
+  if (closingText) {
+    html += '<div class="section-close">' + closingText + '</div>';
+  }
+
+}
+
+
+// ✅ FINAL முற்றிற்று (ONLY ONCE, ALWAYS LAST)
+if (isTrueSectionEnd && !window._sectionClosingDone[p.section_id]) {
+
+  window._sectionClosingDone[p.section_id] = true;
+
+  const sectionName = p.section_name || "";
+
+  html += `
+    <div class="section-final-ending">
+      ${sectionHeaderMap[sectionName] || sectionName} முற்றிற்று
+    </div>
+  `;
+}
+
+  });
+
+}
+
   state.pasuramData = originalData;
-/* ✅ MIC BUTTON */
-html += `
-  <div class="mic-btn" onclick="openRecital()">
-    🎤
-  </div>
-`;  
+
+
   return html;
 }
 

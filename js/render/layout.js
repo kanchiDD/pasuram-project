@@ -6,8 +6,16 @@ import { renderOptions } from "./options.js";
 import { renderSection } from "./section.js";
 import { renderPasuram } from "./pasuram.js";
 
+
 export function render() {
 
+  // 🔥 BLOCK render during full build
+  if (state.isFullRender) {
+    console.log("⛔ render blocked (full render mode)");
+    return;
+  }
+
+  console.log("🔥 RENDER CALLED", Date.now());
   const app = document.getElementById("app");
   const topbar = document.getElementById("topbar");
 
@@ -46,8 +54,33 @@ export function render() {
       break;
 
     case "PASURAM":
-      topbar.style.display = "flex";
-      app.innerHTML = renderPasuram();
-      break;
+  topbar.style.display = "flex";
+
+  // ✅ FIRST TIME → create structure
+  if (!document.getElementById("indexPage")) {
+
+    const indexDiv = document.createElement("div");
+    indexDiv.id = "indexPage";
+    indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
+
+    const contentDiv = document.createElement("div");
+    contentDiv.id = "contentPage";
+    contentDiv.style.display = "none";
+
+    app.innerHTML = "";
+    app.appendChild(indexDiv);
+    app.appendChild(contentDiv);
+  }
+
+  // ✅ ALWAYS ensure content is rendered
+  const contentDiv = document.getElementById("contentPage");
+
+  if (contentDiv && !contentDiv.innerHTML) {
+    contentDiv.innerHTML = renderPasuram();
+  }
+
+  break;
   }
 }
+
+

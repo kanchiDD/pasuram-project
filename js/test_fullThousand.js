@@ -6,11 +6,13 @@ import {
   fetchMadal,
   fetchKootrirukkai,
   fetchThousand
-} from "./api.js";
+  } from "./api.js";
 
-import { renderPasuram } from "./render/pasuram.js";
+import { renderPasuram } from "./render/pasuram_full.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
+import { renderIndex } from "./index.js";
+import { renderThaniyan } from "./render/thaniyan.js";
 
 const sectionHeaderMap = {
   "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
@@ -46,15 +48,20 @@ const sectionHeaderMap = {
   "ஆர்த்தி ப்ரபந்தம்": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்"
 };
 
-
 // =========================
 // 🔥 MAIN FUNCTION
 // =========================
 export async function testFullThousand(selectedThousandId = null) {
 
+let html = "";
+let fullAnchorRows = [];
+
+// ✅ ADD THIS
+const isFullMode = !selectedThousandId;
+
+
   state.isFullRender = true;
 
-  let html = "";
 
   const context = {
     thousandId: null,
@@ -92,83 +99,167 @@ export async function testFullThousand(selectedThousandId = null) {
     state.selectedThousandId = t.id;
     context.thousandId = t.id;
 
-    // =========================
-    // 🔥 THOUSAND HEADER
-    // =========================
-    html += `
-      <div style="text-align:center;margin:30px 0 20px 0;font-size:20px;font-weight:700;">
-        ${t.name}
-      </div>
-    `;
+// =========================
+// 🔥 THOUSAND HEADER
+// =========================
+html += `
+  <div style="text-align:center;margin:30px 0 20px 0;font-size:20px;font-weight:700;">
+    ${t.name}
+  </div>
+`;
 
-    await fetchSections();
+// =========================
+// 🔥 FETCH anchor map FIRST
+// =========================
+const res = await fetch(
+  "https://cdnaalayiram-api.kanchitrust.workers.dev/api/anchor-map?thousand_id=" + t.id
+);
 
-    const sections = state.sectionData || [];
+const anchorRows = await res.json();
 
-    // =========================
-    // 🔥 LOOP SECTIONS (NO EXTRA FILTER)
-    // =========================
-    for (const sec of sections) {
+// 🔥 accumulate for full index
+fullAnchorRows.push(...anchorRows);
 
-      state.selectedSectionId = sec.id;
-      state.selectedSectionName = sec.name;
+// ✅ DEBUG LOG (ADD THIS)
+console.log("Thousand:", t.id, "Rows:", anchorRows.length, "Total so far:", fullAnchorRows.length);
+
+// =========================
+// 🔥 INDEX FOR THIS THOUSAND (IMPORTANT)
+// =========================
+// 🔥 SHOW INDEX ONLY FOR SINGLE THOUSAND
+if (selectedThousandId) {
+  html += `
+  <div class="index-border">
+
+    <div class="index-title">
+      📑 Index
+    </div>
+
+    ${renderIndex(anchorRows, t.id)}
+
+  </div>
+`;
+
+html += `
+  <div class="page-spacer"></div>
+`;
+}
+
+// =========================
+// 🔥 BUILD SECTIONS FROM anchor map (MUST BE INSIDE LOOP)
+// =========================
+const sections = [...new Set(anchorRows.map(r => r.section_id))]
+  .sort((a, b) => a - b)
+  .map(id => ({ id }));
+
+
+// =========================
+// 🔥 LOOP SECTIONS
+// =========================
+for (const sec of sections) {
+
+  state.selectedSectionId = sec.id;
+
+  const sectionRow = anchorRows.find(
+    r => r.section_id === sec.id && r.type === "section"
+  );
+
+  let baseName = sectionRow?.canonical_text || "";
+
+  // 🔥 FIX missing section names
+  if (!baseName) {
+    const SECTION_BASE_NAME = {
+      2: "பெரியாழ்வார் திருமொழி",
+      4: "நாச்சியார் திருமொழி",
+      5: "பெருமாள் திருமொழி",
+      11: "பெரிய திருமொழி",
+      26: "திருவாய்மொழி"
+    };
+
+    baseName = SECTION_BASE_NAME[sec.id] || "";
+  }
+
+  state.selectedSectionName = baseName;
+
+  const sectionTitle = sectionHeaderMap[baseName] || baseName;
+
 
       // =========================
       // 🔥 FETCH THANIYAN ALWAYS
       // =========================
-      await fetchThaniyan();
+      if (![2, 12, 13].includes(sec.id)) {
+    await fetchThaniyan();
+    }
 
       const isSpecial = isSpecialSection(sec.id);
 
-      // =========================
-      // 🔥 SPECIAL SECTIONS
-      // =========================
-      if (isSpecial) {
+// =========================
+// 🔥 SPECIAL SECTIONS (FINAL FIXED)
+// =========================
+if (isSpecial) {
 
-        html += getThaniyanHTML(sec, state, context);
+  const sectionId = Number(sec.section_id || sec.id);
 
-        const sectionName = (state.selectedSectionName || "").trim();
+  let specialHtml = "";
 
-        const title =
-          sectionHeaderMap[sectionName] ||
-          sectionName;
+  if ([22, 23, 2673, 2674].includes(sectionId)) {
+    await fetchMadal();
+    specialHtml = renderMadal(state.madalData);
+  }
+  else if ([21, 2672].includes(sectionId)) {
+    await fetchKootrirukkai();
+    specialHtml = renderKootrirukkai(state.kootrirukkaiData);
+  }
 
-        html += `
-          <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
-            ${title}
-          </div>
-        `;
+  // ✅ FILTER ONLY SECTION THANIYAN
+  const thaniyanData =
+    (state.thaniyanData?.data ||
+     state.thaniyanData?.rows ||
+     state.thaniyanData ||
+     []).filter(t => t.type === "section");
 
-        const sectionId = Number(sec.section_id || sec.id);
+// ✅ ADD THIS FIRST
+html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div>`;
 
-        if ([22, 23, 2673, 2674].includes(sectionId)) {
-          await fetchMadal();
-          html += renderMadal(state.madalData);
-        }
-        else if ([21, 2672].includes(sectionId)) {
-          await fetchKootrirukkai();
-          html += renderKootrirukkai(state.kootrirukkaiData);
-        }
+  // ✅ THANIYAN OUTSIDE (IMPORTANT)
+  if (thaniyanData && thaniyanData.length > 0) {
+  html += `
+    <div class="thaniyan-border">
+      ${renderThaniyan(thaniyanData)}
+    </div>
+  `;
+}
 
-        continue;
-      }
+  // ✅ CONTENT BOX SEPARATE
+  html += `
+    <div class="content-border">
 
-      // =========================
-      // ✅ NORMAL SECTIONS
-      // =========================
-      html += getThaniyanHTML(sec, state, context);
+      ${specialHtml}
 
-      const sectionName = (state.selectedSectionName || "").trim();
+      <div class="section-final-ending">
+        ${sectionHeaderMap[state.selectedSectionName] || state.selectedSectionName} முற்றிற்று
+      </div>
 
-      const title =
-        sectionHeaderMap[sectionName] ||
-        sectionName;
+    </div>
+  `;
 
-      html += `
-        <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
-          ${title}
-        </div>
-      `;
+  continue;
+}
+
+
+// =========================
+// ✅ NORMAL SECTIONS
+// =========================
+
+// ❗ Skip thaniyan for 2 / 12 / 13
+if (![2, 12, 13].includes(sec.id)) {
+  html += `
+    <div class="thaniyan-border">
+      ${getThaniyanHTML(sec, state, context)}
+    </div>
+  `;
+}
+
 
       // =========================
       // ✅ PASURAM FLOW
@@ -191,16 +282,37 @@ export async function testFullThousand(selectedThousandId = null) {
             : Object.keys(state.pasuramData).length > 0
         );
 
-      if (hasPasuram) {
-        html += renderPasuram(currentDisplayMap, currentSectionClosing);
-      }
+      console.log("SECTION START:", sec.id);
+// 🔥 CRITICAL RESET PER SECTION
+window._lastThiru = null;
+window._lastPathu = null;
+
+if (hasPasuram) {
+
+  console.log("RENDERING SECTION:", sec.id);
+
+  html += `
+    <div class="content-border">
+
+      <div id="section-${sec.id}"
+           class="section-heading"
+           style="scroll-margin-top:80px;">
+        ${sectionTitle}
+      </div>
+
+      ${renderPasuram(currentDisplayMap, currentSectionClosing)}
+
+    </div>
+  `;
+
+  console.log("HTML ADDED FOR SECTION:", sec.id);
+}
 
     } // sections loop
 
-  // =========================
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
-// =========================
 let closingText = t.closing_text || t.closingText || t.closing;
+
 
 // fallback only if missing (no override)
 if (!closingText) {
@@ -214,14 +326,29 @@ if (!closingText) {
 }
 
 if (closingText) {
+ 
+
   html += `
-    <div style="text-align:center;margin:30px 0 40px 0;font-size:20px;font-weight:700;">
+    <div class="section-closing">
       ${closingText}
     </div>
   `;
 }
-
 } // ✅ CLOSE thousands loop properly
+
+// 🔥 ADD THIS BACK (CRITICAL FIX)
+state.fullData = fullAnchorRows;
+
+// 🔥 expose to bookMode
+window.fullAnchorRows = fullAnchorRows;
+
+
+// =========================
+// 🔥 AFTER LOOP (SAFE)
+// =========================
+
+// 🔥 expose full anchor data
+window.fullAnchorRows = fullAnchorRows;
 
 
 // =========================
@@ -235,8 +362,89 @@ if (!selectedThousandId) {
   `;
 }
 
+
+// =========================
+// 🔥 FLOATING NAV (FINAL)
+// =========================
+html += `
+  <div id="floating-nav" style="
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:999;
+  ">
+
+    <button onclick="goHome()">🏠</button>
+    <button onclick="goIndex()">📑</button>
+    <button onclick="goPrevPage()">◀️</button>
+    <button onclick="goNextPage()">▶️</button>
+
+  </div>
+`;
+
+// ✅ ONLY FOR FULL 4000 (STRICT)
+if (isFullMode) {
+
+  html = `
+    <div class="index-border">
+      <div class="index-title">
+        📑 Index
+      </div>
+
+      ${renderIndex(fullAnchorRows, null)}
+    </div>
+
+    <div class="page-spacer"></div>
+  ` + html;
+
+}
+state.isFullRender = false;
 return html;
 }
+
+
+
+window.goHome = function() {
+  window.location.href = "tree.html"; // 🔥 your entry page
+};
+
+
+window.goIndex = function() {
+
+  // 🔥 first index on page
+  const el = document.querySelector(".index-container");
+
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth" });
+  }
+};
+
+
+window.goPrevPage = function() {
+
+  window.scrollBy({
+    top: -window.innerHeight * 0.9,
+    behavior: "smooth"
+  });
+};
+
+
+window.goNextPage = function() {
+
+  window.scrollBy({
+    top: window.innerHeight * 0.9,
+    behavior: "smooth"
+  });
+};
+
+
+
+
+
+
 
 // =========================
 // 🔥 HELPER (REQUIRED)
@@ -244,3 +452,5 @@ return html;
 function isSpecialSection(id) {
   return [21, 22, 23].includes(Number(id));
 }
+
+

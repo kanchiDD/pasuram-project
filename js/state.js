@@ -1,16 +1,26 @@
 export const state = {
   level: "HOME",
   history: [],
+
+  view: "COVER",
+
+  // 🔥 ADD THIS LINE (MISSING ROOT CAUSE)
+  showIndex: false,
+
   thousandData: null,
   sectionData: null,
   thaniyanData: null,
   pasuramData: null,
+
   selectedThousandId: null,
   selectedSectionId: null,
+
   thirumozhiData: null,
   selectedThirumozhiId: null,
+
   sectionCache: {}
 };
+
 
 export function pushState() {
   state.history.push(JSON.parse(JSON.stringify(state)));

@@ -63,25 +63,24 @@ export function renderOptions() {
   `;
 }
 
+
 window.showFullNaalayiram = async function () {
 
   const app = document.getElementById("app");
 
-// 🔥 HARD RESET (IMPORTANT)
-app.innerHTML = "";
-
   const { testFullThousand } = await import("../test_fullThousand.js");
 
-  const html = await testFullThousand();
+ // ✅ FIXED: explicitly pass null for full 4000
+  const html = await testFullThousand(null);
+
 
   app.innerHTML = html;
 };
 
+
 window.showFullByThousand = async function (thousandId) {
 
   const app = document.getElementById("app");
-
-  app.innerHTML = "Loading...";
 
   const { testFullThousand } = await import("../test_fullThousand.js");
 
@@ -90,10 +89,11 @@ window.showFullByThousand = async function (thousandId) {
   app.innerHTML = html;
 };
 
+// =========================
+// 🔥 COMMON HELPERS
+// =========================
 window.comingSoon = window.comingSoon || function () {
   alert("Coming soon");
 };
-
-
 
 window.loadSections = loadSections;

@@ -51,7 +51,7 @@ export function openStandaloneSelector(sectionId, sectionName, data) {
     html += `
       <label class="option">
         <input type="radio" name="mode" value="thiru_${t.name}">
-        ${i + 1}. Thirumozhi – ${t.name}
+        ${i + 1}ம் திருமொழி – ${t.name}
       </label>
     `;
   });
