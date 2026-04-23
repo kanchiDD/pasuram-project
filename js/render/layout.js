@@ -56,38 +56,41 @@ export function render() {
     case "PASURAM":
   topbar.style.display = "flex";
 
+  // =========================
   // ✅ FIRST TIME → create structure
+  // =========================
   if (!document.getElementById("indexPage")) {
 
-  const indexDiv = document.createElement("div");
-  indexDiv.id = "indexPage";
+    const indexDiv = document.createElement("div");
+    indexDiv.id = "indexPage";
 
-  // ✅ ONLY render index if data exists
-  if (window.fullAnchorRows && window.fullAnchorRows.length) {
-    indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
-  } else {
-    indexDiv.innerHTML = ""; // no index for section mode
-  }
+    // ✅ ONLY render index if full data exists
+    if (window.fullAnchorRows && window.fullAnchorRows.length) {
+      indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
+    } else {
+      indexDiv.innerHTML = "";
+    }
 
     const contentDiv = document.createElement("div");
     contentDiv.id = "contentPage";
-    const contentDiv = document.getElementById("contentPage");
-
-// ✅ Only render if data exists AND not modal flow
-if (state.pasuramData && !state.isPathuSelectionActive) {
-  contentDiv.style.display = "block";
-  contentDiv.innerHTML = renderPasuram();
-}
+    contentDiv.style.display = "none";
 
     app.innerHTML = "";
     app.appendChild(indexDiv);
     app.appendChild(contentDiv);
   }
 
-  // ✅ ALWAYS ensure content is rendered
-  const contentDiv = document.getElementById("contentPage");
+  // =========================
+  // ✅ GET EXISTING ELEMENT
+  // =========================
+  let contentDiv = document.getElementById("contentPage");
 
-  if (contentDiv && !contentDiv.innerHTML) {
+  // =========================
+  // ✅ RENDER CONTROL (FINAL)
+  // =========================
+  if (contentDiv && state.pasuramData && !state.isPathuSelectionActive) {
+
+    contentDiv.style.display = "block";
     contentDiv.innerHTML = renderPasuram();
   }
 
