@@ -196,13 +196,11 @@ function openThirumozhiSelector() {
 /* 🔥 FINAL */
 
 window.confirmThirumozhi = function () {
+
   const selected = document.querySelector('input[name="thirumozhi"]:checked');
   if (!selected) return;
 
   const source = state.pasuramData || [];
-
-/* 🔥 ADD THIS EXACTLY HERE */
-console.log("AVAILABLE KEYS:", Object.keys(source[0] || {}));
   const { sectionId, pathuName } = state.selectedPathu;
 
   let filtered = [];
@@ -216,22 +214,29 @@ console.log("AVAILABLE KEYS:", Object.keys(source[0] || {}));
 
   } else {
 
-  const heading = selected.value;
+    const heading = selected.value;
 
-  filtered = source.filter(p =>
-    Number(p.section_id) === Number(sectionId) &&
-    String(p.pathu_name).trim() === String(pathuName).trim() &&
-    String(p.thirumozhi_heading).trim() === String(heading).trim()
-  );
-}
+    filtered = source.filter(p =>
+      Number(p.section_id) === Number(sectionId) &&
+      String(p.pathu_name).trim() === String(pathuName).trim() &&
+      String(p.thirumozhi_heading).trim() === String(heading).trim()
+    );
+  }
 
-state.filteredPasuram = filtered;
+  // ✅ SET DATA FIRST
+  state.filteredPasuram = filtered;
+  state.pasuramData = filtered;
 
-state.level = "PASURAM";
+  // ✅ TURN OFF MODAL FLAG (CRITICAL)
+  state.isPathuSelectionActive = false;
 
-closePathuModal(true);
-render();
+  // ✅ SET LEVEL
+  state.level = "PASURAM";
 
+  // ✅ CLOSE + RENDER ONCE
+  closePathuModal(true);
+  render();
+};
   
 
 /* 🔥 ADD THIS LINE */
