@@ -176,6 +176,7 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
   state.level = "PASURAM";
   render();
 }
+});
 
 window.selectThousand = selectThousand;
 window.goBack = goBack;
