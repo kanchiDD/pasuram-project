@@ -11,7 +11,7 @@ const sectionHeaderMap = {
   "திருச்சந்தவிருத்தம்": "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
   "திருமாலை": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
   "திருப்பள்ளியெழுச்சி": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலானதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலானதிபிரான்",
+  "அமலனாதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
   "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
   "பெரிய திருமொழி": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
   "திருகுறுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
@@ -40,7 +40,6 @@ export function renderPasuram(displayMapOverride, sectionClosingOverride) {
 const displayMap = displayMapOverride || state.displayMap;
 const sectionClosing = sectionClosingOverride || state.sectionClosing;
 
-  console.log("RENDER PASURAM FUNCTION RUNNING");
 
   if (!state) return "";
 
@@ -155,11 +154,7 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
 
     state.pasuramData.forEach(function(p, index) {
     // 🔥 ADD THIS LINE (FIRST LINE INSIDE LOOP)
-  console.log(
-    "SEC:", p.section_id,
-    "THIRU:", p.thirumozhi_id,
-    "LAST:", window._lastThiru
-  );
+  
       
       const key = String(p.global_no);
 

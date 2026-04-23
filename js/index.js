@@ -12,7 +12,7 @@ const SECTION_NAMES = {
   6: "திருச்சந்தவிருத்தம்",
   7: "திருமாலை",
   8: "திருப்பள்ளியெழுச்சி",
-  9: "அமலானதிபிரான்",
+  9: "அமலனாதிபிரான்",
   10: "கண்ணிநுண்சிறுத்தாம்பு",
   11: "பெரிய திருமொழி",
   12: "திருகுறுந்தாண்டகம்",
@@ -95,7 +95,6 @@ export function renderIndex(rows, thousandId) {
   let html = `<div class="index-container">`;
 
   grouped.forEach((section, secIndex) => {
-console.log("INDEX thousandId:", thousandId);  // 🔥 ADD THIS
 
     let secNum = "";
 
@@ -492,3 +491,5 @@ window.openPathuStart = function(sectionId, pathuName) {
     first.thirumozhi_heading
   );
 };
+
+

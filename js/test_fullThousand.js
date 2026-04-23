@@ -23,7 +23,7 @@ const sectionHeaderMap = {
   "திருச்சந்தவிருத்தம்": "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
   "திருமாலை": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
   "திருப்பள்ளியெழுச்சி": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலானதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலானதிபிரான்",
+  "அமலனாதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
   "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
   "பெரிய திருமொழி": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
   "திருகுறுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
@@ -80,17 +80,7 @@ const isFullMode = !selectedThousandId;
     ? thousands.filter(t => Number(t.id) === Number(selectedThousandId))
     : thousands;
 
-  // =========================
-  // 🔥 FULL 4000 HEADING (TOP)
-  // =========================
-  if (!selectedThousandId) {
-    html += `
-      <div style="text-align:center;margin:30px 0 40px 0;font-size:24px;font-weight:800;">
-        நாலாயிர திவ்யப்பிரபந்தம்
-      </div>
-    `;
-  }
-
+  
   // =========================
   // 🔥 LOOP THOUSANDS
   // =========================
@@ -103,8 +93,24 @@ const isFullMode = !selectedThousandId;
 // 🔥 THOUSAND HEADER
 // =========================
 html += `
-  <div style="text-align:center;margin:30px 0 20px 0;font-size:20px;font-weight:700;">
-    ${t.name}
+  <div style="text-align:center;margin:30px 0 20px 0;">
+    
+    ${
+      selectedThousandId
+        ? `<div style="font-size:26px;font-weight:900;">
+             நாலாயிர திவ்யப்பிரபந்தம்
+           </div>`
+        : ``
+    }
+
+    <div style="font-size:20px;font-weight:700;margin-top:6px;">
+  ${
+    t.name === "நாலாயிர திவ்யப்பிரபந்தம்"
+      ? ""
+      : t.name
+  }
+</div>
+
   </div>
 `;
 
@@ -120,8 +126,7 @@ const anchorRows = await res.json();
 // 🔥 accumulate for full index
 fullAnchorRows.push(...anchorRows);
 
-// ✅ DEBUG LOG (ADD THIS)
-console.log("Thousand:", t.id, "Rows:", anchorRows.length, "Total so far:", fullAnchorRows.length);
+
 
 // =========================
 // 🔥 INDEX FOR THIS THOUSAND (IMPORTANT)
@@ -282,14 +287,14 @@ if (![2, 12, 13].includes(sec.id)) {
             : Object.keys(state.pasuramData).length > 0
         );
 
-      console.log("SECTION START:", sec.id);
+     
 // 🔥 CRITICAL RESET PER SECTION
 window._lastThiru = null;
 window._lastPathu = null;
 
 if (hasPasuram) {
 
-  console.log("RENDERING SECTION:", sec.id);
+  
 
   html += `
     <div class="content-border">
@@ -305,12 +310,13 @@ if (hasPasuram) {
     </div>
   `;
 
-  console.log("HTML ADDED FOR SECTION:", sec.id);
+  
 }
 
     } // sections loop
 
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
+
 let closingText = t.closing_text || t.closingText || t.closing;
 
 
@@ -329,10 +335,22 @@ if (closingText) {
  
 
   html += `
-    <div class="section-closing">
+  <div class="section-closing" style="text-align:center;margin:40px 0 30px 0;">
+
+    <div style="font-size:22px;font-weight:900;margin-bottom:10px;">
       ${closingText}
     </div>
-  `;
+
+    <div style="width:100px;height:2px;background:#b38b2e;margin:8px auto;"></div>
+
+    <div style="font-size:16px;letter-spacing:5px;color:#b38b2e;">
+      ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖
+    </div>
+
+    <div style="width:100px;height:2px;background:#b38b2e;margin:8px auto;"></div>
+
+  </div>
+`;
 }
 } // ✅ CLOSE thousands loop properly
 
@@ -356,12 +374,19 @@ window.fullAnchorRows = fullAnchorRows;
 // =========================
 if (!selectedThousandId) {
   html += `
-    <div style="text-align:center;margin:40px 0;font-size:24px;font-weight:800;">
-      நாலாயிர திவ்யப்பிரபந்தம் முற்றிற்று
+    <div style="text-align:center;margin:50px 0 30px 0;">
+
+      <div style="font-size:26px;font-weight:900;">
+        நாலாயிர திவ்யப்பிரபந்தம் முற்றிற்று
+      </div>
+
+      <div style="font-size:18px;margin-top:10px;color:#b38b2e;">
+        ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖
+      </div>
+
     </div>
   `;
 }
-
 
 // =========================
 // 🔥 FLOATING NAV (FINAL)
@@ -377,31 +402,51 @@ html += `
     z-index:999;
   ">
 
-    <button onclick="goHome()">🏠</button>
-    <button onclick="goIndex()">📑</button>
-    <button onclick="goPrevPage()">◀️</button>
-    <button onclick="goNextPage()">▶️</button>
+    <button onclick="goHome()">🏠<br><small>Home</small></button>
+    <button onclick="goIndex()">📑<br><small>Index</small></button>
+    <button onclick="goPrevPage()">◀️<br><small>Back</small></button>
+    <button onclick="goNextPage()">▶️<br><small>Next</small></button>
+    <button onclick="increaseFont()">A+<br><small>Zoom In</small></button>
+    <button onclick="decreaseFont()">A-<br><small>Zoom Out</small></button>
 
   </div>
 `;
-
 // ✅ ONLY FOR FULL 4000 (STRICT)
 if (isFullMode) {
 
   html = `
-    <div class="index-border">
-      <div class="index-title">
-        📑 Index
-      </div>
+  <div id="main-4000-heading" style="text-align:center;margin:40px 0 50px 0;">
+    <div style="font-size:34px;font-weight:900;">
+      நாலாயிர திவ்யப்பிரபந்தம்
+    </div>
+    <div style="width:140px;height:2px;background:#b38b2e;margin:12px auto;"></div>
+  </div>
 
-      ${renderIndex(fullAnchorRows, null)}
+  <div class="index-border">
+    <div class="index-title">
+      📑 Index
     </div>
 
-    <div class="page-spacer"></div>
-  ` + html;
+    ${renderIndex(fullAnchorRows, null)}
+  </div>
+
+  <div class="page-spacer"></div>
+` + html;
 
 }
 state.isFullRender = false;
+// 🔥 REMOVE accidental duplicates (safety)
+setTimeout(() => {
+  const all = document.querySelectorAll("#main-4000-heading");
+  if (all.length > 1) {
+    all.forEach((el, i) => {
+      if (i !== 0) el.remove();
+    });
+  }
+}, 0);
+
+
+
 return html;
 }
 
@@ -440,6 +485,31 @@ window.goNextPage = function() {
   });
 };
 
+window.increaseFont = function () {
+  let size = parseFloat(
+    getComputedStyle(document.documentElement)
+      .getPropertyValue('--base-font')
+  );
+
+  document.documentElement.style.setProperty(
+    '--base-font',
+    (size + 2) + 'px'
+  );
+};
+
+window.decreaseFont = function () {
+  let size = parseFloat(
+    getComputedStyle(document.documentElement)
+      .getPropertyValue('--base-font')
+  );
+
+  if (size > 12) {
+    document.documentElement.style.setProperty(
+      '--base-font',
+      (size - 2) + 'px'
+    );
+  }
+};
 
 
 

@@ -13,7 +13,7 @@ export function renderOptions() {
   const isNaalayiram = Number(state.selectedThousandId) === 5;
 
   // =========================
-  // 🔥 SPECIAL MENU (5th ITEM)
+  // 🔥 SPECIAL MENU (FULL 4000)
   // =========================
   if (isNaalayiram) {
 
@@ -24,17 +24,15 @@ export function renderOptions() {
       <div class="tree-list">
 
         <div class="tree-item" onclick="comingSoon()">Azhwars</div>
-
         <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
-
         <div class="tree-item" onclick="comingSoon()">Nithyaanusandanam</div>
-
         <div class="tree-item" onclick="comingSoon()">Koil Thirumozhi</div>
-
         <div class="tree-item" onclick="comingSoon()">Koil Thiruvaimozhi</div>
 
-        <div class="tree-item" onclick="showFullNaalayiram()">
-          Full NaalayiraDivyaprabandham
+        <!-- 🔥 FULL BOOK IMAGE -->
+        <div class="book-image-card" onclick="showFullNaalayiram()">
+          <img src="assets/images/full.png" class="book-img"/>
+          <div class="book-label">Click to Open</div>
         </div>
 
       </div>
@@ -47,6 +45,15 @@ export function renderOptions() {
 
   const title = names[state.selectedThousandId] || "Naalayiram";
 
+  const imageMap = {
+    1: "mudal.png",
+    2: "irandaam.png",
+    3: "moonraam.png",
+    4: "naangu.png"
+  };
+
+  const imageName = imageMap[state.selectedThousandId];
+
   return `
     <h3>Adiyen 🙏</h3>
     <p>Please Select an Option</p>
@@ -56,42 +63,44 @@ export function renderOptions() {
       <div class="tree-item" onclick="comingSoon()">Azhwars</div>
       <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
 
-      <div class="tree-item" onclick="showFullByThousand(${state.selectedThousandId})">
-        Show Full ${title}
+      <!-- 🔥 BOOK IMAGE -->
+      <div class="book-image-card" onclick="showFullByThousand(${state.selectedThousandId})">
+        <img src="assets/images/${imageName}" class="book-img"/>
+        <div class="book-label">Click to Open</div>
       </div>
+
     </div>
   `;
 }
 
 
-window.showFullNaalayiram = async function () {
+// =========================
+// 🔥 COVER LINKS
+// =========================
 
-  const app = document.getElementById("app");
-
-  const { testFullThousand } = await import("../test_fullThousand.js");
-
- // ✅ FIXED: explicitly pass null for full 4000
-  const html = await testFullThousand(null);
-
-
-  app.innerHTML = html;
+window.showFullNaalayiram = function () {
+  openBookCover("full", "நாலாயிர திவ்யப்பிரபந்தம்");
 };
 
+window.showFullByThousand = function (thousandId) {
 
-window.showFullByThousand = async function (thousandId) {
+  const names = {
+    1: "முதலாமாயிரம்",
+    2: "இரண்டாமாயிரம்",
+    3: "மூன்றாமாயிரம்",
+    4: "நான்காமாயிரம்"
+  };
 
-  const app = document.getElementById("app");
+  const name = names[thousandId] || "";
 
-  const { testFullThousand } = await import("../test_fullThousand.js");
-
-  const html = await testFullThousand(thousandId);
-
-  app.innerHTML = html;
+  openBookCover(thousandId, name);
 };
+
 
 // =========================
 // 🔥 COMMON HELPERS
 // =========================
+
 window.comingSoon = window.comingSoon || function () {
   alert("Coming soon");
 };
