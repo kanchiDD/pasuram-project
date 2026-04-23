@@ -238,17 +238,6 @@ window.confirmThirumozhi = function () {
   render();
 };
   
-
-/* 🔥 ADD THIS LINE */
-state.pasuramData = filtered;
-
-state.level = "PASURAM";
-
-  closePathuModal(true);
-  render();
-};
-
-
 /* 🔥 CLOSE */
 
 window.closePathuModal = function (skipRender = false) {
