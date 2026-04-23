@@ -59,9 +59,15 @@ export function render() {
   // ✅ FIRST TIME → create structure
   if (!document.getElementById("indexPage")) {
 
-    const indexDiv = document.createElement("div");
-    indexDiv.id = "indexPage";
+  const indexDiv = document.createElement("div");
+  indexDiv.id = "indexPage";
+
+  // ✅ ONLY render index if data exists
+  if (window.fullAnchorRows && window.fullAnchorRows.length) {
     indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
+  } else {
+    indexDiv.innerHTML = ""; // no index for section mode
+  }
 
     const contentDiv = document.createElement("div");
     contentDiv.id = "contentPage";
