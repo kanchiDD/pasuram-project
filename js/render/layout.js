@@ -71,7 +71,9 @@ export function render() {
 
     const contentDiv = document.createElement("div");
     contentDiv.id = "contentPage";
-    contentDiv.style.display = "none";
+    contentDiv.style.display = "block";
+
+     contentDiv.innerHTML = renderPasuram();
 
     app.innerHTML = "";
     app.appendChild(indexDiv);
