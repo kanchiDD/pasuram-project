@@ -165,15 +165,16 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
     console.log("PASURAM DATA READY:", state.pasuramData);
 
     if (hasValidPathu(state.pasuramData)) {
-      // ✅ ONLY when pathu exists
-      openPathuSelector();
-    } else {
-      // ✅ DIRECT RENDER (NO MODAL)
-      state.filteredPasuram = state.pasuramData;
-      state.level = "PASURAM";
-      render();
-    }
-  });
+
+  state.isPathuSelectionActive = true;
+  openPathuSelector();
+
+} else {
+
+  state.isPathuSelectionActive = false;
+  state.filteredPasuram = state.pasuramData;
+  state.level = "PASURAM";
+  render();
 }
 
 window.selectThousand = selectThousand;

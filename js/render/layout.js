@@ -71,9 +71,13 @@ export function render() {
 
     const contentDiv = document.createElement("div");
     contentDiv.id = "contentPage";
-    contentDiv.style.display = "block";
+    const contentDiv = document.getElementById("contentPage");
 
-     contentDiv.innerHTML = renderPasuram();
+// ✅ Only render if data exists AND not modal flow
+if (state.pasuramData && !state.isPathuSelectionActive) {
+  contentDiv.style.display = "block";
+  contentDiv.innerHTML = renderPasuram();
+}
 
     app.innerHTML = "";
     app.appendChild(indexDiv);
