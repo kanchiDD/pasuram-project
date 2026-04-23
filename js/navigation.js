@@ -177,6 +177,7 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
   render();
 }
 });
+}
 
 window.selectThousand = selectThousand;
 window.goBack = goBack;
