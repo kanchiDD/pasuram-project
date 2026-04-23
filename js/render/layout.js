@@ -5,8 +5,7 @@ import { renderThousand } from "./thousand.js";
 import { renderOptions } from "./options.js";
 import { renderSection } from "./section.js";
 import { renderPasuram } from "./pasuram.js";
-import { renderIndex } from "../navigation.js";
-
+import { renderIndex } from "../index.js";
 
 export function render() {
 
