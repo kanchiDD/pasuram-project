@@ -106,17 +106,19 @@ window.confirmPathu = function () {
   if (!selected) return;
 
   if (selected.value === "full") {
-    state.filteredPasuram = state.pasuramData || [];
 
-/* 🔥 ADD THIS */
-state.pasuramData = state.filteredPasuram;
+  state.filteredPasuram = state.pasuramData || [];
+  state.pasuramData = state.filteredPasuram;
 
-state.level = "PASURAM";
+  // 🔥 CRITICAL FIX
+  state.isPathuSelectionActive = false;
 
-    closePathuModal(true);
-    render();
-    return;
-  }
+  state.level = "PASURAM";
+
+  closePathuModal(true);
+  render();
+  return;
+}
 
   const [sectionId, pathuName] = selected.value.split("_");
 
