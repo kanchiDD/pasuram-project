@@ -120,20 +120,34 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
  
   // 🔶 KOOTRIRUKKAI
   if ([21, 2672].includes(Number(id))) {
-     state.level = "PASURAM";   // 🔥 ADD THIS
-    fetchThaniyan();
-    fetchKootrirukkai();
-    return;
-  }
+
+  state.level = "PASURAM";
+
+  Promise.all([
+    fetchThaniyan(),
+    fetchKootrirukkai()
+  ]).then(() => {
+    render();
+  });
+
+  return;
+}
 
 
 // 🔶 MADAL
   if ([22, 23, 2673, 2674].includes(Number(id))) {
-     state.level = "PASURAM";   // 🔥 ADD THIS
-    fetchThaniyan();
-    fetchMadal();
-    return;
-  }
+
+  state.level = "PASURAM";
+
+  Promise.all([
+    fetchThaniyan(),
+    fetchMadal()
+  ]).then(() => {
+    render();
+  });
+
+  return;
+}
 
 
   // 🔶 STANDALONE (UNCHANGED — SAFE)
