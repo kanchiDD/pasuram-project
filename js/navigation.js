@@ -116,10 +116,11 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
   state.filteredPasuram = null;
 
   const sectionId = Number(id);
+// 🔥 MARK SPECIAL SECTION
+state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
  
-  // 🔶 KOOTRIRUKKAI
-  if ([21, 2672].includes(Number(id))) {
+ if ([21, 2672].includes(sectionId)) {
 
   state.level = "PASURAM";
 
@@ -134,8 +135,7 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
 }
 
 
-// 🔶 MADAL
-  if ([22, 23, 2673, 2674].includes(Number(id))) {
+if ([22, 23, 2673, 2674].includes(sectionId)) {
 
   state.level = "PASURAM";
 
@@ -148,7 +148,6 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
 
   return;
 }
-
 
   // 🔶 STANDALONE (UNCHANGED — SAFE)
   const standaloneSections = [4, 5];

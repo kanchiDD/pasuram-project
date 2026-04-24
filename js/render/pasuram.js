@@ -60,18 +60,16 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
  // console.log("MADAL?", state.madalData);
  // console.log("KOOTRIRUKKAI?", state.kootrirukkaiData);
 
-  if (!state.isFullRender) {
+  // 🔥 ALWAYS HANDLE SPECIAL FIRST
 
-  if (state.madalData) {
-    html += renderMadal(state.madalData);
-    return html;
-  }
+if (state.madalData) {
+  html += renderMadal(state.madalData);
+  return html;
+}
 
-  if (state.kootrirukkaiData) {
-    html += renderKootrirukkai(state.kootrirukkaiData);
-    return html;
-  }
-
+if (state.kootrirukkaiData) {
+  html += renderKootrirukkai(state.kootrirukkaiData);
+  return html;
 }
 
   function getProsodyName(globalNo) {

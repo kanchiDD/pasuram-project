@@ -45,7 +45,10 @@ export async function fetchThaniyan() {
   state.thaniyanData = data.thaniyan;
   state.prosodyMap = data.prosodyMap;
 
-  render();
+  // 🔥 ONLY render for normal sections
+  if (!state.isSpecialSection) {
+    render();
+  }
 }
 
 /* 🔥 NEW — MADAL (FIXED) */
@@ -92,7 +95,7 @@ export async function fetchMadal() {
 
   // 🔥 ONLY render if NOT standalone modal flow
   if (!state.isStandaloneSelection) {
-    render();
+    
   }
 }
 
@@ -140,7 +143,7 @@ export async function fetchKootrirukkai() {
   /* Clear others */
   state.pasuramData = null;
 
-  render();
+
 }
 
 export async function fetchPasuram() {
