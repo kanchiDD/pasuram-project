@@ -21,7 +21,8 @@ function renderHeader() {
 
   let html = "";
 
-if (state.thaniyanData && !state.isFullRender) {
+if (state.thaniyanData) {
+
   const data =
     state.thaniyanData?.data ||
     state.thaniyanData?.rows ||
@@ -29,15 +30,14 @@ if (state.thaniyanData && !state.isFullRender) {
 
   let toRender = data;
 
-  // 🔥 FULL MODE → only section thaniyan
+  // ✅ FULL MODE → only section thaniyan
   if (state.isFullRender) {
     toRender = data.filter(t => t.type === "section");
   }
 
-  // ✅ RENDER THANIYAN
+  // ✅ SECTION MODE → show all relevant thaniyan
   html += renderThaniyan(toRender);
 }
-
   
 
 /* Section Title */
