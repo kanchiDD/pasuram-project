@@ -10,10 +10,9 @@ import { renderIndex } from "../index.js";
 export function render() {
 
   // 🔥 BLOCK render during full build
-  if (state.isFullRender) {
-    console.log("⛔ render blocked (full render mode)");
-    return;
-  }
+  if (state.isFullRender && state.level !== "PASURAM") {
+  return;
+}
 
   console.log("🔥 RENDER CALLED", Date.now());
   const app = document.getElementById("app");

@@ -28,17 +28,23 @@ if (state.thaniyanData) {
     state.thaniyanData?.rows ||
     state.thaniyanData;
 
-  let toRender = data;
+  let toRender = [];
 
-  // ✅ FULL MODE → only section thaniyan
-  if (state.isFullRender) {
+  // ✅ FULL 3000 / 4000 MODE
+  if (state.isFullRender === true) {
+
+    // ONLY section thaniyan (NO duplicates)
     toRender = data.filter(t => t.type === "section");
+
+  } else {
+
+    // ✅ SECTION MODE (21/22/23)
+    // show ALL (global + section)
+    toRender = data;
   }
 
-  // ✅ SECTION MODE → show all relevant thaniyan
   html += renderThaniyan(toRender);
-}
-  
+}  
 
 /* Section Title */
   /* Section Title */
