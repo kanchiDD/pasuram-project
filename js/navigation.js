@@ -21,32 +21,6 @@ function hasValidPathu(data) {
   );
 }
 
-export function initNavigation() {
-
-  document.getElementById("backBtn").onclick = () => {
-
-   stopAudio(); // ✅ ONLY ADD THIS
-
-    state.madalData = null;
-    state.kootrirukkaiData = null;
-
-    goBack();
-    render();
-  };
-
-  document.getElementById("homeBtn").onclick = () => {
-
-    stopAudio(); // ✅ ONLY ADD THIS
-
-    state.madalData = null;
-    state.kootrirukkaiData = null;
-
-    goHome();
-    render();
-  };
-
-  render();
-}
 
 
 /* ACTIONS */
@@ -195,6 +169,38 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 }
 });
 }
+
+document.addEventListener("click", (e) => {
+
+  const back = e.target.closest("#backBtn");
+  const home = e.target.closest("#homeBtn");
+
+  // 🔙 BACK
+  if (back) {
+    stopAudio();
+
+    state.madalData = null;
+    state.kootrirukkaiData = null;
+
+    goBack();
+    render();
+  }
+
+  // 🏠 HOME
+  if (home) {
+    stopAudio();
+
+    state.madalData = null;
+    state.kootrirukkaiData = null;
+
+    goHome();
+    render();
+  }
+
+});
+
+
+
 
 function stopAudio() {
   const audios = document.querySelectorAll("audio");
