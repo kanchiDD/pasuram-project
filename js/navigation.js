@@ -25,6 +25,8 @@ export function initNavigation() {
 
   document.getElementById("backBtn").onclick = () => {
 
+   stopAudio(); // ✅ ONLY ADD THIS
+
     state.madalData = null;
     state.kootrirukkaiData = null;
 
@@ -33,6 +35,8 @@ export function initNavigation() {
   };
 
   document.getElementById("homeBtn").onclick = () => {
+
+    stopAudio(); // ✅ ONLY ADD THIS
 
     state.madalData = null;
     state.kootrirukkaiData = null;
@@ -191,6 +195,16 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 }
 });
 }
+
+function stopAudio() {
+  const audios = document.querySelectorAll("audio");
+
+  audios.forEach(a => {
+    a.pause();
+    a.currentTime = 0;
+  });
+}
+
 
 window.selectThousand = selectThousand;
 window.goBack = goBack;
