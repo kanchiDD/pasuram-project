@@ -65,13 +65,12 @@
 
 <!-- 🔥 MAIN APP ENTRY -->
 <script type="module">
-  import { startTree, initNavigation } from './js/navigation.js?v=12';
-
+import { startTree } from './js/navigation.js?v=12';
   document.addEventListener("DOMContentLoaded", () => {
 
     // small delay ensures header buttons exist
     setTimeout(() => {
-      initNavigation();   // ✅ bind Back/Home
+      
       startTree();        // ✅ load canonical (THOUSAND)
     }, 50);
 
