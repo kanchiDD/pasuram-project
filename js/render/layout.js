@@ -6,6 +6,7 @@ import { renderOptions } from "./options.js";
 import { renderSection } from "./section.js";
 import { renderPasuram } from "./pasuram.js";
 import { renderIndex } from "../index.js";
+import { renderMadal, renderKootrirukkai } from "./special.js";
 
 export function render() {
 
@@ -89,12 +90,39 @@ export function render() {
   // =========================
   if (contentDiv && state.pasuramData && !state.isPathuSelectionActive) {
 
-    contentDiv.style.display = "block";
+  contentDiv.style.display = "block";
+
+  const sectionId = Number(state.selectedSectionId);
+
+  // ✅ SPECIAL SECTIONS
+  if ([21, 22, 23].includes(sectionId)) {
+
+    // 🔥 IMPORTANT: use special renderer
+    if (state.specialData) {
+      contentDiv.innerHTML = renderSpecial(state.specialData);
+    } else {
+      console.log("⚠️ No specialData");
+      contentDiv.innerHTML = "";
+    }
+
+  } else {
+
+    // ✅ NORMAL FLOW
     contentDiv.innerHTML = renderPasuram();
   }
+}
 
   break;
   }
+}
+
+function renderSpecial(data) {
+  const name = state.selectedSectionName || "";
+
+  if (name.includes("மடல்")) return renderMadal(data);
+  if (name.includes("கூற்றிருக்கை")) return renderKootrirukkai(data);
+
+  return "";
 }
 
 
