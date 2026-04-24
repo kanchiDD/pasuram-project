@@ -182,23 +182,29 @@ document.addEventListener("click", (e) => {
     state.madalData = null;
     state.kootrirukkaiData = null;
 
+    // 🔥 IF NO HISTORY → GO TO INDEX
+    if (!state.history || state.history.length === 0) {
+      state.level = "HOME";
+      render();
+      return;
+    }
+
     goBack();
     render();
   }
 
-  // 🏠 HOME
+  // 🏠 HOME (ALWAYS INDEX)
   if (home) {
     stopAudio();
 
     state.madalData = null;
     state.kootrirukkaiData = null;
 
-    goHome();
+    state.level = "HOME";   // 🔥 FORCE INDEX
     render();
   }
 
 });
-
 
 
 
