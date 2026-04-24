@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="/css/main.css?v=860">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Tamil:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
 .container{
     max-width:600px;
@@ -49,29 +50,36 @@
 <!-- INDEX PAGE -->
 <div id="index-page" style="display:none;"></div>
 
-
-<!-- ✅ ADD THIS LINE HERE -->
+<!-- MODAL ROOT -->
 <div id="modalRoot"></div>
-
 <div id="pathuModal" class="overlay" style="display:none;"></div>
 
 <!-- FOOTER -->
 <div id="footer"></div>
 
-<!-- ✅ HEADER / FOOTER BUILDER (MUST LOAD FIRST) -->
+<!-- 🔥 LOAD HEADER / FOOTER IMMEDIATELY -->
 <script src="js/layout.js"></script>
 <script>
   loadLayout();
 </script>
 
-<!-- ✅ APP LOGIC -->
+<!-- 🔥 MAIN APP ENTRY -->
 <script type="module">
-  import { startTree } from './js/navigation.js?v=11';
+  import { startTree, initNavigation } from './js/navigation.js?v=12';
 
-  startTree();
+  document.addEventListener("DOMContentLoaded", () => {
+
+    // small delay ensures header buttons exist
+    setTimeout(() => {
+      initNavigation();   // ✅ bind Back/Home
+      startTree();        // ✅ load canonical (THOUSAND)
+    }, 50);
+
+  });
 </script>
 
-<script type="module" src="./js/render/start.js"></script>
+<!-- KEEP OTHER FEATURES -->
 <script type="module" src="js/cover.js"></script>
+
 </body>
 </html>
