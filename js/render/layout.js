@@ -88,26 +88,18 @@ export function render() {
   // =========================
   // ✅ RENDER CONTROL (FINAL)
   // =========================
-  if (contentDiv && state.pasuramData && !state.isPathuSelectionActive) {
+  if (contentDiv && !state.isPathuSelectionActive) {
 
   contentDiv.style.display = "block";
 
-  const sectionId = Number(state.selectedSectionId);
+  // 🔥 SPECIAL SECTIONS (NO pasuramData needed)
+  if (state.madalData || state.kootrirukkaiData) {
+    contentDiv.innerHTML = renderPasuram();
+    return;
+  }
 
-  // ✅ SPECIAL SECTIONS
-  if ([21, 22, 23].includes(sectionId)) {
-
-    // 🔥 IMPORTANT: use special renderer
-    if (state.specialData) {
-      contentDiv.innerHTML = renderSpecial(state.specialData);
-    } else {
-      console.log("⚠️ No specialData");
-      contentDiv.innerHTML = "";
-    }
-
-  } else {
-
-    // ✅ NORMAL FLOW
+  // 🔥 NORMAL FLOW
+  if (state.pasuramData) {
     contentDiv.innerHTML = renderPasuram();
   }
 }
