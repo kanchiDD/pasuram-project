@@ -10,6 +10,8 @@ import { renderMadal, renderKootrirukkai } from "./special.js";
 
 export function render() {
 
+console.log("LEVEL BEFORE RENDER:", state.level);
+
   // 🔥 BLOCK render during full build
   if (state.isFullRender && state.level !== "PASURAM") {
   return;
