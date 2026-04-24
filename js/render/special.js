@@ -21,19 +21,17 @@ function renderHeader() {
 
   let html = "";
 
-if (state.thaniyanData) {
+if (state.thaniyanData && !state.isFullRender) {
 
   const data =
     state.thaniyanData?.data ||
     state.thaniyanData?.rows ||
     state.thaniyanData;
 
-  let toRender = [];
+  let toRender = data;
 
   if (state.isFullRender === true) {
     toRender = data.filter(t => t.type === "section");
-  } else {
-    toRender = data;
   }
 
   html += renderThaniyan(toRender);

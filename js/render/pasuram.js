@@ -63,11 +63,13 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
   if (!state.isFullRender) {
 
   if (state.madalData) {
-    return renderMadal(state.madalData);
+    html += renderMadal(state.madalData);
+    return html;
   }
 
   if (state.kootrirukkaiData) {
-    return renderKootrirukkai(state.kootrirukkaiData);
+    html += renderKootrirukkai(state.kootrirukkaiData);
+    return html;
   }
 
 }

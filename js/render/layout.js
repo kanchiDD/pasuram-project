@@ -116,13 +116,5 @@ export function render() {
   }
 }
 
-function renderSpecial(data) {
-  const name = state.selectedSectionName || "";
-
-  if (name.includes("மடல்")) return renderMadal(data);
-  if (name.includes("கூற்றிருக்கை")) return renderKootrirukkai(data);
-
-  return "";
-}
 
 
