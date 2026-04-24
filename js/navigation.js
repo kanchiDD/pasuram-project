@@ -184,10 +184,9 @@ document.addEventListener("click", (e) => {
 
     // 🔥 IF NO HISTORY → GO TO INDEX
     if (!state.history || state.history.length === 0) {
-      state.level = "HOME";
-      render();
-      return;
-    }
+  window.location.href = "/";
+  return;
+}
 
     goBack();
     render();
