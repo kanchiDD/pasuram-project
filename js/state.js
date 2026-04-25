@@ -23,13 +23,27 @@ export const state = {
 
 
 export function pushState() {
-  const snapshot = JSON.parse(JSON.stringify(state));
+  state.history = state.history || [];
 
-  // 🔥 CRITICAL FIX — remove history from snapshot
-  delete snapshot.history;
+  const snapshot = {
+    level: state.level,
+
+    selectedThousandId: state.selectedThousandId,
+    selectedSectionId: state.selectedSectionId,
+    selectedSectionName: state.selectedSectionName,
+
+    filteredPasuram: state.filteredPasuram,
+    pasuramData: state.pasuramData,
+
+    madalData: state.madalData,
+    kootrirukkaiData: state.kootrirukkaiData,
+
+    isPathuSelectionActive: state.isPathuSelectionActive
+  };
 
   state.history.push(snapshot);
 }
+
 
 export function goBack() {
   if (!state.history || state.history.length === 0) {
