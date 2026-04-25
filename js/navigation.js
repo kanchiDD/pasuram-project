@@ -99,7 +99,7 @@ state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
  
  if ([21, 2672].includes(sectionId)) {
-
+  pushState(); // ✅ ADD HERE
   state.level = "PASURAM";
 
   Promise.all([
@@ -114,7 +114,7 @@ state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
 
 if ([22, 23, 2673, 2674].includes(sectionId)) {
-
+  pushState(); // ✅ ADD HERE
   state.level = "PASURAM";
 
   Promise.all([
@@ -164,6 +164,8 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 
   state.isPathuSelectionActive = false;
   state.filteredPasuram = state.pasuramData;
+  pushState(); // ✅ ADD HERE
+
   state.level = "PASURAM";
   render();
 }
@@ -171,7 +173,7 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 }
 
 document.addEventListener("click", (e) => {
-
+e.stopPropagation();   // 🔥 ADD THIS LINE
   const back = e.target.closest("#backBtn");
   const home = e.target.closest("#homeBtn");
 
