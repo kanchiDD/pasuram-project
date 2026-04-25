@@ -82,8 +82,9 @@ export function selectSection(id, name) {
 state.isFullRender = false;   // 🔥 VERY IMPORTANT
   console.log("SECTION CLICK:", id, name);
 
-  pushState();
+  
   state.level = "SECTION";
+  pushState();
 
   state.selectedSectionId = id;
   state.selectedSectionName = name || "Thirumozhi";
