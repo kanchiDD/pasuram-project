@@ -21,9 +21,9 @@ function hasValidPathu(data) {
 
 /* ACTIONS */
 
+// SS1 → SS2
 export function startTree() {
-  // Save HOME before leaving it
-  pushState();                  // ✅ saves: level=HOME
+  pushState();                  // saves: HOME
   state.level = "THOUSAND";
   render();
   fetchThousand();
@@ -31,52 +31,47 @@ export function startTree() {
 
 export function loadThousand() {
   state.isFullRender = false;
-  // Save current screen before leaving it
-  pushState();                  // ✅ saves: level=THOUSAND_OPTIONS or NAALAYIRAM_OPTIONS
+  pushState();                  // saves: current level before going to THOUSAND
   state.level = "THOUSAND";
   render();
   fetchThousand();
 }
 
+// SS2 → SS3
 export function selectThousand(id) {
-
-  // SPECIAL CASE — 5th ITEM
   if (Number(id) === 5) {
-    pushState();                // ✅ saves: level=THOUSAND
+    pushState();                // saves: THOUSAND
     state.selectedThousandId = id;
     state.level = "NAALAYIRAM_OPTIONS";
     render();
     return;
   }
-
-  // NORMAL FLOW
-  pushState();                  // ✅ saves: level=THOUSAND
+  pushState();                  // saves: THOUSAND
   state.selectedThousandId = id;
   state.level = "THOUSAND_OPTIONS";
   render();
 }
 
+// SS3 → SS4
+// ✅ KEY FIX: loadSections must NOT pushState
+// Because loadSections and selectSection are BOTH called for SS3→SS4 transition
+// Only selectSection should push (it saves SS4/SECTION correctly)
 export function loadSections() {
-  // ✅ FIX: was missing pushState entirely — SS3 was never saved
-  pushState();                  // ✅ saves: level=THOUSAND_OPTIONS or NAALAYIRAM_OPTIONS
   state.level = "SECTION";
   render();
   fetchSections();
 }
 
-
-/* MAIN SECTION CLICK */
-
+// SS4 → SS5
 export function selectSection(id, name) {
   state.isFullRender = false;
 
-  // ✅ FIX: pushState BEFORE mutating level, so we save SECTION screen correctly
-  pushState();                  // ✅ saves: level=SECTION
+  // Push BEFORE any mutation — saves the SECTION screen (SS4)
+  pushState();
 
   state.selectedSectionId = id;
   state.selectedSectionName = name || "Thirumozhi";
 
-  // RESET
   state.pasuramData = null;
   state.thaniyanData = null;
   state.madalData = null;
@@ -109,7 +104,6 @@ export function selectSection(id, name) {
     return;
   }
 
-  // STANDALONE
   const standaloneSections = [4, 5];
   if (standaloneSections.includes(sectionId)) {
     state.isStandaloneSelection = true;
@@ -124,7 +118,6 @@ export function selectSection(id, name) {
     return;
   }
 
-  // PATHU / DIRECT FLOW
   fetchThaniyan();
   fetchPasuram().then(() => {
     if (hasValidPathu(state.pasuramData)) {
@@ -143,7 +136,6 @@ document.addEventListener("click", (e) => {
   const back = e.target.closest("#backBtn");
   const home = e.target.closest("#homeBtn");
 
-  // BACK
   if (back) {
     stopAudio();
 
@@ -152,13 +144,11 @@ document.addEventListener("click", (e) => {
       return;
     }
 
-    // ✅ FIX: goBack() first — it restores madalData/kootrirukkaiData from snapshot
-    // Do NOT null them before goBack, that was wiping restored data
+    // goBack first — never null data before goBack (it wipes the restore)
     goBack();
     render();
   }
 
-  // HOME
   if (home) {
     stopAudio();
     window.location.href = "/";

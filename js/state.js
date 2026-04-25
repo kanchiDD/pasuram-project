@@ -3,8 +3,6 @@ export const state = {
   history: [],
 
   view: "COVER",
-
-  // 🔥 ADD THIS LINE (MISSING ROOT CAUSE)
   showIndex: false,
 
   thousandData: null,
@@ -25,6 +23,7 @@ export const state = {
 export function pushState() {
   state.history = state.history || [];
 
+  // ✅ Snapshot ALL keys needed to re-render any screen
   const snapshot = {
     level: state.level,
 
@@ -32,13 +31,19 @@ export function pushState() {
     selectedSectionId: state.selectedSectionId,
     selectedSectionName: state.selectedSectionName,
 
-    filteredPasuram: state.filteredPasuram,
+    thousandData: state.thousandData,
+    sectionData: state.sectionData,
+    thaniyanData: state.thaniyanData,
     pasuramData: state.pasuramData,
+    filteredPasuram: state.filteredPasuram,
 
     madalData: state.madalData,
     kootrirukkaiData: state.kootrirukkaiData,
 
-    isPathuSelectionActive: state.isPathuSelectionActive
+    isPathuSelectionActive: state.isPathuSelectionActive,
+    isStandaloneSelection: state.isStandaloneSelection,
+    isSpecialSection: state.isSpecialSection,
+    isFullRender: state.isFullRender,
   };
 
   state.history.push(snapshot);
@@ -47,20 +52,15 @@ export function pushState() {
 
 export function goBack() {
   if (!state.history || state.history.length === 0) {
-    return; // ❗ DO NOT redirect
+    return;
   }
 
   const prev = state.history.pop();
-
   if (!prev) return;
 
-  // 🔥 FULL SAFE RESTORE
   for (let key in prev) {
     state[key] = prev[key];
   }
-
-  // 🔥 IMPORTANT: DO NOT carry over history snapshot
-  state.history = state.history;
 }
 
 export function goHome() {
@@ -68,5 +68,4 @@ export function goHome() {
   state.history = [];
 }
 
-/* 👇 ADD THIS ONLY FOR DEBUG */
 window.state = state;
