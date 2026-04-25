@@ -33,7 +33,7 @@ export function startTree() {
   state.level = "THOUSAND";
 
   render();
-
+  
   fetchThousand();
 }
 
@@ -42,6 +42,7 @@ state.isFullRender = false;   // 🔥 ADD THIS
   pushState();
   state.level = "THOUSAND";
   render();
+  
   fetchThousand();
 }
 
@@ -54,6 +55,7 @@ export function selectThousand(id) {
     pushState();
     state.level = "NAALAYIRAM_OPTIONS";
     render();
+    
     return;
   }
 
@@ -62,12 +64,14 @@ export function selectThousand(id) {
   state.level = "THOUSAND_OPTIONS";
   state.selectedThousandId = id;
   render();
+  
 }
 
 export function loadSections() {
   pushState();
   state.level = "SECTION";
   render();
+  
   fetchSections();
 }
 
@@ -99,7 +103,7 @@ state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
  
  if ([21, 2672].includes(sectionId)) {
-  pushState(); // ✅ ADD HERE
+  
   state.level = "PASURAM";
 
   Promise.all([
@@ -107,6 +111,7 @@ state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
     fetchKootrirukkai()
   ]).then(() => {
     render();
+    
   });
 
   return;
@@ -114,7 +119,7 @@ state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
 
 if ([22, 23, 2673, 2674].includes(sectionId)) {
-  pushState(); // ✅ ADD HERE
+  
   state.level = "PASURAM";
 
   Promise.all([
@@ -122,6 +127,7 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
     fetchMadal()
   ]).then(() => {
     render();
+    
   });
 
   return;
@@ -164,7 +170,6 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 
   state.isPathuSelectionActive = false;
   state.filteredPasuram = state.pasuramData;
-  pushState(); // ✅ ADD HERE
 
   state.level = "PASURAM";
   render();
@@ -173,7 +178,6 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 }
 
 document.addEventListener("click", (e) => {
-e.stopPropagation();   // 🔥 ADD THIS LINE
   const back = e.target.closest("#backBtn");
   const home = e.target.closest("#homeBtn");
 
@@ -191,6 +195,7 @@ e.stopPropagation();   // 🔥 ADD THIS LINE
 }
 
     goBack();
+    render();
     
   }
 
