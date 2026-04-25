@@ -68,7 +68,7 @@ export function selectThousand(id) {
 }
 
 export function loadSections() {
-  pushState();
+  
   state.level = "SECTION";
   render();
   
