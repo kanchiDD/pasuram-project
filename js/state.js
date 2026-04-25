@@ -23,7 +23,12 @@ export const state = {
 
 
 export function pushState() {
-  state.history.push(JSON.parse(JSON.stringify(state)));
+  const snapshot = JSON.parse(JSON.stringify(state));
+
+  // 🔥 CRITICAL FIX — remove history from snapshot
+  delete snapshot.history;
+
+  state.history.push(snapshot);
 }
 
 export function goBack() {
