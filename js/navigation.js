@@ -189,19 +189,19 @@ document.addEventListener("click", (e) => {
 }
 
     goBack();
-    render();
+    
   }
 
+  
   // 🏠 HOME (ALWAYS INDEX)
-  if (home) {
-    stopAudio();
+if (home) {
+  stopAudio();
 
-    state.madalData = null;
-    state.kootrirukkaiData = null;
+  state.madalData = null;
+  state.kootrirukkaiData = null;
 
-    state.level = "HOME";   // 🔥 FORCE INDEX
-    render();
-  }
+  window.location.href = "/";
+}
 
 });
 
