@@ -170,7 +170,7 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
 
   state.isPathuSelectionActive = false;
   state.filteredPasuram = state.pasuramData;
-
+  pushState();   // ✅ ADD THIS LINE (ONLY HERE)
   state.level = "PASURAM";
   render();
 }
