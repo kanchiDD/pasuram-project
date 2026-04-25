@@ -8,83 +8,70 @@ import {
   fetchMadal,
   fetchKootrirukkai
 } from "./api.js";
-// ✅ STATIC IMPORTS
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
 import { openPathuSelector } from "./render/pathuSelector.js";
 
-/* 🔥 SAFE CHECK — ONLY ADDITION */
 function hasValidPathu(data) {
   if (!data || !data.length) return false;
-
   return data.some(p =>
     p.pathu_name && String(p.pathu_name).trim() !== ""
   );
 }
 
 
-
 /* ACTIONS */
 
 export function startTree() {
-
-  pushState();
-
-  // 🔥 DIRECT ENTRY TO THOUSAND
+  // Save HOME before leaving it
+  pushState();                  // ✅ saves: level=HOME
   state.level = "THOUSAND";
-
   render();
-  
   fetchThousand();
 }
 
 export function loadThousand() {
-state.isFullRender = false;   // 🔥 ADD THIS
-  pushState();
+  state.isFullRender = false;
+  // Save current screen before leaving it
+  pushState();                  // ✅ saves: level=THOUSAND_OPTIONS or NAALAYIRAM_OPTIONS
   state.level = "THOUSAND";
   render();
-  
   fetchThousand();
 }
 
 export function selectThousand(id) {
 
-
-  // 🔥 SPECIAL CASE — 5th ITEM
+  // SPECIAL CASE — 5th ITEM
   if (Number(id) === 5) {
-    state.selectedThousandId = id;   // 🔥 ADD THIS LINE
-    pushState();
+    pushState();                // ✅ saves: level=THOUSAND
+    state.selectedThousandId = id;
     state.level = "NAALAYIRAM_OPTIONS";
     render();
-    
     return;
   }
 
   // NORMAL FLOW
-  pushState();
-  state.level = "THOUSAND_OPTIONS";
+  pushState();                  // ✅ saves: level=THOUSAND
   state.selectedThousandId = id;
+  state.level = "THOUSAND_OPTIONS";
   render();
-  
 }
 
 export function loadSections() {
-  
+  // ✅ FIX: was missing pushState entirely — SS3 was never saved
+  pushState();                  // ✅ saves: level=THOUSAND_OPTIONS or NAALAYIRAM_OPTIONS
   state.level = "SECTION";
   render();
-  
   fetchSections();
 }
 
 
-/* 🔥 MAIN SECTION CLICK */
+/* MAIN SECTION CLICK */
 
 export function selectSection(id, name) {
-state.isFullRender = false;   // 🔥 VERY IMPORTANT
-  console.log("SECTION CLICK:", id, name);
+  state.isFullRender = false;
 
-  
-  state.level = "SECTION";
-  pushState();
+  // ✅ FIX: pushState BEFORE mutating level, so we save SECTION screen correctly
+  pushState();                  // ✅ saves: level=SECTION
 
   state.selectedSectionId = id;
   state.selectedSectionName = name || "Thirumozhi";
@@ -94,55 +81,39 @@ state.isFullRender = false;   // 🔥 VERY IMPORTANT
   state.thaniyanData = null;
   state.madalData = null;
   state.kootrirukkaiData = null;
-
   state.selectedPathu = null;
   state.filteredPasuram = null;
 
   const sectionId = Number(id);
-// 🔥 MARK SPECIAL SECTION
-state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
+  state.isSpecialSection = [21, 22, 23, 2672, 2673, 2674].includes(sectionId);
 
- 
- if ([21, 2672].includes(sectionId)) {
-  
-  state.level = "PASURAM";
+  if ([21, 2672].includes(sectionId)) {
+    state.level = "PASURAM";
+    Promise.all([
+      fetchThaniyan(),
+      fetchKootrirukkai()
+    ]).then(() => {
+      render();
+    });
+    return;
+  }
 
-  Promise.all([
-    fetchThaniyan(),
-    fetchKootrirukkai()
-  ]).then(() => {
-    render();
-    
-  });
+  if ([22, 23, 2673, 2674].includes(sectionId)) {
+    state.level = "PASURAM";
+    Promise.all([
+      fetchThaniyan(),
+      fetchMadal()
+    ]).then(() => {
+      render();
+    });
+    return;
+  }
 
-  return;
-}
-
-
-if ([22, 23, 2673, 2674].includes(sectionId)) {
-  
-  state.level = "PASURAM";
-
-  Promise.all([
-    fetchThaniyan(),
-    fetchMadal()
-  ]).then(() => {
-    render();
-    
-  });
-
-  return;
-}
-
-  // 🔶 STANDALONE (UNCHANGED — SAFE)
+  // STANDALONE
   const standaloneSections = [4, 5];
-
   if (standaloneSections.includes(sectionId)) {
-
     state.isStandaloneSelection = true;
-
     fetchThaniyan();
-
     fetchPasuram().then(() => {
       openStandaloneSelector(
         sectionId,
@@ -150,74 +121,53 @@ if ([22, 23, 2673, 2674].includes(sectionId)) {
         state.pasuramData
       );
     });
-
     return;
   }
 
-  // 🔶 PATHU / DIRECT FLOW (FIX APPLIED HERE ONLY)
-
+  // PATHU / DIRECT FLOW
   fetchThaniyan();
-
   fetchPasuram().then(() => {
-
-    console.log("PASURAM DATA READY:", state.pasuramData);
-
     if (hasValidPathu(state.pasuramData)) {
-
-  state.isPathuSelectionActive = true;
-  openPathuSelector();
-
-} else {
-
-  state.isPathuSelectionActive = false;
-  state.filteredPasuram = state.pasuramData;
-  pushState();   // ✅ ADD THIS LINE (ONLY HERE)
-  state.level = "PASURAM";
-  render();
-}
-});
+      state.isPathuSelectionActive = true;
+      openPathuSelector();
+    } else {
+      state.isPathuSelectionActive = false;
+      state.filteredPasuram = state.pasuramData;
+      state.level = "PASURAM";
+      render();
+    }
+  });
 }
 
 document.addEventListener("click", (e) => {
   const back = e.target.closest("#backBtn");
   const home = e.target.closest("#homeBtn");
 
-  // 🔙 BACK
+  // BACK
   if (back) {
     stopAudio();
 
-    state.madalData = null;
-    state.kootrirukkaiData = null;
-
-    // 🔥 IF NO HISTORY → GO TO INDEX
     if (!state.history || state.history.length === 0) {
-  window.location.href = "/";
-  return;
-}
+      window.location.href = "/";
+      return;
+    }
 
+    // ✅ FIX: goBack() first — it restores madalData/kootrirukkaiData from snapshot
+    // Do NOT null them before goBack, that was wiping restored data
     goBack();
     render();
-    
   }
 
-  
-  // 🏠 HOME (ALWAYS INDEX)
-if (home) {
-  stopAudio();
-
-  state.madalData = null;
-  state.kootrirukkaiData = null;
-
-  window.location.href = "/";
-}
-
+  // HOME
+  if (home) {
+    stopAudio();
+    window.location.href = "/";
+  }
 });
-
 
 
 function stopAudio() {
   const audios = document.querySelectorAll("audio");
-
   audios.forEach(a => {
     a.pause();
     a.currentTime = 0;
@@ -228,4 +178,3 @@ function stopAudio() {
 window.selectThousand = selectThousand;
 window.goBack = goBack;
 window.loadThousand = loadThousand;
-
