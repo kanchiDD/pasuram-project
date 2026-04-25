@@ -16,14 +16,16 @@ export const state = {
   thirumozhiData: null,
   selectedThirumozhiId: null,
 
-  sectionCache: {}
+  sectionCache: {},
+
+  // 🔥 NEW: blocks stale API renders after goBack
+  isNavigating: false
 };
 
 
 export function pushState() {
   state.history = state.history || [];
 
-  // ✅ Snapshot ALL keys needed to re-render any screen
   const snapshot = {
     level: state.level,
 
@@ -57,6 +59,10 @@ export function goBack() {
 
   const prev = state.history.pop();
   if (!prev) return;
+
+  // 🔥 block any API-triggered render() calls for 300ms
+  state.isNavigating = true;
+  setTimeout(() => { state.isNavigating = false; }, 300);
 
   for (let key in prev) {
     state[key] = prev[key];

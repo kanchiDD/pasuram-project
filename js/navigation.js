@@ -18,12 +18,8 @@ function hasValidPathu(data) {
   );
 }
 
-
-/* ACTIONS */
-
-// SS1 → SS2
 export function startTree() {
-  pushState();                  // saves: HOME
+  pushState();
   state.level = "THOUSAND";
   render();
   fetchThousand();
@@ -31,42 +27,35 @@ export function startTree() {
 
 export function loadThousand() {
   state.isFullRender = false;
-  pushState();                  // saves: current level before going to THOUSAND
+  pushState();
   state.level = "THOUSAND";
   render();
   fetchThousand();
 }
 
-// SS2 → SS3
 export function selectThousand(id) {
   if (Number(id) === 5) {
-    pushState();                // saves: THOUSAND
+    pushState();
     state.selectedThousandId = id;
     state.level = "NAALAYIRAM_OPTIONS";
     render();
     return;
   }
-  pushState();                  // saves: THOUSAND
+  pushState();
   state.selectedThousandId = id;
   state.level = "THOUSAND_OPTIONS";
   render();
 }
 
-// SS3 → SS4
-// ✅ KEY FIX: loadSections must NOT pushState
-// Because loadSections and selectSection are BOTH called for SS3→SS4 transition
-// Only selectSection should push (it saves SS4/SECTION correctly)
 export function loadSections() {
+  pushState();
   state.level = "SECTION";
   render();
   fetchSections();
 }
 
-// SS4 → SS5
 export function selectSection(id, name) {
   state.isFullRender = false;
-
-  // Push BEFORE any mutation — saves the SECTION screen (SS4)
   pushState();
 
   state.selectedSectionId = id;
@@ -84,23 +73,13 @@ export function selectSection(id, name) {
 
   if ([21, 2672].includes(sectionId)) {
     state.level = "PASURAM";
-    Promise.all([
-      fetchThaniyan(),
-      fetchKootrirukkai()
-    ]).then(() => {
-      render();
-    });
+    Promise.all([fetchThaniyan(), fetchKootrirukkai()]).then(() => render());
     return;
   }
 
   if ([22, 23, 2673, 2674].includes(sectionId)) {
     state.level = "PASURAM";
-    Promise.all([
-      fetchThaniyan(),
-      fetchMadal()
-    ]).then(() => {
-      render();
-    });
+    Promise.all([fetchThaniyan(), fetchMadal()]).then(() => render());
     return;
   }
 
@@ -109,11 +88,7 @@ export function selectSection(id, name) {
     state.isStandaloneSelection = true;
     fetchThaniyan();
     fetchPasuram().then(() => {
-      openStandaloneSelector(
-        sectionId,
-        state.selectedSectionName,
-        state.pasuramData
-      );
+      openStandaloneSelector(sectionId, state.selectedSectionName, state.pasuramData);
     });
     return;
   }
@@ -132,38 +107,49 @@ export function selectSection(id, name) {
   });
 }
 
-document.addEventListener("click", (e) => {
-  const back = e.target.closest("#backBtn");
-  const home = e.target.closest("#homeBtn");
+/* =====================================================
+   BACK BUTTON — attached exactly once
+   ===================================================== */
 
-  if (back) {
-    stopAudio();
+if (!window._backListenerAttached) {
+  window._backListenerAttached = true;
 
-    if (!state.history || state.history.length === 0) {
-      window.location.href = "/";
-      return;
+  document.addEventListener("click", function(e) {
+    const back = e.target.closest("#backBtn");
+    const home = e.target.closest("#homeBtn");
+
+    if (back) {
+      stopAudio();
+
+      // 🔥 THE FIX: if no history left, OR after goBack we land on HOME
+      // → always go to index page, never show ghost HOME screen
+      if (!state.history || state.history.length === 0) {
+        window.location.href = "/";
+        return;
+      }
+
+      goBack();
+
+      // 🔥 if goBack landed on HOME level → go to index instead of rendering it
+      if (state.level === "HOME") {
+        window.location.href = "/";
+        return;
+      }
+
+      render();
     }
 
-    // goBack first — never null data before goBack (it wipes the restore)
-    goBack();
-    render();
-  }
-
-  if (home) {
-    stopAudio();
-    window.location.href = "/";
-  }
-});
-
-
-function stopAudio() {
-  const audios = document.querySelectorAll("audio");
-  audios.forEach(a => {
-    a.pause();
-    a.currentTime = 0;
+    if (home) {
+      stopAudio();
+      window.location.href = "/";
+    }
   });
 }
 
+function stopAudio() {
+  const audios = document.querySelectorAll("audio");
+  audios.forEach(a => { a.pause(); a.currentTime = 0; });
+}
 
 window.selectThousand = selectThousand;
 window.goBack = goBack;
