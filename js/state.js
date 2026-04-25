@@ -32,13 +32,21 @@ export function pushState() {
 }
 
 export function goBack() {
-  if (state.history.length === 0) {
-    window.location.href = "index.html";
-    return;
+  if (!state.history || state.history.length === 0) {
+    return; // ❗ DO NOT redirect
   }
 
   const prev = state.history.pop();
-  Object.assign(state, prev);
+
+  if (!prev) return;
+
+  // 🔥 FULL SAFE RESTORE
+  for (let key in prev) {
+    state[key] = prev[key];
+  }
+
+  // 🔥 IMPORTANT: DO NOT carry over history snapshot
+  state.history = state.history;
 }
 
 export function goHome() {
