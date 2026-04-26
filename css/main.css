@@ -1471,3 +1471,52 @@ html, body {
   font-size: 13px;
   color: #555;
 }
+
+.thaniyan-block {
+  border: 2px solid #8B6914;
+  outline: 4px solid #8B6914;
+  outline-offset: 3px;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0 24px 0;
+  background: #fffdf5;
+}
+
+.pasuram-block {
+  border: 2px solid #c0a060;
+  outline: 4px solid #c0a060;
+  outline-offset: 3px;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 0 0 16px 0;
+}
+
+.thaniyan-container {
+  background: #fff;
+}
+
+/* =========================
+   🔤 FONT SCALING — PASURAM BLOCK
+   Mirrors the content-border rule for koil path
+========================= */
+.pasuram-block,
+.pasuram-block *,
+.thaniyan-block,
+.thaniyan-block * {
+  font-size: inherit !important;
+}
+
+.pasuram-block {
+  font-size: 1em;
+}
+
+.thaniyan-block {
+  font-size: 1em;
+}
+
+/* Override hardcoded px sizes that block font scaling */
+.tree-item            { font-size: inherit !important; }
+.pasuram-local        { font-size: inherit !important; }
+.display-item         { font-size: inherit !important; }
+.thaniyan-prosody     { font-size: inherit !important; }
+.section-final-ending { font-size: inherit !important; }

@@ -10,6 +10,8 @@ export const state = {
   thaniyanData: null,
   pasuramData: null,
 
+  koilLoaded: false,   // 🔥 ADD THIS
+
   selectedThousandId: null,
   selectedSectionId: null,
 

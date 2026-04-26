@@ -463,3 +463,27 @@ if (isTrueSectionEnd && !window._sectionClosingDone[p.section_id]) {
   return html;
 }
 
+// 🔥 KOIL-ONLY — returns { thaniyanHtml, bodyHtml } separately
+// Does NOT affect renderPasuram() used by 1000s / 4000s
+export function renderPasuramSplit(displayMapOverride, sectionClosingOverride) {
+  const displayMap = displayMapOverride || state.displayMap;
+  const sectionClosing = sectionClosingOverride || state.sectionClosing;
+
+  // ── Thaniyan ──
+  let thaniyanHtml = "";
+  if (!state.isFullRender && state.thaniyanData) {
+    const t = renderThaniyan(
+      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
+      state.prosodyMap
+    );
+    if (typeof t === "string") thaniyanHtml = t;
+  }
+
+  // ── Temporarily suppress thaniyan inside renderPasuram ──
+  const savedThaniyan = state.thaniyanData;
+  state.thaniyanData = null;          // hide it from renderPasuram
+  const bodyHtml = renderPasuram(displayMapOverride, sectionClosingOverride);
+  state.thaniyanData = savedThaniyan; // restore immediately
+
+  return { thaniyanHtml, bodyHtml };
+}

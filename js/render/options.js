@@ -26,8 +26,8 @@ export function renderOptions() {
         <div class="tree-item" onclick="comingSoon()">Azhwars</div>
         <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
         <div class="tree-item" onclick="comingSoon()">Nithyaanusandanam</div>
-        <div class="tree-item" onclick="comingSoon()">Koil Thirumozhi</div>
-        <div class="tree-item" onclick="comingSoon()">Koil Thiruvaimozhi</div>
+        <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
+        <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
 
         <!-- 🔥 FULL BOOK IMAGE -->
         <div class="book-image-card" onclick="showFullNaalayiram()">

@@ -161,3 +161,10 @@ export async function fetchThirumozhiList(sectionId) {
   console.log("THIRUMOZHI LIST:", data);
   state.thirumozhiData = data;
 }
+
+export async function fetchEntitySearch() {
+  const res = await fetch("https://cdnaalayiram-api.kanchitrust.workers.dev/api/entity-search");
+  const data = await res.json();
+
+  state.entitySearchData = data || [];
+}

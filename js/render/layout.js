@@ -7,6 +7,7 @@ import { renderSection } from "./section.js";
 import { renderPasuram } from "./pasuram.js";
 import { renderIndex } from "../index.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
+import { renderKoil } from "../koil.js";
 
 export function render() {
 
@@ -54,6 +55,11 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       topbar.style.display = "flex";
       app.innerHTML = renderSection();
       break;
+
+    case "KOIL":
+  topbar.style.display = "flex";
+  renderKoil(state.koilType); // ✅ just call it, don't assign — it handles its own DOM
+  break;
 
     case "PASURAM":
   topbar.style.display = "flex";

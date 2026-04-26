@@ -10,6 +10,7 @@ import {
 } from "./api.js";
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
 import { openPathuSelector } from "./render/pathuSelector.js";
+import { renderKoil } from "./koil.js";
 
 function hasValidPathu(data) {
   if (!data || !data.length) return false;
@@ -93,6 +94,7 @@ export function selectSection(id, name) {
     return;
   }
 
+
   fetchThaniyan();
   fetchPasuram().then(() => {
     if (hasValidPathu(state.pasuramData)) {
@@ -106,6 +108,26 @@ export function selectSection(id, name) {
     }
   });
 }
+
+function openKoil(type) {
+  pushState();
+
+  // reset conflicting states
+  state.selectedSectionId = null;
+  state.selectedSectionName = "";
+  state.pasuramData = null;
+  state.thaniyanData = null;
+  state.madalData = null;
+  state.kootrirukkaiData = null;
+
+  state.koilLoaded = false;   // 🔥 ADD THIS
+
+  state.koilType = type;
+  state.level = "KOIL";
+
+  render();
+}
+
 
 /* =====================================================
    BACK BUTTON — attached exactly once
@@ -154,3 +176,4 @@ function stopAudio() {
 window.selectThousand = selectThousand;
 window.goBack = goBack;
 window.loadThousand = loadThousand;
+window.openKoil = openKoil;
