@@ -1,5 +1,6 @@
 import { loadSections } from "../navigation.js";
 import { state } from "../state.js";
+import "../cover.js"; // 🔥 ensures window.openBookCover is registered before any click
 
 export function renderOptions() {
 

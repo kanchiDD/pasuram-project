@@ -1139,6 +1139,29 @@ html, body {
   font-weight: 600;
   margin: 6px 0;
   cursor: pointer;
+  padding-left: 10px;   /* 🔥 level-1 indent from left edge */
+}
+
+/* =========================
+   📑 INDEX CHILD ITEMS (level 2)
+   Pathu titles, thirumozhi rows, option-items
+========================= */
+.pathu-title,
+.thirumozhi,
+.option-item,
+.pathu-content .thirumozhi {
+  padding-left: 28px;         /* 🔥 deeper than section-title */
+  font-size: 13px;            /* 🔥 smaller than section level */
+  line-height: 1.7;
+  cursor: pointer;
+  color: #5a3a00;
+}
+
+/* level-3: items inside an expanded pathu block */
+.pathu-block .option-item,
+.pathu-content .thirumozhi {
+  padding-left: 46px;         /* 🔥 deepest indent for 3rd level */
+  font-size: 12.5px;
 }
 
 .content-page {
@@ -1451,6 +1474,79 @@ html, body {
     padding: 9px 16px;
     font-size: 13px;
   }
+}
+
+/* =========================
+   ⏳ LOADING SPINNER (full 4000 mode)
+========================= */
+.cover-spinner {
+  width: 100%;
+  padding: 10px 0 4px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-wrap {
+  text-align: center;
+  width: 100%;
+  padding: 0 10px;
+}
+
+/* Rotating lotus symbol */
+.spinner-lotus {
+  font-size: 40px;
+  color: #8b6b1f;
+  animation: spinLotus 2.5s linear infinite;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+@keyframes spinLotus {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+.spinner-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #5a3a00;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.spinner-msg {
+  font-size: 13px;
+  color: #7a5c2a;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* Progress bar track */
+.spinner-bar-track {
+  width: 85%;
+  height: 8px;
+  background: #e8d5a3;
+  border-radius: 10px;
+  margin: 0 auto 12px auto;
+  overflow: hidden;
+}
+
+/* Animated fill */
+.spinner-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, #c8960c, #f5c242);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.spinner-sub {
+  font-size: 11px;
+  color: #9a7a40;
+  font-style: italic;
+  line-height: 1.5;
+  padding: 0 8px;
 }
 
 .book-image-card {
