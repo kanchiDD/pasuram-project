@@ -5,13 +5,13 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
+import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
   injectDisplayCSS,
   fetchDisplayData,
   fetchThaniyanWithProsody,
   renderSectionDisplayItems,
   renderSectionProsody,
-  renderAdivaravu,
   renderSectionClosing,
   buildPasuramDisplayMap,
   buildThirumozhiDisplayMap,
@@ -55,6 +55,9 @@ const sectionHeaderMap = {
 };
 
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
+const SPECIAL_MADAL  = [22, 23]; // சிறியதிருமடல், பெரியதிருமடல்
+const SPECIAL_KOOTRI = [21];     // திருவெழுகூற்றிருக்கை
+const sectionNameMap = { 21:"திருவெழுகூற்றிருக்கை", 22:"சிறியதிருமடல்", 23:"பெரியதிருமடல்" };
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 function injectCSS() {
@@ -89,6 +92,18 @@ function injectCSS() {
     .fdr-group-gap { display:block; height:14px; }
     .fdr-local-no { font-size:12px; color:#999; text-align:right; margin-top:2px; }
     .fdr-pasuram-sep { height:1px; background:#e8d5a0; margin:10px 0; }
+    /* couplet no right-aligned on last line of each couplet */
+    .fdr-line-with-no {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .fdr-couplet-no {
+      font-size: 12px;
+      color: #999;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
     .fdr-section-closing { text-align:center; font-size:15px; font-weight:700; color:#4a2c00; margin-top:14px; padding-top:12px; border-top:1px solid #d4a843; }
     .fdr-end-ornament { text-align:center; margin:36px 0 16px; color:#b38b2e; font-size:18px; letter-spacing:5px; }
     .fdr-float-nav { position:fixed; bottom:20px; right:12px; display:flex; flex-direction:column; gap:8px; z-index:999; }
@@ -123,6 +138,14 @@ async function fetchPasuramRaw(sectionId) {
   const res = await fetch(`${API}/pasuram?section_id=${sectionId}`);
   const data = await res.json();
   return Array.isArray(data) ? data : [];
+}
+async function fetchMadalRaw(sectionId) {
+  const res = await fetch(`${API}/madal?section_id=${sectionId}`);
+  return await res.json();
+}
+async function fetchKootrirukkai_Raw(sectionId) {
+  const res = await fetch(`${API}/kootrirukkai?section_id=${sectionId}`);
+  return await res.json();
 }
 function getRows(data, type) {
   const raw = Array.isArray(data) ? data : (data?.data || data?.rows || []);
@@ -188,7 +211,6 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
   // section-level display (carnatic/prosody) shown at top
   const sectionDisplayHtml = renderSectionDisplayItems(displayData);
   const prosodyHtml        = renderSectionProsody(displayData);
-  const adivaravuHtml      = renderAdivaravu(displayData);
   const closingHtml        = renderSectionClosing(displayData, "fdr-section-closing");
 
   const thaniyanHtml = thaniyanRows.length > 0 ? `
@@ -260,7 +282,6 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
       ${sectionDisplayHtml}
       ${prosodyHtml}
       ${groupsHtml}
-      ${adivaravuHtml}
       ${closingHtml}
     </div>
   `;
@@ -320,10 +341,165 @@ export async function renderFullDualRecital(selectedThousandId = null) {
         sectionThaniyanRows._prosodyMap = thaniyanProsodyMap;
       }
 
-      const allPasurams = await fetchPasuramRaw(secId);
-      const displayData = await fetchDisplayData(secId);  // ← single fetch, all display data
-
+      const displayData = await fetchDisplayData(secId);
       const heading = sectionHeaderMap[baseName] || baseName;
+
+      // ── special sections use renderMadal / renderKootrirukkai ──────────────
+      if (SPECIAL_MADAL.includes(Number(secId)) || SPECIAL_KOOTRI.includes(Number(secId))) {
+        // set state fields that special.js renderers read
+        state.selectedSectionId   = secId;
+        state.selectedSectionName = sectionNameMap[Number(secId)] || "";
+        state.isFullRender        = false;
+        state.thaniyanData        = null;
+        state.displayMap = {
+          section:    displayData.section    || [],
+          pathu:      displayData.pathu      || {},
+          thirumozhi: displayData.thirumozhi || {},
+          pasuram:    displayData.pasuram    || {}
+        };
+        state.sectionClosing  = displayData.sectionClosing  || [];
+        state.prosodyScope    = displayData.prosodyScope     || [];
+        state.prosodyMaster   = {};
+        (displayData.prosodyMaster || []).forEach(p => { state.prosodyMaster[p.prosody_id] = p; });
+
+        let specialDualHtml = "";
+
+        if (SPECIAL_MADAL.includes(Number(secId))) {
+          // ── Extract only dual-recital lines/blocks from madal ──────────────
+          const madalData = await fetchMadalRaw(secId);
+          const rules = madalData.rules || [];
+          const sectionGlobalNo = madalData.global_no || madalData.section_global_no
+            || (secId === 22 ? 2673 : 2674);
+
+          function getBlockRule(c, l) {
+            return rules.find(r =>
+              r.rule_type === "block_repeat" &&
+              ((c > r.start_couplet || (c === r.start_couplet && l >= r.start_line)) &&
+               (c < r.end_couplet   || (c === r.end_couplet   && l <= r.end_line)))
+            );
+          }
+          function isLineDual(c, l) {
+            return rules.some(r => r.rule_type === "line_repeat" && r.start_couplet == c && r.line_no == l);
+          }
+
+          // build grouped lines per couplet
+          const grouped = {};
+          (madalData.units || []).forEach(u => {
+            const c = u.couplet_no;
+            if (!grouped[c]) grouped[c] = [];
+            for (let i = 1; i <= 8; i++) {
+              if (u[`line_${i}`]) grouped[c].push({ text: u[`line_${i}`], line_no: i });
+            }
+          });
+
+          const couplets = Object.keys(grouped).map(Number).sort((a,b) => a-b);
+          const maxCouplet = sectionNameMap[Number(secId)] === "பெரியதிருமடல்" ? 148 : 77;
+          let prevBlockRule = null;
+
+          // Build units: consecutive block-rule couplets → one unit (no separator within)
+          // independent line_repeat couplets → individual units (separator between)
+          const units = []; // [{blockRuleId, couplets:[{c, lines:[{text,coupletNo}]}]}]
+
+          for (const c of couplets) {
+            const lines = grouped[c];
+            let thisCoupletBlockRule = null;
+            const coupletDualLines = [];
+            let lastLineInCouplet = false;
+
+            for (let li = 0; li < lines.length; li++) {
+              const l = lines[li];
+              const blockRule = getBlockRule(c, l.line_no);
+              const lineDual  = isLineDual(c, l.line_no);
+              const isInsideBlock = !!blockRule;
+              const isLastLine = li === lines.length - 1;
+
+              if (isInsideBlock || lineDual) {
+                if (isInsideBlock) thisCoupletBlockRule = blockRule;
+                // couplet no shown right on last line of couplet (if within maxCouplet)
+                const showCoupletNo = isLastLine && c <= maxCouplet;
+                coupletDualLines.push({ text: l.text, showCoupletNo, coupletNo: c });
+              }
+              prevBlockRule = blockRule || prevBlockRule;
+            }
+
+            if (coupletDualLines.length === 0) continue;
+
+            if (thisCoupletBlockRule) {
+              // block couplet: find existing unit for same block or start new one
+              const brId = thisCoupletBlockRule.start_couplet + "_" + thisCoupletBlockRule.start_line;
+              const existing = units.find(u => u.blockRuleId === brId);
+              if (existing) {
+                existing.couplets.push({ c, lines: coupletDualLines });
+              } else {
+                units.push({ blockRuleId: brId, couplets: [{ c, lines: coupletDualLines }] });
+              }
+            } else {
+              // independent line_repeat: own unit
+              units.push({ blockRuleId: null, couplets: [{ c, lines: coupletDualLines }] });
+            }
+          }
+
+          if (units.length > 0) {
+            // global_no top-left once for the whole section
+            specialDualHtml = `<div class="fdr-global-no">${sectionGlobalNo}</div>`;
+            specialDualHtml += units.map((unit, ui) => {
+              // all couplets in a block run together — no separator between them
+              const innerHtml = unit.couplets.map(({ c, lines }) => {
+                return lines.map((l, li) => {
+                  if (l.showCoupletNo) {
+                    return `<div class="fdr-line-with-no">
+                      <span>${l.text}</span>
+                      <span class="fdr-couplet-no">${l.coupletNo}</span>
+                    </div>`;
+                  }
+                  return `<div class="fdr-line">${l.text}</div>`;
+                }).join("");
+              }).join(""); // NO separator within a block unit
+              return `<div class="fdr-lines" style="margin-bottom:${unit.blockRuleId ? "0" : "6px"};">${innerHtml}</div>`;
+            }).join('<div class="fdr-pasuram-sep"></div>');
+          }
+
+        } else {
+          // ── Kootrirukkai: only line_no == 41 is dual ──────────────────────
+          const kootriData = await fetchKootrirukkai_Raw(secId);
+          const dualLines = (kootriData.lines || []).filter(l => l.line_no == 41);
+          if (dualLines.length > 0) {
+            specialDualHtml = `
+              <div class="fdr-pasuram-block">
+                <div class="fdr-global-no">2672</div>
+                <div class="fdr-lines">
+                  ${dualLines.map(l => `<div class="fdr-line">${l.line_text}</div>`).join("")}
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        // wrap in section box with thaniyan
+        const spThaniyanHtml = sectionThaniyanRows.length > 0 ? `
+          <div class="fdr-thaniyan-box">
+            <div class="fdr-thaniyan-label">தனியன்</div>
+            ${renderThaniyan(sectionThaniyanRows, sectionThaniyanRows._prosodyMap || {})}
+          </div>
+        ` : "";
+
+        const spClosing = (displayData.sectionClosing || [])[0]?.closing_text || "";
+
+        html += `
+          <div class="fdr-section-box">
+            <div class="fdr-section-heading">${heading}</div>
+            ${spThaniyanHtml}
+            ${renderSectionDisplayItems(displayData)}
+            ${renderSectionProsody(displayData)}
+            ${specialDualHtml || '<div style="text-align:center;color:#aaa;font-style:italic;padding:10px 0;">★★ பாசுரங்கள் இல்லை</div>'}
+            ${spClosing ? `<div class="fdr-section-closing">${spClosing}</div>` : ""}
+          </div>
+        `;
+        continue;
+      }
+
+      // ── normal sections ────────────────────────────────────────────────────
+      const allPasurams = await fetchPasuramRaw(secId);
       html += buildSectionBlock(heading, sectionThaniyanRows, allPasurams, displayData);
     }
   }
