@@ -13,6 +13,7 @@ import { renderKoil } from "../koil.js";
 import { renderFullThaniyans } from "./fullThaniyans.js";
 import { renderFullDualRecital, dualRecitalSpinner } from "./fullDualRecital.js";
 import { renderFullAzhwars, azhwarSpinner } from "./fullAzhwars.js";
+import { renderFullDivyadesam, divyadesamSpinner } from "./fullDivyadesam.js";
 
 export function render() {
 
@@ -87,6 +88,17 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       topbar.style.display = "flex";
       app.innerHTML = dualRecitalSpinner(); // 🪷 lotus spinner
       renderFullDualRecital(state.dualRecitalThousandId).then(html => {
+        app.innerHTML = html;
+      });
+      break;
+
+    // =========================
+    // 🔥 DIVYADESAM
+    // =========================
+    case "FULL_DIVYADESAM":
+      topbar.style.display = "flex";
+      app.innerHTML = divyadesamSpinner();
+      renderFullDivyadesam(state.divyadesamThousandId).then(html => {
         app.innerHTML = html;
       });
       break;

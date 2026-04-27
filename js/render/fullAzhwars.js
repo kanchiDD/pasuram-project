@@ -90,14 +90,12 @@ function injectCSS() {
     .faz-divider { width:120px; height:2px; background:#b38b2e; margin:8px auto 24px; }
     .faz-index-box { background:#ffffff; border:3px double #b38b2e; border-radius:8px; padding:18px 16px; margin-bottom:30px; }
     .faz-index-title { text-align:center; font-size:17px; font-weight:800; color:#4a2c00; border-bottom:1.5px solid #d4a843; padding-bottom:8px; margin-bottom:14px; }
-    .faz-index-row { display:flex; align-items:baseline; gap:8px; padding:6px 0; border-bottom:1px dotted #e8d5a0; font-size:15px; color:#2a1a00; text-decoration:none; }
+    .faz-index-row { display:flex; align-items:flex-start; gap:8px; padding:7px 0; border-bottom:1px dotted #e8d5a0; font-size:15px; color:#2a1a00; text-decoration:none; }
     .faz-index-row:last-child { border-bottom:none; }
-    .faz-index-num { min-width:24px; font-size:12px; color:#b38b2e; font-weight:700; text-align:left; }
-    .faz-index-name { font-weight:700; flex:1; text-align:left; }
-    .faz-index-birth { font-size:12px; color:#7a5a20; white-space:nowrap; text-align:right; }
+    .faz-index-num { min-width:22px; font-size:12px; color:#b38b2e; font-weight:700; text-align:left; padding-top:2px; }
+    .faz-index-name { font-weight:700; flex:1; text-align:left; display:block; }
+    .faz-index-birth { font-size:11px; color:#7a5a20; white-space:normal; text-align:left; display:block; margin-top:1px; font-style:italic; }
     .faz-azhwar-block { margin-bottom:36px; }
-    .faz-azhwar-heading { text-align:center; font-size:20px; font-weight:900; color:#4a2c00; margin-bottom:4px; }
-    .faz-azhwar-birth { text-align:center; font-size:13px; color:#7a5a20; margin-bottom:16px; }
     .faz-thaniyan-box { background:#ffffff; border:3px double #b38b2e; border-radius:8px; padding:16px; margin-bottom:12px; box-shadow:0 2px 8px rgba(179,139,46,0.08); }
     .faz-thaniyan-label { text-align:center; font-size:12px; font-weight:700; color:#b38b2e; letter-spacing:1px; margin-bottom:8px; text-transform:uppercase; }
     .faz-content-box { background:#ffffff; border:3px double #b38b2e; border-radius:8px; padding:18px 16px 16px; margin-bottom:20px; box-shadow:0 2px 8px rgba(179,139,46,0.08); }
@@ -239,7 +237,7 @@ function renderGroupedPasurams(pasurams, displayData) {
 }
 
 // ── Build normal section ──────────────────────────────────────────────────────
-async function buildNormalSectionBlock(sectionId) {
+async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
   const heading = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
 
   let thaniyanHtml = "";
@@ -267,6 +265,7 @@ async function buildNormalSectionBlock(sectionId) {
 
   const contentBox = `
     <div class="faz-content-box">
+      ${azhwarHeader}
       <div class="faz-section-heading">${heading}</div>
       ${sectionDisplayHtml}
       ${prosodyHtml}
@@ -280,7 +279,7 @@ async function buildNormalSectionBlock(sectionId) {
 }
 
 // ── Build special section (21/22/23) ─────────────────────────────────────────
-async function buildSpecialSectionBlock(sectionId) {
+async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
   const heading    = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
   const sectionName = sectionNameMap[sectionId] || "";
 
@@ -327,6 +326,7 @@ async function buildSpecialSectionBlock(sectionId) {
   return `
     ${thaniyanHtml}
     <div class="faz-content-box">
+      ${azhwarHeader}
       <div class="faz-section-heading">${heading}</div>
       ${specialHtml}
     </div>
@@ -343,8 +343,10 @@ function buildIndex(azhwarsToShow) {
         return `
           <a class="faz-index-row" href="#faz-azhwar-${a.id}">
             <span class="faz-index-num">${i + 1}.</span>
-            <span class="faz-index-name">ஸ்ரீ ${a.name}</span>
-            ${birth ? `<span class="faz-index-birth">${birth}</span>` : ""}
+            <span style="flex:1;">
+              <span class="faz-index-name">ஸ்ரீ ${a.name}</span>
+              ${birth ? `<span class="faz-index-birth">${birth}</span>` : ""}
+            </span>
           </a>
         `;
       }).join("")}
@@ -406,17 +408,27 @@ export async function renderFullAzhwars(selectedThousandId = null) {
     const birthLine = azhwar.month && azhwar.star
       ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
 
-    html += `
-      <div class="faz-azhwar-block" id="faz-azhwar-${azhwar.id}">
-        <div class="faz-azhwar-heading">ஸ்ரீ ${azhwar.name}</div>
-        ${birthLine ? `<div class="faz-azhwar-birth">${birthLine}</div>` : ""}
-    `;
+    // azhwar name + birth stored — injected into FIRST section's content box heading
+    const azhwarLabel = `ஸ்ரீ ${azhwar.name}`;
+    const azhwarBirth = azhwar.month
+      ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
+    let firstSection = true;
 
+    html += `<div class="faz-azhwar-block" id="faz-azhwar-${azhwar.id}">`;
+
+    let isFirstSec = true;
     for (const secId of sectionsToShow) {
+      // Build azhwar header — injected inside first section's content box only
+      const azhHdr = isFirstSec ? `
+        <div style="text-align:center;font-size:16px;font-weight:900;color:#4a2c00;margin-bottom:2px;">ஸ்ரீ ${azhwarLabel}</div>
+        ${azhwarBirth ? `<div style="text-align:center;font-size:12px;color:#7a5a20;font-style:italic;margin-bottom:8px;">${azhwarBirth}</div>` : ""}
+        <div style="height:1px;background:#d4a843;margin:0 0 12px;"></div>
+      ` : "";
+      isFirstSec = false;
       if (SPECIAL_MADAL.includes(secId) || SPECIAL_KOOTRI.includes(secId)) {
-        html += await buildSpecialSectionBlock(secId);
+        html += await buildSpecialSectionBlock(secId, azhHdr);
       } else {
-        html += await buildNormalSectionBlock(secId);
+        html += await buildNormalSectionBlock(secId, azhHdr);
       }
     }
 
