@@ -9,6 +9,10 @@ import { renderIndex } from "../index.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import { renderKoil } from "../koil.js";
 
+// 🔥 NEW — import both feature renderers
+import { renderFullThaniyans } from "./fullThaniyans.js";
+import { renderFullDualRecital, dualRecitalSpinner } from "./fullDualRecital.js";
+
 export function render() {
 
 console.log("LEVEL BEFORE RENDER:", state.level);
@@ -57,64 +61,86 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       break;
 
     case "KOIL":
-  topbar.style.display = "flex";
-  renderKoil(state.koilType); // ✅ just call it, don't assign — it handles its own DOM
-  break;
+      topbar.style.display = "flex";
+      renderKoil(state.koilType); // ✅ just call it, don't assign — it handles its own DOM
+      break;
+
+    // =========================
+    // 🔥 FULL THANIYANS
+    // state.thaniyansThousandId:
+    //   null  → entire 4000 (global thaniyan once + all sections)
+    //   1–4   → only that thousand's thaniyans
+    // =========================
+    case "FULL_THANIYANS":
+      topbar.style.display = "flex";
+      app.innerHTML = dualRecitalSpinner(); // 🪷 lotus spinner
+      renderFullThaniyans(state.thaniyansThousandId).then(html => {
+        app.innerHTML = html;
+      });
+      break;
+
+    // =========================
+    // 🔥 DUAL RECITAL (★★ PASURAMS)
+    // =========================
+    case "FULL_DUAL_RECITAL":
+      topbar.style.display = "flex";
+      app.innerHTML = dualRecitalSpinner(); // 🪷 lotus spinner
+      renderFullDualRecital(state.dualRecitalThousandId).then(html => {
+        app.innerHTML = html;
+      });
+      break;
 
     case "PASURAM":
-  topbar.style.display = "flex";
+      topbar.style.display = "flex";
 
-  // =========================
-  // ✅ FIRST TIME → create structure
-  // =========================
-  if (!document.getElementById("indexPage")) {
+      // =========================
+      // ✅ FIRST TIME → create structure
+      // =========================
+      if (!document.getElementById("indexPage")) {
 
-    const indexDiv = document.createElement("div");
-    indexDiv.id = "indexPage";
+        const indexDiv = document.createElement("div");
+        indexDiv.id = "indexPage";
 
-    // ✅ ONLY render index if full data exists
-    if (window.fullAnchorRows && window.fullAnchorRows.length) {
-      indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
-    } else {
-      indexDiv.innerHTML = "";
-    }
+        // ✅ ONLY render index if full data exists
+        if (window.fullAnchorRows && window.fullAnchorRows.length) {
+          indexDiv.innerHTML = renderIndex(window.fullAnchorRows, null);
+        } else {
+          indexDiv.innerHTML = "";
+        }
 
-    const contentDiv = document.createElement("div");
-    contentDiv.id = "contentPage";
-    contentDiv.style.display = "none";
+        const contentDiv = document.createElement("div");
+        contentDiv.id = "contentPage";
+        contentDiv.style.display = "none";
 
-    app.innerHTML = "";
-    app.appendChild(indexDiv);
-    app.appendChild(contentDiv);
-  }
+        app.innerHTML = "";
+        app.appendChild(indexDiv);
+        app.appendChild(contentDiv);
+      }
 
-  // =========================
-  // ✅ GET EXISTING ELEMENT
-  // =========================
-  let contentDiv = document.getElementById("contentPage");
+      // =========================
+      // ✅ GET EXISTING ELEMENT
+      // =========================
+      let contentDiv = document.getElementById("contentPage");
 
-  // =========================
-  // ✅ RENDER CONTROL (FINAL)
-  // =========================
-  if (contentDiv && !state.isPathuSelectionActive) {
+      // =========================
+      // ✅ RENDER CONTROL (FINAL)
+      // =========================
+      if (contentDiv && !state.isPathuSelectionActive) {
 
-  contentDiv.style.display = "block";
+        contentDiv.style.display = "block";
 
-  // 🔥 SPECIAL SECTIONS (NO pasuramData needed)
-  if (state.madalData || state.kootrirukkaiData) {
-    contentDiv.innerHTML = renderPasuram();
-    return;
-  }
+        // 🔥 SPECIAL SECTIONS (NO pasuramData needed)
+        if (state.madalData || state.kootrirukkaiData) {
+          contentDiv.innerHTML = renderPasuram();
+          return;
+        }
 
-  // 🔥 NORMAL FLOW
-  if (state.pasuramData) {
-    contentDiv.innerHTML = renderPasuram();
+        // 🔥 NORMAL FLOW
+        if (state.pasuramData) {
+          contentDiv.innerHTML = renderPasuram();
+        }
+      }
+
+      break;
   }
 }
-
-  break;
-  }
-}
-
-
-

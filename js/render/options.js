@@ -23,7 +23,8 @@ export function renderOptions() {
       <p>Select an Option</p>
 
       <div class="tree-list">
-
+        <div class="tree-item" onclick="openDualRecital(null)">Rettai/Star Pasurams</div>
+        <div class="tree-item" onclick="openFullThaniyans(null)">Nallayira Thaniyangal</div>
         <div class="tree-item" onclick="comingSoon()">Azhwars</div>
         <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
         <div class="tree-item" onclick="comingSoon()">Nithyaanusandanam</div>
@@ -62,6 +63,8 @@ export function renderOptions() {
     <div class="tree-list">
       <div class="tree-item" onclick="loadSections()">Arulicheyal (Sections)</div>
       <div class="tree-item" onclick="comingSoon()">Azhwars</div>
+      <div class="tree-item" onclick="openDualRecital(${state.selectedThousandId})">Rettai/Star Pasurams</div>
+      <div class="tree-item" onclick="openFullThaniyans(${state.selectedThousandId})">Thaniyangal</div>
       <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
 
       <!-- 🔥 BOOK IMAGE -->
@@ -95,6 +98,31 @@ window.showFullByThousand = function (thousandId) {
   const name = names[thousandId] || "";
 
   openBookCover(thousandId, name);
+};
+
+
+// =========================
+// 🔥 THANIYANS LINK
+// null  → full 4000 (from NAALAYIRAM menu)
+// 1–4   → that thousand only (from per-thousand menu)
+// =========================
+window.openFullThaniyans = function (thousandId) {
+  state.thaniyansThousandId = thousandId; // null = full 4000
+  state.level = "FULL_THANIYANS";
+  // import render() lazily to avoid circular deps
+  import("./layout.js").then(m => m.render());
+};
+
+
+// =========================
+// 🔥 DUAL RECITAL LINK
+// null  → full 4000 (from NAALAYIRAM menu)
+// 1–4   → that thousand only (from per-thousand menu)
+// =========================
+window.openDualRecital = function (thousandId) {
+  state.dualRecitalThousandId = thousandId; // null = full 4000
+  state.level = "FULL_DUAL_RECITAL";
+  import("./layout.js").then(m => m.render());
 };
 
 
