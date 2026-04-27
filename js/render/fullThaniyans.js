@@ -5,6 +5,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
+import { fetchThaniyanWithProsody } from "./displayHelper.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -144,6 +145,13 @@ function injectCSS() {
       justify-content: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
+    /* thaniyan prosody — display only, kept small */
+    .thaniyan-prosody {
+      font-size: 11px !important;
+      color: #999 !important;
+      font-style: italic;
+      margin-bottom: 2px;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -155,11 +163,7 @@ async function fetchThousandRaw() {
   return await res.json();
 }
 
-async function fetchThaniyanRaw(sectionId) {
-  const res = await fetch(`${API}/thaniyan?section_id=${sectionId}`);
-  const data = await res.json();
-  return data.thaniyan || data || [];
-}
+// fetchThaniyanRaw replaced by fetchThaniyanWithProsody from displayHelper
 
 function getRows(data, type) {
   const raw = Array.isArray(data) ? data : (data?.data || data?.rows || []);
@@ -223,7 +227,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
     // ── global thaniyan ONCE ────────────────────────────────────────────
     if (!globalRendered || !isFullMode) {
-      const globalData = await fetchThaniyanRaw(null);
+      const { rows: globalData, prosodyMap: globalProsodyMap } = await fetchThaniyanWithProsody(null);
       const globalRows = [
         ...getRows(globalData, "global"),
         ...getRows(globalData, "thousand")
@@ -236,7 +240,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
               <div><span class="ft-global-tag">பொது தனியன்</span></div>
               ${isFullMode ? "நாலாயிர திவ்யப்பிரபந்தம்" : pageTitle}
             </div>
-            ${renderThaniyan(globalRows)}
+            ${renderThaniyan(globalRows, globalProsodyMap)}
           </div>
         `;
         globalRendered = true;
@@ -258,7 +262,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
         baseName = FB[secId] || "";
       }
 
-      const thaniyanData = await fetchThaniyanRaw(secId);
+      const { rows: thaniyanData, prosodyMap: sectionProsodyMap } = await fetchThaniyanWithProsody(secId);
       const sectionRows = getRows(thaniyanData, "section");
       if (sectionRows.length === 0) continue;
 
@@ -268,7 +272,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       html += `
         <div class="ft-box">
           <div class="ft-box-heading">${heading}</div>
-          ${renderThaniyan(sectionRows)}
+          ${renderThaniyan(sectionRows, sectionProsodyMap)}
         </div>
       `;
     }

@@ -12,6 +12,7 @@ import { renderKoil } from "../koil.js";
 // 🔥 NEW — import both feature renderers
 import { renderFullThaniyans } from "./fullThaniyans.js";
 import { renderFullDualRecital, dualRecitalSpinner } from "./fullDualRecital.js";
+import { renderFullAzhwars, azhwarSpinner } from "./fullAzhwars.js";
 
 export function render() {
 
@@ -86,6 +87,17 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       topbar.style.display = "flex";
       app.innerHTML = dualRecitalSpinner(); // 🪷 lotus spinner
       renderFullDualRecital(state.dualRecitalThousandId).then(html => {
+        app.innerHTML = html;
+      });
+      break;
+
+    // =========================
+    // 🔥 AZHWARS
+    // =========================
+    case "FULL_AZHWARS":
+      topbar.style.display = "flex";
+      app.innerHTML = azhwarSpinner(); // 🪷 lotus spinner
+      renderFullAzhwars(state.azhwarsThousandId).then(html => {
         app.innerHTML = html;
       });
       break;

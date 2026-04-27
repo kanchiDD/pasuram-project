@@ -25,7 +25,7 @@ export function renderOptions() {
       <div class="tree-list">
         <div class="tree-item" onclick="openDualRecital(null)">Rettai/Star Pasurams</div>
         <div class="tree-item" onclick="openFullThaniyans(null)">Nallayira Thaniyangal</div>
-        <div class="tree-item" onclick="comingSoon()">Azhwars</div>
+        <div class="tree-item" onclick="openAzhwars(null)">Azhwars</div>
         <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
         <div class="tree-item" onclick="comingSoon()">Nithyaanusandanam</div>
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
@@ -62,7 +62,7 @@ export function renderOptions() {
 
     <div class="tree-list">
       <div class="tree-item" onclick="loadSections()">Arulicheyal (Sections)</div>
-      <div class="tree-item" onclick="comingSoon()">Azhwars</div>
+      <div class="tree-item" onclick="openAzhwars(${state.selectedThousandId})">Azhwars</div>
       <div class="tree-item" onclick="openDualRecital(${state.selectedThousandId})">Rettai/Star Pasurams</div>
       <div class="tree-item" onclick="openFullThaniyans(${state.selectedThousandId})">Thaniyangal</div>
       <div class="tree-item" onclick="comingSoon()">Divyadesam</div>
@@ -115,10 +115,15 @@ window.openFullThaniyans = function (thousandId) {
 
 
 // =========================
-// 🔥 DUAL RECITAL LINK
+// 🔥 AZHWARS LINK
 // null  → full 4000 (from NAALAYIRAM menu)
 // 1–4   → that thousand only (from per-thousand menu)
 // =========================
+window.openAzhwars = function (thousandId) {
+  state.azhwarsThousandId = thousandId;
+  state.level = "FULL_AZHWARS";
+  import("./layout.js").then(m => m.render());
+};
 window.openDualRecital = function (thousandId) {
   state.dualRecitalThousandId = thousandId; // null = full 4000
   state.level = "FULL_DUAL_RECITAL";

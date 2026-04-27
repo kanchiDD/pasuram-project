@@ -1,21 +1,22 @@
 // =============================================================
 // 🔥 fullDualRecital.js  →  js/render/fullDualRecital.js
 // ⚠️  Raw fetch only — no api.js imports (avoids safeRender loop)
-//
-// Structure per section:
-//   Section heading (full name)
-//   └─ Thaniyan box (double-border white)
-//   └─ Pathu groups:
-//       pathu_name  (e.g. முதற்பத்து)
-//       └─ pathu_subunit_name + thirumozhi_heading
-//           → ALL ★★ pasurams in ONE block (no border per pasuram)
-//           → Within each pasuram: group separator between recital groups
-//           → global_no top-left, local_no bottom-right
-//   └─ Section closing (last sectionClosing entry)
 // =============================================================
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
+import {
+  injectDisplayCSS,
+  fetchDisplayData,
+  fetchThaniyanWithProsody,
+  renderSectionDisplayItems,
+  renderSectionProsody,
+  renderAdivaravu,
+  renderSectionClosing,
+  buildPasuramDisplayMap,
+  buildThirumozhiDisplayMap,
+  buildPathuDisplayMap
+} from "./displayHelper.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -55,7 +56,7 @@ const sectionHeaderMap = {
 
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
 
-// ── CSS ──────────────────────────────────────────────────────────────────────
+// ── CSS ───────────────────────────────────────────────────────────────────────
 function injectCSS() {
   if (document.getElementById("full-dual-recital-style")) return;
   const style = document.createElement("style");
@@ -69,290 +70,90 @@ function injectCSS() {
       font-family: "Latha", "Bamini", serif;
       font-size: var(--base-font, 18px);
     }
-    .fdr-page-title {
-      text-align: center;
-      font-size: 26px;
-      font-weight: 900;
-      color: #4a2c00;
-      margin-bottom: 6px;
-    }
-    .fdr-page-subtitle {
-      text-align: center;
-      font-size: 15px;
-      color: #7a5a20;
-      margin-bottom: 4px;
-    }
-    .fdr-divider {
-      width: 120px;
-      height: 2px;
-      background: #b38b2e;
-      margin: 8px auto 24px;
-    }
-    .fdr-thousand-heading {
-      text-align: center;
-      font-size: 20px;
-      font-weight: 900;
-      color: #4a2c00;
-      margin: 28px 0 14px;
-    }
-
-    /* ── section outer box ── */
-    .fdr-section-box {
-      background: #ffffff;
-      border: 3px double #b38b2e;
-      border-radius: 8px;
-      padding: 18px 16px 16px;
-      margin-bottom: 28px;
-      box-shadow: 0 2px 8px rgba(179,139,46,0.08);
-    }
-    .fdr-section-heading {
-      text-align: center;
-      font-size: 16px;
-      font-weight: 800;
-      color: #4a2c00;
-      border-bottom: 1.5px solid #d4a843;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
-      line-height: 1.5;
-    }
-
-    /* ── thaniyan inner box ── */
-    .fdr-thaniyan-box {
-      background: #ffffff;
-      border: 3px double #b38b2e;
-      border-radius: 6px;
-      padding: 14px 14px;
-      margin-bottom: 16px;
-    }
-    .fdr-thaniyan-label {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: #b38b2e;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    /* ── pathu heading ── */
-    .fdr-pathu-heading {
-      text-align: center;
-      font-size: 17px;
-      font-weight: 800;
-      color: #4a2c00;
-      margin: 16px 0 8px;
-      padding: 6px 0;
-      border-bottom: 1px dashed #d4a843;
-    }
-
-    /* ── thirumozhi group box (one per thirumozhi, contains all its ★★) ── */
-    .fdr-thirumozhi-box {
-      background: #ffffff;
-      border: 3px double #b38b2e;
-      border-radius: 6px;
-      padding: 14px 14px 10px;
-      margin-bottom: 14px;
-    }
-
-    /* subunit + thirumozhi heading inside thirumozhi box */
-    .fdr-thirumozhi-heading {
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      color: #4a2c00;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #e8d5a0;
-      line-height: 1.6;
-    }
-    .fdr-thirumozhi-sub {
-      font-size: 13px;
-      color: #7a5a20;
+    .fdr-page-title { text-align:center; font-size:26px; font-weight:900; color:#4a2c00; margin-bottom:6px; }
+    .fdr-page-subtitle { text-align:center; font-size:15px; color:#7a5a20; margin-bottom:4px; }
+    .fdr-divider { width:120px; height:2px; background:#b38b2e; margin:8px auto 24px; }
+    .fdr-thousand-heading { text-align:center; font-size:20px; font-weight:900; color:#4a2c00; margin:28px 0 14px; }
+    .fdr-section-box { background:#ffffff; border:3px double #b38b2e; border-radius:8px; padding:18px 16px 16px; margin-bottom:34px; box-shadow:0 2px 8px rgba(179,139,46,0.08); }
+    .fdr-section-heading { text-align:center; font-size:16px; font-weight:800; color:#4a2c00; border-bottom:1.5px solid #d4a843; padding-bottom:10px; margin-bottom:16px; line-height:1.5; }
+    .fdr-thaniyan-box { background:#ffffff; border:3px double #b38b2e; border-radius:6px; padding:14px; margin-bottom:16px; }
+    .fdr-thaniyan-label { text-align:center; font-size:12px; font-weight:700; color:#b38b2e; letter-spacing:1px; margin-bottom:8px; text-transform:uppercase; }
+    .fdr-pathu-heading { text-align:center; font-size:17px; font-weight:800; color:#4a2c00; margin:14px 0 8px; padding:6px 0; border-bottom:1px dashed #d4a843; }
+    .fdr-thirumozhi-box { background:#ffffff; border:3px double #b38b2e; border-radius:6px; padding:14px 14px 10px; margin-bottom:14px; }
+    .fdr-thirumozhi-heading { text-align:center; font-size:15px; font-weight:700; color:#4a2c00; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #e8d5a0; line-height:1.6; }
+    .fdr-count-badge { display:inline-block; background:#e8f5e9; color:#1a6b3a; font-size:12px; font-weight:700; padding:1px 10px; border-radius:12px; margin-left:10px; border:1px solid #8cc98c; }
+    .fdr-pasuram-block { margin-bottom:10px; }
+    .fdr-global-no { font-size:13px; font-weight:700; color:#b38b2e; text-align:left; margin-bottom:4px; }
+    .fdr-lines { font-size:var(--base-font,18px); color:#1a2a00; line-height:2; text-align:left; }
+    .fdr-line { display:block; }
+    .fdr-group-gap { display:block; height:14px; }
+    .fdr-local-no { font-size:12px; color:#999; text-align:right; margin-top:2px; }
+    .fdr-pasuram-sep { height:1px; background:#e8d5a0; margin:10px 0; }
+    .fdr-section-closing { text-align:center; font-size:15px; font-weight:700; color:#4a2c00; margin-top:14px; padding-top:12px; border-top:1px solid #d4a843; }
+    .fdr-end-ornament { text-align:center; margin:36px 0 16px; color:#b38b2e; font-size:18px; letter-spacing:5px; }
+    .fdr-float-nav { position:fixed; bottom:20px; right:12px; display:flex; flex-direction:column; gap:8px; z-index:999; }
+    .fdr-float-nav button { width:44px; height:44px; border-radius:50%; border:2px solid #b38b2e; background:#fff; color:#4a2c00; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+    .fdr-spinner-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
+    .fdr-lotus { font-size:48px; animation:fdr-spin 1.6s linear infinite; }
+    @keyframes fdr-spin { 0%{transform:rotate(0deg) scale(1);} 50%{transform:rotate(180deg) scale(1.1);} 100%{transform:rotate(360deg) scale(1);} }
+    .fdr-loading-text { margin-top:14px; font-size:16px; color:#7a5a20; font-family:"Latha","Bamini",serif; }
+    /* thaniyan prosody — display only, kept small */
+    .thaniyan-prosody {
+      font-size: 11px !important;
+      color: #999 !important;
       font-style: italic;
-    }
-
-    /* ── pasuram block (all ★★ of one thirumozhi in one block) ── */
-    .fdr-pasuram-block {
-      margin-bottom: 10px;
-    }
-
-    /* global_no — top left */
-    .fdr-global-no {
-      font-size: 13px;
-      font-weight: 700;
-      color: #b38b2e;
-      text-align: left;
-      margin-bottom: 4px;
-    }
-
-    /* pasuram lines — left aligned, respects font adjuster */
-    .fdr-lines {
-      font-size: var(--base-font, 18px);
-      color: #1a2a00;
-      line-height: 2;
-      text-align: left;
-    }
-    .fdr-line { display: block; }
-
-    /* recital group gap — MUST be display:block for height to work */
-    .fdr-group-gap {
-      display: block;
-      height: 14px;
-    }
-
-    /* local_no — bottom right */
-    .fdr-local-no {
-      font-size: 12px;
-      color: #999;
-      text-align: right;
-      margin-top: 2px;
-    }
-
-    /* divider between pasurams within same thirumozhi block */
-    .fdr-pasuram-sep {
-      height: 1px;
-      background: #e8d5a0;
-      margin: 10px 0;
-    }
-
-    /* ── section closing ── */
-    .fdr-section-closing {
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      color: #4a2c00;
-      margin-top: 16px;
-      padding-top: 12px;
-      border-top: 1px solid #d4a843;
-    }
-
-    .fdr-end-ornament {
-      text-align: center;
-      margin: 36px 0 16px;
-      color: #b38b2e;
-      font-size: 18px;
-      letter-spacing: 5px;
-    }
-
-    /* ── floating nav ── */
-    .fdr-float-nav {
-      position: fixed;
-      bottom: 20px;
-      right: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 999;
-    }
-    .fdr-float-nav button {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 2px solid #b38b2e;
-      background: #fff;
-      color: #4a2c00;
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    /* ── lotus spinner ── */
-    .fdr-spinner-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-    }
-    .fdr-lotus {
-      font-size: 48px;
-      animation: fdr-spin 1.6s linear infinite;
-    }
-    @keyframes fdr-spin {
-      0%   { transform: rotate(0deg) scale(1);   }
-      50%  { transform: rotate(180deg) scale(1.1); }
-      100% { transform: rotate(360deg) scale(1); }
-    }
-    .fdr-loading-text {
-      margin-top: 14px;
-      font-size: 16px;
-      color: #7a5a20;
-      font-family: "Latha", "Bamini", serif;
+      margin-bottom: 2px;
     }
   `;
   document.head.appendChild(style);
 }
 
-// ── spinner HTML (inject into app immediately before async work) ──────────────
 export function dualRecitalSpinner() {
-  return `
-    <div class="fdr-spinner-wrap">
-      <div class="fdr-lotus">🪷</div>
-      <div class="fdr-loading-text">Content Loading...</div>
-    </div>
-  `;
+  return `<div class="fdr-spinner-wrap"><div class="fdr-lotus">🪷</div><div class="fdr-loading-text">Content Loading...</div></div>`;
 }
 
-// ── raw fetchers ──────────────────────────────────────────────────────────────
+// ── Raw fetchers ──────────────────────────────────────────────────────────────
 async function fetchThousandRaw() {
   if (state.thousandData) return state.thousandData;
   const res = await fetch(`${API}/thousand`);
   return await res.json();
 }
-
-async function fetchThaniyanRaw(sectionId) {
-  const res = await fetch(`${API}/thaniyan?section_id=${sectionId}`);
-  const data = await res.json();
-  return data.thaniyan || data || [];
-}
-
+// thaniyan fetch now via fetchThaniyanWithProsody from displayHelper
 async function fetchPasuramRaw(sectionId) {
   const res = await fetch(`${API}/pasuram?section_id=${sectionId}`);
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
-
-async function fetchSectionClosingRaw(sectionId) {
-  const res = await fetch(`${API}/pasuram-display?section_id=${sectionId}`);
-  const data = await res.json();
-  return data.sectionClosing || [];
-}
-
 function getRows(data, type) {
   const raw = Array.isArray(data) ? data : (data?.data || data?.rows || []);
   return type ? raw.filter(r => r.type === type) : raw;
 }
 
-// ── render lines with recital group gaps ─────────────────────────────────────
-// lines: [{text, group}] — group changes indicate a recital section break
+// ── Render lines with recital group gaps ─────────────────────────────────────
 function renderLinesWithGroups(lines) {
   if (!Array.isArray(lines) || lines.length === 0) return "";
-  let html = "";
-  let lastGroup = null;
+  let html = "", lastGroup = null;
   for (const l of lines) {
     const g = l.group ?? 1;
     const text = typeof l === "string" ? l : (l?.text || "");
-    if (lastGroup !== null && g !== lastGroup) {
-      // gap between recital groups — div so height:14px actually renders
-      html += `<div class="fdr-group-gap"></div>`;
-    }
+    if (lastGroup !== null && g !== lastGroup) html += `<div class="fdr-group-gap"></div>`;
     html += `<div class="fdr-line">${text}</div>`;
     lastGroup = g;
   }
   return html;
 }
 
-// ── render all ★★ pasurams for one thirumozhi in ONE block ───────────────────
-function renderPasuramBlock(pasurams) {
+// ── Render ★★ pasurams for one thirumozhi with per-pasuram display items ──────
+function renderPasuramBlock(pasurams, pasuramDisplayMap) {
   let html = "";
   for (let i = 0; i < pasurams.length; i++) {
     const p = pasurams[i];
     if (i > 0) html += `<div class="fdr-pasuram-sep"></div>`;
+    // per-pasuram display item (e.g. ragam/talam shown above specific pasurams)
+    const displayItem = pasuramDisplayMap?.get(String(p.global_no)) || "";
     html += `
       <div class="fdr-pasuram-block">
+        ${displayItem}
         <div class="fdr-global-no">${p.global_no}</div>
         <div class="fdr-lines">${renderLinesWithGroups(p.lines)}</div>
         <div class="fdr-local-no">${p.local_no}</div>
@@ -362,7 +163,7 @@ function renderPasuramBlock(pasurams) {
   return html;
 }
 
-// ── floating nav ─────────────────────────────────────────────────────────────
+// ── Floating nav ──────────────────────────────────────────────────────────────
 function floatingNav() {
   return `
     <div class="fdr-float-nav">
@@ -376,82 +177,75 @@ function floatingNav() {
   `;
 }
 
-// ── build one section block ───────────────────────────────────────────────────
-function buildSectionBlock(heading, thaniyanRows, pasurams, sectionClosing) {
+// ── Build section block ───────────────────────────────────────────────────────
+function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
 
-  // thaniyan box
+  // build lookup maps from display data
+  const pasuramDisplayMap   = buildPasuramDisplayMap(displayData);
+  const thirumozhiDisplayMap = buildThirumozhiDisplayMap(displayData);
+  const pathuDisplayMap     = buildPathuDisplayMap(displayData);
+
+  // section-level display (carnatic/prosody) shown at top
+  const sectionDisplayHtml = renderSectionDisplayItems(displayData);
+  const prosodyHtml        = renderSectionProsody(displayData);
+  const adivaravuHtml      = renderAdivaravu(displayData);
+  const closingHtml        = renderSectionClosing(displayData, "fdr-section-closing");
+
   const thaniyanHtml = thaniyanRows.length > 0 ? `
     <div class="fdr-thaniyan-box">
       <div class="fdr-thaniyan-label">தனியன்</div>
-      ${renderThaniyan(thaniyanRows)}
+      ${renderThaniyan(thaniyanRows, thaniyanRows._prosodyMap || {})}
     </div>
   ` : "";
 
-  // filter ★★ only
   const dualPasurams = pasurams.filter(p => p.double_recital === 1);
 
-  // ── group: pathu_id → pathu_subunit_name+thirumozhi_heading ─────────────
-  // We preserve insertion order to keep chronological sequence
-
-  // Step 1: collect ordered pathu keys
-  const pathuMap = new Map(); // pathuKey → { label, thiruMap }
+  // group: pathu → thirumozhi
+  const pathuMap = new Map();
   for (const p of dualPasurams) {
-    const pathuKey = p.pathu_id != null ? String(p.pathu_id) : "__none__";
-    if (!pathuMap.has(pathuKey)) {
-      pathuMap.set(pathuKey, { label: p.pathu_name || "", thiruMap: new Map() });
+    const pk = p.pathu_id != null ? String(p.pathu_id) : "__none__";
+    if (!pathuMap.has(pk)) pathuMap.set(pk, { label: p.pathu_name || "", thiruMap: new Map() });
+    const pm = pathuMap.get(pk);
+    const tk = p.thirumozhi_id != null ? String(p.thirumozhi_id) : "__none__";
+    if (!pm.thiruMap.has(tk)) {
+      pm.thiruMap.set(tk, {
+        thiruName:    p.thirumozhi_name    || "",
+        subunit:      p.pathu_subunit_name || "",
+        thiruHeading: p.thirumozhi_heading || "",
+        pasurams: []
+      });
     }
-    const pm = pathuMap.get(pathuKey);
-
-    // Step 2: within pathu, group by thirumozhi_id
-    const thiruKey = p.thirumozhi_id != null ? String(p.thirumozhi_id) : "__none__";
-    if (!pm.thiruMap.has(thiruKey)) {
-      // heading parts: thirumozhi_name (e.g. "முதல் திருமொழி") + subunit + thirumozhi_heading
-      const thiruName   = p.thirumozhi_name || "";       // "முதல் திருமொழி"
-      const subunit     = p.pathu_subunit_name || "";    // e.g. "முதற்பத்து"
-      const thiruHeading = p.thirumozhi_heading || "";   // e.g. "வண்ணமாடங்கள்"
-      pm.thiruMap.set(thiruKey, { thiruName, subunit, thiruHeading, pasurams: [] });
-    }
-    pm.thiruMap.get(thiruKey).pasurams.push(p);
+    pm.thiruMap.get(tk).pasurams.push(p);
   }
 
-  // Step 3: render
   let groupsHtml = "";
-  for (const [, pathu] of pathuMap) {
-    if (pathu.label) {
-      groupsHtml += `<div class="fdr-pathu-heading">${pathu.label}</div>`;
-    }
-    for (const [, thiru] of pathu.thiruMap) {
-      let thiruHeadingHtml = "";
+  for (const [pk, pathu] of pathuMap) {
+    if (pathu.label) groupsHtml += `<div class="fdr-pathu-heading">${pathu.label}</div>`;
+    // pathu-level display items
+    const pathuDisplay = pk !== "__none__" ? (pathuDisplayMap.get(pk) || "") : "";
+    if (pathuDisplay) groupsHtml += pathuDisplay;
 
-      // For pathu-based sections: subunit - thirumozhi_heading (e.g. "முதற்பத்து - வண்ணமாடங்கள்")
-      // For thirumozhi-based sections (நாச்சியார், பெருமாள்): thirumozhi_name - thirumozhi_heading
-      const line1 = thiru.thiruName || thiru.subunit || ""; // thirumozhi order name
-      const line2 = thiru.thiruHeading || "";               // song title
+    for (const [tk, thiru] of pathu.thiruMap) {
+      const line1 = thiru.thiruName || thiru.subunit || "";
+      const line2 = thiru.thiruHeading || "";
+      const parts = [line1, line2].filter(Boolean);
+      const thiruHeadingHtml = parts.length > 0
+        ? `<div class="fdr-thirumozhi-heading">${parts.join(" — ")}</div>`
+        : "";
 
-      if (line1 || line2) {
-        const parts = [line1, line2].filter(Boolean);
-        thiruHeadingHtml = `
-          <div class="fdr-thirumozhi-heading">
-            ${parts.join(" — ")}
-          </div>
-        `;
-      }
+      // thirumozhi-level display items and closing
+      const thiruDisplay = tk !== "__none__" ? (thirumozhiDisplayMap.get(tk) || {}) : {};
+      const thiruDisplayHtml = thiruDisplay.displayHtml || "";
+      const thiruClosingHtml = thiruDisplay.closingHtml || "";
 
       groupsHtml += `
         <div class="fdr-thirumozhi-box">
           ${thiruHeadingHtml}
-          ${renderPasuramBlock(thiru.pasurams)}
+          ${thiruDisplayHtml}
+          ${renderPasuramBlock(thiru.pasurams, pasuramDisplayMap)}
+          ${thiruClosingHtml}
         </div>
       `;
-    }
-  }
-
-  // section closing — field is closing_text (confirmed from API)
-  let closingHtml = "";
-  if (sectionClosing && sectionClosing.length > 0) {
-    const closing = sectionClosing[0].closing_text;
-    if (closing) {
-      closingHtml = `<div class="fdr-section-closing">${closing}</div>`;
     }
   }
 
@@ -463,26 +257,22 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, sectionClosing) {
     <div class="fdr-section-box">
       <div class="fdr-section-heading">${heading}${countBadge}</div>
       ${thaniyanHtml}
+      ${sectionDisplayHtml}
+      ${prosodyHtml}
       ${groupsHtml}
+      ${adivaravuHtml}
       ${closingHtml}
     </div>
   `;
 }
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
-/**
- * renderFullDualRecital(selectedThousandId?)
- *   null / undefined → full 4000
- *   1 / 2 / 3 / 4   → only that thousand
- * @returns {Promise<string>}
- */
 export async function renderFullDualRecital(selectedThousandId = null) {
   injectCSS();
+  injectDisplayCSS();
 
-  // font adjuster — sets --base-font on :root, inherited by .fdr-lines via var()
   window.fdrAdjFont = function(delta) {
-    const current = getComputedStyle(document.documentElement)
-      .getPropertyValue('--base-font').trim();
+    const current = getComputedStyle(document.documentElement).getPropertyValue('--base-font').trim();
     let size = current ? parseFloat(current) : 18;
     if (isNaN(size)) size = 18;
     if (delta < 0 && size <= 12) return;
@@ -495,9 +285,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
     : thousands;
 
   const isFullMode = !selectedThousandId;
-  const pageTitle = isFullMode
-    ? "நாலாயிர திவ்யப்பிரபந்தம்"
-    : (filtered[0]?.name || "");
+  const pageTitle = isFullMode ? "நாலாயிர திவ்யப்பிரபந்தம்" : (filtered[0]?.name || "");
 
   let html = `
     <div class="fdr-page">
@@ -515,33 +303,28 @@ export async function renderFullDualRecital(selectedThousandId = null) {
       if (tName) html += `<div class="fdr-thousand-heading">${tName}</div>`;
     }
 
-    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))]
-      .sort((a, b) => a - b);
+    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a,b) => a-b);
 
     for (const secId of sectionIds) {
       const sectionRow = anchorRows.find(r => r.section_id === secId && r.type === "section");
       let baseName = sectionRow?.canonical_text || "";
       if (!baseName) {
-        const FB = { 2:"பெரியாழ்வார் திருமொழி", 4:"நாச்சியார் திருமொழி",
-                     5:"பெருமாள் திருமொழி", 11:"பெரிய திருமொழி", 26:"திருவாய்மொழி" };
+        const FB = {2:"பெரியாழ்வார் திருமொழி",4:"நாச்சியார் திருமொழி",5:"பெருமாள் திருமொழி",11:"பெரிய திருமொழி",26:"திருவாய்மொழி"};
         baseName = FB[secId] || "";
       }
 
-      // thaniyan
       let sectionThaniyanRows = [];
       if (!SKIP_THANIYAN_SECTIONS.includes(Number(secId))) {
-        const thaniyanData = await fetchThaniyanRaw(secId);
+        const { rows: thaniyanData, prosodyMap: thaniyanProsodyMap } = await fetchThaniyanWithProsody(secId);
         sectionThaniyanRows = getRows(thaniyanData, "section");
+        sectionThaniyanRows._prosodyMap = thaniyanProsodyMap;
       }
 
-      // pasurams
       const allPasurams = await fetchPasuramRaw(secId);
-
-      // section closing
-      const sectionClosing = await fetchSectionClosingRaw(secId);
+      const displayData = await fetchDisplayData(secId);  // ← single fetch, all display data
 
       const heading = sectionHeaderMap[baseName] || baseName;
-      html += buildSectionBlock(heading, sectionThaniyanRows, allPasurams, sectionClosing);
+      html += buildSectionBlock(heading, sectionThaniyanRows, allPasurams, displayData);
     }
   }
 
