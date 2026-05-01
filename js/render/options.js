@@ -27,7 +27,7 @@ export function renderOptions() {
         <div class="tree-item" onclick="openFullThaniyans(null)">Nallayira Thaniyangal</div>
         <div class="tree-item" onclick="openAzhwars(null)">Azhwars</div>
         <div class="tree-item" onclick="openDivyadesam(null)">Divyadesam</div>
-        <div class="tree-item" onclick="comingSoon()">Nithyaanusandanam</div>
+        <div class="tree-item" onclick="openNithyanusandhanam()">Nithyaanusandanam</div>
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
 
@@ -115,6 +115,12 @@ window.openFullThaniyans = function (thousandId) {
 
 
 // =========================
+// 🔥 NITHYANUSANDHANAM LINK
+window.openNithyanusandhanam = function() {
+  state.level = "NITHYANUSANDHANAM";
+  import("./layout.js").then(m => m.render());
+};
+
 // 🔥 DIVYADESAM LINK
 // =========================
 window.openDivyadesam = function (thousandId) {

@@ -14,6 +14,7 @@ import { renderFullThaniyans } from "./fullThaniyans.js";
 import { renderFullDualRecital, dualRecitalSpinner } from "./fullDualRecital.js";
 import { renderFullAzhwars, azhwarSpinner } from "./fullAzhwars.js";
 import { renderFullDivyadesam, divyadesamSpinner } from "./fullDivyadesam.js";
+import { renderFullNithyanusandhanam } from "./fullNithyanusandhanam.js";
 
 export function render() {
 
@@ -93,6 +94,12 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       break;
 
     // =========================
+    // 🔥 NITHYANUSANDHANAM
+    case "NITHYANUSANDHANAM":
+      app.innerHTML = divyadesamSpinner(); // reuse spinner
+      renderFullNithyanusandhanam().then(html => { app.innerHTML = html; });
+      break;
+
     // 🔥 DIVYADESAM
     // =========================
     case "FULL_DIVYADESAM":
