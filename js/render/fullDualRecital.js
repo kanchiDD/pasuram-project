@@ -1,6 +1,7 @@
 // =============================================================
 // 🔥 fullDualRecital.js  →  js/render/fullDualRecital.js
 // ⚠️  Raw fetch only — no api.js imports (avoids safeRender loop)
+// ✅  OPTIMISED: parallel fetches + in-memory dedup cache
 // =============================================================
 
 import { state } from "../state.js";
@@ -58,6 +59,16 @@ const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
 const SPECIAL_MADAL  = [22, 23]; // சிறியதிருமடல், பெரியதிருமடல்
 const SPECIAL_KOOTRI = [21];     // திருவெழுகூற்றிருக்கை
 const sectionNameMap = { 21:"திருவெழுகூற்றிருக்கை", 22:"சிறியதிருமடல்", 23:"பெரியதிருமடல்" };
+
+// ── In-memory fetch cache (deduplication) ─────────────────────────────────────
+// Stores Promise objects so parallel calls for the same URL share one request.
+const _fetchCache = new Map();
+function cachedFetch(url) {
+  if (!_fetchCache.has(url)) {
+    _fetchCache.set(url, fetch(url).then(r => r.json()));
+  }
+  return _fetchCache.get(url);
+}
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 function injectCSS() {
@@ -130,22 +141,17 @@ export function dualRecitalSpinner() {
 // ── Raw fetchers ──────────────────────────────────────────────────────────────
 async function fetchThousandRaw() {
   if (state.thousandData) return state.thousandData;
-  const res = await fetch(`${API}/thousand`);
-  return await res.json();
+  return cachedFetch(`${API}/thousand`);
 }
-// thaniyan fetch now via fetchThaniyanWithProsody from displayHelper
 async function fetchPasuramRaw(sectionId) {
-  const res = await fetch(`${API}/pasuram?section_id=${sectionId}`);
-  const data = await res.json();
+  const data = await cachedFetch(`${API}/pasuram?section_id=${sectionId}`);
   return Array.isArray(data) ? data : [];
 }
 async function fetchMadalRaw(sectionId) {
-  const res = await fetch(`${API}/madal?section_id=${sectionId}`);
-  return await res.json();
+  return cachedFetch(`${API}/madal?section_id=${sectionId}`);
 }
 async function fetchKootrirukkai_Raw(sectionId) {
-  const res = await fetch(`${API}/kootrirukkai?section_id=${sectionId}`);
-  return await res.json();
+  return cachedFetch(`${API}/kootrirukkai?section_id=${sectionId}`);
 }
 function getRows(data, type) {
   const raw = Array.isArray(data) ? data : (data?.data || data?.rows || []);
@@ -315,16 +321,68 @@ export async function renderFullDualRecital(selectedThousandId = null) {
       <div class="fdr-divider"></div>
   `;
 
-  for (const t of filtered) {
-    const anchorRes = await fetch(`${API}/anchor-map?thousand_id=${t.id}`);
-    const anchorRows = await anchorRes.json();
+  // ── Step 1: Fetch all anchor-maps in parallel ─────────────────────────────
+  const allAnchorRows = await Promise.all(
+    filtered.map(t => cachedFetch(`${API}/anchor-map?thousand_id=${t.id}`))
+  );
+
+  // ── Step 2: Collect all unique section IDs across all thousands ───────────
+  const allSectionIds = [];
+  const seenSections = new Set();
+  for (const anchorRows of allAnchorRows) {
+    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
+    for (const secId of sectionIds) {
+      if (!seenSections.has(secId)) {
+        seenSections.add(secId);
+        allSectionIds.push(secId);
+      }
+    }
+  }
+
+  // ── Step 3: Prefetch all section data in parallel ─────────────────────────
+  // For each section we need: thaniyan, displayData, and either
+  // pasuram / madal / kootrirukkai depending on type.
+  const sectionDataMap = new Map(); // secId → { thaniyanRows, displayData, pasurams/madalData/kootriData }
+
+  await Promise.all(allSectionIds.map(async secId => {
+    const isSpecialMadal  = SPECIAL_MADAL.includes(Number(secId));
+    const isSpecialKootri = SPECIAL_KOOTRI.includes(Number(secId));
+    const skipThaniyan    = SKIP_THANIYAN_SECTIONS.includes(Number(secId));
+
+    // Fire all needed fetches for this section concurrently
+    const [thaniyanResult, displayData, contentData] = await Promise.all([
+      skipThaniyan
+        ? Promise.resolve({ rows: [], prosodyMap: {} })
+        : fetchThaniyanWithProsody(secId),
+      fetchDisplayData(secId),
+      isSpecialMadal  ? fetchMadalRaw(secId)         :
+      isSpecialKootri ? fetchKootrirukkai_Raw(secId)  :
+                        fetchPasuramRaw(secId)
+    ]);
+
+    const thaniyanRows = getRows(thaniyanResult.rows, "section");
+    thaniyanRows._prosodyMap = thaniyanResult.prosodyMap;
+
+    sectionDataMap.set(secId, {
+      thaniyanRows,
+      displayData,
+      contentData,
+      isSpecialMadal,
+      isSpecialKootri
+    });
+  }));
+
+  // ── Step 4: Build HTML (pure sync rendering from prefetched data) ─────────
+  for (let ti = 0; ti < filtered.length; ti++) {
+    const t = filtered[ti];
+    const anchorRows = allAnchorRows[ti];
 
     if (isFullMode) {
       const tName = t.name === "நாலாயிர திவ்யப்பிரபந்தம்" ? "" : t.name;
       if (tName) html += `<div class="fdr-thousand-heading">${tName}</div>`;
     }
 
-    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a,b) => a-b);
+    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
 
     for (const secId of sectionIds) {
       const sectionRow = anchorRows.find(r => r.section_id === secId && r.type === "section");
@@ -334,18 +392,13 @@ export async function renderFullDualRecital(selectedThousandId = null) {
         baseName = FB[secId] || "";
       }
 
-      let sectionThaniyanRows = [];
-      if (!SKIP_THANIYAN_SECTIONS.includes(Number(secId))) {
-        const { rows: thaniyanData, prosodyMap: thaniyanProsodyMap } = await fetchThaniyanWithProsody(secId);
-        sectionThaniyanRows = getRows(thaniyanData, "section");
-        sectionThaniyanRows._prosodyMap = thaniyanProsodyMap;
-      }
+      const { thaniyanRows, displayData, contentData, isSpecialMadal, isSpecialKootri }
+        = sectionDataMap.get(secId);
 
-      const displayData = await fetchDisplayData(secId);
       const heading = sectionHeaderMap[baseName] || baseName;
 
       // ── special sections use renderMadal / renderKootrirukkai ──────────────
-      if (SPECIAL_MADAL.includes(Number(secId)) || SPECIAL_KOOTRI.includes(Number(secId))) {
+      if (isSpecialMadal || isSpecialKootri) {
         // set state fields that special.js renderers read
         state.selectedSectionId   = secId;
         state.selectedSectionName = sectionNameMap[Number(secId)] || "";
@@ -364,9 +417,9 @@ export async function renderFullDualRecital(selectedThousandId = null) {
 
         let specialDualHtml = "";
 
-        if (SPECIAL_MADAL.includes(Number(secId))) {
+        if (isSpecialMadal) {
           // ── Extract only dual-recital lines/blocks from madal ──────────────
-          const madalData = await fetchMadalRaw(secId);
+          const madalData = contentData;
           const rules = madalData.rules || [];
           const sectionGlobalNo = madalData.global_no || madalData.section_global_no
             || (secId === 22 ? 2673 : 2674);
@@ -396,15 +449,12 @@ export async function renderFullDualRecital(selectedThousandId = null) {
           const maxCouplet = sectionNameMap[Number(secId)] === "பெரியதிருமடல்" ? 148 : 77;
           let prevBlockRule = null;
 
-          // Build units: consecutive block-rule couplets → one unit (no separator within)
-          // independent line_repeat couplets → individual units (separator between)
-          const units = []; // [{blockRuleId, couplets:[{c, lines:[{text,coupletNo}]}]}]
+          const units = [];
 
           for (const c of couplets) {
             const lines = grouped[c];
             let thisCoupletBlockRule = null;
             const coupletDualLines = [];
-            let lastLineInCouplet = false;
 
             for (let li = 0; li < lines.length; li++) {
               const l = lines[li];
@@ -415,7 +465,6 @@ export async function renderFullDualRecital(selectedThousandId = null) {
 
               if (isInsideBlock || lineDual) {
                 if (isInsideBlock) thisCoupletBlockRule = blockRule;
-                // couplet no shown right on last line of couplet (if within maxCouplet)
                 const showCoupletNo = isLastLine && c <= maxCouplet;
                 coupletDualLines.push({ text: l.text, showCoupletNo, coupletNo: c });
               }
@@ -425,7 +474,6 @@ export async function renderFullDualRecital(selectedThousandId = null) {
             if (coupletDualLines.length === 0) continue;
 
             if (thisCoupletBlockRule) {
-              // block couplet: find existing unit for same block or start new one
               const brId = thisCoupletBlockRule.start_couplet + "_" + thisCoupletBlockRule.start_line;
               const existing = units.find(u => u.blockRuleId === brId);
               if (existing) {
@@ -434,16 +482,13 @@ export async function renderFullDualRecital(selectedThousandId = null) {
                 units.push({ blockRuleId: brId, couplets: [{ c, lines: coupletDualLines }] });
               }
             } else {
-              // independent line_repeat: own unit
               units.push({ blockRuleId: null, couplets: [{ c, lines: coupletDualLines }] });
             }
           }
 
           if (units.length > 0) {
-            // global_no top-left once for the whole section
             specialDualHtml = `<div class="fdr-global-no">${sectionGlobalNo}</div>`;
             specialDualHtml += units.map((unit, ui) => {
-              // all couplets in a block run together — no separator between them
               const innerHtml = unit.couplets.map(({ c, lines }) => {
                 return lines.map((l, li) => {
                   if (l.showCoupletNo) {
@@ -454,14 +499,14 @@ export async function renderFullDualRecital(selectedThousandId = null) {
                   }
                   return `<div class="fdr-line">${l.text}</div>`;
                 }).join("");
-              }).join(""); // NO separator within a block unit
+              }).join("");
               return `<div class="fdr-lines" style="margin-bottom:${unit.blockRuleId ? "0" : "6px"};">${innerHtml}</div>`;
             }).join('<div class="fdr-pasuram-sep"></div>');
           }
 
         } else {
           // ── Kootrirukkai: only line_no == 41 is dual ──────────────────────
-          const kootriData = await fetchKootrirukkai_Raw(secId);
+          const kootriData = contentData;
           const dualLines = (kootriData.lines || []).filter(l => l.line_no == 41);
           if (dualLines.length > 0) {
             specialDualHtml = `
@@ -476,10 +521,10 @@ export async function renderFullDualRecital(selectedThousandId = null) {
         }
 
         // wrap in section box with thaniyan
-        const spThaniyanHtml = sectionThaniyanRows.length > 0 ? `
+        const spThaniyanHtml = thaniyanRows.length > 0 ? `
           <div class="fdr-thaniyan-box">
             <div class="fdr-thaniyan-label">தனியன்</div>
-            ${renderThaniyan(sectionThaniyanRows, sectionThaniyanRows._prosodyMap || {})}
+            ${renderThaniyan(thaniyanRows, thaniyanRows._prosodyMap || {})}
           </div>
         ` : "";
 
@@ -499,8 +544,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
       }
 
       // ── normal sections ────────────────────────────────────────────────────
-      const allPasurams = await fetchPasuramRaw(secId);
-      html += buildSectionBlock(heading, sectionThaniyanRows, allPasurams, displayData);
+      html += buildSectionBlock(heading, thaniyanRows, contentData, displayData);
     }
   }
 

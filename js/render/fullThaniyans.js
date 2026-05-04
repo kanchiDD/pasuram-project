@@ -1,6 +1,7 @@
 // =============================================================
 // 📜 fullThaniyans.js  →  js/render/fullThaniyans.js
 // ⚠️  Raw fetch only — no api.js imports (avoids safeRender loop)
+// ✅  OPTIMISED: parallel fetches + in-memory dedup cache
 // =============================================================
 
 import { state } from "../state.js";
@@ -44,6 +45,16 @@ const sectionHeaderMap = {
 };
 
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
+
+// ── In-memory fetch cache (deduplication) ─────────────────────────────────────
+// Stores Promise objects so parallel calls for the same URL share one request.
+const _fetchCache = new Map();
+function cachedFetch(url) {
+  if (!_fetchCache.has(url)) {
+    _fetchCache.set(url, fetch(url).then(r => r.json()));
+  }
+  return _fetchCache.get(url);
+}
 
 // ── CSS ──────────────────────────────────────────────────────────────────────
 function injectCSS() {
@@ -159,8 +170,7 @@ function injectCSS() {
 // ── raw fetchers ─────────────────────────────────────────────────────────────
 async function fetchThousandRaw() {
   if (state.thousandData) return state.thousandData;
-  const res = await fetch(`${API}/thousand`);
-  return await res.json();
+  return cachedFetch(`${API}/thousand`);
 }
 
 // fetchThaniyanRaw replaced by fetchThaniyanWithProsody from displayHelper
@@ -216,9 +226,40 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
   let globalRendered = false;
 
-  for (const t of filtered) {
-    const anchorRes = await fetch(`${API}/anchor-map?thousand_id=${t.id}`);
-    const anchorRows = await anchorRes.json();
+  // ── Prefetch anchor-maps for all thousands in parallel ────────────────────
+  const anchorMapPromises = filtered.map(t =>
+    cachedFetch(`${API}/anchor-map?thousand_id=${t.id}`)
+  );
+  const allAnchorRows = await Promise.all(anchorMapPromises);
+
+  // ── Prefetch global thaniyan once (needed for first thousand or full mode) ─
+  const globalThaniyanPromise = fetchThaniyanWithProsody(null);
+
+  // Collect all unique section IDs that need thaniyan data across all thousands
+  const allSectionIds = new Set();
+  for (const anchorRows of allAnchorRows) {
+    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
+    for (const secId of sectionIds) {
+      if (!SKIP_THANIYAN_SECTIONS.includes(Number(secId))) {
+        allSectionIds.add(secId);
+      }
+    }
+  }
+
+  // ── Prefetch all section thaniyans in parallel ────────────────────────────
+  const sectionThaniyanMap = new Map();
+  const sectionThaniyanEntries = [...allSectionIds].map(async secId => {
+    const result = await fetchThaniyanWithProsody(secId);
+    sectionThaniyanMap.set(secId, result);
+  });
+  // Kick off global thaniyan + all section thaniyans concurrently
+  await Promise.all([globalThaniyanPromise, ...sectionThaniyanEntries]);
+  const { rows: globalDataResolved, prosodyMap: globalProsodyMap } = await globalThaniyanPromise;
+
+  // ── Build HTML per thousand ───────────────────────────────────────────────
+  for (let ti = 0; ti < filtered.length; ti++) {
+    const t = filtered[ti];
+    const anchorRows = allAnchorRows[ti];
 
     if (isFullMode) {
       const tName = t.name === "நாலாயிர திவ்யப்பிரபந்தம்" ? "" : t.name;
@@ -227,10 +268,9 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
     // ── global thaniyan ONCE ────────────────────────────────────────────
     if (!globalRendered || !isFullMode) {
-      const { rows: globalData, prosodyMap: globalProsodyMap } = await fetchThaniyanWithProsody(null);
       const globalRows = [
-        ...getRows(globalData, "global"),
-        ...getRows(globalData, "thousand")
+        ...getRows(globalDataResolved, "global"),
+        ...getRows(globalDataResolved, "thousand")
       ];
       if (globalRows.length > 0) {
         // ONE heading only — label tag above, no separate inner title
@@ -262,7 +302,8 @@ export async function renderFullThaniyans(selectedThousandId = null) {
         baseName = FB[secId] || "";
       }
 
-      const { rows: thaniyanData, prosodyMap: sectionProsodyMap } = await fetchThaniyanWithProsody(secId);
+      // Use pre-fetched thaniyan data (already in sectionThaniyanMap)
+      const { rows: thaniyanData, prosodyMap: sectionProsodyMap } = sectionThaniyanMap.get(secId) || {};
       const sectionRows = getRows(thaniyanData, "section");
       if (sectionRows.length === 0) continue;
 
