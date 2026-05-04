@@ -15,6 +15,7 @@ import { renderFullDualRecital, dualRecitalSpinner } from "./fullDualRecital.js"
 import { renderFullAzhwars, azhwarSpinner } from "./fullAzhwars.js";
 import { renderFullDivyadesam, divyadesamSpinner } from "./fullDivyadesam.js";
 import { renderFullNithyanusandhanam } from "./fullNithyanusandhanam.js";
+import { renderMunnadiPinnadi, munnadiSpinner } from "./munnadiPinnadiRender.js";
 
 export function render() {
 
@@ -119,6 +120,19 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       renderFullAzhwars(state.azhwarsThousandId).then(html => {
         app.innerHTML = html;
       });
+      break;
+
+    // =========================
+    // 🔥 MUNNADI PINNADI
+    // state.munnadiThousandId: null=full 4000, 1-4=that thousand
+    // =========================
+    case "MUNNADI_PINNADI":
+      topbar.style.display = "flex";
+      app.innerHTML = munnadiSpinner();
+      renderMunnadiPinnadi(
+        state.munnadiThousandId === null ? "full" : "1000",
+        state.munnadiThousandId
+      ).then(html => { app.innerHTML = html; });
       break;
 
     case "PASURAM":

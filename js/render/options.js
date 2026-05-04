@@ -28,6 +28,7 @@ export function renderOptions() {
         <div class="tree-item" onclick="openAzhwars(null)">Azhwars</div>
         <div class="tree-item" onclick="openDivyadesam(null)">Divyadesam</div>
         <div class="tree-item" onclick="openNithyanusandhanam()">Nithyaanusandanam</div>
+        <div class="tree-item" onclick="openMunnadiPinnadi(null)">Munnadi Pinnadi</div>
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
 
@@ -66,6 +67,7 @@ export function renderOptions() {
       <div class="tree-item" onclick="openDualRecital(${state.selectedThousandId})">Rettai/Star Pasurams</div>
       <div class="tree-item" onclick="openFullThaniyans(${state.selectedThousandId})">Thaniyangal</div>
       <div class="tree-item" onclick="openDivyadesam(${state.selectedThousandId})">Divyadesam</div>
+      <div class="tree-item" onclick="openMunnadiPinnadi(${state.selectedThousandId})">Munnadi Pinnadi</div>
 
       <!-- 🔥 BOOK IMAGE -->
       <div class="book-image-card" onclick="showFullByThousand(${state.selectedThousandId})">
@@ -145,6 +147,16 @@ window.openDualRecital = function (thousandId) {
   import("./layout.js").then(m => m.render());
 };
 
+
+// =========================
+// 🔥 MUNNADI PINNADI LINK
+// null → full 4000, 1-4 → that thousand
+// =========================
+window.openMunnadiPinnadi = function (thousandId) {
+  state.munnadiThousandId = thousandId;
+  state.level = "MUNNADI_PINNADI";
+  import("./layout.js").then(m => m.render());
+};
 
 // =========================
 // 🔥 COMMON HELPERS
