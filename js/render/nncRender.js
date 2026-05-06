@@ -609,16 +609,26 @@ export async function renderFixed(refValue, label, anchor) {
   try {
     const data = await fetch(`${API}/nithyanusandhanam?sub=fixed&id=${refValue}`).then(r=>r.json());
     const lines = data.lines || [];
+    // First non-bracket line = section title (bold underlined)
     const linesHtml = lines.map(l => {
-      const t = l.line_text || "";
-      const isSub = t.trim().startsWith("(") && t.trim().endsWith(")");
-      return isSub
-        ? `<div style="font-size:13px;color:#7a5a20;text-align:center;font-style:italic;padding:3px 0;">${t}</div>`
-        : `<div class="nnc-line" style="text-align:left;">${t}</div>`;
+      const t = (l.line_text || "").trim();
+      if (!t) return "";
+      // () bracket lines = author name subheading: small centered italic, strip brackets
+      if (t.startsWith("(") && t.endsWith(")")) {
+        const heading = t.slice(1, -1).trim();
+        return `<div class="nnc-fixed-subheading">${heading}</div>`;
+      }
+      // Closing line containing முற்றிற்று
+      if (t.includes("முற்றிற்று")) {
+        return `<div class="nnc-fixed-closing">${t}</div>`;
+      }
+      // All other lines = regular content
+      const endsVerse = t.endsWith("||");
+      return `<div class="nnc-fixed-line">${t}</div>${endsVerse ? '<div class="nnc-group-gap"></div>' : ""}`;
     }).join("");
     return `
       <div class="nnc-section-box" ${anchor}>
-        <div class="nnc-section-heading">${getHeading(label)}</div>
+        <div class="nnc-section-heading">${label}</div>
         <div class="nnc-section-inner">${linesHtml}</div>
       </div>`;
   } catch { return comingSoonBox(label, anchor); }

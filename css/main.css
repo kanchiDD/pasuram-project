@@ -7,11 +7,12 @@
 ========================= */
 :root {
   --base-font: 16px;
+  --nf: 16px;           /* synced — A+/A- updates --nf, base-font stays reference */
 }
 
 html, body {
-  font-size: var(--base-font);
-  font-family: "Noto Serif Tamil", "Latha", serif;
+  font-size: var(--nf);
+  font-family: "Noto Sans Tamil", "Latha", "Bamini", serif;
 }
 
 /* Optional: only if you use it somewhere */

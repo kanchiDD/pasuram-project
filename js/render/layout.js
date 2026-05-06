@@ -1,10 +1,12 @@
 import { state } from "../state.js";
+import "./css.js"; // injects shared styles + floating nav
 import { renderHome } from "./home.js";
 import { renderStart } from "./start.js";
 import { renderThousand } from "./thousand.js";
 import { renderOptions } from "./options.js";
 import { renderSection } from "./section.js";
 import { renderPasuram } from "./pasuram.js";
+import { renderPasuram as renderNewPasuram } from "./newPasuram.js";
 import { renderIndex } from "../index.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import { renderKoil } from "../koil.js";
@@ -29,6 +31,9 @@ console.log("LEVEL BEFORE RENDER:", state.level);
   console.log("🔥 RENDER CALLED", Date.now());
   const app = document.getElementById("app");
   const topbar = document.getElementById("topbar");
+
+  // Show floating nav only on content pages
+  document.body.classList.toggle("show-nav", state.level === "PASURAM");
 
   if (!app) return;
 
@@ -176,13 +181,13 @@ console.log("LEVEL BEFORE RENDER:", state.level);
 
         // 🔥 SPECIAL SECTIONS (NO pasuramData needed)
         if (state.madalData || state.kootrirukkaiData) {
-          contentDiv.innerHTML = renderPasuram();
+          contentDiv.innerHTML = renderNewPasuram();
           return;
         }
 
         // 🔥 NORMAL FLOW
         if (state.pasuramData) {
-          contentDiv.innerHTML = renderPasuram();
+          contentDiv.innerHTML = renderNewPasuram();
         }
       }
 

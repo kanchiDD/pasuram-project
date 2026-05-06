@@ -33,7 +33,7 @@ const _specialCache = {};
 const SPECIAL_SECTION_DESAM_COUPLETS = {
   // section_id → { desam_id → [couplet_nos] }
   21: {
-    14: "lines_38_41"  // திருக்குடந்தை — lines 38-41 of kootrirukkai
+    14: "lines_1_48"  // திருக்குடந்தை — lines 1-48 of kootrirukkai
   },
   22: {
     1:71, 6:70, 8:70, 10:72, 12:72, 14:73, 16:72, 17:72, 18:71,
@@ -50,25 +50,28 @@ const SPECIAL_SECTION_DESAM_COUPLETS = {
 };
 
 // Get couplet lines for a specific desam from a special section
+// Shows FULL couplet with the divyadesam-specific line bolded
 async function fetchSpecificLines(secId, annotation, desamId) {
   if (secId === 21) {
-    // Kootrirukkai — lines 38-41 reference திருக்குடந்தை
+    // Kootrirukkai — lines 1-41 reference திருக்குடந்தை
     if (!_specialCache[21]) {
       const d = await fetch(`${API_BASE}/kootrirukkai?section_id=21`).then(r=>r.json());
       _specialCache[21] = d.lines || [];
     }
     const lines = _specialCache[21];
-    return lines.filter(l => l.line_no >= 38 && l.line_no <= 41)
+    return lines.filter(l => l.line_no >= 1 && l.line_no <= 48)
                 .map(l => ({ text: l.line_text, group: 1 }));
   }
 
-  // Sections 22 & 23 — lookup from hardcoded table
-  const lookup = SPECIAL_SECTION_DESAM_COUPLETS[secId];
-  const coupletRef = lookup ? lookup[desamId] : null;
-
-  if (coupletRef === null || coupletRef === undefined) return [];
-
-  const coupletNos = Array.isArray(coupletRef) ? coupletRef : [coupletRef];
+  // Sections 22 & 23 — use DB line map for exact couplet + line
+  // Fetch which couplets and which line_no belongs to this desam
+  const lineMapCacheKey = `line_map_${secId}_${desamId}`;
+  if (!_specialCache[lineMapCacheKey]) {
+    const lm = await fetch(`${API_DD}?sub=madal-line-map&section_id=${secId}&desam_id=${desamId}`).then(r=>r.json());
+    _specialCache[lineMapCacheKey] = lm || [];
+  }
+  const lineMap = _specialCache[lineMapCacheKey];
+  if (!lineMap.length) return [];
 
   // Fetch madal units (cached)
   const cacheKey = `madal_units_${secId}`;
@@ -78,13 +81,26 @@ async function fetchSpecificLines(secId, annotation, desamId) {
   }
   const units = _specialCache[cacheKey];
 
+  // Get unique couplet_nos from line map
+  const coupletNos = [...new Set(lineMap.map(r => r.couplet_no))];
+
   const result = [];
   for (const coupletNo of coupletNos) {
     const unit = units.find(u => u.couplet_no === coupletNo);
     if (!unit) continue;
     if (result.length > 0) result.push({ text: "—", group: 2 });
+    // Show FULL couplet, bold the specific line(s) that reference this desam
+    const boldLineNos = new Set(
+      lineMap.filter(r => r.couplet_no === coupletNo).map(r => r.line_no)
+    );
     for (let i = 1; i <= 8; i++) {
-      if (unit[`line_${i}`]) result.push({ text: unit[`line_${i}`], group: 1 });
+      if (!unit[`line_${i}`]) continue;
+      const text = unit[`line_${i}`];
+      const isBold = boldLineNos.has(i);
+      result.push({
+        text: isBold ? `<strong>${text}</strong>` : text,
+        group: 1
+      });
     }
   }
   return result;
