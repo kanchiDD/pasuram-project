@@ -9,10 +9,10 @@ export function injectMunnadiCSS() {
     @media (orientation:landscape) { .mp-portrait-gate{display:none;} .mp-page{display:block;} }
     .mp-rotate-icon { font-size:48px; animation:mp-rot 2s ease-in-out infinite; }
     @keyframes mp-rot { 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(-90deg);} }
-    .mp-rotate-msg { font-size:15px; color:#fef0c0; font-family:'Latha','Bamini',serif; line-height:1.7; }
+    .mp-rotate-msg { font-size:15px; color:#fef0c0; font-family:'Noto Sans Tamil','Latha','Bamini',serif; line-height:1.7; }
 
     :root { --mp-header-h:60px; --mp-font:11px; }
-    .mp-page { max-width:900px; margin:0 auto; padding:0 0 80px; font-family:'Latha','Bamini',serif; background:#fffdf5; min-height:100vh; }
+    .mp-page { max-width:900px; margin:0 auto; padding:0 0 80px; font-family:'Noto Sans Tamil','Latha','Bamini',serif; background:#fffdf5; min-height:100vh; }
     .mp-page-header { background:linear-gradient(135deg,#4a2c00,#7a5a20); color:#fef0c0; text-align:center; padding:16px 12px 12px; font-size:18px; font-weight:900; position:sticky; top:0; z-index:10; }
     .mp-page-header-sub { font-size:11px; color:#d4a843; margin-top:2px; }
 
@@ -100,7 +100,7 @@ export function injectMunnadiCSS() {
 
     /* ── FLOAT NAV ── */
     .mp-float-nav { position:fixed; bottom:20px; right:14px; display:flex; flex-direction:column; gap:8px; z-index:999; }
-    .mp-float-nav button { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#c9a227,#e8c060); border:2px solid #b38b2e; color:#2a1a00; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'Latha','Bamini',serif; }
+    .mp-float-nav button { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#c9a227,#e8c060); border:2px solid #b38b2e; color:#2a1a00; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans Tamil','Latha','Bamini',serif; }
     .mp-final-closing { text-align:center; font-size:16px; font-weight:900; color:#4a2c00; padding:24px 12px; border-top:3px double #b38b2e; margin:12px; }
   `;
   document.head.appendChild(s);
