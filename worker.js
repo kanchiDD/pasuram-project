@@ -57,7 +57,7 @@ if (url.pathname.includes("/api/munnadi-pinnadi")) {
 }
 
 if (url.pathname.includes("/api/sattrumurai/list")) {
-    return handleSattrumuraiList(env);
+    return handleSattrumuraiList(request, env);
   }
  
   if (url.pathname.includes("/api/sattrumurai/")) {
@@ -1229,22 +1229,25 @@ export async function handleSattrumuraiList(request, env) {
   const url = new URL(request.url);
   const thousandId = url.searchParams.get("thousand_id");
 
-  let query, params;
+  let results;
 
   if (thousandId) {
-    query  = `SELECT sattrumurai_id, name, tamil_name, thousand_id
-               FROM   sattrumurai_master
-               WHERE  thousand_id = ?
-               ORDER  BY sattrumurai_id`;
-    params = [thousandId];
+    const res = await env.db.prepare(`
+      SELECT sattrumurai_id, name, tamil_name, thousand_id
+      FROM   sattrumurai_master
+      WHERE  thousand_id = ?
+      ORDER  BY sattrumurai_id
+    `).bind(thousandId).all();
+    results = res.results;
   } else {
-    query  = `SELECT sattrumurai_id, name, tamil_name, thousand_id
-               FROM   sattrumurai_master
-               ORDER  BY sattrumurai_id`;
-    params = [];
+    const res = await env.db.prepare(`
+      SELECT sattrumurai_id, name, tamil_name, thousand_id
+      FROM   sattrumurai_master
+      ORDER  BY sattrumurai_id
+    `).all();
+    results = res.results;
   }
 
-  const { results } = await env.db.prepare(query).bind(...params).all();
   return json({ success: true, data: results });
 }
 
