@@ -65,6 +65,9 @@ const closing =
     ? "கோயில் திருமொழி முற்றிற்று"
     : "கோயில் திருவாய்மொழி முற்றிற்று";
 
+// Show site floating nav (from css.js)
+document.body.classList.add("show-nav");
+
 document.getElementById("app").innerHTML = `
   <div class="section-heading">${state.koilTitle}</div>
 
@@ -77,8 +80,6 @@ document.getElementById("app").innerHTML = `
   </div>
 
   <div class="section-close">${closing}</div>
-
-  ${renderFloatingNav("KOIL")}
 `;
 
 // applyKoilUI() is now retired for koil path — no DOM surgery needed
@@ -138,43 +139,7 @@ function applyKoilUI() {
       ${closing}
     </div>
 
-    ${renderFloatingNav("KOIL")}
   `;
 }
 
-/* =========================
-   🔥 FLOATING NAV
-========================= */
-
-function renderFloatingNav(mode = "FULL") {
-
-  const showIndex = mode !== "KOIL";
-
-  return `
-    <div id="floating-nav" style="
-      position:fixed;
-      bottom:20px;
-      right:20px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      z-index:999;
-    ">
-
-      <button onclick="goHome()">🏠<br><small>Home</small></button>
-
-      ${
-        showIndex
-          ? `<button onclick="goIndex()">📑<br><small>Index</small></button>`
-          : ""
-      }
-
-      <button onclick="goPrevPage()">◀️<br><small>Up</small></button>
-      <button onclick="goNextPage()">▶️<br><small>Down</small></button>
-
-      <button onclick="increaseFont()">A+<br><small>Zoom In</small></button>
-      <button onclick="decreaseFont()">A-<br><small>Zoom Out</small></button>
-
-    </div>
-  `;
-}
+// Floating nav handled by css.js (site-wide)

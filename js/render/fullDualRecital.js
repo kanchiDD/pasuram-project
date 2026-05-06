@@ -81,7 +81,7 @@ function injectCSS() {
       max-width: 700px;
       margin: 0 auto;
       padding: 20px 14px 80px;
-      font-family: "Latha", "Bamini", serif;
+      font-family: "Noto Sans Tamil","Latha", "Bamini", serif;
       font-size: var(--base-font, 18px);
     }
     .fdr-page-title { text-align:center; font-size:26px; font-weight:900; color:#4a2c00; margin-bottom:6px; }
@@ -122,7 +122,7 @@ function injectCSS() {
     .fdr-spinner-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
     .fdr-lotus { font-size:48px; animation:fdr-spin 1.6s linear infinite; }
     @keyframes fdr-spin { 0%{transform:rotate(0deg) scale(1);} 50%{transform:rotate(180deg) scale(1.1);} 100%{transform:rotate(360deg) scale(1);} }
-    .fdr-loading-text { margin-top:14px; font-size:16px; color:#7a5a20; font-family:"Latha","Bamini",serif; }
+    .fdr-loading-text { margin-top:14px; font-size:16px; color:#7a5a20; font-family:"Noto Sans Tamil","Latha","Bamini",serif; }
     /* thaniyan prosody — display only, kept small */
     .thaniyan-prosody {
       font-size: 11px !important;

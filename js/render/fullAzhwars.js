@@ -21,6 +21,15 @@ import {
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
+// ── In-memory dedup cache ────────────────────────────────────────────────────
+const _fetchCache = new Map();
+function cachedFetch(url) {
+  if (!_fetchCache.has(url)) {
+    _fetchCache.set(url, fetch(url).then(r => r.json()));
+  }
+  return _fetchCache.get(url);
+}
+
 const AZHWARS = [
   { id:1,  name:"பொய்கை ஆழ்வார்",          month:"ஐப்பசி",    star:"ஓணம்",        sections:[14] },
   { id:2,  name:"பூதத்தாழ்வார்",            month:"ஐப்பசி",    star:"அவிட்டம்",    sections:[15] },
@@ -84,7 +93,7 @@ function injectCSS() {
   const style = document.createElement("style");
   style.id = "full-azhwars-style";
   style.textContent = `
-    .faz-page { background:#ffffff; max-width:700px; margin:0 auto; padding:20px 14px 80px; font-family:"Latha","Bamini",serif; font-size:var(--base-font,18px); }
+    .faz-page { background:#ffffff; max-width:700px; margin:0 auto; padding:20px 14px 80px; font-family:"Noto Sans Tamil","Latha","Bamini",serif; font-size:var(--base-font,18px); }
     .faz-page-title { text-align:center; font-size:26px; font-weight:900; color:#4a2c00; margin-bottom:6px; }
     .faz-page-subtitle { text-align:center; font-size:15px; color:#7a5a20; margin-bottom:4px; }
     .faz-divider { width:120px; height:2px; background:#b38b2e; margin:8px auto 24px; }
@@ -105,8 +114,8 @@ function injectCSS() {
     .faz-thirumozhi-heading { text-align:center; font-size:15px; font-weight:700; color:#4a2c00; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #e8d5a0; line-height:1.6; }
     .faz-pasuram-block { margin-bottom:10px; }
     .faz-global-no { font-size:13px; font-weight:700; color:#b38b2e; text-align:left; margin-bottom:4px; }
-    .faz-lines { font-size:var(--base-font,18px); color:#1a2a00; line-height:2; text-align:left; }
-    .faz-line { display:block; }
+    .faz-lines { font-size:var(--base-font,18px); color:#1a2a00; line-height:2; text-align:left; font-family:"Noto Sans Tamil","Latha","Bamini",serif; }
+    .faz-line { display:block; font-family:"Noto Sans Tamil","Latha","Bamini",serif; }
     .faz-group-gap { display:block; height:14px; }
     .faz-local-no { font-size:12px; color:#999; text-align:right; margin-top:2px; }
     .faz-pasuram-sep { height:1px; background:#e8d5a0; margin:10px 0; }
@@ -117,7 +126,7 @@ function injectCSS() {
     .faz-spinner-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; }
     .faz-lotus { font-size:48px; animation:faz-spin 1.6s linear infinite; }
     @keyframes faz-spin { 0%{transform:rotate(0deg) scale(1);} 50%{transform:rotate(180deg) scale(1.1);} 100%{transform:rotate(360deg) scale(1);} }
-    .faz-loading-text { margin-top:14px; font-size:16px; color:#7a5a20; }
+    .faz-loading-text { margin-top:14px; font-size:16px; color:#7a5a20; font-family:"Noto Sans Tamil","Latha","Bamini",serif; }
     /* thaniyan prosody — display only, kept small */
     .thaniyan-prosody {
       font-size: 11px !important;
@@ -136,17 +145,14 @@ export function azhwarSpinner() {
 // ── Raw fetchers ──────────────────────────────────────────────────────────────
 // thaniyan fetch now via fetchThaniyanWithProsody from displayHelper
 async function fetchPasuramRaw(sectionId) {
-  const res = await fetch(`${API}/pasuram?section_id=${sectionId}`);
-  const data = await res.json();
+  const data = await cachedFetch(`${API}/pasuram?section_id=${sectionId}`);
   return Array.isArray(data) ? data : [];
 }
 async function fetchMadalRaw(sectionId) {
-  const res = await fetch(`${API}/madal?section_id=${sectionId}`);
-  return await res.json();
+  return cachedFetch(`${API}/madal?section_id=${sectionId}`);
 }
 async function fetchKootrirukkai_Raw(sectionId) {
-  const res = await fetch(`${API}/kootrirukkai?section_id=${sectionId}`);
-  return await res.json();
+  return cachedFetch(`${API}/kootrirukkai?section_id=${sectionId}`);
 }
 function getRows(data, type) {
   const raw = Array.isArray(data) ? data : (data?.data || data?.rows || []);
@@ -409,7 +415,7 @@ export async function renderFullAzhwars(selectedThousandId = null) {
       ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
 
     // azhwar name + birth stored — injected into FIRST section's content box heading
-    const azhwarLabel = `ஸ்ரீ ${azhwar.name}`;
+    const azhwarLabel = azhwar.name; // ஸ்ரீ added in azhHdr below — no double prefix
     const azhwarBirth = azhwar.month
       ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
     let firstSection = true;

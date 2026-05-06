@@ -67,7 +67,7 @@ function injectCSS() {
       max-width: 700px;
       margin: 0 auto;
       padding: 20px 14px 80px;
-      font-family: "Latha", "Bamini", serif;
+      font-family: "Noto Sans Tamil","Latha", "Bamini", serif;
     }
     .ft-page-title {
       text-align: center;

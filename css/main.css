@@ -7,12 +7,27 @@
 ========================= */
 :root {
   --base-font: 16px;
-  --nf: 16px;           /* synced — A+/A- updates --nf, base-font stays reference */
+  --nf: 16px;
 }
 
 html, body {
   font-size: var(--nf);
   font-family: "Noto Sans Tamil", "Latha", "Bamini", serif;
+}
+
+/* Universal font rule — all content inherits Noto Sans Tamil */
+*, *::before, *::after {
+  font-family: inherit;
+}
+.thaniyan-block, .pasuram-block, .content-border,
+.content-box, .content-outer, .thaniyan-outer,
+.thaniyan-container, .thaniyan-line,
+.pasuram-line, .pasuram-item,
+.nnc-page, .nnc-section-inner,
+.madal-container, .kootrirukkai-container,
+.tree-item, .section-heading, .section-close,
+.display-item, .prosody {
+  font-family: "Noto Sans Tamil", "Latha", "Bamini", serif !important;
 }
 
 /* Optional: only if you use it somewhere */
