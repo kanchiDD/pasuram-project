@@ -31,6 +31,7 @@ export function renderOptions() {
         <div class="tree-item" onclick="openMunnadiPinnadi(null)">Munnadi Pinnadi</div>
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
+        <div class="tree-item" onclick="openSattrumurai(null)">Sattrumurai</div>
 
         <!-- 🔥 FULL BOOK IMAGE -->
         <div class="book-image-card" onclick="showFullNaalayiram()">
@@ -68,6 +69,7 @@ export function renderOptions() {
       <div class="tree-item" onclick="openFullThaniyans(${state.selectedThousandId})">Thaniyangal</div>
       <div class="tree-item" onclick="openDivyadesam(${state.selectedThousandId})">Divyadesam</div>
       <div class="tree-item" onclick="openMunnadiPinnadi(${state.selectedThousandId})">Munnadi Pinnadi</div>
+      <div class="tree-item" onclick="openSattrumurai(${state.selectedThousandId})">Sattrumurai</div>
 
       <!-- 🔥 BOOK IMAGE -->
       <div class="book-image-card" onclick="showFullByThousand(${state.selectedThousandId})">
@@ -155,6 +157,15 @@ window.openDualRecital = function (thousandId) {
 window.openMunnadiPinnadi = function (thousandId) {
   state.munnadiThousandId = thousandId;
   state.level = "MUNNADI_PINNADI";
+  import("./layout.js").then(m => m.render());
+};
+
+window.openSattrumurai = function (thousandId) {
+  // thousandId = null  → full 4000, fetch ALL sattrumurais for dropdown
+  // thousandId = 1–4   → fetch only that thousand's sattrumurais
+  state.sattrumuraiThousandId = thousandId;
+  state.sattrumuraiId = null; // renderer auto-picks first from list
+  state.level = "SATTRUMURAI";
   import("./layout.js").then(m => m.render());
 };
 

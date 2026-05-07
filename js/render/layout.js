@@ -18,6 +18,7 @@ import { renderFullAzhwars, azhwarSpinner } from "./fullAzhwars.js";
 import { renderFullDivyadesam, divyadesamSpinner } from "./fullDivyadesam.js";
 import { renderFullNithyanusandhanam } from "./fullNithyanusandhanam.js";
 import { renderMunnadiPinnadi, munnadiSpinner } from "./munnadiPinnadiRender.js";
+import { renderFullSattrumurai, sattrumuraiSpinner } from "./fullSattrumurai.js";
 
 export function render() {
 
@@ -140,6 +141,19 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       ).then(html => { app.innerHTML = html; });
       break;
 
+     // =========================
+    // 🔥 SATTRUMURAI
+    // state.sattrumuraiId: integer (1–N)
+    // =========================
+    case "SATTRUMURAI":
+      topbar.style.display = "flex";
+      app.innerHTML = sattrumuraiSpinner();
+      renderFullSattrumurai(state.sattrumuraiId).then(html => {
+        app.innerHTML = html;
+      });
+      break;
+
+
     case "PASURAM":
       topbar.style.display = "flex";
 
@@ -192,5 +206,7 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       }
 
       break;
+
+      
   }
 }
