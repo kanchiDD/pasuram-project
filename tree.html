@@ -66,11 +66,18 @@
 <!-- 🔥 MAIN APP ENTRY -->
 <script type="module">
 import { startTree } from './js/navigation.js?v=12';
+import './js/voiceNavBoot.js';
   document.addEventListener("DOMContentLoaded", () => {
 
     // small delay ensures header buttons exist
     setTimeout(() => {
-      
+
+      // ✅ Skip startTree if voice navigation is pending
+      // voiceNavBoot.js reads and clears "voiceNav" from sessionStorage —
+      // but it runs on requestAnimationFrame (~16ms) before this 50ms timeout.
+      // Use a flag set by voiceNavBoot to detect voice navigation.
+      if (window._voiceNavActive) return;
+
       startTree();        // ✅ load canonical (THOUSAND)
     }, 50);
 

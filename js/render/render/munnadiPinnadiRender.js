@@ -330,7 +330,7 @@ const COL_HEADERS = `
 // ── Pasuram rows ──
 function buildPasurams(pasurams) {
   if (!pasurams || pasurams.length === 0) return '';
-  const parts = [COL_HEADERS, `<div class="mp-pasurams">`];
+  const parts = [`<div class="mp-pasurams">${COL_HEADERS}`];
   for (const p of pasurams) {
     const dual = p.double_recital ? `<span class="mp-dual-marker">** </span>` : "";
     if (p.merged) {

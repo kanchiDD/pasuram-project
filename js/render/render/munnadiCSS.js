@@ -73,7 +73,7 @@ export function injectMunnadiCSS() {
     .mp-subunit-heading { font-size:10px; color:#7a5a20; text-align:center; padding:0 0 3px; font-style:italic; }
 
     /* ── COLUMN HEADERS — sticky below page header ── */
-    .mp-col-headers { display:grid; grid-template-columns:34px 1fr 1px 1fr 26px; align-items:center; padding:3px 8px; background:#fef3d0; border-bottom:2px solid #e8c060; border-top:1px solid #e8d090; font-size:9px; font-weight:700; color:#b38b2e; text-transform:uppercase; letter-spacing:0.8px; position:sticky; top:-1px; z-index:5; }
+    .mp-col-headers { display:grid; grid-template-columns:34px 1fr 1px 1fr 26px; align-items:center; padding:3px 8px; background:#fef3d0; border-bottom:2px solid #e8c060; border-top:1px solid #e8d090; font-size:9px; font-weight:700; color:#b38b2e; text-transform:uppercase; letter-spacing:0.8px; position:sticky; top:var(--mp-header-h); z-index:5; }
     .mp-ch-gno { text-align:right; padding-right:5px; }
     .mp-ch-m   { text-align:center; padding:0 4px; }
     .mp-ch-div { background:#d4a843; height:12px; width:1px; margin:0 auto; }

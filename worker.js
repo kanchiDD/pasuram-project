@@ -1,6 +1,26 @@
+// ── Chunk helper: splits any IN() query into safe batches of 99 ──
+async function _inQuery(env, ids, sql, extraBinds = []) {
+  if (!ids.length) return [];
+  const CHUNK = 99;
+  const all = [];
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const ph    = chunk.map(() => "?").join(",");
+    const res   = await env.db.prepare(sql.replace("__IN__", ph))
+                    .bind(...extraBinds, ...chunk).all();
+    all.push(...(res.results || []));
+  }
+  return all;
+}
+
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith("/voice/")) {
+  return handleVoice(request, env);
+}
 
     if (url.searchParams.get("view") === "4000") {
   return handleFullAPI(url, env);
@@ -64,6 +84,23 @@ if (url.pathname.includes("/api/sattrumurai/list")) {
     const id = url.pathname.split("/api/sattrumurai/")[1];
     return handleSattrumurai(id, env);
   }
+
+  if (url.pathname.includes("/api/star-pasuram")) {
+  return handleStarPasuram(request, env);
+}
+  if (url.pathname.includes("/api/azhwar-recital")) {
+  return handleAzhwarRecital(request, env);
+}
+  if (url.pathname.includes("/api/custom-recital-entities")) {
+  try {
+    return handleCustomRecitalEntities(env);
+  } catch(err) {
+    return new Response(JSON.stringify({ error: err.message, stack: err.stack }), {
+      status: 500,
+      headers: { "Content-Type":"application/json", "Access-Control-Allow-Origin":"*" }
+    });
+  }
+}
 
 
     return new Response("Not Found", { status: 404 });
@@ -1168,17 +1205,43 @@ async function handleAnchorMap(request, env) {
 }
 async function handleEntitySearch(request, env) {
   try {
+    const url  = new URL(request.url);
+    const tag  = url.searchParams.get("tag");
+    const type = url.searchParams.get("type");
 
+    // ── Star pasuram lookup: ?tag=அஸ்வினி நட்சத்திர பாசுரங்கள்&type=pathu ──
+    if (tag && type) {
+      const res = await env.db.prepare(`
+        SELECT em.entity_id,
+               pm.section_id,
+               pm.pathu_name,
+               pm.pathu_subunit_name,
+               s.section_name
+        FROM   entity_master em
+        JOIN   pathu_master pm   ON em.entity_id   = pm.pathu_id
+        JOIN   section_master s  ON pm.section_id  = s.section_id
+        WHERE  em.entity_type = ?
+          AND  em.meta_value  = ?
+          AND  em.meta_key    = 'tag'
+          AND  (em.search_flag = 1 OR em.meta_category = 'search')
+        ORDER  BY pm.section_id, pm.pathu_id
+      `).bind(type, tag).all();
+
+      return new Response(JSON.stringify(res.results || []), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+
+    // ── Original behaviour: return all search tags ──
     const result = await env.db.prepare(`
-      SELECT 
-        entity_type,
-        entity_id,
-        meta_key,
-        meta_value
-      FROM entity_master
-      WHERE meta_category = 'search'
-        AND search_flag = 1
-        AND meta_key = 'tag'
+      SELECT entity_type, entity_id, meta_key, meta_value
+      FROM   entity_master
+      WHERE  meta_category = 'search'
+        AND  search_flag   = 1
+        AND  meta_key      = 'tag'
     `).all();
 
     return new Response(JSON.stringify(result.results || []), {
@@ -1190,8 +1253,7 @@ async function handleEntitySearch(request, env) {
 
   } catch (err) {
     return new Response(JSON.stringify({
-      error: "DB error",
-      details: err.message
+      error: "DB error", details: err.message
     }), {
       status: 500,
       headers: {
@@ -1201,6 +1263,641 @@ async function handleEntitySearch(request, env) {
     });
   }
 }
+
+
+// ── Star Pasuram: returns ALL entity types for a star ────────
+async function handleStarPasuram(request, env) {
+  try {
+    const url  = new URL(request.url);
+    const star = url.searchParams.get("star");
+
+    if (!star) {
+      const res = await env.db.prepare(`
+        SELECT DISTINCT meta_value AS star
+        FROM   entity_master
+        WHERE  entity_type  = 'pathu'
+          AND  meta_key     = 'tag'
+          AND  meta_category = 'search'
+        ORDER  BY meta_value
+      `).all();
+      return new Response(JSON.stringify(res.results || []), {
+        headers: { "Content-Type":"application/json","Access-Control-Allow-Origin":"*" }
+      });
+    }
+
+    const tag = star + " நட்சத்திர பாசுரங்கள்";
+
+    // ── pathu level ──────────────────────────────────────────
+    const pathuRes = await env.db.prepare(`
+      SELECT em.entity_id AS id,
+             pm.section_id, pm.pathu_name, s.section_name
+      FROM   entity_master em
+      JOIN   pathu_master pm  ON em.entity_id  = pm.pathu_id
+      JOIN   section_master s ON pm.section_id = s.section_id
+      WHERE  em.entity_type = 'pathu'
+        AND  em.meta_key    = 'tag'
+        AND  em.meta_value  = ?
+        AND  em.meta_category = 'search'
+      ORDER  BY pm.section_id, pm.pathu_id
+    `).bind(tag).all();
+
+    // ── section level (full section) ─────────────────────────
+    const secRes = await env.db.prepare(`
+      SELECT em.entity_id AS section_id, s.section_name
+      FROM   entity_master em
+      JOIN   section_master s ON em.entity_id = s.section_id
+      WHERE  em.entity_type = 'section'
+        AND  em.meta_key    = 'tag'
+        AND  em.meta_value  = ?
+        AND  em.meta_category = 'search'
+      ORDER  BY em.entity_id
+    `).bind(tag).all();
+
+    // ── thirumozhi level ─────────────────────────────────────
+    const thiruRes = await env.db.prepare(`
+      SELECT em.entity_id AS thirumozhi_id,
+             tm.section_id, tm.thirumozhi_name,
+             tm.thirumozhi_heading, s.section_name
+      FROM   entity_master em
+      JOIN   thirumozhi_master tm ON em.entity_id  = tm.thirumozhi_id
+      JOIN   section_master s     ON tm.section_id = s.section_id
+      WHERE  em.entity_type = 'thirumozhi'
+        AND  em.meta_key    = 'tag'
+        AND  em.meta_value  = ?
+        AND  em.meta_category = 'search'
+      ORDER  BY tm.section_id, tm.thirumozhi_id
+    `).bind(tag).all();
+
+    // ── individual pasuram level ─────────────────────────────
+    const pasuramRes = await env.db.prepare(`
+      SELECT em.entity_id AS global_no,
+             pm.section_id, s.section_name
+      FROM   entity_master em
+      JOIN   pasuram_master pm ON em.entity_id  = pm.global_no
+      JOIN   section_master s  ON pm.section_id = s.section_id
+      WHERE  em.entity_type = 'pasuram'
+        AND  em.meta_key    = 'tag'
+        AND  em.meta_value  = ?
+        AND  em.meta_category = 'search'
+      ORDER  BY pm.section_id, pm.global_no
+    `).bind(tag).all();
+
+    return new Response(JSON.stringify({
+      pathus:     pathuRes.results   || [],
+      sections:   secRes.results     || [],
+      thirumozhi: thiruRes.results   || [],
+      pasurams:   pasuramRes.results || []
+    }), {
+      headers: { "Content-Type":"application/json","Access-Control-Allow-Origin":"*" }
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error:"DB error", details:err.message }), {
+      status: 500,
+      headers: { "Content-Type":"application/json","Access-Control-Allow-Origin":"*" }
+    });
+  }
+}
+
+// ====================================================================
+
+const KOIL_SECTION_MAP = {
+  "koil_thirumozhi":    11,
+  "koil_thiruvaimozhi": 26
+};
+
+// =============================================================
+// COMPLETE handleAzhwarRecital — replace existing in worker.js
+// Display structure matches handlePasuramDisplay exactly:
+//   s.display = { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+// Sections 21/22/23 handled as madal/kootrirukkai
+// Pasuram display_items = pasuram level only (NOT merged)
+// =============================================================
+
+// =============================================================
+// COMPLETE handleAzhwarRecital — replace existing in worker.js
+// Display structure matches handlePasuramDisplay exactly:
+//   s.display = { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+// Sections 21/22/23 handled as madal/kootrirukkai
+// Pasuram display_items = pasuram level only (NOT merged)
+// =============================================================
+
+async function handleAzhwarRecital(request, env) {
+  try {
+    const url      = new URL(request.url);
+    const authorId = url.searchParams.get("author_id");
+    const hdrs     = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+
+    if (!authorId) return new Response(JSON.stringify([]), { headers: hdrs });
+
+    // ── MASTER ───────────────────────────────────────────────
+    const master = await env.db.prepare(`
+      SELECT recital_id, tamil_name, notes
+      FROM   author_birth_recital_master
+      WHERE  author_id = ?
+    `).bind(authorId).first();
+
+    if (!master) return new Response(JSON.stringify([]), { headers: hdrs });
+
+    // ── SEQUENCE ─────────────────────────────────────────────
+    const seqRes = await env.db.prepare(`
+      SELECT sequence_no, entity_type, entity_id, is_dual_recital, is_optional
+      FROM   author_birth_recital_sequence
+      WHERE  recital_id = ?
+      ORDER  BY sequence_no
+    `).bind(master.recital_id).all();
+
+    const seqRows = seqRes.results || [];
+
+    const pasuramIds  = [...new Set(seqRows.filter(r => r.entity_type === "pasuram")           .map(r => r.entity_id))];
+    const thaniyanIds = [...new Set(seqRows.filter(r => r.entity_type === "thaniyan")          .map(r => r.entity_id))];
+    const sectionIds  = [...new Set(seqRows.filter(r => r.entity_type === "section")           .map(r => r.entity_id))];
+    const fixedIds    = [...new Set(seqRows.filter(r => r.entity_type === "fixed_text")        .map(r => r.entity_id))];
+    const vazhiIds    = [...new Set(seqRows.filter(r => r.entity_type === "vazhi")             .map(r => r.entity_id))];
+    const madalIds    = [...new Set(seqRows.filter(r => r.entity_type === "madal_sattrumurai") .map(r => r.entity_id))];
+
+    // ── PROSODY MASTER + SCOPE ───────────────────────────────
+    const prosodyMasterRes = await env.db.prepare(
+      `SELECT prosody_id, canonical_name_tamil FROM prosody_master`
+    ).all();
+    const prosodyMaster = {};
+    for (const r of prosodyMasterRes.results || [])
+      prosodyMaster[r.prosody_id] = r.canonical_name_tamil;
+
+    const prosodyScopes = (await env.db.prepare(
+      `SELECT prosody_id, start_global_no, end_global_no FROM prosody_scope_map`
+    ).all()).results || [];
+
+    function getProsodyName(globalNo) {
+      const n = Number(globalNo);
+      const s = prosodyScopes.find(s =>
+        n >= Number(s.start_global_no) && n <= Number(s.end_global_no)
+      );
+      return s ? (prosodyMaster[s.prosody_id] || "") : "";
+    }
+
+    // ── HELPER: buildDisplayMap — identical to handlePasuramDisplay ──
+    // Returns { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+    async function buildDisplayMap(sid) {
+      const result = await env.db.prepare(`
+        SELECT entity_type, entity_id, meta_value, sequence_no
+        FROM entity_master
+        WHERE display_flag = 1 AND (
+          (entity_type = 'pasuram' AND entity_id BETWEEN
+            (SELECT global_no_start FROM section_master WHERE section_id = ?)
+            AND (SELECT global_no_end FROM section_master WHERE section_id = ?))
+          OR (entity_type = 'pathu' AND entity_id IN (
+            SELECT pathu_id FROM pathu_master WHERE section_id = ?))
+          OR (entity_type = 'thirumozhi' AND entity_id IN (
+            SELECT thirumozhi_id FROM thirumozhi_master WHERE section_id = ?))
+          OR (entity_type = 'section' AND entity_id = ?)
+        )
+        ORDER BY entity_type, entity_id, sequence_no
+      `).bind(sid, sid, sid, sid, sid).all();
+
+      const thiruRes = await env.db.prepare(
+        `SELECT thirumozhi_id, pathu_id FROM thirumozhi_master WHERE section_id = ?`
+      ).bind(sid).all();
+      const t2p = {};
+      for (const r of thiruRes.results || [])
+        if (r.pathu_id) t2p[String(r.thirumozhi_id)] = String(r.pathu_id);
+
+      const map = { section: [], pathu: {}, thirumozhi: {}, pasuram: {} };
+      for (const row of result.results || []) {
+        const text = row.meta_value;
+        if (!text || !text.trim()) continue;
+        if (row.entity_type === "section") {
+          map.section.push({ text, order: row.sequence_no });
+        } else if (row.entity_type === "pathu") {
+          const k = String(row.entity_id);
+          if (!map.pathu[k]) map.pathu[k] = [];
+          map.pathu[k].push({ text, order: row.sequence_no });
+        } else if (row.entity_type === "thirumozhi") {
+          const k = String(row.entity_id);
+          if (!map.thirumozhi[k]) map.thirumozhi[k] = { items: [], pathu_id: t2p[k] || null };
+          map.thirumozhi[k].items.push({ text, order: row.sequence_no });
+        } else if (row.entity_type === "pasuram") {
+          const k = String(row.entity_id);
+          if (!map.pasuram[k]) map.pasuram[k] = [];
+          map.pasuram[k].push({ text, order: row.sequence_no });
+        }
+      }
+      return map;
+    }
+
+    // ── PASURAM MAP (standalone pasurams in sequence) ────────
+    const pasuramMap = {};
+
+    if (pasuramIds.length) {
+      const pmRows = await _inQuery(env, pasuramIds,
+        `SELECT global_no, local_pasuram_no, section_id,
+                pathu_id, thirumozhi_id, double_recital
+         FROM pasuram_master WHERE global_no IN (__IN__)`);
+
+      const linesRows = await _inQuery(env, pasuramIds,
+        `SELECT global_no, line_no, line_text, recital_group
+         FROM pasuram_line_master WHERE global_no IN (__IN__)
+         ORDER BY global_no, line_no`);
+
+      const dispRows = await _inQuery(env, pasuramIds,
+        `SELECT entity_id, meta_key, meta_value, sequence_no
+         FROM entity_master
+         WHERE entity_type='pasuram' AND display_flag=1 AND entity_id IN (__IN__)
+         ORDER BY entity_id, sequence_no`);
+
+      const uniqueSectionIds = [...new Set(pmRows.map(r => r.section_id))];
+      const sectionEndRows   = await _inQuery(env, uniqueSectionIds,
+        `SELECT section_id, global_no_end FROM section_master WHERE section_id IN (__IN__)`);
+      const sectionEndMap = {};
+      for (const r of sectionEndRows) sectionEndMap[r.section_id] = Number(r.global_no_end);
+
+      const closingRows = await _inQuery(env, uniqueSectionIds,
+        `SELECT section_id, closing_text FROM section_closing_master WHERE section_id IN (__IN__)`);
+      const closingMap = {};
+      for (const r of closingRows) closingMap[r.section_id] = r.closing_text || "";
+
+      const linesMap = {};
+      for (const l of linesRows) {
+        if (!linesMap[l.global_no]) linesMap[l.global_no] = [];
+        linesMap[l.global_no].push({ text: l.line_text, group: l.recital_group });
+      }
+      const dispMap = {};
+      for (const d of dispRows) {
+        if (!dispMap[d.entity_id]) dispMap[d.entity_id] = [];
+        dispMap[d.entity_id].push({ key: d.meta_key, text: d.meta_value });
+      }
+
+      for (const pm of pmRows) {
+        const isLast = Number(pm.global_no) === sectionEndMap[pm.section_id];
+        pasuramMap[pm.global_no] = {
+          global_no:      pm.global_no,
+          local_no:       pm.local_pasuram_no,
+          section_id:     pm.section_id,
+          pathu_id:       pm.pathu_id,
+          thirumozhi_id:  pm.thirumozhi_id,
+          double_recital: pm.double_recital,
+          lines:          linesMap[pm.global_no] || [],
+          display_items:  dispMap[pm.global_no]  || [],  // pasuram level only
+          prosody:        getProsodyName(pm.global_no),
+          closing_text:   isLast ? (closingMap[pm.section_id] || "") : ""
+        };
+      }
+    }
+
+    // ── THANIYAN MAP ─────────────────────────────────────────
+    const thaniyanMap = {};
+
+    if (thaniyanIds.length) {
+      const tmRows = await _inQuery(env, thaniyanIds,
+        `SELECT thaniyan_id, canonical_name FROM thaniyan_master WHERE thaniyan_id IN (__IN__)`);
+
+      const REF_MAP = {};
+      for (const t of tmRows)
+        REF_MAP[t.thaniyan_id] = t.thaniyan_id === 1 ? "global" : `section_${t.thaniyan_id - 1}`;
+
+      const refs   = Object.values(REF_MAP);
+      const tlRows = await _inQuery(env, refs,
+        `SELECT thaniyan_ref, line_no, line_text, line_role, line_group, prosody_id
+         FROM thaniyan_line_master WHERE thaniyan_ref IN (__IN__)
+         ORDER BY thaniyan_ref, line_no`);
+
+      const linesByRef = {};
+      for (const l of tlRows) {
+        if (!linesByRef[l.thaniyan_ref]) linesByRef[l.thaniyan_ref] = [];
+        linesByRef[l.thaniyan_ref].push(l);
+      }
+      for (const tm of tmRows) {
+        const ref = REF_MAP[tm.thaniyan_id];
+        thaniyanMap[tm.thaniyan_id] = {
+          thaniyan_id: tm.thaniyan_id,
+          title:       tm.canonical_name || "",
+          ref,
+          lines: (linesByRef[ref] || []).map(l => ({
+            ...l,
+            prosody_name: l.prosody_id ? (prosodyMaster[l.prosody_id] || "") : ""
+          }))
+        };
+      }
+    }
+
+    // ── SECTION MAP ──────────────────────────────────────────
+    const sectionMap = {};
+
+    if (sectionIds.length) {
+      const smRows = await _inQuery(env, sectionIds,
+        `SELECT section_id, section_name, global_no_start, global_no_end
+         FROM section_master WHERE section_id IN (__IN__)`);
+
+      for (const sm of smRows) {
+        const sid = sm.section_id;
+
+        // ── Section 21: திருவெழுகூற்றிருக்கை ──
+        if (sid === 21) {
+          const lines  = await env.db.prepare(
+            `SELECT line_no, line_text, dual_recital
+             FROM thiruvezhukootrarikkai_master ORDER BY line_no`
+          ).all();
+          const dispMap = await buildDisplayMap(sid);
+          const closing = await env.db.prepare(
+            `SELECT closing_text FROM section_closing_master WHERE section_id=?`
+          ).bind(sid).first();
+          sectionMap[sid] = {
+            section_id:   sid, display_name: sm.section_name,
+            section_type: "kootrirukkai",
+            display:      dispMap,
+            closing_text: closing?.closing_text || "",
+            lines:        lines.results || []
+          };
+          continue;
+        }
+
+        // ── Sections 22/23: சிறிய/பெரிய திருமடல் ──
+        if (sid === 22 || sid === 23) {
+          const madalId = sid === 22 ? 1 : 2;
+          const units   = await env.db.prepare(
+            `SELECT * FROM madal_unit_master WHERE madal_id=? ORDER BY couplet_no`
+          ).bind(madalId).all();
+          const rules   = await env.db.prepare(
+            `SELECT * FROM madal_recital_rule WHERE madal_id=?`
+          ).bind(madalId).all();
+          const dispMap = await buildDisplayMap(sid);
+          const closing = await env.db.prepare(
+            `SELECT closing_text FROM section_closing_master WHERE section_id=?`
+          ).bind(sid).first();
+          sectionMap[sid] = {
+            section_id:   sid, display_name: sm.section_name,
+            section_type: "madal", madal_id: madalId,
+            display:      dispMap,
+            closing_text: closing?.closing_text || "",
+            units:        units.results || [],
+            rules:        rules.results || []
+          };
+          continue;
+        }
+
+        // ── Normal sections ──
+        const dispMap = await buildDisplayMap(sid);
+        const closing = await env.db.prepare(
+          `SELECT closing_text FROM section_closing_master WHERE section_id=?`
+        ).bind(sid).first();
+
+        const pasuramsRes = await env.db.prepare(`
+          SELECT p.global_no, p.local_pasuram_no, p.section_id,
+                 p.pathu_id, p.thirumozhi_id, p.double_recital,
+                 pm.pathu_name, pm.pathu_subunit_name,
+                 COALESCE(pm.thirumozhi_heading, tm.thirumozhi_heading) AS thirumozhi_heading,
+                 tm.thirumozhi_name
+          FROM pasuram_master p
+          LEFT JOIN pathu_master pm ON p.pathu_id = pm.pathu_id
+          LEFT JOIN thirumozhi_master tm ON p.thirumozhi_id = tm.thirumozhi_id
+          WHERE p.section_id=? ORDER BY p.global_no
+        `).bind(sid).all();
+
+        const secPasuramIds = (pasuramsRes.results || []).map(r => r.global_no);
+        let pasurams = [];
+
+        if (secPasuramIds.length) {
+          const secLinesRows = await _inQuery(env, secPasuramIds,
+            `SELECT global_no, line_no, line_text, recital_group
+             FROM pasuram_line_master WHERE global_no IN (__IN__)
+             ORDER BY global_no, line_no`);
+
+          const secLinesMap = {};
+          for (const l of secLinesRows) {
+            if (!secLinesMap[l.global_no]) secLinesMap[l.global_no] = [];
+            secLinesMap[l.global_no].push({ text: l.line_text, group: l.recital_group });
+          }
+
+          pasurams = (pasuramsRes.results || []).map(p => ({
+            global_no:           p.global_no,
+            local_no:            p.local_pasuram_no,
+            section_id:          p.section_id,
+            pathu_id:            p.pathu_id,
+            thirumozhi_id:       p.thirumozhi_id,
+            double_recital:      p.double_recital,
+            pathu_name:          p.pathu_name          || "",
+            pathu_subunit_name:  p.pathu_subunit_name  || "",
+            thirumozhi_heading:  p.thirumozhi_heading  || "",
+            thirumozhi_name:     p.thirumozhi_name     || "",
+            lines:               secLinesMap[p.global_no] || [],
+            prosody:             getProsodyName(p.global_no),
+            closing_text:        Number(p.global_no) === Number(sm.global_no_end)
+                                   ? (closing?.closing_text || "") : ""
+          }));
+        }
+
+        sectionMap[sid] = {
+          section_id:   sid,
+          display_name: sm.section_name || "",
+          section_type: "normal",
+          closing_text: closing?.closing_text || "",
+          display:      dispMap,  // { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+          pasurams
+        };
+      }
+    }
+
+    // ── FIXED TEXT MAP ───────────────────────────────────────
+    const fixedMap = {};
+
+    if (fixedIds.length) {
+      const fmRows = await _inQuery(env, fixedIds,
+        `SELECT fixed_id, name FROM fixed_text_master WHERE fixed_id IN (__IN__)`);
+      const flRows = await _inQuery(env, fixedIds,
+        `SELECT fixed_id, line_text FROM fixed_text_line_master
+         WHERE fixed_id IN (__IN__) ORDER BY fixed_id, line_no`);
+      const fixedLinesMap = {};
+      for (const l of flRows) {
+        if (!fixedLinesMap[l.fixed_id]) fixedLinesMap[l.fixed_id] = [];
+        fixedLinesMap[l.fixed_id].push(l.line_text);
+      }
+      for (const fm of fmRows) {
+        fixedMap[fm.fixed_id] = {
+          fixed_id: fm.fixed_id, name: fm.name,
+          lines:    fixedLinesMap[fm.fixed_id] || []
+        };
+      }
+    }
+
+    // ── VAZHI MAP ────────────────────────────────────────────
+    const vazhiMap = {};
+
+    if (vazhiIds.length) {
+      const vmRows = await _inQuery(env, vazhiIds,
+        `SELECT v.vazhi_id, v.entity_id, a.canonical_name
+         FROM vazhi_thirunamam_master v
+         LEFT JOIN author_master a ON a.author_id = v.entity_id
+         WHERE v.vazhi_id IN (__IN__)`);
+      const vlRows = await _inQuery(env, vazhiIds,
+        `SELECT vazhi_id, vazhi_group, line_text
+         FROM vazhi_thirunamam_line_master WHERE vazhi_id IN (__IN__)
+         ORDER BY vazhi_id, vazhi_group, line_no`);
+      const vazhiLinesMap = {};
+      for (const l of vlRows) {
+        if (!vazhiLinesMap[l.vazhi_id]) vazhiLinesMap[l.vazhi_id] = {};
+        if (!vazhiLinesMap[l.vazhi_id][l.vazhi_group])
+          vazhiLinesMap[l.vazhi_id][l.vazhi_group] = [];
+        vazhiLinesMap[l.vazhi_id][l.vazhi_group].push(l.line_text);
+      }
+      for (const vm of vmRows) {
+        const rawName   = vm.canonical_name || "";
+        const vazhiName = rawName.startsWith("ஸ்ரீ") ? rawName : "ஸ்ரீ " + rawName;
+        vazhiMap[vm.vazhi_id] = {
+          vazhi_id: vm.vazhi_id, vazhi_name: vazhiName,
+          groups: Object.entries(vazhiLinesMap[vm.vazhi_id] || {}).map(([g, lines]) => ({
+            group_no: Number(g), lines
+          }))
+        };
+      }
+    }
+
+    // ── MADAL SATTRUMURAI MAP ────────────────────────────────
+    const madalSattrumuraiMap = {};
+
+    if (madalIds.length) {
+      const mmRows = await _inQuery(env, madalIds,
+        `SELECT madal_sattrumurai_id, title
+         FROM madal_sattrumurai_master WHERE madal_sattrumurai_id IN (__IN__)`);
+      const mlRows = await _inQuery(env, madalIds,
+        `SELECT madal_sattrumurai_id, line_no, line_text, is_dual_recital
+         FROM madal_sattrumurai_line_master
+         WHERE madal_sattrumurai_id IN (__IN__)
+         ORDER BY madal_sattrumurai_id, line_no`);
+      const madalLinesMap = {};
+      for (const l of mlRows) {
+        if (!madalLinesMap[l.madal_sattrumurai_id]) madalLinesMap[l.madal_sattrumurai_id] = [];
+        madalLinesMap[l.madal_sattrumurai_id].push({
+          line_no: l.line_no, text: l.line_text, is_dual_recital: l.is_dual_recital
+        });
+      }
+      for (const mm of mmRows) {
+        madalSattrumuraiMap[mm.madal_sattrumurai_id] = {
+          madal_sattrumurai_id: mm.madal_sattrumurai_id,
+          title: mm.title,
+          lines: madalLinesMap[mm.madal_sattrumurai_id] || []
+        };
+      }
+    }
+
+    // ── CUSTOM MAP ───────────────────────────────────────────
+    const customMap = {};
+    const customSeqRows = seqRows.filter(r => r.entity_type === "custom");
+
+    if (customSeqRows.length) {
+      const allCustom = await env.db.prepare(
+        `SELECT custom_id, custom_key, tamil_name FROM custom_recital_entity ORDER BY custom_id`
+      ).all();
+
+      for (const ce of allCustom.results || []) {
+        if (!customSeqRows.find(r => r.entity_id === ce.custom_id)) continue;
+        const sectionId = KOIL_SECTION_MAP[ce.custom_key];
+        if (!sectionId) {
+          customMap[ce.custom_id] = {
+            custom_id: ce.custom_id, custom_key: ce.custom_key, tamil_name: ce.tamil_name,
+            pasurams: [], display: { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+          };
+          continue;
+        }
+
+        const sm = await env.db.prepare(
+          `SELECT section_id, section_name, global_no_start, global_no_end
+           FROM section_master WHERE section_id = ?`
+        ).bind(sectionId).first();
+        if (!sm) continue;
+
+        const dispMap    = await buildDisplayMap(sectionId);
+        const koilClose  = await env.db.prepare(
+          `SELECT closing_text FROM section_closing_master WHERE section_id=?`
+        ).bind(sectionId).first();
+
+        // ── Koil pathu_ids — hardcoded from DB (exact match verified) ──
+        const KOIL_PATHU_IDS = {
+          "koil_thirumozhi":    [44,50,52,56,57,59,60,69,82,91,102,107,115,132,141,151],
+          "koil_thiruvaimozhi": [152,153,171,174,182,191,199,211,213,215,231,241,250,251]
+        };
+
+        const koilPathuArr = KOIL_PATHU_IDS[ce.custom_key] || [];
+
+        if (koilPathuArr.length === 0) {
+          customMap[ce.custom_id] = {
+            custom_id: ce.custom_id, custom_key: ce.custom_key,
+            tamil_name: ce.tamil_name, display_name: sm.section_name,
+            closing_text: koilClose?.closing_text || "",
+            display: dispMap, pasurams: []
+          };
+          continue;
+        }
+        const pasuramsRes = { results: await _inQuery(env, koilPathuArr,
+          `SELECT p.global_no, p.local_pasuram_no, p.section_id,
+                  p.pathu_id, p.thirumozhi_id, p.double_recital,
+                  pm.pathu_name, pm.pathu_subunit_name,
+                  COALESCE(pm.thirumozhi_heading, tm.thirumozhi_heading) AS thirumozhi_heading,
+                  tm.thirumozhi_name
+           FROM pasuram_master p
+           LEFT JOIN pathu_master pm ON p.pathu_id = pm.pathu_id
+           LEFT JOIN thirumozhi_master tm ON p.thirumozhi_id = tm.thirumozhi_id
+           WHERE p.pathu_id IN (__IN__) ORDER BY p.global_no`) };
+
+        const secPasuramIds = (pasuramsRes.results || []).map(r => r.global_no);
+        const secLinesRows  = await _inQuery(env, secPasuramIds,
+          `SELECT global_no, line_no, line_text, recital_group
+           FROM pasuram_line_master WHERE global_no IN (__IN__)
+           ORDER BY global_no, line_no`);
+        const secLinesMap = {};
+        for (const l of secLinesRows) {
+          if (!secLinesMap[l.global_no]) secLinesMap[l.global_no] = [];
+          secLinesMap[l.global_no].push({ text: l.line_text, group: l.recital_group });
+        }
+
+        customMap[ce.custom_id] = {
+          custom_id:    ce.custom_id, custom_key: ce.custom_key, tamil_name: ce.tamil_name,
+          display_name: sm.section_name,
+          closing_text: koilClose?.closing_text || "",
+          display:      dispMap,
+          pasurams: (pasuramsRes.results || []).map(p => ({
+            global_no:          p.global_no, local_no: p.local_pasuram_no,
+            section_id:         p.section_id, pathu_id: p.pathu_id,
+            thirumozhi_id:      p.thirumozhi_id, double_recital: p.double_recital,
+            pathu_name:         p.pathu_name         || "",
+            pathu_subunit_name: p.pathu_subunit_name || "",
+            thirumozhi_heading: p.thirumozhi_heading || "",
+            thirumozhi_name:    p.thirumozhi_name    || "",
+            lines:              secLinesMap[p.global_no] || [],
+            prosody:            getProsodyName(p.global_no),
+            closing_text:       ""
+          }))
+        };
+      }
+    }
+
+    // ── FINAL SEQUENCE ────────────────────────────────────────
+    const sequence = seqRows.map(row => {
+      let content = null;
+      if      (row.entity_type === "pasuram")           content = pasuramMap[row.entity_id]           || null;
+      else if (row.entity_type === "thaniyan")          content = thaniyanMap[row.entity_id]          || null;
+      else if (row.entity_type === "section")           content = sectionMap[row.entity_id]           || null;
+      else if (row.entity_type === "fixed_text")        content = fixedMap[row.entity_id]             || null;
+      else if (row.entity_type === "vazhi")             content = vazhiMap[row.entity_id]             || null;
+      else if (row.entity_type === "madal_sattrumurai") content = madalSattrumuraiMap[row.entity_id]  || null;
+      else if (row.entity_type === "custom")            content = customMap[row.entity_id]            || null;
+      return {
+        sequence_no: row.sequence_no, entity_type: row.entity_type,
+        entity_id: row.entity_id, is_dual_recital: row.is_dual_recital,
+        is_optional: row.is_optional, content
+      };
+    });
+
+    return new Response(JSON.stringify({ recital: master, sequence }), { headers: hdrs });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "DB error", details: err.message, stack: err.stack }), {
+      status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+
+
 
 // =============================================================
 // 📜 sattrumurai.js  — Cloudflare Worker route handler
@@ -1783,6 +2480,43 @@ async function handleDivyadesam(request, env) {
     if (sub === "special")    return await ddSpecial(url, env);
     if (sub === "filters")    return await ddFilters(env);
     if (sub === "madal-line-map") return await ddMadalLineMap(url, env);
+
+    // ── ADD THIS BLOCK ──────────────────────────────────────────
+    if (sub === "aliases") {
+      const rows = await env.db.prepare(
+        `SELECT entity_id, alias_text 
+         FROM search_alias 
+         WHERE entity_type = 'divyadesam'
+         ORDER BY entity_id`
+      ).all();
+      return ddJson(rows.results);
+    }
+    // ────────────────────────────────────────────────────────────
+    if (sub === "archanai") {
+  const res = await env.db.prepare(`
+    SELECT dm.divyadesam_id,
+           dm.canonical_name,
+           dd.perumal_name,
+           dd.thayar_name,
+           dd.archana_namavalli
+    FROM   divyadesam_master dm
+    LEFT JOIN divyadesam_deity_master dd USING(divyadesam_id)
+    ORDER  BY dm.divyadesam_id
+  `).all();
+  return ddJson(res.results);
+}
+
+if (sub === "aliases") {
+  const rows = await env.db.prepare(
+    `SELECT entity_id, alias FROM search_alias
+     WHERE entity_type = 'divyadesam'
+     ORDER BY entity_id`
+  ).all();
+  return ddJson(rows.results);
+}
+
+
+
     return ddJson({ error: "Unknown sub" });
   } catch (err) {
     return ddJson({ error: err.message });
@@ -2833,6 +3567,248 @@ if (sectionIds.length > 0) {
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: CORS_HEADERS,
+    });
+  }
+}
+
+// =============================================================
+// VOICE ROUTES — paste this block into your existing worker.js
+//
+// STEP 1: Add this route check in the main fetch handler,
+//         BEFORE the existing routes (after the opening lines):
+//
+//   if (url.pathname.startsWith("/voice/")) {
+//     return handleVoice(request, env);
+//   }
+//
+// STEP 2: Paste the entire block below at the bottom of worker.js
+//
+// Zero changes to any existing handler.
+// All queries are read-only SELECTs on the same `db` binding.
+// =============================================================
+
+async function handleVoice(request, env) {
+  const url  = new URL(request.url);
+  const path = url.pathname; // e.g. "/voice/desam-aliases"
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Cache-Control": "public, max-age=3600"  // 1hr cache — this data rarely changes
+  };
+
+  function ok(data) {
+    return new Response(JSON.stringify(data), { headers });
+  }
+  function fail(msg, status = 400) {
+    return new Response(JSON.stringify({ error: msg }), { status, headers });
+  }
+
+  try {
+
+    // ── OPTIONS preflight ──────────────────────────────────────
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers });
+    }
+
+    // ==========================================================
+    // GET /voice/desam-aliases
+    // Returns all 108 divyadesams with canonical_name,
+    // perumal_name, thayar_name + all aliases from search_alias
+    // Shape: [ { id, name, perumal, thayar, aliases: [str] } ]
+    // ==========================================================
+    if (path === "/voice/desam-aliases") {
+
+      const [desamRes, aliasRes] = await Promise.all([
+        env.db.prepare(`
+          SELECT dm.divyadesam_id AS id,
+                 dm.canonical_name AS name,
+                 dd.perumal_name   AS perumal,
+                 dd.thayar_name    AS thayar
+          FROM   divyadesam_master dm
+          LEFT JOIN divyadesam_deity_master dd USING(divyadesam_id)
+          ORDER  BY dm.divyadesam_id
+        `).all(),
+
+        env.db.prepare(`
+          SELECT entity_id AS id, alias AS alias_text
+          FROM   search_alias
+          WHERE  entity_type = 'divyadesam'
+          ORDER  BY entity_id
+        `).all()
+      ]);
+
+      // Build alias map: id → [alias, alias, ...]
+      const aliasMap = {};
+      for (const row of aliasRes.results) {
+        if (!aliasMap[row.id]) aliasMap[row.id] = [];
+        aliasMap[row.id].push(row.alias_text);
+      }
+
+      const result = desamRes.results.map(d => ({
+        id:      d.id,
+        name:    d.name    || "",
+        perumal: d.perumal || "",
+        thayar:  d.thayar  || "",
+        aliases: aliasMap[d.id] || []
+      }));
+
+      return ok(result);
+    }
+
+    // ==========================================================
+    // GET /voice/anchor-map
+    // Returns all anchor_map rows across ALL thousands
+    // Used for thirumozhi heading search (வாடினேன், ஆராவமுதே etc.)
+    // Shape: [ { section_id, type, canonical_text,
+    //            pathu_name, subunit_name, thirumozhi_heading,
+    //            thousand_id, thousand_anchor_no, global_anchor_no } ]
+    // ==========================================================
+    if (path === "/voice/anchor-map") {
+
+      const res = await env.db.prepare(`
+        SELECT section_id,
+               type,
+               canonical_text,
+               pathu_name,
+               subunit_name,
+               thirumozhi_heading,
+               thousand_id,
+               thousand_anchor_no,
+               global_anchor_no
+        FROM   anchor_map
+        ORDER  BY thousand_id, global_anchor_no
+      `).all();
+
+      return ok(res.results);
+    }
+
+    // ==========================================================
+    // GET /voice/by-global?no=1234
+    // Returns section_id for a given global pasuram number
+    // Shape: { global_no, section_id, section_name }
+    // ==========================================================
+    if (path === "/voice/by-global") {
+
+      const no = url.searchParams.get("no");
+      if (!no || isNaN(Number(no))) return fail("no= param required");
+
+      const row = await env.db.prepare(`
+        SELECT p.global_no,
+               p.section_id,
+               s.section_name
+        FROM   pasuram_master p
+        LEFT JOIN section_master s ON p.section_id = s.section_id
+        WHERE  p.global_no = ?
+        LIMIT  1
+      `).bind(Number(no)).first();
+
+      if (!row) return fail("Pasuram not found", 404);
+      return ok(row);
+    }
+
+    // ==========================================================
+    // GET /voice/entity-tags
+    // Returns all search tags from entity_master
+    // Used for star-wise / thirunatchathra / special group search
+    // Shape: [ { entity_type, entity_id, meta_value } ]
+    // ==========================================================
+    if (path === "/voice/entity-tags") {
+
+      const res = await env.db.prepare(`
+        SELECT entity_type,
+               entity_id,
+               meta_key,
+               meta_value
+        FROM   entity_master
+        WHERE  meta_category = 'search'
+          AND  search_flag   = 1
+        ORDER  BY entity_type, entity_id
+      `).all();
+
+      return ok(res.results);
+    }
+
+    // ==========================================================
+    // GET /voice/first-lines
+    // Returns first line (munnadi) of ALL 4000 pasurams
+    // Source: munnadi_pinnadi_master.line_1 — already exists
+    // Used for spoken pasuram first-line search
+    // Shape: [ { global_no, section_id, line_1 } ]
+    // ==========================================================
+    if (path === "/voice/first-lines") {
+
+      const res = await env.db.prepare(`
+        SELECT m.global_no,
+               p.section_id,
+               m.line_1
+        FROM   munnadi_pinnadi_master m
+        JOIN   pasuram_master p ON p.global_no = m.global_no
+        WHERE  m.line_1 IS NOT NULL AND m.line_1 != ''
+        ORDER  BY m.global_no
+      `).all();
+
+      return ok(res.results);
+    }
+
+    // ==========================================================
+    // GET /voice/special-groups
+    // Returns the 3 special divyadesam group keys + labels
+    // Shape: [ { key, label_ta, desam_ids: [int] } ]
+    // ==========================================================
+    if (path === "/voice/special-groups") {
+
+      // Fetch desam_ids for each group from divyadesam_alias_master
+      // which has group membership data, falling back to known IDs
+      return ok([
+        {
+          key:      "thirunangur",
+          label_ta: "திருநாங்கூர் திவ்யதேசங்கள்",
+          label_en: "Thirunangur Divya Desams (11)",
+          sub:      "ஸ்ரீ திருமங்கை ஆழ்வார்"
+        },
+        {
+          key:      "navathiruppathi",
+          label_ta: "நவ திருப்பதிகள்",
+          label_en: "Nava Thiruppathi (9)",
+          sub:      "9 திருப்பதிகள்"
+        },
+        {
+          key:      "irattai",
+          label_ta: "இரட்டை திருப்பதிகள்",
+          label_en: "Irattai Thiruppathi (2)",
+          sub:      "2 இரட்டை திருப்பதிகள்"
+        }
+      ]);
+    }
+
+    return fail("Unknown voice route", 404);
+
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers }
+    );
+  }
+}
+
+// ── Fix 1: handleCustomRecitalEntities ───────────────────────
+// Replace your existing handleCustomRecitalEntities with this:
+
+async function handleCustomRecitalEntities(env) {
+  try {
+    const res = await env.db.prepare(
+      `SELECT custom_id, custom_key, tamil_name
+       FROM custom_recital_entity ORDER BY custom_id`
+    ).all();
+    return new Response(JSON.stringify(res.results || []), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
   }
 }

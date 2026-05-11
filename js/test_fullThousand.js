@@ -242,7 +242,7 @@ html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div
       ${specialHtml}
 
       <div class="section-final-ending">
-        ${sectionHeaderMap[state.selectedSectionName] || state.selectedSectionName} முற்றிற்று
+      ${sectionHeaderMap[state.selectedSectionName] || state.selectedSectionName} முற்றிற்று
       </div>
 
     </div>
