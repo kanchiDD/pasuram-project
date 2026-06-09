@@ -250,7 +250,10 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       return secName ? `${secName} — சாற்றுமுறை பாசுரம்` : `சாற்றுமுறை பாசுரம்`;
     }
     if (s.entity_type === "fixed_text") return `சாற்றுமுறை`;
-    if (s.entity_type === "vazhi")      return `வாழி திருநாமம்`;
+    if (s.entity_type === "vazhi") {
+      const vn = s.content?.vazhi_name;
+      return vn ? `வாழித் திருநாமம் — ${vn}` : `வாழித் திருநாமம்`;
+    }
     if (s.entity_type === "pathu")      return `பத்து ${s.entity_id}`;
     const heading = s.content?.display_name || s.content?.title || s.content?.name;
     if (heading) return _sectionHeading(heading);
@@ -258,10 +261,11 @@ function _showSelectionModal(azhwar, sequence, customItems) {
   }
 
   function buildModalHtml() {
-    // Show ONLY section and custom items in modal.
+    // Show section, custom, and vazhi items in modal.
     // Thaniyan and sattrumurai pasurams are part of the section —
     // they come/go automatically when section is selected/deselected.
-    const SHOW_TYPES = new Set(["section", "custom"]);
+    // Each vazhi item is shown as its own row (some compulsory, some optional).
+    const SHOW_TYPES = new Set(["section", "custom", "vazhi"]);
     const allRendered = [];
 
     for (const s of sequence) {
@@ -330,6 +334,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       }
     }
   };
+
 
   window._fathnCloseModal = function() {
     const m = document.getElementById("fathn-modal-overlay");

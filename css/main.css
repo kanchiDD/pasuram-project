@@ -1632,3 +1632,65 @@ html, body {
 .display-item         { font-size: inherit !important; }
 .thaniyan-prosody     { font-size: inherit !important; }
 .section-final-ending { font-size: inherit !important; }
+
+
+/* =========================
+   VEDAM AUDIO
+========================= */
+
+.veda-card{
+  margin:12px 0;
+  border:2px solid #c0a060;
+  border-radius:8px;
+  background:#fffdf5;
+}
+
+.veda-header{
+  padding:14px;
+  font-weight:600;
+  cursor:pointer;
+  color:#5a3a00;
+}
+
+.veda-header:hover{
+  background:#fde8a3;
+}
+
+.audio-list{
+  display:none;
+}
+
+.audio-row{
+  padding:12px 20px;
+  border-top:1px solid #eee;
+  cursor:pointer;
+}
+
+.audio-row:hover{
+  background:#fff8e1;
+}
+
+.audio-player{
+  margin-top:20px;
+  padding:15px;
+  background:#fff;
+  border:2px solid #c0a060;
+  border-radius:8px;
+}
+
+.audio-player audio{
+  width:100%;
+}
+
+.player-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.back-button,
+.home-button {
+    padding: 8px 16px;
+    cursor: pointer;
+}

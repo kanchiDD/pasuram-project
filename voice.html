@@ -4,391 +4,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Voice Search — நாலாயிர திவ்யப்பிரபந்தம்</title>
-<link rel="stylesheet" href="/css/main.css?v=860">
-
-  <!-- Shared layout loader (header + footer) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=860">
   <script src="./js/layout.js" defer></script>
   <script>
-  window.addEventListener("DOMContentLoaded", function () {
-    if (typeof loadLayout === "function") {
-      loadLayout();
-    } else {
-      console.error("loadLayout not found");
-    }
-  });
-</script>
-
-  <!-- Voice page styles -->
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
   <style>
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: #FFFFF8;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #FFFFF8; min-height: 100vh; display: flex; flex-direction: column; }
     #header { width: 100%; }
     #footer { width: 100%; margin-top: auto; }
-
-    /* ── Main stage ── */
-    #voice-stage {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px 60px;
-      gap: 28px;
-    }
-
-    /* ── Title block ── */
-    .vs-title {
-      text-align: center;
-    }
-
-    .vs-title h1 {
-      font-size: 20px;
-      font-weight: 600;
-      color: #3B2410;
-      letter-spacing: 0.02em;
-    }
-
-    .vs-title p {
-      font-size: 14px;
-      color: #8B6A45;
-      margin-top: 6px;
-    }
-
-    /* ── Mic button ── */
-    #mic-btn {
-      width: 130px;
-      height: 130px;
-      border-radius: 50%;
-      background: #4A3728;
-      border: 3px solid #C9A84C;
-      box-shadow: 0 6px 28px rgba(74,55,40,0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-    }
-
-    #mic-btn:hover {
-      transform: scale(1.06);
-      box-shadow: 0 8px 32px rgba(74,55,40,0.45);
-    }
-
-    #mic-btn.listening {
-      background: #7B2D1E;
-      border-color: #E8C97A;
-      animation: mic-pulse 1.2s ease-in-out infinite;
-    }
-
-    #mic-btn svg {
-      width: 58px;
-      height: 58px;
-    }
-
-    @keyframes mic-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200,80,50,0.4); }
-      50%       { box-shadow: 0 0 0 20px rgba(200,80,50,0); }
-    }
-
-    /* ── Mic label ── */
-    .vs-mic-label {
-      text-align: center;
-      font-size: 14px;
-      color: #7A5C3A;
-    }
-
-    .vs-mic-label span {
-      display: block;
-      font-size: 12px;
-      color: #B09070;
-      margin-top: 5px;
-    }
-
-    /* ── Demo chips ── */
-    .vs-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      max-width: 440px;
-    }
-
-    .vs-chips-label {
-      width: 100%;
-      text-align: center;
-      font-size: 11px;
-      color: #B09070;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 2px;
-    }
-
-    .vs-chip {
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid #D4B896;
-      background: #FFF8ED;
-      color: #7A5C3A;
-      cursor: pointer;
-      transition: all 0.15s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .vs-chip:hover {
-      border-color: #4A3728;
-      color: #4A3728;
-      background: #FFF0CC;
-    }
-
-    /* ══════════════════════════════════════════
-       POPUP OVERLAY
-    ══════════════════════════════════════════ */
-
-    #voice-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(20,12,6,0.65);
-      z-index: 9100;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    #voice-overlay.active {
-      display: flex;
-      animation: vfade 0.18s ease;
-    }
-
-    @keyframes vfade {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    #voice-popup {
-      background: #FFF8ED;
-      border: 1.5px solid #C9A84C;
-      border-radius: 14px;
-      width: 100%;
-      max-width: 420px;
-      padding: 22px 20px 18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-      animation: vslide 0.2s ease;
-    }
-
-    @keyframes vslide {
-      from { transform: translateY(14px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-
-    /* Header */
-    .vp-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
+    #voice-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px 60px; gap: 28px; }
+    .vs-title { text-align: center; }
+    .vs-title h1 { font-size: 20px; font-weight: 600; color: #3B2410; letter-spacing: 0.02em; }
+    .vs-title p { font-size: 14px; color: #8B6A45; margin-top: 6px; }
+    #mic-btn { width: 130px; height: 130px; border-radius: 50%; background: #4A3728; border: 3px solid #C9A84C; box-shadow: 0 6px 28px rgba(74,55,40,0.35); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; -webkit-tap-highlight-color: transparent; outline: none; }
+    #mic-btn:hover { transform: scale(1.06); box-shadow: 0 8px 32px rgba(74,55,40,0.45); }
+    #mic-btn.listening { background: #7B2D1E; border-color: #E8C97A; animation: mic-pulse 1.2s ease-in-out infinite; }
+    #mic-btn svg { width: 58px; height: 58px; }
+    @keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(200,80,50,0.4); } 50% { box-shadow: 0 0 0 20px rgba(200,80,50,0); } }
+    .vs-mic-label { text-align: center; font-size: 14px; color: #7A5C3A; }
+    .vs-mic-label span { display: block; font-size: 12px; color: #B09070; margin-top: 5px; }
+    .vs-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 440px; }
+    .vs-chips-label { width: 100%; text-align: center; font-size: 11px; color: #B09070; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px; }
+    .vs-chip { font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid #D4B896; background: #FFF8ED; color: #7A5C3A; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .vs-chip:hover { border-color: #4A3728; color: #4A3728; background: #FFF0CC; }
+    #voice-overlay { display: none; position: fixed; inset: 0; background: rgba(20,12,6,0.65); z-index: 9100; align-items: center; justify-content: center; padding: 16px; }
+    #voice-overlay.active { display: flex; animation: vfade 0.18s ease; }
+    @keyframes vfade { from { opacity: 0; } to { opacity: 1; } }
+    #voice-popup { background: #FFF8ED; border: 1.5px solid #C9A84C; border-radius: 14px; width: 100%; max-width: 420px; padding: 22px 20px 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); animation: vslide 0.2s ease; }
+    @keyframes vslide { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .vp-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
     .vp-namaste { font-size: 30px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
-
-    .vp-greeting {
-      font-size: 16px;
-      font-weight: 700;
-      color: #3B2410;
-      font-family: serif;
-    }
-
+    .vp-greeting { font-size: 16px; font-weight: 700; color: #3B2410; font-family: serif; }
     .vp-subgreeting { font-size: 13px; color: #7A5C3A; margin-top: 3px; }
-
-    /* Heard text */
-    .vp-heard-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #9A7A55;
-      margin-bottom: 5px;
-    }
-
-    .vp-heard-text {
-      font-size: 14px;
-      color: #3B2410;
-      background: #F0E3C8;
-      border-radius: 8px;
-      padding: 9px 13px;
-      margin-bottom: 16px;
-      font-style: italic;
-      border-left: 3px solid #C9A84C;
-    }
-
-    .vp-heard-text.offtopic {
-      border-left-color: #C0392B;
-      background: #FDE8E4;
-      color: #922B21;
-    }
-
-    /* Do you mean */
-    .vp-dym-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #9A7A55;
-      margin-bottom: 9px;
-    }
-
-    /* Options */
+    .vp-heard-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9A7A55; margin-bottom: 5px; }
+    .vp-heard-text { font-size: 14px; color: #3B2410; background: #F0E3C8; border-radius: 8px; padding: 9px 13px; margin-bottom: 16px; font-style: italic; border-left: 3px solid #C9A84C; }
+    .vp-heard-text.offtopic { border-left-color: #C0392B; background: #FDE8E4; color: #922B21; }
+    .vp-dym-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9A7A55; margin-bottom: 9px; }
     .vp-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-
-    .vp-option {
-      display: flex;
-      align-items: flex-start;
-      gap: 11px;
-      padding: 11px 13px;
-      border: 1.5px solid #D4B896;
-      border-radius: 9px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      background: #FFFDF7;
-    }
-
-    .vp-option:hover  { border-color: #C9A84C; background: #FFF4DC; }
+    .vp-option { display: flex; align-items: flex-start; gap: 11px; padding: 11px 13px; border: 1.5px solid #D4B896; border-radius: 9px; cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #FFFDF7; }
+    .vp-option:hover { border-color: #C9A84C; background: #FFF4DC; }
     .vp-option.selected { border-color: #4A3728; background: #FFF0CC; }
-
-    .vp-option input[type="radio"] {
-      margin-top: 3px;
-      accent-color: #4A3728;
-      flex-shrink: 0;
-      width: 16px;
-      height: 16px;
-    }
-
+    .vp-option input[type="radio"] { margin-top: 3px; accent-color: #4A3728; flex-shrink: 0; width: 16px; height: 16px; }
     .vp-opt-label { font-size: 14px; font-weight: 600; color: #3B2410; line-height: 1.3; }
-    .vp-opt-sub   { font-size: 12px; color: #8B6A45; margin-top: 3px; }
-
-    /* Off-topic */
-    .vp-offtopic-msg {
-      font-size: 14px;
-      color: #5D4037;
-      line-height: 1.65;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: #FDE8E4;
-      border-radius: 8px;
-      border-left: 3px solid #C0392B;
-    }
-
-    /* Actions */
+    .vp-opt-sub { font-size: 12px; color: #8B6A45; margin-top: 3px; }
+    .vp-offtopic-msg { font-size: 14px; color: #5D4037; line-height: 1.65; margin-bottom: 16px; padding: 12px; background: #FDE8E4; border-radius: 8px; border-left: 3px solid #C0392B; }
     .vp-actions { display: flex; gap: 10px; }
-
-    .vp-btn-search {
-      flex: 1;
-      padding: 11px;
-      border-radius: 8px;
-      border: none;
-      background: #4A3728;
-      color: #F5E6C8;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-
+    .vp-btn-search { flex: 1; padding: 11px; border-radius: 8px; border: none; background: #4A3728; color: #F5E6C8; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
     .vp-btn-search:hover { opacity: 0.87; }
-
-    .vp-btn-retry, .vp-btn-close {
-      padding: 11px 15px;
-      border-radius: 8px;
-      border: 1.5px solid #C9A84C;
-      background: transparent;
-      color: #4A3728;
-      font-size: 13px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .vp-btn-retry:hover,
-    .vp-btn-close:hover { background: #FFF0CC; }
-
+    .vp-btn-retry, .vp-btn-close { padding: 11px 15px; border-radius: 8px; border: 1.5px solid #C9A84C; background: transparent; color: #4A3728; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+    .vp-btn-retry:hover, .vp-btn-close:hover { background: #FFF0CC; }
     .vp-btn-close { width: 100%; font-size: 14px; }
-
-    /* Listening dots */
-    .vp-dots {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      justify-content: center;
-      padding: 16px 0 8px;
-    }
-
-    .vp-dots span {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #C9A84C;
-      animation: dot-bounce 1.2s ease-in-out infinite;
-    }
-
+    .vp-dots { display: flex; gap: 6px; align-items: center; justify-content: center; padding: 16px 0 8px; }
+    .vp-dots span { width: 10px; height: 10px; border-radius: 50%; background: #C9A84C; animation: dot-bounce 1.2s ease-in-out infinite; }
     .vp-dots span:nth-child(2) { animation-delay: 0.2s; }
     .vp-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes dot-bounce {
-      0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
-      40%           { transform: scale(1.2); opacity: 1;   }
-    }
-
-    .vp-listen-text {
-      text-align: center;
-      font-size: 13px;
-      color: #7A5C3A;
-      margin-bottom: 14px;
-    }
-
+    @keyframes dot-bounce { 0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; } 40% { transform: scale(1.2); opacity: 1; } }
+    .vp-listen-text { text-align: center; font-size: 13px; color: #7A5C3A; margin-bottom: 14px; }
   </style>
 </head>
-
 <body>
-
-  <!-- Shared header (loaded by layout.js) -->
   <div id="header"></div>
-
-  <!-- Voice stage -->
   <main id="voice-stage">
-
     <div class="vs-title">
       <h1>நாலாயிர திவ்யப்பிரபந்தம்</h1>
       <p>Naalayira Divya Prabandham — Voice Search</p>
     </div>
-
     <button id="mic-btn" onclick="startVoiceSearch()" aria-label="Start voice search">
       <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="19" y="4" width="20" height="30" rx="10" fill="#C9A84C"/>
-        <path d="M9 28c0 11.05 8.95 20 20 20s20-8.95 20-20"
-              stroke="#C9A84C" stroke-width="3.5"
-              stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="29" y1="48" x2="29" y2="55"
-              stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="19" y1="55" x2="39" y2="55"
-              stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M9 28c0 11.05 8.95 20 20 20s20-8.95 20-20" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="29" y1="48" x2="29" y2="55" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="19" y1="55" x2="39" y2="55" stroke="#C9A84C" stroke-width="3.5" stroke-linecap="round"/>
       </svg>
     </button>
-
     <div class="vs-mic-label">
       Tap to speak your search
       <span>Tamil · English · Mixed — all welcome</span>
     </div>
-
-    <!-- Demo chips -->
     <div class="vs-chips">
       <div class="vs-chips-label">Try saying</div>
       <div class="vs-chip" onclick="runDemo('thiruppavai')">Thiruppavai</div>
@@ -398,18 +95,11 @@
       <div class="vs-chip" onclick="runDemo('koil thirumozhi')">Koil Thirumozhi</div>
       <div class="vs-chip" onclick="runDemo('cricket score')">cricket score</div>
     </div>
-
   </main>
-
-  <!-- Popup overlay -->
   <div id="voice-overlay">
     <div id="voice-popup"></div>
   </div>
-
-  <!-- Shared footer -->
   <div id="footer"></div>
-
-  <!-- Voice controller -->
-<script type="module" src="js/voice.js"></script>
+  <script type="module" src="js/voice.js"></script>
 </body>
 </html>

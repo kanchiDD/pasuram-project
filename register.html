@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arulicheyal.org — Register / Sign In</title>
+<link rel="stylesheet" href="/css/main.css?v=860">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css"/>
+<style>
+  .reg-wrap {
+    min-height: calc(100vh - 160px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    background: #fffdf5;
+  }
+  .reg-card {
+    background: #fff;
+    border: 3px double #b38b2e;
+    border-radius: 16px;
+    width: 100%; max-width: 400px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 6px 24px rgba(74,44,0,0.10);
+    animation: regFade .4s ease;
+  }
+  @keyframes regFade { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+  .reg-adiyen {
+    text-align: center; font-size: 13px; font-weight: 700;
+    color: #b38b2e; letter-spacing: .06em; margin-bottom: 6px;
+  }
+  .reg-divider { width: 50px; height: 2px; background: #b38b2e; margin: 10px auto 20px; }
+
+  .reg-step { display: none; }
+  .reg-step.active { display: block; animation: regFade .3s ease; }
+
+  .reg-step-label {
+    font-size: 11px; font-weight: 700; color: #b38b2e;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 14px; text-align: center;
+  }
+  .reg-field { margin-bottom: 14px; }
+  .reg-field label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: #7a5a20; margin-bottom: 6px;
+  }
+  .reg-field input[type="text"] {
+    width: 100%; padding: 11px 13px;
+    border: 1.5px solid #e8c060; border-radius: 8px;
+    font-size: 15px; color: #4a2c00; background: #fffdf5;
+    outline: none; transition: border-color .2s;
+  }
+  .reg-field input[type="text"]:focus { border-color: #b38b2e; }
+
+  /* intl-tel-input overrides to match site style */
+  .iti { width: 100%; }
+  .iti__flag-container { border-radius: 8px 0 0 8px; }
+  .iti input[type="tel"] {
+    width: 100%; padding: 11px 13px;
+    border: 1.5px solid #e8c060; border-radius: 8px;
+    font-size: 15px; color: #4a2c00; background: #fffdf5;
+    outline: none; transition: border-color .2s;
+  }
+  .iti input[type="tel"]:focus { border-color: #b38b2e; }
+
+  .reg-btn {
+    width: 100%; padding: 12px;
+    background: #7a4d00; color: #fef0c0;
+    border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background .2s; margin-top: 4px;
+  }
+  .reg-btn:hover { background: #5a3a00; }
+
+  .reg-note { font-size: 11px; color: #aaa; text-align: center; margin-top: 10px; line-height: 1.6; }
+
+  .reg-preview {
+    background: #fef3d0; border: 1px solid #e8c060; border-radius: 8px;
+    padding: 11px 13px; margin-bottom: 14px;
+    font-size: 13px; color: #4a2c00; line-height: 1.9;
+  }
+  .reg-preview strong {
+    color: #b38b2e; font-size: 10px; display: block;
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1px;
+  }
+
+  .google-btn {
+    width: 100%; padding: 12px;
+    background: #fff; color: #3c4043;
+    border: 1.5px solid #dadce0; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: box-shadow .2s, background .2s; margin-top: 6px;
+  }
+  .google-btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,.12); background: #f8f9fa; }
+  .google-icon { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .reg-back {
+    display: block; text-align: center; font-size: 12px;
+    color: #7a5a20; cursor: pointer; margin-top: 12px; text-decoration: underline;
+  }
+
+  .reg-success-icon { font-size: 44px; text-align: center; margin-bottom: 8px; }
+  .reg-success-name { text-align: center; font-size: 19px; font-weight: 900; color: #4a2c00; margin-bottom: 4px; }
+  .reg-success-sub { text-align: center; font-size: 13px; color: #7a5a20; margin-bottom: 18px; line-height: 1.6; }
+  .reg-go {
+    width: 100%; padding: 12px;
+    background: #b38b2e; color: #fff; border: none; border-radius: 8px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+
+  .reg-err { font-size: 12px; color: #c0392b; margin-top: 5px; display: none; }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="reg-wrap">
+  <div class="reg-card">
+
+    <div class="reg-adiyen">🙏 Adiyen</div>
+    <div class="reg-divider"></div>
+
+    <!-- Please Provide your Details -->
+    <div class="reg-step active" id="reg-step1">
+      <div class="reg-step-label">Please Provide your Details</div>
+
+      <div class="reg-field">
+ 	 <label>Prefix</label>
+  	<select id="reg-prefix" style="width:100%;padding:11px 13px;border:1.5px solid #e8c060;border-radius:8px;font-size:15px;color:#4a2c00;background:	#fffdf5;outline:none;">
+    <option value="Sri">Sri</option>
+    <option value="Smt">Smt</option>
+    <option value="Kumari">Kumari</option>
+  	</select>
+	</div>
+
+      <div class="reg-field">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Enter your name" autocomplete="name">
+        <div class="reg-err" id="reg-err-name">Please enter your name</div>
+      </div>
+
+      <div class="reg-field">
+        <label>Mobile Number</label>
+        <input type="tel" id="reg-mobile" placeholder="e.g. 9876543210" autocomplete="tel">
+        <div class="reg-err" id="reg-err-mobile">Please enter a valid mobile number</div>
+      </div>
+
+      <div class="reg-field" style="display:flex;align-items:flex-start;gap:10px;margin-top:6px;">
+        <input type="checkbox" id="reg-terms" style="width:18px;height:18px;margin-top:2px;accent-color:#7a4d00;flex-shrink:0;cursor:pointer;">
+        <label for="reg-terms" style="font-size:12px;color:#5a3a10;line-height:1.6;cursor:pointer;">
+          I have read and agree to the
+          <a href="terms.html" target="_blank" style="color:#b38b2e;font-weight:700;">Terms &amp; Conditions</a>,
+          <a href="privacy.html" target="_blank" style="color:#b38b2e;font-weight:700;">Privacy Policy</a>, and
+          <a href="disclaimer.html" target="_blank" style="color:#b38b2e;font-weight:700;">Disclaimer</a>
+        </label>
+      </div>
+      <div class="reg-err" id="reg-err-terms" style="margin-top:-8px;">Please accept the Terms &amp; Conditions to continue</div>
+
+      <button class="reg-btn" onclick="regStep2()">Continue →</button>
+      <div class="reg-note">Your details are stored securely and never shared.</div>
+    </div>
+
+    <!-- STEP 2 — Google -->
+    <div class="reg-step" id="reg-step2">
+      <div class="reg-step-label">Step 2 — Verify with Google</div>
+      <div class="reg-preview" id="reg-preview"></div>
+      <button class="google-btn" onclick="regGoogleSignIn()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      
+      <div id="google-btn-container" style="margin-top:10px;display:flex;justify-content:center;"></div>
+      <span class="reg-back" onclick="regGoBack()">← Go back</span>
+      <div class="reg-note" style="margin-top:12px">Google verifies your identity securely. No password required.</div>
+    </div>
+
+    <!-- STEP 3 — Success -->
+    <div class="reg-step" id="reg-step3">
+      <div class="reg-success-icon">✅</div>
+      <div class="reg-success-name" id="reg-success-name"></div>
+      <div class="reg-success-sub" id="reg-success-sub"></div>
+      <button class="reg-go" onclick="window.location.href='tree.html'">Start Recital 🙏</button>
+    </div>
+
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<!-- intl-tel-input -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"></script>
+
+<!-- Google Identity -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Site layout -->
+<script src="js/layout.js" defer></script>
+<script>
+  window.addEventListener("DOMContentLoaded", function () {
+    if (typeof loadLayout === "function") loadLayout();
+  });
+</script>
+<script>
+  // Register page logic
+
+  // Init intl-tel-input on mobile field
+  const phoneInput = document.getElementById("reg-mobile");
+  const iti = window.intlTelInput(phoneInput, {
+    initialCountry:     "in",
+    preferredCountries: ["in", "us", "gb", "au", "sg", "ae", "my", "ca"],
+    separateDialCode:   true,
+    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"
+  });
+
+  // ── State ──
+  let regData = { name:"", mobile:"", googleEmail:"", googleId:"", googleName:"" };
+
+  // ── Step 1 → Step 2 ──
+  function regStep2() {
+    const name = document.getElementById("reg-name").value.trim();
+    let ok = true;
+
+    if (!name) {
+      document.getElementById("reg-err-name").style.display = "block"; ok = false;
+    } else {
+      document.getElementById("reg-err-name").style.display = "none";
+    }
+
+    if (!iti.isValidNumber()) {
+      document.getElementById("reg-err-mobile").style.display = "block"; ok = false;
+    } else {
+      document.getElementById("reg-err-mobile").style.display = "none";
+    }
+
+    if (!document.getElementById("reg-terms").checked) {
+      document.getElementById("reg-err-terms").style.display = "block"; ok = false;
+    } else {
+      document.getElementById("reg-err-terms").style.display = "none";
+    }
+
+    if (!ok) return;
+
+    regData.name   = name;
+    regData.mobile = iti.getNumber();
+
+    document.getElementById("reg-preview").innerHTML =
+      `<strong>Name</strong>${name}<strong style="margin-top:5px">Mobile</strong>${regData.mobile}`;
+
+    regSetStep("reg-step2");
+  }
+
+  function regGoBack() { regSetStep("reg-step1"); }
+
+  // ── Google Sign In ──
+  function regGoogleSignIn() {
+  if (!window.google) {
+    alert("Google service not loaded. Please refresh and try again.");
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: "49899300551-sqg7tbbfkficni6q806p851s9j1pphuu.apps.googleusercontent.com",
+    callback:  regHandleGoogle,
+    context:   "signup",
+    use_fedcm_for_prompt: true
+  });
+
+  // Try One Tap first
+  google.accounts.id.prompt((notification) => {
+    // If One Tap fails — render a visible button as fallback
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      const container = document.getElementById("google-btn-container");
+      container.innerHTML = "";
+      google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size:  "large",
+        width: 300
+      });
+    }
+  });
+}
+
+  function regHandleGoogle(response) {
+    const p = JSON.parse(atob(response.credential.split('.')[1]));
+    regData.googleEmail = p.email || "";
+    regData.googleId    = p.sub   || "";
+    regData.googleName  = p.name  || "";
+    regSaveUser(regData);
+  }
+
+  // ── Save to Worker ──
+  async function regSaveUser(data) {
+    try {
+      const res  = await fetch("https://cdnaalayiram-api.kanchitrust.workers.dev/auth/register", {
+        method:  "POST",
+        headers: { "Content-Type":"application/json" },
+        body:    JSON.stringify(data)
+      });
+      const json = await res.json();
+      if (json.success) regShowSuccess(data);
+      else alert("Registration failed: " + (json.error || "Please try again."));
+    } catch(e) {
+      regShowSuccess(data);
+    }
+  }
+
+  // ── Success screen ──
+  function regShowSuccess(data) {
+    localStorage.setItem("mobile", data.mobile);
+    localStorage.setItem("name", data.name);
+    localStorage.setItem("googleEmail", data.googleEmail);
+    document.getElementById("reg-success-name").textContent = "Welcome Adiyen 🙏, " + data.name + "!";
+    document.getElementById("reg-success-sub").innerHTML =
+      "Your account has been created successfully.<br>" +
+      "<span style='color:#b38b2e'>" + (data.googleEmail || data.mobile) + "</span>";
+    regSetStep("reg-step3");
+  }
+
+  function regSetStep(id) {
+    document.querySelectorAll(".reg-step").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+</script>
+
+</body>
+</html>

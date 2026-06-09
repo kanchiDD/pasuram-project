@@ -11,7 +11,9 @@ export function renderOptions() {
     4: "Naangaam Aayiram"
   };
 
-  const isNaalayiram = Number(state.selectedThousandId) === 5;
+  const isNaalayiram = Number(state.selectedThousandId) === 5; 
+  const isItaram     = Number(state.selectedThousandId) === 99;
+
 
   // =========================
   // 🔥 SPECIAL MENU (FULL 4000)
@@ -33,9 +35,10 @@ export function renderOptions() {
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
         <div class="tree-item" onclick="openSattrumurai(null)">Sattrumurai</div>
         <div class="tree-item" onclick="openStarPasuram()">Star & Pasuram</div>
-        <div class="tree-item" onclick="openDivyadesamArchanai()">108 Divyadesa Arhanai</div>
+        <div class="tree-item" onclick="openDivyadesamArchanai()">108 Divyadesa Archanai</div>
         <div class="tree-item" onclick="openAzhwarThirunatchathra()">Azhwar Thirunatcharam Goshti</div>
-
+        <div class="tree-item" onclick="openRegister()">Register / Sign In</div>
+        <div class="tree-item" onclick="openRecitalPlan()">My Recital Plan</div>
 
         <!-- 🔥 FULL BOOK IMAGE -->
         <div class="book-image-card" onclick="showFullNaalayiram()">
@@ -46,6 +49,16 @@ export function renderOptions() {
       </div>
     `;
   }
+
+if (isItaram) {
+  return `
+    <h3>Adiyen 🙏</h3>
+    <p>இதர பிரபந்தங்கள்</p>
+    <div class="tree-list">
+      <div class="tree-item" onclick="loadSections()">Arulicheyal (Sections)</div>
+    </div>
+  `;
+}
 
   // =========================
   // ✅ NORMAL FLOW (1–4)
@@ -60,7 +73,7 @@ export function renderOptions() {
     4: "naangu.png"
   };
 
-  const imageName = imageMap[state.selectedThousandId];
+  const imageName = imageMap[state.selectedThousandId] || "full.png";
 
   return `
     <h3>Adiyen 🙏</h3>
@@ -74,6 +87,7 @@ export function renderOptions() {
       <div class="tree-item" onclick="openDivyadesam(${state.selectedThousandId})">Divyadesam</div>
       <div class="tree-item" onclick="openMunnadiPinnadi(${state.selectedThousandId})">Munnadi Pinnadi</div>
       <div class="tree-item" onclick="openSattrumurai(${state.selectedThousandId})">Sattrumurai</div>
+      <div class="tree-item" onclick="openRegister()">Register / Sign In</div>
 
       <!-- 🔥 BOOK IMAGE -->
       <div class="book-image-card" onclick="showFullByThousand(${state.selectedThousandId})">
@@ -186,6 +200,19 @@ window.openDivyadesamArchanai = function() {
 
 window.openAzhwarThirunatchathra = function() {
   state.level = "AZHWAR_THIRUNATCHATHRA";
+  import("./layout.js").then(m => m.render());
+};
+
+
+// =========================
+// 🔥 REGISTER / SIGN IN
+// =========================
+window.openRegister = function() {
+  window.location.href = "register.html";
+};
+
+window.openRecitalPlan = function() {
+  state.level = "RECITAL";
   import("./layout.js").then(m => m.render());
 };
 

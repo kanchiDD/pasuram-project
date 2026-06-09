@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ghoshti — நாலாயிர திவ்யப்பிரபந்தம்</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=860">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fffdf5; min-height: 100vh; display: flex; flex-direction: column; }
+    #header { width: 100%; }
+    #footer { width: 100%; margin-top: auto; }
+
+    #ghoshti-app {
+      flex: 1;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      width: 100%;
+    }
+
+    /* ── Welcome popup ── */
+    .g-welcome-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+    .g-welcome-box {
+      background: #fff;
+      border: 3px double #b38b2e;
+      border-radius: 16px;
+      width: 92%; max-width: 400px;
+      padding: 28px 24px;
+      text-align: center;
+      animation: fadeIn .3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:none; }
+    }
+    .g-welcome-hands { font-size: 48px; margin-bottom: 12px; }
+    .g-welcome-title {
+      font-size: 20px; font-weight: 900;
+      color: #4a2c00; margin-bottom: 10px;
+    }
+    .g-welcome-desc {
+      font-size: 13px; color: #7a4d00;
+      line-height: 1.7; margin-bottom: 20px;
+    }
+    .g-btn-primary {
+      display: block; width: 100%;
+      padding: 13px; background: #7a4d00; color: #fef0c0;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      margin-bottom: 10px; transition: background .2s;
+    }
+    .g-btn-primary:hover { background: #4a2c00; }
+    .g-btn-secondary {
+      display: block; width: 100%;
+      padding: 13px; background: #fff; color: #7a4d00;
+      border: 2px solid #e8c060; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all .2s;
+    }
+    .g-btn-secondary:hover { background: #fef3d0; }
+
+    /* ── Page title ── */
+    .g-page-title {
+      text-align: center;
+      font-size: 20px; font-weight: 900;
+      color: #4a2c00; margin: 20px 0 4px;
+    }
+    .g-page-sub {
+      text-align: center;
+      font-size: 12px; color: #b38b2e; margin-bottom: 24px;
+    }
+
+    /* ── Tabs ── */
+    .g-tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .g-tab {
+      flex: 1; padding: 10px;
+      border: 2px solid #e8c060; border-radius: 8px;
+      font-size: 13px; font-weight: 700; color: #7a4d00;
+      background: #fff; cursor: pointer; text-align: center;
+      transition: all .2s;
+    }
+    .g-tab.active { background: #7a4d00; color: #fef0c0; border-color: #7a4d00; }
+
+    /* ── Form ── */
+    .g-form-card {
+      background: #fff; border: 1.5px solid #e8c060;
+      border-radius: 12px; padding: 18px; margin-bottom: 16px;
+    }
+    .g-form-label {
+      font-size: 11px; font-weight: 700; color: #b38b2e;
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 6px; display: block;
+    }
+    .g-form-input, .g-form-select {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #e8c060; border-radius: 8px;
+      font-size: 14px; color: #4a2c00; background: #fffdf5;
+      outline: none; margin-bottom: 14px; box-sizing: border-box;
+    }
+    .g-form-input:focus, .g-form-select:focus { border-color: #b38b2e; }
+    .g-form-row { display: flex; gap: 10px; }
+    .g-form-row > div { flex: 1; }
+
+    /* ── Ghoshti list card ── */
+    .g-ghoshti-card {
+      background: #fff; border: 1.5px solid #e8c060;
+      border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    }
+    .g-ghoshti-heading { font-size: 16px; font-weight: 900; color: #4a2c00; margin-bottom: 4px; }
+    .g-ghoshti-meta { font-size: 12px; color: #b38b2e; margin-bottom: 10px; line-height: 1.6; }
+    .g-ghoshti-link-box {
+      background: #fef3d0; border: 1px solid #e8c060;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 13px; color: #4a2c00; word-break: break-all;
+      margin-bottom: 10px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .g-copy-hint { font-size: 11px; color: #b38b2e; flex-shrink: 0; }
+    .g-ghoshti-actions { display: flex; gap: 8px; }
+    .g-action-btn {
+      flex: 1; padding: 8px;
+      border: 1.5px solid #e8c060; border-radius: 8px;
+      font-size: 12px; font-weight: 700; color: #7a4d00;
+      background: #fff; cursor: pointer; text-align: center;
+      transition: background .2s;
+    }
+    .g-action-btn:hover { background: #fef3d0; }
+    .g-action-btn.danger { color: #c0392b; border-color: #e8b0b0; }
+
+    /* ── Status badge ── */
+    .g-status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    .g-status.active   { background: #d4edda; color: #155724; }
+    .g-status.expired  { background: #f8d7da; color: #721c24; }
+    .g-status.upcoming { background: #fff3cd; color: #856404; }
+
+    /* ── Selection screen ── */
+    .g-selection-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .g-back-link { font-size: 13px; color: #b38b2e; cursor: pointer; text-decoration: underline; flex-shrink: 0; }
+    .g-selection-title { font-size: 15px; font-weight: 900; color: #4a2c00; }
+
+    /* ── Empty state ── */
+    .g-empty { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+
+    /* ── Toast ── */
+    .g-toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #4a2c00; color: #fef0c0; padding: 10px 18px;
+      border-radius: 20px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: opacity .3s; z-index: 3000;
+      max-width: 90%; text-align: center; pointer-events: none;
+    }
+    .g-toast.show { opacity: 1; }
+
+    /* ── Spinner ── */
+    .g-spinner { text-align: center; padding: 40px 20px; color: #b38b2e; font-size: 14px; }
+    .g-spinner .lotus {
+      font-size: 36px;
+      animation: spinLotus 2.5s linear infinite;
+      display: block; margin-bottom: 10px;
+    }
+    @keyframes spinLotus { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ── Edit modal ── */
+    .g-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 1500;
+      align-items: center; justify-content: center;
+    }
+    .g-modal-overlay.open { display: flex; }
+    .g-modal-box {
+      background: #fff; border: 3px double #b38b2e;
+      border-radius: 16px; width: 94%; max-width: 420px;
+      padding: 20px; animation: fadeIn .25s ease;
+    }
+    .g-modal-title { font-size: 15px; font-weight: 900; color: #4a2c00; margin-bottom: 16px; }
+    .g-modal-close { float: right; font-size: 20px; cursor: pointer; color: #b38b2e; font-weight: 700; margin-top: -4px; }
+
+    /* ── Sign in notice ── */
+    .g-signin-notice {
+      text-align: center; padding: 30px 20px;
+      background: #fef3d0; border: 1.5px solid #e8c060;
+      border-radius: 12px; color: #7a4d00; font-size: 14px;
+    }
+    .g-signin-notice a { color: #4a2c00; font-weight: 700; text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <!-- Welcome popup -->
+  <div class="g-welcome-overlay" id="g-welcome-overlay">
+    <div class="g-welcome-box">
+      <div class="g-welcome-hands">🙏</div>
+      <div class="g-welcome-title">Adiyen — Raamanuja Daasan</div>
+      <div class="g-welcome-desc">
+        Organise a Divya Prabandham Ghoshti at home for any occasion — 
+        birthday, anniversary or any special day.<br><br>
+        Select the pasurams you wish to recite, set the date and time, 
+        and share the link with your participants. 
+        They can follow along on their mobiles — no books needed!<br><br>
+        The link becomes active on the day of the Ghoshti 
+        and is deactivated after it concludes.
+      </div>
+      <button class="g-btn-primary" onclick="dismissWelcome(true)">
+        Create a Ghoshti 🙏
+      </button>
+      <button class="g-btn-secondary" onclick="dismissWelcome(false)">
+        View My Ghoshti List
+      </button>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="g-modal-overlay" id="g-edit-modal">
+    <div class="g-modal-box">
+      <span class="g-modal-close" onclick="closeEditModal()">✕</span>
+      <div class="g-modal-title">Edit Ghoshti</div>
+      <div id="g-edit-form-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="g-toast" id="g-toast"></div>
+
+  <!-- Main app -->
+  <div id="ghoshti-app">
+    <div class="g-spinner"><span class="lotus">🪷</span>Loading...</div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script>
+    const WORKER = "https://recitalworker.kanchitrust.workers.dev";
+
+    // ── State ──
+    let mobile         = localStorage.getItem("mobile") || "";
+    let activeTab      = "my";
+    let ghoshtiList    = [];
+    let creatingNew    = false;
+    let editingGhoshti = null;
+    let pendingMeta    = null;
+
+    // ── Welcome popup ──
+    function dismissWelcome(createNew) {
+      document.getElementById("g-welcome-overlay").style.display = "none";
+      if (createNew) showCreateForm();
+      else renderMyGhoshtiList();
+    }
+
+    // ── Toast ──
+    function showToast(msg) {
+      const t = document.getElementById("g-toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3500);
+    }
+
+    // ── Copy to clipboard ──
+    async function copyLink(link, heading, dateStr) {
+      const msg = heading && dateStr
+        ? `You are invited to join the Ghoshti:\n🙏 ${heading}\n📅 ${dateStr}\n\nJoin here: ${link}`
+        : link;
+      try {
+        await navigator.clipboard.writeText(msg);
+        showToast("Link copied! Share with your Ghoshti members 🙏");
+      } catch(e) {
+        showToast("Please copy: " + link);
+      }
+    }
+
+    // ── Format date/time ──
+    function formatDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-IN", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+    }
+    function formatTime(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      return d.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
+    }
+    function getStatus(session) {
+      const now = new Date();
+      const exp = new Date(session.expires_at);
+      if (now > exp || !session.is_active) return "expired";
+      if (now < new Date(session.start_time)) return "upcoming";
+      return "active";
+    }
+    function statusLabel(s) {
+      if (s === "active")   return `<span class="g-status active">Active</span>`;
+      if (s === "upcoming") return `<span class="g-status upcoming">Upcoming</span>`;
+      return `<span class="g-status expired">Concluded</span>`;
+    }
+
+    // ── Render main frame ──
+    function renderFrame(contentHTML) {
+      const app = document.getElementById("ghoshti-app");
+      app.innerHTML = `
+        <div class="g-page-title">🙏 Ghoshti</div>
+        <div class="g-page-sub">Host a Ghoshti at home for any special occasion</div>
+        <div class="g-tab-row">
+          <div class="g-tab ${activeTab==="my"?"active":""}" onclick="switchTab('my')">My Ghoshti</div>
+          <div class="g-tab ${activeTab==="view"?"active":""}" onclick="switchTab('view')">View Ghoshti</div>
+        </div>
+        ${contentHTML}`;
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      creatingNew = false;
+      if (tab === "my") renderMyGhoshtiList();
+      else renderViewTab();
+    }
+
+    // ── My Ghoshti tab ──
+    async function renderMyGhoshtiList() {
+      activeTab = "my";
+      if (!mobile) {
+        renderFrame(`
+          <div class="g-signin-notice">
+            Please <a href="register.html">sign in</a> to manage your Ghoshti sessions.
+          </div>
+          <div style="margin-top:16px">
+            <button class="g-btn-primary" onclick="showCreateForm()">+ Create New Ghoshti</button>
+          </div>`);
+        return;
+      }
+
+      renderFrame(`<div class="g-spinner"><span class="lotus">🪷</span>Loading your ghoshti sessions...</div>`);
+
+      try {
+        const res  = await fetch(`${WORKER}/recital/ghoshti?mobile=${encodeURIComponent(mobile)}`);
+        const data = await res.json();
+        ghoshtiList = data.sessions || [];
+      } catch(e) {
+        ghoshtiList = [];
+      }
+
+      const seenIds = new Set();
+      ghoshtiList = ghoshtiList.filter(g => {
+        if (seenIds.has(g.ghoshti_id)) return false;
+        seenIds.add(g.ghoshti_id); return true;
+      });
+
+      let listHTML = "";
+      if (!ghoshtiList.length) {
+        listHTML = `<div class="g-empty">No Ghoshti sessions yet.<br>Create one to get started!</div>`;
+      } else {
+        for (const g of ghoshtiList) {
+          const status  = getStatus(g);
+          const link    = `https://arulicheyal.org/ghoshti.html?id=${g.ghoshti_id}`;
+          const canEdit = status === "upcoming";
+          listHTML += `
+            <div class="g-ghoshti-card">
+              <div class="g-ghoshti-heading">${escHtml(g.ghoshti_name || "Ghoshti")}</div>
+              <div class="g-ghoshti-meta">
+                📅 ${formatDate(g.start_time)} &nbsp;|&nbsp; 🕐 ${formatTime(g.start_time)}<br>
+                ${statusLabel(status)}
+              </div>
+              <div class="g-ghoshti-link-box" onclick="copyLink('${link}','${escHtml(g.ghoshti_name)}','${formatDate(g.start_time)} at ${formatTime(g.start_time)}')">
+                <span style="flex:1;font-size:12px">${link}</span>
+                <span class="g-copy-hint">📋 Copy</span>
+              </div>
+              <div class="g-ghoshti-actions">
+                ${canEdit ? `<div class="g-action-btn" onclick="openEditModal('${g.ghoshti_id}')">✏️ Edit</div>` : ""}
+                <div class="g-action-btn" onclick="copyLink('${link}','${escHtml(g.ghoshti_name)}','${formatDate(g.start_time)} at ${formatTime(g.start_time)}')">🔗 Share</div>
+                <div class="g-action-btn" onclick="viewGhoshti('${g.ghoshti_id}')">👁 Preview</div>
+                <div class="g-action-btn danger" onclick="deleteGhoshti('${g.ghoshti_id}','${escHtml(g.ghoshti_name)}')">🗑</div>
+              </div>
+            </div>`;
+        }
+      }
+
+      renderFrame(`
+        ${listHTML}
+        <div style="margin-top:16px">
+          <button class="g-btn-primary" onclick="showCreateForm()">+ Create New Ghoshti</button>
+        </div>`);
+    }
+
+    // ── Create form ──
+    function showCreateForm(prefill) {
+      activeTab = "my";
+      creatingNew = true;
+      const now = new Date();
+      now.setMinutes(now.getMinutes() < 30 ? 30 : 0);
+      if (now.getMinutes() === 0) now.setHours(now.getHours() + 1);
+      const dateStr = now.toISOString().slice(0,10);
+      const timeStr = now.toTimeString().slice(0,5);
+
+      renderFrame(`
+        <div class="g-selection-header">
+          <span class="g-back-link" onclick="renderMyGhoshtiList()">← Back</span>
+          <span class="g-selection-title">New Ghoshti — Details</span>
+        </div>
+        <div class="g-form-card">
+          <label class="g-form-label">Ghoshti Heading</label>
+          <input type="text" class="g-form-input" id="g-heading"
+            placeholder="e.g. Appa's Birthday Ghoshti 2026"
+            value="${escHtml(prefill?.heading || "")}">
+          <div class="g-form-row">
+            <div>
+              <label class="g-form-label">Date</label>
+              <input type="date" class="g-form-input" id="g-date"
+                value="${prefill?.date || dateStr}"
+                min="${new Date().toISOString().slice(0,10)}">
+            </div>
+            <div>
+              <label class="g-form-label">Time</label>
+              <input type="time" class="g-form-input" id="g-time"
+                value="${prefill?.time || timeStr}">
+            </div>
+          </div>
+          <button class="g-btn-primary" onclick="proceedToSelection()">
+            Next — Select Pasurams →
+          </button>
+        </div>`);
+    }
+
+    function proceedToSelection() {
+      const heading = document.getElementById("g-heading")?.value?.trim();
+      const date    = document.getElementById("g-date")?.value;
+      const time    = document.getElementById("g-time")?.value;
+      if (!heading) { showToast("Please enter a Ghoshti heading"); return; }
+      if (!date)    { showToast("Please select a date"); return; }
+      if (!time)    { showToast("Please select a time"); return; }
+      pendingMeta = { heading, date, time };
+      openGhoshtiSetup(pendingMeta);
+    }
+
+    async function openGhoshtiSetup(meta) {
+      const app = document.getElementById("ghoshti-app");
+      app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading selection...</div>`;
+      try {
+        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js");
+        renderGhoshtiSetup(meta, app, function(result) {
+          if (!result) {
+            renderMyGhoshtiList();
+            showCreateForm(meta);
+            return;
+          }
+          activeTab = "my";
+          renderMyGhoshtiList().then(() => {
+            showToast("Ghoshti created! Link is ready to share 🙏");
+          });
+        });
+      } catch(e) {
+        app.innerHTML = `<div class="g-empty">Error loading setup: ${e.message}</div>`;
+      }
+    }
+
+    // ── View Ghoshti tab ──
+    function renderViewTab(autoId) {
+      activeTab = "view";
+      renderFrame(`
+        <div class="g-form-card">
+          <label class="g-form-label">Enter Ghoshti ID or paste link</label>
+          <input type="text" class="g-form-input" id="g-view-id"
+            placeholder="e.g. abc123 or full link">
+          <button class="g-btn-primary" onclick="lookupGhoshti()">View Ghoshti</button>
+        </div>
+        <div id="g-view-result"></div>`);
+
+      const idToLoad = autoId || new URLSearchParams(window.location.search).get("id");
+      if (idToLoad) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById("g-view-id");
+          if (el) { el.value = idToLoad; lookupGhoshti(); }
+        });
+      }
+    }
+
+    async function lookupGhoshti() {
+      let val = document.getElementById("g-view-id")?.value?.trim() || "";
+      if (val.includes("?id=")) val = val.split("?id=")[1].split("&")[0];
+      if (!val) { showToast("Please enter a Ghoshti ID"); return; }
+
+      const result = document.getElementById("g-view-result");
+      result.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading Ghoshti...</div>`;
+
+      try {
+        const res  = await fetch(`${WORKER}/recital/ghoshti?id=${val}&mobile=${encodeURIComponent(mobile)}`);
+        const data = await res.json();
+        if (data.expired) { result.innerHTML = `<div class="g-empty">This Ghoshti session has ended. 🙏</div>`; return; }
+        if (data.error)   { result.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
+        result.innerHTML = buildGhoshtiViewHTML(data);
+      } catch(e) {
+        result.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
+      }
+    }
+
+    function buildGhoshtiViewHTML(data) {
+      const link = `https://arulicheyal.org/ghoshti.html?id=${data.ghoshti_id}`;
+      let html = `
+        <div class="g-ghoshti-card">
+          <div class="g-ghoshti-heading" style="font-size:18px;margin-bottom:6px">
+            🙏 ${escHtml(data.ghoshti_name || "Ghoshti")}
+          </div>
+          <div class="g-ghoshti-meta" style="font-size:13px">
+            📅 ${formatDate(data.start_time)}<br>
+            🕐 ${formatTime(data.start_time)}<br>
+            👤 Host: ${escHtml(data.host_name || "")}<br>
+          </div>
+          <div class="g-ghoshti-link-box" onclick="copyLink('${link}')">
+            <span style="flex:1;font-size:12px">${link}</span>
+            <span class="g-copy-hint">📋 Copy to Share</span>
+          </div>
+        </div>`;
+      if (data.plan_id) {
+        html += `<div style="margin-top:12px;text-align:center">
+          <a href="recital.html?plan_id=${data.plan_id}"
+             style="display:inline-block;padding:10px 24px;background:#7a4d00;color:#fff;
+                    border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
+            🙏 View Full Recital
+          </a>
+        </div>`;
+      }
+      return html;
+    }
+
+    // ── Recital blocks renderer ──
+    const SECTION_HEADER_MAP = {
+      "திருப்பல்லாண்டு":           "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
+      "பெரியாழ்வார் திருமொழி":     "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
+      "திருப்பாவை":                "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
+      "நாச்சியார் திருமொழி":       "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
+      "பெருமாள் திருமொழி":         "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
+      "திருச்சந்தவிருத்தம்":       "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
+      "திருமாலை":                  "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
+      "திருப்பள்ளியெழுச்சி":      "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
+      "அமலனாதிபிரான்":            "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
+      "கண்ணிநுண்சிறுத்தாம்பு":   "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
+      "பெரிய திருமொழி":            "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
+      "திருவிருத்தம்":             "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவிருத்தம்",
+      "திருவாசிரியம்":             "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாசிரியம்",
+      "திருவாய்மொழி":              "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி"
+    };
+
+    function buildRecitalBlocksHTML(blocks) {
+      let html = "";
+      const shown = new Set();
+      for (const block of blocks) {
+        if (block.block_type === "global_thaniyan") {
+          html += `<div class="thaniyan-block">
+            <div style="font-size:10px;font-weight:700;color:#b38b2e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Global Thaniyan</div>
+            ${renderThaniyanLines(block.lines)}
+          </div>`;
+        } else if (block.block_type === "section_thaniyan") {
+          const key = `t_${block.section_id}`;
+          if (!shown.has(key)) {
+            shown.add(key);
+            html += `<div class="thaniyan-block">
+              <div style="font-size:10px;font-weight:700;color:#b38b2e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Thaniyan</div>
+              ${renderThaniyanLines(block.lines)}
+            </div>`;
+          }
+        } else if (block.block_type === "pasurams") {
+          const sid = block.section_id;
+          if (sid && !shown.has(`h_${sid}`) && block.section_name) {
+            shown.add(`h_${sid}`);
+            const heading = SECTION_HEADER_MAP[block.section_name] || block.section_name;
+            html += `<div class="section-heading">${heading}</div>`;
+          }
+          for (const p of groupPasurams(block.pasurams)) {
+            const isDual = p.double_recital === 1;
+            html += `<div class="pasuram-block">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+                <span style="font-size:11px;font-weight:700;color:#b38b2e">${p.global_no}</span>
+                ${isDual ? `<span style="font-size:13px;font-weight:900;color:#7a4d00">★★</span>` : ""}
+              </div>`;
+            p.groups.forEach((group, gi) => {
+              html += `<div style="margin-bottom:${gi===0&&p.groups.length>1?"12px":"0"}">`;
+              group.forEach((line, li) => {
+                const prefix = isDual && gi===0 && li===0 ? "** " : "";
+                html += `<div class="line">${prefix}${line.line_text}</div>`;
+              });
+              html += `</div>`;
+            });
+            html += `<div class="pasuram-local">${p.local_pasuram_no}</div></div>`;
+          }
+        } else if (block.block_type === "sattrumurai") {
+          html += `<div class="thaniyan-block" style="text-align:center;color:#b38b2e;font-size:13px">
+            <div style="font-size:10px;font-weight:700;color:#b38b2e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Sattrumurai</div>
+            — Sattrumurai —
+          </div>`;
+        }
+      }
+      return html;
+    }
+
+    function renderThaniyanLines(lines) {
+      let html = "", cg = null;
+      for (const line of lines) {
+        if (line.line_role === "title") {
+          html += `<div class="thaniyan-title">${line.line_text}</div>`;
+        } else if (line.line_role === "subhead") {
+          html += `<div class="thaniyan-subhead">${line.line_text}</div>`;
+        } else {
+          if (line.line_group !== cg) {
+            if (cg !== null) html += `</div>`;
+            html += `<div class="thaniyan-group">`;
+            cg = line.line_group;
+          }
+          html += `<div class="thaniyan-line">${line.line_text}</div>`;
+        }
+      }
+      if (cg !== null) html += `</div>`;
+      return html;
+    }
+
+    function groupPasurams(rows) {
+      const map = new Map();
+      for (const row of rows) {
+        if (!map.has(row.global_no)) {
+          map.set(row.global_no, {
+            global_no: row.global_no,
+            local_pasuram_no: row.local_pasuram_no,
+            double_recital: row.double_recital,
+            groups: new Map()
+          });
+        }
+        const p = map.get(row.global_no);
+        if (!p.groups.has(row.recital_group)) p.groups.set(row.recital_group, []);
+        p.groups.get(row.recital_group).push(row);
+      }
+      return [...map.values()].map(p => ({ ...p, groups: [...p.groups.values()] }));
+    }
+
+    // ── Edit modal ──
+    function openEditModal(ghoshtiId) {
+      editingGhoshti = ghoshtiId;
+      const g = ghoshtiList.find(x => x.ghoshti_id === ghoshtiId);
+      if (!g) return;
+      const d = new Date(g.start_time);
+      const dateStr = d.toISOString().slice(0,10);
+      const timeStr = d.toTimeString().slice(0,5);
+      document.getElementById("g-edit-form-content").innerHTML = `
+        <label class="g-form-label">Ghoshti Heading</label>
+        <input type="text" class="g-form-input" id="g-edit-heading" value="${escHtml(g.ghoshti_name || "")}">
+        <div class="g-form-row">
+          <div>
+            <label class="g-form-label">Date</label>
+            <input type="date" class="g-form-input" id="g-edit-date" value="${dateStr}">
+          </div>
+          <div>
+            <label class="g-form-label">Time</label>
+            <input type="time" class="g-form-input" id="g-edit-time" value="${timeStr}">
+          </div>
+        </div>
+        <button class="g-btn-primary" style="margin-bottom:10px" onclick="saveEdit()">Save Details</button>
+        <button class="g-btn-secondary" onclick="editPasurams('${ghoshtiId}')">✏️ Edit Pasuram Selection</button>`;
+      document.getElementById("g-edit-modal").classList.add("open");
+    }
+
+    function closeEditModal() {
+      document.getElementById("g-edit-modal").classList.remove("open");
+      editingGhoshti = null;
+    }
+
+    async function saveEdit() {
+      const heading = document.getElementById("g-edit-heading")?.value?.trim();
+      const date    = document.getElementById("g-edit-date")?.value;
+      const time    = document.getElementById("g-edit-time")?.value;
+      if (!heading || !date || !time) { showToast("Please fill all fields"); return; }
+      const start_time = new Date(`${date}T${time}`).toISOString();
+      try {
+        const res  = await fetch(`${WORKER}/recital/ghoshti`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ghoshti_id: editingGhoshti, mobile, ghoshti_name: heading, start_time })
+        });
+        const data = await res.json();
+        if (data.success) { showToast("Ghoshti updated 🙏"); closeEditModal(); renderMyGhoshtiList(); }
+        else showToast(data.error || "Update failed");
+      } catch(e) { showToast("Error: " + e.message); }
+    }
+
+    function viewGhoshti(id) {
+      activeTab = "view";
+      renderViewTab(id);
+    }
+
+    function editPasurams(ghoshtiId) {
+      const g = ghoshtiList.find(x => x.ghoshti_id === ghoshtiId);
+      if (!g) return;
+      closeEditModal();
+      const d = new Date(g.start_time);
+      const meta = {
+        heading:    g.ghoshti_name || "Ghoshti",
+        date:       d.toISOString().slice(0,10),
+        time:       d.toTimeString().slice(0,5),
+        ghoshti_id: ghoshtiId,
+        plan_id:    g.plan_id
+      };
+      openGhoshtiSetup(meta);
+    }
+
+    async function deleteGhoshti(ghoshtiId, heading) {
+      if (!confirm(`Delete "${heading}"?\nThis cannot be undone.`)) return;
+      try {
+        const res  = await fetch(`${WORKER}/recital/ghoshti`, {
+          method:  "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ ghoshti_id: ghoshtiId, mobile })
+        });
+        const data = await res.json();
+        if (data.success) { showToast("Ghoshti deleted 🙏"); renderMyGhoshtiList(); }
+        else showToast(data.error || "Delete failed");
+      } catch(e) { showToast("Error: " + e.message); }
+    }
+
+    function escHtml(str) {
+      return String(str || "").replace(/&/g,"&amp;").replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+    }
+
+    // ── Init ──
+    async function init() {
+      mobile = localStorage.getItem("mobile") || "";
+
+      const urlId = new URLSearchParams(window.location.search).get("id");
+      if (urlId) {
+        document.getElementById("g-welcome-overlay").style.display = "none";
+        activeTab = "view";
+        renderViewTab(urlId);
+        return;
+      }
+
+      const ghoshtiDone = sessionStorage.getItem("ghoshtiDone");
+      if (ghoshtiDone) {
+        sessionStorage.removeItem("ghoshtiDone");
+        sessionStorage.removeItem("ghoshtiMode");
+        document.getElementById("g-welcome-overlay").style.display = "none";
+        renderMyGhoshtiList();
+        return;
+      }
+
+      renderMyGhoshtiList();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

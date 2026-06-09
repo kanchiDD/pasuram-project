@@ -18,6 +18,18 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin":  "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      });
+    }
+
     if (url.pathname.startsWith("/voice/")) {
   return handleVoice(request, env);
 }
@@ -101,7 +113,13 @@ if (url.pathname.includes("/api/sattrumurai/list")) {
     });
   }
 }
+   if (url.pathname.includes("/auth/register")) {
+  return handleAuthRegister(request, env);
+}
 
+if (url.pathname.includes("/api/vedam")) {
+  return handleVedam(request, env);
+}
 
     return new Response("Not Found", { status: 404 });
   }
@@ -3810,5 +3828,99 @@ async function handleCustomRecitalEntities(env) {
       status: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
+  }
+}
+
+async function handleAuthRegister(request, env) {
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+
+  try {
+    const body = await request.json();
+    const { name, mobile, prefix, googleEmail, googleId, googleName } = body;
+
+    if (!mobile || !name) {
+      return new Response(JSON.stringify({ error: "mobile and name required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    await env.db.prepare(`
+      INSERT INTO user_master (mobile, name, prefix, google_email, google_id, updated_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(mobile) DO UPDATE SET
+        name         = excluded.name,
+        prefix       = excluded.prefix,
+        google_email = excluded.google_email,
+        google_id    = excluded.google_id,
+        updated_at   = datetime('now')
+    `).bind(
+      mobile,
+      name,
+      prefix       || null,
+      googleEmail  || null,
+      googleId     || null
+    ).run();
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+async function handleVedam(request, env) {
+
+  try {
+
+    const { results } = await env.db.prepare(`
+      SELECT
+        vm.veda_id,
+        vm.veda_name,
+        va.audio_id,
+        va.title,
+        va.audio_url,
+        va.display_order
+      FROM veda_master vm
+      LEFT JOIN veda_audio_master va
+        ON vm.veda_id = va.veda_id
+      ORDER BY vm.veda_id, va.display_order
+    `).all();
+
+    return new Response(
+      JSON.stringify(results),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    );
+
+  } catch (err) {
+
+    return new Response(
+      JSON.stringify({
+        error: err.message
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    );
+
   }
 }

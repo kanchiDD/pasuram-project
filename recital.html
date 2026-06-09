@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Daily Recital — Naalayira Divya Prabandham</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=860">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    :root { --pf: 15px; }
+    body { background: #fffdf5; min-height: 100vh; display: flex; flex-direction: column; font-family: "Noto Sans Tamil", sans-serif; }
+    #header { width: 100%; }
+    #footer  { width: 100%; margin-top: auto; }
+
+    #recital-stage {
+      flex: 1; max-width: 680px;
+      margin: 0 auto; padding: 14px 12px 100px; width: 100%;
+    }
+
+    /* ── Page title ── */
+    .r-page-title {
+      text-align: center; font-size: 18px; font-weight: 900;
+      color: #4a2c00; margin-bottom: 4px;
+    }
+    .r-day-label {
+      text-align: center; font-size: 12px;
+      color: #b38b2e; margin-bottom: 16px;
+    }
+
+    /* ── Spinner ── */
+    .r-spinner {
+      text-align: center; padding: 60px 20px;
+      color: #b38b2e; font-size: 14px;
+    }
+    .r-spinner .lotus {
+      font-size: 40px; display: block; margin-bottom: 12px;
+      animation: spinLotus 2.5s linear infinite;
+    }
+    @keyframes spinLotus { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* ── Index ── */
+    .r-index {
+      background: #fef3d0; border: 1.5px solid #e8c060;
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+    }
+    .r-index-title {
+      font-size: 11px; font-weight: 700; color: #b38b2e;
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px;
+    }
+    .r-idx-item {
+      font-size: 13px; color: #4a2c00; padding: 6px 0;
+      border-bottom: 1px solid #f0e0b0; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .r-idx-item:last-child { border-bottom: none; }
+    .r-idx-item:active { color: #7a4d00; }
+    .r-idx-item.group { font-weight: 700; }
+    .r-idx-arrow { font-size: 10px; color: #b38b2e; transition: transform .2s; flex-shrink: 0; }
+    .r-idx-arrow.open { transform: rotate(90deg); }
+    .r-idx-children { display: none; padding-left: 12px; }
+    .r-idx-children.open { display: block; }
+    .r-idx-child {
+      font-size: 12px; color: #7a4d00; padding: 4px 0;
+      border-bottom: 1px solid #f5ecd0; cursor: pointer;
+    }
+
+    /* ══════════════════════════════════════
+       CONTENT BLOCKS — uniform box design
+    ══════════════════════════════════════ */
+
+    /* Global thaniyan box */
+    .r-global-thaniyan {
+      background: #fff8e8; border: 2px solid #e8c060;
+      border-radius: 10px; padding: 14px 14px 10px;
+      margin-bottom: 14px;
+    }
+
+    /* Section thaniyan box */
+    .r-section-thaniyan {
+      background: #fef3d0; border: 2px solid #e8c060;
+      border-radius: 10px; padding: 14px 14px 10px;
+      margin-bottom: 14px;
+    }
+
+    /* Section content box — wraps heading + all pasurams of that section */
+    .r-section-box {
+      border: 1.5px solid #c8b38a;
+      border-radius: 10px; overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .r-section-box-header {
+      background: #f5e8c8;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 14px; font-weight: 700; color: #4a2c00;
+      border-bottom: 1px solid #c8b38a;
+    }
+    .r-section-box-body {
+      background: #fff; padding: 10px 12px;
+    }
+
+    /* Thaniyan badge */
+    .r-thaniyan-badge {
+      font-size: 10px; font-weight: 700; color: #b38b2e;
+      text-transform: uppercase; letter-spacing: .08em;
+      text-align: center; margin-bottom: 8px;
+    }
+    /* Thaniyan content */
+    .r-thaniyan-title   { font-size: 14px; font-weight: 900; color: #4a2c00; text-align: center; margin-bottom: 4px; }
+    .r-thaniyan-subhead { font-size: 11px; color: #b38b2e; text-align: center; margin-bottom: 6px; font-style: italic; }
+    .r-thaniyan-group   { margin-bottom: 10px; }
+    .r-thaniyan-line    { font-size: var(--pf); color: #4a2c00; line-height: 1.9; }
+
+    /* Pathu heading inside section box */
+    .r-pathu-heading {
+      font-size: 12px; font-weight: 700; color: #7a4d00;
+      margin: 12px 0 4px; padding: 5px 8px;
+      background: #fff8e8; border-left: 3px solid #e8c060;
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* Thirumozhi heading */
+    .r-thiru-heading {
+      font-size: 12px; font-weight: 700; color: #4a2c00;
+      margin: 10px 0 4px; text-align: center;
+      padding: 4px 0;
+    }
+
+    /* Display items + prosody — centered, small, italic */
+    .r-display-item {
+      font-size: 11px; color: #7a4d00; line-height: 1.7;
+      text-align: center; font-style: italic; margin: 1px 0;
+    }
+    .r-thiru-separator {
+      border: none; border-top: 1px solid #e8c060;
+      margin: 14px 4px 2px; opacity: 0.6;
+    }
+    .r-prosody {
+      font-size: 10px; font-weight: 600; color: #b38b2e;
+      text-align: center; font-style: italic; margin: 6px 0 2px;
+    }
+
+    /* Individual pasuram — inside section box */
+    .r-pasuram-block {
+      border-top: 1px solid #f0e0b0;
+      padding: 8px 0 4px;
+    }
+    .r-pasuram-block:first-child { border-top: none; }
+
+    .r-global-no {
+      font-size: 10px; font-weight: 700; color: #b38b2e;
+      display: block; margin-bottom: 2px;
+    }
+    .r-recital-group { margin-bottom: 6px; }
+    .r-recital-group:last-child { margin-bottom: 0; }
+    .r-pasuram-line {
+      font-size: var(--pf); color: #4a2c00; line-height: 1.9;
+    }
+    /* Last line of pasuram — flex with local no inline */
+    .r-pasuram-last-line {
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .r-pasuram-line-text {
+      font-size: var(--pf); color: #4a2c00; line-height: 1.9; flex: 1;
+    }
+    .r-local-no {
+      font-size: 10px; color: #b38b2e; font-weight: 600;
+      flex-shrink: 0; padding-left: 8px; align-self: flex-end;
+    }
+
+    /* Section close + final */
+    .r-section-close {
+      text-align: center; font-size: 13px; font-weight: 600;
+      color: #4a3b1f; margin: 14px 0 6px;
+      padding-top: 10px; border-top: 1px solid #c8b38a;
+    }
+    /* Per-thirumozhi closing — smaller, no top border (separator already there) */
+    .r-thiru-close {
+      font-size: 11px; font-weight: 600; color: #b38b2e;
+      border-top: none; margin: 4px 0 2px; padding-top: 0;
+    }
+    .r-section-final {
+      text-align: center; font-size: 11px; color: #b38b2e;
+      margin: 4px 0 10px; font-style: italic;
+    }
+
+    /* Sattrumurai */
+    .r-sattrumurai {
+      text-align: center; background: #fef3d0;
+      border: 2px solid #e8c060; border-radius: 10px;
+      padding: 12px; margin-bottom: 14px; color: #b38b2e; font-size: 13px;
+    }
+
+    /* No plan / error */
+    .r-no-plan {
+      text-align: center; padding: 40px 20px;
+      color: #999; font-size: 14px; line-height: 1.8;
+    }
+    .r-no-plan a { color: #7a4d00; font-weight: 700; text-decoration: underline; }
+    .r-error { text-align: center; padding: 30px; color: #c0392b; font-size: 14px; }
+
+    /* ── Floating Nav ── */
+    .r-float-nav {
+      position: fixed; bottom: 20px; right: 14px;
+      display: flex; flex-direction: column; gap: 6px;
+      z-index: 500;
+    }
+    .r-float-btn {
+      width: 38px; height: 38px;
+      background: #7a4d00; color: #fef0c0;
+      border: none; border-radius: 50%;
+      font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transition: background .2s;
+    }
+    .r-float-btn:active { background: #4a2c00; }
+    .r-float-btn.font-btn { font-size: 12px; font-weight: 700; }
+
+    /* ── Madal / Kootrirukkai ───────────────────────── */
+    .r-madal-outer {
+      background: #fffdf5;
+      border: 1.5px solid #c8a84b;
+      border-radius: 10px;
+      padding: 16px 18px 12px;
+      margin: 16px 0;
+    }
+    .r-madal-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      color: #4a2c00;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .r-madal-gno {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #b38b2e;
+      margin-bottom: 10px;
+    }
+    .r-madal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .r-madal-couplet {
+      background: #fff;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .r-madal-line, .r-madal-line-cno {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #2a1a00;
+    }
+    .r-madal-line-cno {
+      display: block;
+      position: relative;
+    }
+    .r-madal-line-cno .r-mcno {
+      float: right;
+    }
+    .r-mmarker {
+      color: #b38b2e;
+      font-weight: 700;
+      font-size: 12px;
+      margin-right: 2px;
+    }
+    .r-mcno {
+      font-size: 10px;
+      color: #999;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .r-mdual-block {
+      background: #fffbe8;
+    }
+    .r-madal-closing {
+      text-align: center;
+      font-weight: 700;
+      color: #7a4d00;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <div id="recital-stage">
+    <div class="r-spinner">
+      <span class="lotus">🪷</span>Loading...
+    </div>
+  </div>
+
+  <!-- Floating Nav -->
+  <div class="r-float-nav" id="r-float-nav" style="display:none">
+    <button class="r-float-btn" onclick="window.location.href='tree.html'" title="Home">🏠</button>
+    <button class="r-float-btn" onclick="document.getElementById('r-index-block')?.scrollIntoView({behavior:'smooth'})" title="Index">☰</button>
+    <button class="r-float-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">↑</button>
+    <button class="r-float-btn" onclick="window.scrollBy({top:-window.innerHeight*0.8,behavior:'smooth'})" title="Up">▲</button>
+    <button class="r-float-btn" onclick="window.scrollBy({top:window.innerHeight*0.8,behavior:'smooth'})" title="Down">▼</button>
+    <button class="r-float-btn font-btn" onclick="changeFontSize(1)" title="Font+">A+</button>
+    <button class="r-float-btn font-btn" onclick="changeFontSize(-1)" title="Font-">A-</button>
+  </div>
+
+  <div id="footer"></div>
+
+  <script>
+    const WORKER    = "https://recitalworker.kanchitrust.workers.dev";
+    const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+    const SECTION_HEADER_MAP = {
+      "திருப்பல்லாண்டு":           "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
+      "பெரியாழ்வார் திருமொழி":     "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
+      "திருப்பாவை":                "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
+      "நாச்சியார் திருமொழி":       "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
+      "பெருமாள் திருமொழி":         "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
+      "திருச்சந்தவிருத்தம்":       "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
+      "திருமாலை":                  "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
+      "திருப்பள்ளியெழுச்சி":      "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
+      "அமலனாதிபிரான்":            "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
+      "கண்ணிநுண்சிறுத்தாம்பு":   "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
+      "பெரிய திருமொழி":            "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
+      "திருகுறுந்தாண்டகம்":       "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
+      "திருநெடுந்தாண்டகம்":       "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
+      "முதல்‌ திருவந்தாதி":       "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
+      "இரண்டாம்‌ திருவந்தாதி":    "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
+      "மூன்றாம்‌ திருவந்தாதி":    "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
+      "நான்முகன்‌திருவந்தாதி":    "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
+      "திருவிருத்தம்":             "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவிருத்தம்",
+      "திருவாசிரியம்":             "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாசிரியம்",
+      "பெரியதிருவந்தாதி":          "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த பெரியதிருவந்தாதி",
+      "திருவெழுகூற்றிருக்கை":     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
+      "சிறியதிருமடல்":             "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
+      "பெரியதிருமடல்":             "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
+      "இராமாநுச நூற்றந்தாதி":     "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த இராமாநுச நூற்றந்தாதி",
+      "உபதேசரத்தினமாலை":          "ஸ்ரீ பெரியஜீயர் அருளிச்செய்த உபதேசரத்தினமாலை",
+      "திருவாய்மொழி":              "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
+      "திருவாய்மொழி நூற்றந்தாதி": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த திருவாய்மொழி நூற்றந்தாதி",
+      "ஞானசாரம்":                  "பரமகாருணிகரான அருளாளப் பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ஞானசாரம்",
+      "ப்ரமேயஸாரம்":               "பரமகாருணிகரான அருளாளப் பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ப்ரமேயஸாரம்",
+      "ஸப்தகாதை":                  "ஸ்ரீ விலாஞ்சோலைப்பிள்ளை அருளிச்செய்த ஸப்தகாதை",
+      "ஆர்த்தி ப்ரபந்தம்":         "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்",
+      "கோயில் திருமொழி":           "கோயில் திருமொழி",
+      "கோயில் திருவாய்மொழி":       "கோயில் திருவாய்மொழி"
+    };
+
+    // ── Font size control ──
+    function changeFontSize(delta) {
+      const root = document.documentElement;
+      const cur  = parseFloat(getComputedStyle(root).getPropertyValue('--pf')) || 15;
+      const nv   = Math.min(20, Math.max(12, cur + delta));
+      root.style.setProperty('--pf', nv + 'px');
+    }
+
+    // ── Index scroll ──
+    function idxGo(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    function idxToggle(key) {
+      const ch  = document.getElementById("idx-ch-" + key);
+      const arr = document.getElementById("idx-arr-" + key);
+      if (!ch) return;
+      const opening = !ch.classList.contains("open");
+      document.querySelectorAll(".r-idx-children.open").forEach(el => {
+        if (el.id !== "idx-ch-" + key) {
+          el.classList.remove("open");
+          const k = el.id.replace("idx-ch-","");
+          const a = document.getElementById("idx-arr-" + k);
+          if (a) a.classList.remove("open");
+        }
+      });
+      ch.classList.toggle("open", opening);
+      if (arr) arr.classList.toggle("open", opening);
+    }
+
+    // ── Helpers ──
+    function getProsodyName(globalNo, scope, master) {
+      const row = scope?.find(r => globalNo >= r.start_global_no && globalNo <= r.end_global_no);
+      return row ? (master?.[row.prosody_id] || null) : null;
+    }
+
+    function getDisplayItems(disp, etype, eid, adiOnly) {
+      const arr = disp?.[etype]?.[String(eid)] || [];
+      return adiOnly ? arr.filter(d => d.is_adivaravu) : arr.filter(d => !d.is_adivaravu);
+    }
+
+    function renderDisp(items) {
+      return items.map(d => `<div class="r-display-item">${d.text}</div>`).join("");
+    }
+
+    function groupPasurams(rows) {
+      const map = new Map();
+      for (const r of rows) {
+        if (!map.has(r.global_no)) {
+          map.set(r.global_no, {
+            global_no: r.global_no, local_pasuram_no: r.local_pasuram_no,
+            double_recital: r.double_recital,
+            section_id: r.section_id, section_name: r.section_name, section_closing: r.section_closing,
+            pathu_id: r.pathu_id, pathu_name: r.pathu_name, pathu_subunit_name: r.pathu_subunit_name,
+            pathu_thirumozhi_heading: r.pathu_thirumozhi_heading,
+            thirumozhi_id: r.thirumozhi_id, thirumozhi_heading: r.thirumozhi_heading, thirumozhi_name: r.thirumozhi_name,
+            groups: new Map()
+          });
+        }
+        const p = map.get(r.global_no);
+        const g = r.recital_group ?? 1;
+        if (!p.groups.has(g)) p.groups.set(g, []);
+        p.groups.get(g).push(r);
+      }
+      return [...map.values()].map(p => ({ ...p, groups: [...p.groups.values()] }));
+    }
+
+    function thaniyanLines(lines, prosodyMaster) {
+      let html = "", cg = null, lastProsodyId = null;
+      for (const l of lines) {
+        if (l.line_role === "title") {
+          html += `<div class="r-thaniyan-title">${l.line_text}</div>`;
+        } else if (l.line_role === "subhead") {
+          html += `<div class="r-thaniyan-subhead">${l.line_text}</div>`;
+        } else {
+          // Show prosody name when prosody_id changes
+          if (l.prosody_id && l.prosody_id !== lastProsodyId && prosodyMaster) {
+            lastProsodyId = l.prosody_id;
+            const pName = prosodyMaster[l.prosody_id];
+            if (pName) html += `<div class="r-prosody">${pName}</div>`;
+          }
+          if (l.line_group !== cg) {
+            if (cg !== null) html += `</div>`;
+            html += `<div class="r-thaniyan-group">`;
+            cg = l.line_group;
+          }
+          html += `<div class="r-thaniyan-line">${l.line_text}</div>`;
+        }
+      }
+      if (cg !== null) html += `</div>`;
+      return html;
+    }
+
+    // ── Render a single pasuram ──
+    function renderPasuram(p, disp, prosodyScope, prosodyMaster, currentProsody) {
+      const isDual = Number(p.double_recital) === 1;
+      const prosody = getProsodyName(p.global_no, prosodyScope, prosodyMaster);
+      let html = "";
+
+      // Prosody change
+      if (prosody && prosody !== currentProsody.val) {
+        currentProsody.val = prosody;
+        html += `<div class="r-prosody">${prosody}</div>`;
+      }
+
+      // Pasuram-level display items (non-adivaravu)
+      const pDisp = getDisplayItems(disp, "pasuram", p.global_no, false);
+      if (pDisp.length) html += renderDisp(pDisp);
+
+      html += `<div class="r-pasuram-block">`;
+      html += `<span class="r-global-no">${p.global_no}</span>`;
+
+      const allGroups = p.groups;
+      allGroups.forEach((grp, gi) => {
+        const isLastGroup = gi === allGroups.length - 1;
+        html += `<div class="r-recital-group">`;
+        grp.forEach((line, li) => {
+          // ** only on first line of first group of dual pasuram
+          const pfx = isDual && gi === 0 && li === 0 ? "** " : "";
+          const isLastLine = isLastGroup && li === grp.length - 1;
+          if (isLastLine) {
+            html += `<div class="r-pasuram-last-line">
+              <span class="r-pasuram-line-text">${pfx}${line.line_text}</span>
+              <span class="r-local-no">${p.local_pasuram_no}</span>
+            </div>`;
+          } else {
+            html += `<div class="r-pasuram-line">${pfx}${line.line_text}</div>`;
+          }
+        });
+        html += `</div>`;
+        if (gi === 0 && allGroups.length > 1) html += `<div style="height:5px"></div>`;
+      });
+
+      html += `</div>`; // end pasuram-block
+      return html;
+    }
+
+    // ── Build full page ──
+    const API_CDN = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+
+    // Special sections need prosody scope from blocks — stored here after buildAll
+    let _specialProsodyScope  = [];
+    let _specialProsodyMaster = {};
+
+    async function loadSpecialSections(prosodyScope, prosodyMaster) {
+      _specialProsodyScope  = prosodyScope  || [];
+      _specialProsodyMaster = prosodyMaster || {};
+      // Kootrirukkai (section 21)
+      for (const el of document.querySelectorAll("[data-kootri]")) {
+        const sectionId = el.dataset.kootri;
+        try {
+          const data = await fetch(`${API_CDN}/kootrirukkai?section_id=${sectionId}`).then(r => r.json());
+          const blockMeta = JSON.parse(el.dataset.block || "{}");
+          el.outerHTML = renderKootrirukkai(data, blockMeta);
+        } catch(e) { el.textContent = "Error loading கூற்றிருக்கை"; }
+      }
+      // Madal (sections 22/23)
+      for (const el of document.querySelectorAll("[data-madal]")) {
+        const sectionId = Number(el.dataset.madal);
+        const isRettai  = el.dataset.rettai === "1";
+        try {
+          const data = await fetch(`${API_CDN}/madal?section_id=${sectionId}`).then(r => r.json());
+          const blockMeta = JSON.parse(el.dataset.block || "{}");
+          el.outerHTML = renderMadal(data, sectionId, isRettai, blockMeta);
+        } catch(e) { el.textContent = "Error loading திருமடல்"; }
+      }
+    }
+
+    function renderKootrirukkai(data, block) {
+      if (!data?.lines?.length) return "<div>No data</div>";
+      const heading = "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை";
+      const closing = block?.section_closing || "";
+      let html = `<div class="r-madal-outer">
+        <div class="r-madal-title">${heading}</div>
+        <div class="r-madal-gno">2672</div>`;
+      const kDisp = getDisplayItems(block.disp || {}, "section", 21, false);
+      if (kDisp.length) html += renderDisp(kDisp);
+      const kProsody = getProsodyName(2672, _specialProsodyScope, _specialProsodyMaster);
+      if (kProsody) html += `<div class="r-prosody">${kProsody}</div>`;
+      html += `<div class="r-madal-body">`;
+      // Each line in its own container
+      data.lines.forEach(l => {
+        const isDual = l.line_no == 41;
+        html += `<div class="r-madal-couplet">
+          <div class="r-madal-line">${isDual ? "<span class='r-mmarker'>**</span> " : ""}${l.line_text}</div>
+        </div>`;
+      });
+      html += `</div>`;
+      if (closing) html += `<div class="r-madal-closing">${closing}</div>`;
+      html += `</div>`;
+      return html;
+    }
+
+    function renderMadal(data, sectionId, isRettai, block) {
+      const rules      = data.rules || [];
+      const sectionGno = sectionId === 22 ? 2673 : 2674;
+      const maxCouplet = sectionId === 23 ? 148 : 77;
+      const heading    = sectionId === 22
+        ? "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்"
+        : "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்";
+      const closing = block?.section_closing || "";
+
+      function getBlockRule(c, l) {
+        return rules.find(r => r.rule_type === "block_repeat" &&
+          ((c > r.start_couplet || (c === r.start_couplet && l >= r.start_line)) &&
+           (c < r.end_couplet   || (c === r.end_couplet   && l <= r.end_line))));
+      }
+      function isLineDual(c, l) {
+        return rules.some(r => r.rule_type === "line_repeat" && r.start_couplet == c && r.line_no == l);
+      }
+
+      const grouped = {};
+      (data.units || []).forEach(u => {
+        if (!grouped[u.couplet_no]) grouped[u.couplet_no] = [];
+        for (let i = 1; i <= 8; i++) {
+          if (u[`line_${i}`]) grouped[u.couplet_no].push({ text: u[`line_${i}`], line_no: i });
+        }
+      });
+
+      const couplets = Object.keys(grouped).map(Number).sort((a,b) => a-b);
+      let html = `<div class="r-madal-outer">
+        <div class="r-madal-title">${heading}</div>
+        <div class="r-madal-gno">${sectionGno}</div>`;
+      const mDisp = getDisplayItems(block.disp || {}, "section", sectionId, false);
+      if (mDisp.length) html += renderDisp(mDisp);
+      const gno = sectionId === 22 ? 2673 : 2674;
+      const mProsody = getProsodyName(gno, _specialProsodyScope, _specialProsodyMaster);
+      if (mProsody) html += `<div class="r-prosody">${mProsody}</div>`;
+      html += `<div class="r-madal-body">`;
+
+      let prevBlockRuleId = null;
+
+      for (const c of couplets) {
+        const lines = grouped[c];
+        const showLines = [];
+        lines.forEach((l, idx) => {
+          const blockRule = getBlockRule(c, l.line_no);
+          const lineDual  = isLineDual(c, l.line_no);
+          const isDual    = !!blockRule || lineDual;
+          if (isRettai && !isDual) return;
+          const isLast = idx === lines.length - 1;
+          const blockRuleId = blockRule ? (blockRule.start_couplet + "_" + blockRule.start_line) : null;
+          const isBlockStart = blockRule && blockRuleId !== prevBlockRuleId;
+          const showMarker = isBlockStart || lineDual;
+          if (blockRule) prevBlockRuleId = blockRuleId;
+          showLines.push({ text: l.text, isBlockLine: !!blockRule, showMarker,
+                           showCoupletNo: isLast && c <= maxCouplet, coupletNo: c });
+        });
+        if (!showLines.length) continue;
+
+        html += `<div class="r-madal-couplet">`;
+        showLines.forEach(l => {
+          const cls = l.isBlockLine ? "r-mdual-block" : "";
+          if (l.showCoupletNo) {
+            html += `<div class="r-madal-line-cno ${cls}">${l.showMarker ? "<span class='r-mmarker'>**</span> " : ""}${l.text}<span class="r-mcno">${l.coupletNo}</span></div>`;
+          } else {
+            html += `<div class="r-madal-line ${cls}">${l.showMarker ? "<span class='r-mmarker'>**</span> " : ""}${l.text}</div>`;
+          }
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+      if (closing) html += `<div class="r-madal-closing">${closing}</div>`;
+      html += `</div>`;
+      return html;
+    }
+
+    function buildAll(rawBlocks) {
+      if (!rawBlocks?.length) return { indexHTML: "", contentHTML: `<div class="r-no-plan">No content.</div>` };
+
+      // Merge consecutive child-thirumozhi blocks from same parent pathu into one block.
+      // The worker fetches each child separately (correct), but rendering groups them.
+      // Merge key: same parent_pathu_id + same section_id (rettai and full stay separate).
+      const blocks = [];
+      for (let i = 0; i < rawBlocks.length; i++) {
+        const b = rawBlocks[i];
+        if (b.block_type === "pasurams" && b.is_child_thiru === 1 && b.parent_pathu_id != null) {
+          const merged = { ...b, entity_type: "pathu", entity_id: b.parent_pathu_id,
+                           is_child_thiru: 0, parent_pathu_id: null, pasurams: [...b.pasurams] };
+          while (i + 1 < rawBlocks.length &&
+                 rawBlocks[i+1].block_type      === "pasurams" &&
+                 rawBlocks[i+1].is_child_thiru  === 1 &&
+                 rawBlocks[i+1].parent_pathu_id === b.parent_pathu_id &&
+                 rawBlocks[i+1].section_id      === b.section_id &&
+                 rawBlocks[i+1].is_rettai       === b.is_rettai) {
+            i++;
+            merged.pasurams = merged.pasurams.concat(rawBlocks[i].pasurams);
+          }
+          blocks.push(merged);
+        } else {
+          blocks.push(b);
+        }
+      }
+
+      // ── Index entries ──
+      const indexEntries = [];
+      let blockIdx = 0;
+      for (const block of blocks) {
+        if (block.block_type === "kootrirukkai") {
+          indexEntries.push({ type: "simple", label: "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை", anchorId: `rec-block-${blockIdx}` });
+          blockIdx++; continue;
+        }
+        if (block.block_type === "madal") {
+          const mLabel = block.section_id === 22 ? "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்" : "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்";
+          const mSuffix = block.is_rettai ? " (Rettai)" : "";
+          indexEntries.push({ type: "simple", label: mLabel + mSuffix, anchorId: `rec-block-${blockIdx}` });
+          blockIdx++; continue;
+        }
+        if (block.block_type !== "pasurams") { blockIdx++; continue; }
+        const anchorId = `rec-block-${blockIdx}`;
+        const sname    = block.section_name || "";
+        const etype    = block.entity_type;
+        const eid      = block.entity_id;
+        const pasurams = groupPasurams(block.pasurams);
+        const first    = pasurams[0];
+
+        if (etype === "koil") {
+          const label = eid === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+          // Hardcoded koil children — guaranteed complete list
+          const KOIL_THIRU_CHILDREN = [
+            { label: "முதற்பத்து — முதல் திருமொழி — வாடினேன்",                  pathuId: 44  },
+            { label: "முதற்பத்து — ஏழாம் திருமொழி — அங்கண் ஞாலம்",             pathuId: 50  },
+            { label: "முதற்பத்து — ஒன்பதாம் திருமொழி — தாயே தந்தை",            pathuId: 52  },
+            { label: "இரண்டாம் பத்து — மூன்றாம் திருமொழி — விற்பெரு",          pathuId: 56  },
+            { label: "இரண்டாம் பத்து — நான்காம் திருமொழி — அன்று ஆயர்",       pathuId: 57  },
+            { label: "இரண்டாம் பத்து — ஆறாம் திருமொழி — நண்ணாத",              pathuId: 59  },
+            { label: "இரண்டாம் பத்து — ஏழாம் திருமொழி — திவளும்",              pathuId: 60  },
+            { label: "மூன்றாம் பத்து — ஆறாம் திருமொழி — தூவிரிய",              pathuId: 69  },
+            { label: "நான்காம் பத்து — ஒன்பதாம் திருமொழி — நும்மை",            pathuId: 82  },
+            { label: "ஐந்தாம் பத்து — எட்டாம் திருமொழி — ஏழை ஏதலன்",         pathuId: 91  },
+            { label: "ஆறாம் பத்து — ஒன்பதாம் திருமொழி — பெடை அடர்த்த",       pathuId: 102 },
+            { label: "ஏழாம் பத்து — நான்காம் திருமொழி — கண்சோர",               pathuId: 107 },
+            { label: "எட்டாம் பத்து — இரண்டாம் திருமொழி — தெள்ளியீர்",        pathuId: 115 },
+            { label: "ஒன்பதாம் பத்து — ஒன்பதாம் திருமொழி — மூவரில்",          pathuId: 132 },
+            { label: "பத்தாம் பத்து — எட்டாம் திருமொழி — காதில் கடிப்பிட்டு", pathuId: 141 },
+            { label: "பதினொன்றாம் பத்து — எட்டாம் திருமொழி — மாற்றம் உள",     pathuId: 151 }
+          ];
+          const KOIL_THIVAI_CHILDREN = [
+            { label: "முதற்பத்து — முதல் திருவாய்மொழி — உயர்வற",                      pathuId: 152 },
+            { label: "முதற்பத்து — இரண்டாம் திருவாய்மொழி — வீடுமின்",                 pathuId: 153 },
+            { label: "இரண்டாம் பத்து — பத்தாம் திருவாய்மொழி — கிளரொளி",              pathuId: 171 },
+            { label: "மூன்றாம் பத்து — மூன்றாம் திருவாய்மொழி — ஒழுவில்காலமெல்லாம்", pathuId: 174 },
+            { label: "நான்காம் பத்து — முதல் திருவாய்மொழி — ஒருநாயகமாய்",            pathuId: 182 },
+            { label: "நான்காம் பத்து — பத்தாம் திருவாய்மொழி — ஒன்றும்தேவும்",        pathuId: 191 },
+            { label: "ஐந்தாம் பத்து — எட்டாம் திருவாய்மொழி — ஆராவமுதே",             pathuId: 199 },
+            { label: "ஆறாம் பத்து — பத்தாம் திருவாய்மொழி — உலகமுண்ட",               pathuId: 211 },
+            { label: "ஏழாம் பத்து — இரண்டாம் திருவாய்மொழி — கங்குலும் பகலும்",      pathuId: 213 },
+            { label: "ஏழாம் பத்து — நான்காம் திருவாய்மொழி — ஆழிஎழ",                 pathuId: 215 },
+            { label: "எட்டாம் பத்து — பத்தாம் திருவாய்மொழி — நெடுமாற்கடிமை",        pathuId: 231 },
+            { label: "ஒன்பதாம் பத்து — பத்தாம் திருவாய்மொழி — மாலைநண்ணி",           pathuId: 241 },
+            { label: "பத்தாம் பத்து — ஒன்பதாம் திருவாய்மொழி — சூழ்விசும்பு",        pathuId: 250 },
+            { label: "பத்தாம் பத்து — பத்தாம் திருவாய்மொழி — முனியே",                pathuId: 251 }
+          ];
+          const koilList = eid === 1 ? KOIL_THIRU_CHILDREN : KOIL_THIVAI_CHILDREN;
+          // Build children — anchor to first pasuram of that pathu in the rendered content
+          // Map pathuId → first global_no from pasurams
+          const pathuFirstGno = new Map();
+          for (const p of pasurams) {
+            if (p.pathu_id && !pathuFirstGno.has(p.pathu_id))
+              pathuFirstGno.set(p.pathu_id, p.global_no);
+          }
+          // Show ALL hardcoded children; anchor to rendered content if available,
+          // else anchor to section box top (anchorId)
+          const children = koilList.map(c => ({
+            label:  c.label,
+            anchor: pathuFirstGno.has(c.pathuId)
+              ? `thiru-gno-${pathuFirstGno.get(c.pathuId)}`
+              : anchorId
+          }));
+          indexEntries.push({ type: "group", label, anchorId, children });
+        } else if (etype === "section") {
+          // For thirumozhi sections (நாச்சியார், பெருமாள் etc) build children from unique thirumozhi
+          const secChildren = [];
+          const seenThiru = new Set();
+          for (const p of pasurams) {
+            const thiruName = p.thirumozhi_name    || "";
+            const thiruH    = p.thirumozhi_heading || "";
+            const childLabel = thiruName && thiruH ? `${thiruName} — ${thiruH}`
+                             : thiruName ? thiruName
+                             : thiruH    ? thiruH
+                             : "";
+            const dedupeKey = String(p.thirumozhi_id) || thiruName;
+            if (childLabel && p.thirumozhi_id && !seenThiru.has(dedupeKey)) {
+              seenThiru.add(dedupeKey);
+              secChildren.push({ label: childLabel, anchor: `thiru-gno-${p.global_no}` });
+            }
+          }
+          if (secChildren.length > 1)
+            indexEntries.push({ type: "group", label: SECTION_HEADER_MAP[sname] || sname, anchorId, children: secChildren });
+          else
+            indexEntries.push({ type: "simple", label: SECTION_HEADER_MAP[sname] || sname, anchorId });
+        } else if (etype === "pathu") {
+          const isRettai  = block.is_rettai;
+          const pathuName = first?.pathu_name || "";
+          const pathuLabel = `${sname} — ${pathuName}`;
+          // Build children — one per unique pathu_subunit_name (thirumozhi),
+          // with (Rettai) suffix if this block is rettai
+          const children = [];
+          const seenSub = new Set();
+          for (const p of pasurams) {
+            const sub         = p.pathu_subunit_name        || "";
+            const pathuThiruH = p.pathu_thirumozhi_heading   || "";
+            const h           = p.thirumozhi_heading          || "";
+            const thiruName   = p.thirumozhi_name             || "";
+            const bestH       = pathuThiruH || h;
+            const bestOrd     = sub || thiruName;
+            let   childLabel  = bestOrd && bestH ? `${bestOrd} — ${bestH}`
+                              : bestOrd           ? bestOrd
+                              : bestH             ? bestH
+                              : "";
+            if (isRettai && childLabel) childLabel += " (Rettai)";
+            const dedupeKey   = (sub || thiruName || bestH) + (isRettai ? "_r" : "");
+            if (childLabel && !seenSub.has(dedupeKey)) {
+              seenSub.add(dedupeKey);
+              children.push({ label: childLabel, anchor: `thiru-gno-${p.global_no}` });
+            }
+          }
+          // Group consecutive pathu index entries with same pathuLabel under one parent
+          const lastEntry = indexEntries[indexEntries.length - 1];
+          if (lastEntry && lastEntry.type === "group" && lastEntry.label === pathuLabel && lastEntry._isPathu) {
+            // Append children to existing entry
+            lastEntry.children.push(...children);
+          } else {
+            const entry = { type: "group", label: pathuLabel, anchorId, children, _isPathu: true };
+            indexEntries.push(entry);
+          }
+        } else if (etype === "thirumozhi") {
+          const isRettai  = block.is_rettai;
+          const h         = first?.thirumozhi_heading || first?.thirumozhi_name || "";
+          const thiruNo   = first?.thirumozhi_no ? `${first.thirumozhi_no}. ` : "";
+          let   childLabel = `${thiruNo}${h}`;
+          if (isRettai && childLabel) childLabel += " (Rettai)";
+          const parentLabel = SECTION_HEADER_MAP[sname] || sname;
+          // Group consecutive thirumozhi blocks from same section under one parent
+          const lastEntry = indexEntries[indexEntries.length - 1];
+          if (lastEntry && lastEntry.type === "group" && lastEntry.label === parentLabel && lastEntry._isThirumozhi) {
+            lastEntry.children.push({ label: childLabel, anchor: anchorId });
+          } else {
+            indexEntries.push({ type: "group", label: parentLabel, anchorId,
+              children: [{ label: childLabel, anchor: anchorId }], _isThirumozhi: true });
+          }
+        } else if (etype === "pasuram") {
+          indexEntries.push({ type: "simple", label: `${sname} — Pasuram ${eid}`, anchorId });
+        }
+        blockIdx++;
+      }
+
+      let indexHTML = `<div class="r-index" id="r-index-block"><div class="r-index-title">Today's Recital</div>`;
+      indexEntries.forEach((entry, i) => {
+        const key = `idx-${i}`;
+        if (entry.type === "group" && entry.children?.length) {
+          indexHTML += `<div class="r-idx-item group" onclick="idxToggle('${key}')">
+            <span>${entry.label}</span>
+            <span class="r-idx-arrow" id="idx-arr-${key}">▶</span>
+          </div>
+          <div class="r-idx-children" id="idx-ch-${key}">`;
+          for (const ch of entry.children)
+            indexHTML += `<div class="r-idx-child" onclick="idxGo('${ch.anchor}')">${ch.label}</div>`;
+          indexHTML += `</div>`;
+        } else {
+          indexHTML += `<div class="r-idx-item" onclick="idxGo('${entry.anchorId}')">
+            <span>${entry.label}</span>
+          </div>`;
+        }
+      });
+      indexHTML += `</div>`;
+
+      // ── Content blocks ──
+      let contentHTML = "";
+      const shownThaniyans  = new Set();
+      const shownSections   = new Set();
+      blockIdx = 0;
+      // Extract prosodyMaster from first pasurams block (global — same for all)
+      const globalProsodyMaster = blocks.find(b => b.block_type === "pasurams")?.prosody_master || {};
+
+      for (const block of blocks) {
+        const anchorId = `rec-block-${blockIdx}`;
+        blockIdx++;
+
+        if (block.block_type === "global_thaniyan") {
+          contentHTML += `<div class="r-global-thaniyan" id="${anchorId}">
+            <div class="r-thaniyan-badge">Global Thaniyan</div>
+            ${thaniyanLines(block.lines, globalProsodyMaster)}
+          </div>`;
+
+        } else if (block.block_type === "section_thaniyan") {
+          const sid = block.section_id;
+          if (!shownThaniyans.has(sid)) {
+            shownThaniyans.add(sid);
+            contentHTML += `<div class="r-section-thaniyan" id="${anchorId}">
+              <div class="r-thaniyan-badge">Thaniyan</div>
+              ${thaniyanLines(block.lines, globalProsodyMaster)}
+            </div>`;
+          }
+
+        } else if (block.block_type === "pasurams") {
+          const sname        = block.section_name   || "";
+          const sclosing     = block.section_closing || "";
+          const etype        = block.entity_type;
+          const eid          = block.entity_id;
+          const disp         = block.display_items   || {};
+          const prosodyScope  = block.prosody_scope  || [];
+          const prosodyMaster = block.prosody_master || {};
+          const pasurams     = groupPasurams(block.pasurams);
+          const sid          = pasurams[0]?.section_id;
+
+          const heading      = SECTION_HEADER_MAP[sname] || sname;
+
+          const first = pasurams[0];
+
+          // Section display items (non-adi)
+          const secDisp = getDisplayItems(disp, "section", sid, false);
+
+          // Box header: full section → section heading; pathu → section + pathu; thirumozhi → section + thiru; pasuram → section
+          let boxHeader = heading;
+          if (etype === "pathu" && first?.pathu_name) {
+            boxHeader = `${heading}<br><span style="font-size:12px;font-weight:600;color:#7a4d00">${first.pathu_name}</span>`;
+          } else if (etype === "thirumozhi" && first?.thirumozhi_heading) {
+            boxHeader = `${heading}<br><span style="font-size:12px;font-weight:600;color:#7a4d00">${first.thirumozhi_heading}</span>`;
+          } else if (etype === "pasuram") {
+            boxHeader = `${heading}<br><span style="font-size:11px;font-weight:600;color:#b38b2e">Pasuram ${eid}</span>`;
+          }
+          contentHTML += `<div class="r-section-box" id="${anchorId}">
+            <div class="r-section-box-header">${boxHeader}</div>
+            <div class="r-section-box-body">`;
+
+          if (secDisp.length) contentHTML += renderDisp(secDisp);
+
+          const isStandaloneP = etype === "pasuram";
+          let lastPathuName  = null;  // tracks pathu group (e.g. "முதற்பத்து")
+          let lastThiruHead  = null;  // tracks thirumozhi heading
+          const currentProsody = { val: null };
+
+          for (let pi = 0; pi < pasurams.length; pi++) {
+            const p    = pasurams[pi];
+            const next = pasurams[pi + 1] || null;
+
+            // Pathu group heading — fires when pathu_name changes (one per pathu group)
+            const curPathuName = p.pathu_name || "";
+            if (p.pathu_id && curPathuName && curPathuName !== lastPathuName) {
+              lastPathuName = curPathuName;
+              lastThiruHead = null;
+              contentHTML += `<div class="r-pathu-heading">${curPathuName}</div>`;
+            }
+
+            // Thirumozhi heading
+            // pathu_master sections: sub=pathu_subunit_name (e.g. "முதல் திருமொழி"), h=thirumozhi_heading (first line name)
+            // thirumozhi_master sections: thirumozhi_name has ordinal, thirumozhi_heading has first line
+            // pathu sections: heading in pathu_thirumozhi_heading; ordinal in pathu_subunit_name
+            // thirumozhi sections: heading in thirumozhi_heading; ordinal in thirumozhi_name
+            const pathuThiruH = p.pathu_thirumozhi_heading || "";
+            const thiruHead   = p.thirumozhi_heading       || "";
+            const subUnit     = p.pathu_subunit_name       || "";
+            const thiruName   = p.thirumozhi_name          || "";
+            // Best heading: pathu sections use pathu_thirumozhi_heading; thirumozhi sections use thirumozhi_heading
+            const bestHeading = pathuThiruH || thiruHead;
+            // Best ordinal: pathu sections use pathu_subunit_name; thirumozhi sections use thirumozhi_name
+            const bestOrdinal = subUnit || thiruName;
+            const thiruDisplay = bestOrdinal && bestHeading ? `${bestOrdinal} — ${bestHeading}`
+                               : bestOrdinal                ? bestOrdinal
+                               : bestHeading                ? bestHeading
+                               : "";
+            const thiruDedupeKey = subUnit || String(p.thirumozhi_id) || thiruName;
+            // Thirumozhi boundary: fires on dedupe key change OR (for pathu sections) pathu_id change
+            const thiruBoundary = thiruDedupeKey !== lastThiruHead ||
+              (p.pathu_id && lastThiruHead !== null && thiruDedupeKey === "" && p.pathu_id !== (pasurams[pi-1]?.pathu_id));
+            if (thiruBoundary) {
+              if (lastThiruHead !== null) contentHTML += `<hr class="r-thiru-separator">`;
+              lastThiruHead = thiruDedupeKey;
+              const thiruAnchor = `thiru-gno-${p.global_no}`;
+              if (thiruDisplay)
+                contentHTML += `<div class="r-thiru-heading" id="${thiruAnchor}">${thiruDisplay}</div>`;
+              else
+                contentHTML += `<div id="${thiruAnchor}"></div>`; // anchor only, no visible heading
+              // Display items always shown at thirumozhi boundary (heading or not)
+              if (p.thirumozhi_id) {
+                const thiruDisp = getDisplayItems(disp, "thirumozhi", p.thirumozhi_id, false);
+                if (thiruDisp.length) contentHTML += renderDisp(thiruDisp);
+              }
+              if (p.pathu_id) {
+                const pathuDisp = getDisplayItems(disp, "pathu", p.pathu_id, false);
+                if (pathuDisp.length) contentHTML += renderDisp(pathuDisp);
+              }
+            }
+
+            // Pasuram
+            contentHTML += renderPasuram(p, disp, prosodyScope, prosodyMaster, currentProsody);
+
+            // Adivaravu — only for full fetches; suppress for rettai blocks and standalone pasuram
+            const THIRU_CLOSING_SIDS = new Set([2, 4, 5, 11, 26]);
+            const suppressAdi = isStandaloneP || block.is_rettai === 1;
+            const isLastOfPathu = !suppressAdi && p.pathu_id && (!next || next.pathu_id !== p.pathu_id);
+            const isLastOfThiru = !suppressAdi && p.thirumozhi_id && (!next || next.thirumozhi_id !== p.thirumozhi_id);
+
+            if (isLastOfPathu) {
+              const aP = getDisplayItems(disp, "pathu", p.pathu_id, true);
+              if (aP.length) contentHTML += `<div style="text-align:center">${renderDisp(aP)}</div>`;
+              // Section closing after each thirumozhi for sections 2,4,5,11,26
+              if (sclosing && THIRU_CLOSING_SIDS.has(p.section_id) && next)
+                contentHTML += `<div class="r-section-close r-thiru-close">${sclosing}</div>`;
+            }
+            if (isLastOfThiru) {
+              const aT = getDisplayItems(disp, "thirumozhi", p.thirumozhi_id, true);
+              if (aT.length) contentHTML += `<div style="text-align:center">${renderDisp(aT)}</div>`;
+              // Section closing after each thirumozhi for sections 4,5
+              if (sclosing && THIRU_CLOSING_SIDS.has(p.section_id) && next)
+                contentHTML += `<div class="r-section-close r-thiru-close">${sclosing}</div>`;
+            }
+          }
+
+          // Section adivaravu + closing + முற்றிற்று
+          const isFullSection = etype === "section";
+
+          // Section adivaravu — only for full section
+          if (isFullSection && sid) {
+            const aS = getDisplayItems(disp, "section", sid, true);
+            if (aS.length) contentHTML += `<div style="text-align:center">${renderDisp(aS)}</div>`;
+          }
+          // Section closing — show for ALL types (section, pathu, thirumozhi, pasuram)
+          if (sclosing)
+            contentHTML += `<div class="r-section-close">${sclosing}</div>`;
+          // முற்றிற்று — only for full section
+          if (isFullSection && sname)
+            contentHTML += `<div class="r-section-final">${heading} முற்றிற்று</div>`;
+
+          contentHTML += `</div></div>`; // close body + section-box
+
+        } else if (block.block_type === "kootrirukkai") {
+          const kBlockData = JSON.stringify({ closing: block.section_closing || "", disp: block.display_items || {}, pm: block.prosody_master || {} });
+          contentHTML += `<div id="${anchorId}" class="r-special-section">
+            <div class="r-special-loading"
+              data-kootri="${block.section_id}"
+              data-block='${kBlockData.replace(/'/g,"&#39;")}'>
+              Loading திருவெழுகூற்றிருக்கை...
+            </div>
+          </div>`;
+
+        } else if (block.block_type === "madal") {
+          const mBlockData = JSON.stringify({ closing: block.section_closing || "", disp: block.display_items || {}, pm: block.prosody_master || {} });
+          contentHTML += `<div id="${anchorId}" class="r-special-section">
+            <div class="r-special-loading"
+              data-madal="${block.section_id}"
+              data-rettai="${block.is_rettai || 0}"
+              data-block='${mBlockData.replace(/'/g,"&#39;")}'>
+              Loading ${block.section_id === 22 ? "சிறியதிருமடல்" : "பெரியதிருமடல்"}...
+            </div>
+          </div>`;
+
+        } else if (block.block_type === "sattrumurai") {
+          contentHTML += `<div class="r-sattrumurai" id="${anchorId}">
+            <div class="r-thaniyan-badge">Sattrumurai</div>
+            — Sattrumurai —
+          </div>`;
+        }
+      }
+
+      return { indexHTML, contentHTML };
+    }
+
+    // ── Main ──
+    async function init() {
+      const mobile  = localStorage.getItem("mobile");
+      const stage   = document.getElementById("recital-stage");
+      const today   = new Date().getDay();
+      const dayName = DAY_NAMES[today];
+      const urlPlanId = new URLSearchParams(window.location.search).get("plan_id");
+
+      if (!mobile) {
+        stage.innerHTML = `
+          <div class="r-page-title">🙏 My Daily Recital</div>
+          <div class="r-no-plan">Please <a href="register.html">sign in</a> to view your daily recital.</div>`;
+        return;
+      }
+
+      stage.innerHTML = `
+        <div class="r-page-title">🙏 My Daily Recital</div>
+        <div class="r-day-label">${urlPlanId ? "Ghoshti Recital" : dayName + " — Today's Recital"}</div>
+        <div class="r-spinner"><span class="lotus">🪷</span>Loading...</div>`;
+
+      try {
+        let planId;
+        if (urlPlanId) {
+          // Direct plan_id from URL (e.g. from ghoshti link)
+          planId = urlPlanId;
+        } else {
+          const planRes  = await fetch(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${today}`);
+          const planData = await planRes.json();
+          if (!planData.plan || !planData.items?.length) {
+            stage.innerHTML = `
+              <div class="r-page-title">🙏 My Daily Recital</div>
+              <div class="r-day-label">${dayName}</div>
+              <div class="r-no-plan">
+                No recital plan set for today (${dayName}).<br><br>
+                <a href="tree.html">Setup My Recital Plan</a>
+              </div>`;
+            return;
+          }
+          planId = planData.plan.plan_id;
+        }
+
+        const renderRes  = await fetch(`${WORKER}/recital/render?plan_id=${planId}`);
+        const renderData = await renderRes.json();
+        if (renderData.error) throw new Error(renderData.error);
+
+        const { indexHTML, contentHTML } = buildAll(renderData.blocks);
+
+        stage.innerHTML = `
+          <div class="r-page-title">🙏 My Daily Recital</div>
+          <div class="r-day-label">${dayName} — Today's Recital</div>
+          ${indexHTML}
+          ${contentHTML}`;
+
+        // Show floating nav
+        document.getElementById("r-float-nav").style.display = "flex";
+
+        // Load special sections 21/22/23 async
+        const _spScope  = renderData.blocks.find(b => b.prosody_scope)?.prosody_scope  || [];
+        const _spMaster = renderData.blocks.find(b => b.prosody_master)?.prosody_master || {};
+        await loadSpecialSections(_spScope, _spMaster);
+
+      } catch(e) {
+        stage.innerHTML = `
+          <div class="r-page-title">🙏 My Daily Recital</div>
+          <div class="r-error">Error: ${e.message}</div>`;
+      }
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

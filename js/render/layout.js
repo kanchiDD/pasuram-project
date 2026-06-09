@@ -22,6 +22,7 @@ import { renderFullSattrumurai, sattrumuraiSpinner } from "./fullSattrumurai.js"
 import { renderFullStarPasuram, starSpinner } from "./fullStarPasuram.js";
 import { renderFullDivyadesamArchanai, archanaiSpinner } from "./fullDivyadesamArchanai.js";
 import { renderFullAzhwarThirunatchathra, thirunatchathraSpinner } from "./fullAzhwarThirunatchathra.js";
+import { renderRecitalModule, registerRecitalBindings } from "./recitalSetup.js";
 
 
 export function render() {
@@ -239,6 +240,14 @@ console.log("LEVEL BEFORE RENDER:", state.level);
       }
 
       break;
+
+       case "RECITAL":
+  topbar.style.display = "flex";
+  renderRecitalModule().then(html => {
+    app.innerHTML = html;
+    registerRecitalBindings();
+  });
+  break;
 
       
   }

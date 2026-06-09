@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arulicheyal — Recital Setup</title>
+<link rel="stylesheet" href="/css/main.css?v=860">
+<style>
+
+/* ── Base ── */
+:root {
+  --gold:    #b38b2e;
+  --gold2:   #e8c060;
+  --brown:   #4a2c00;
+  --brown2:  #7a4d00;
+  --cream:   #fffdf5;
+  --cream2:  #fef3d0;
+  --border:  #e8c060;
+  --shadow:  rgba(74,44,0,0.10);
+}
+
+.setup-wrap {
+  min-height: calc(100vh - 160px);
+  background: var(--cream);
+  padding: 20px 16px 40px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.setup-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--brown);
+  margin-bottom: 4px;
+}
+.setup-sub {
+  text-align: center;
+  font-size: 12px;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+
+.day-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.day-btn {
+  padding: 7px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brown2);
+  background: #fff;
+  cursor: pointer;
+  transition: all .2s;
+}
+.day-btn.active {
+  background: var(--brown2);
+  color: var(--cream2);
+  border-color: var(--brown2);
+}
+
+.catalog-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+.thousand-group { margin-bottom: 18px; }
+.thousand-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+.section-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background .2s;
+}
+.section-card:hover { background: var(--cream2); }
+.section-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brown);
+}
+.section-card-arrow {
+  font-size: 16px;
+  color: var(--gold);
+}
+
+.pasuram-box {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+.pasuram-box-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brown2);
+  margin-bottom: 8px;
+}
+.pasuram-input-row {
+  display: flex;
+  gap: 8px;
+}
+.pasuram-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--brown);
+  background: var(--cream);
+  outline: none;
+}
+.pasuram-input:focus { border-color: var(--gold); }
+.pasuram-add-btn {
+  padding: 10px 16px;
+  background: var(--brown2);
+  color: var(--cream2);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pasuram-preview {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--brown2);
+  display: none;
+}
+.pasuram-preview.show { display: block; }
+
+.selected-wrap {
+  background: var(--cream2);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+.selected-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+.selected-empty {
+  font-size: 13px;
+  color: #bbb;
+  text-align: center;
+  padding: 10px 0;
+}
+.selected-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.selected-item-drag {
+  color: #ccc;
+  cursor: grab;
+  font-size: 16px;
+}
+.selected-item-label {
+  flex: 1;
+  font-size: 13px;
+  color: var(--brown);
+  font-weight: 600;
+}
+.selected-item-remove {
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--brown2);
+  color: var(--cream2);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background .2s;
+}
+.save-btn:hover { background: var(--brown); }
+.save-msg {
+  text-align: center;
+  font-size: 13px;
+  color: var(--gold);
+  margin-top: 10px;
+  display: none;
+}
+.save-msg.show { display: block; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff;
+  border: 3px double var(--gold);
+  border-radius: 16px;
+  width: 92%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: modalIn .25s ease;
+}
+@keyframes modalIn {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:none; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.modal-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--brown);
+}
+.modal-close {
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--gold);
+  font-weight: 700;
+}
+.modal-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0e0b0;
+}
+.modal-option:last-child { border-bottom: none; }
+.modal-option input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--brown2);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.modal-option-label {
+  flex: 1;
+  font-size: 14px;
+  color: var(--brown);
+  font-weight: 600;
+}
+.modal-option-drill {
+  font-size: 12px;
+  color: var(--gold);
+  cursor: pointer;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.modal-divider {
+  text-align: center;
+  font-size: 11px;
+  color: #bbb;
+  margin: 8px 0;
+}
+.modal-back {
+  font-size: 12px;
+  color: var(--gold);
+  cursor: pointer;
+  text-decoration: underline;
+  margin-bottom: 10px;
+  display: none;
+}
+.modal-back.show { display: block; }
+
+</style>
+<script>
+const WORKER = "https://recitalworker.kanchitrust.workers.dev";
+const PATHU_SECTIONS = new Set([2, 11, 26]);
+const THIRUMOZHI_SECTIONS = new Set([4, 5]);
+const PRIORITY_SECTIONS = { 1: 0, 8: 1 }; // section_id → forced position
+
+// ── State ──
+let selectedDay    = 7;
+let selectedItems  = []; // { entity_type, entity_id, label }
+let catalogData    = []; // thousands + sections
+let modalStack     = []; // for back navigation
+let dragSrcIndex   = null;
+
+// ── On load ──
+window.addEventListener("DOMContentLoaded", async () => {
+  const mobile = localStorage.getItem("mobile");
+  if (!mobile) {
+    alert("Please register or sign in first.");
+    window.location.href = "register.html";
+    return;
+  }
+  await loadCatalog();
+  await loadExistingPlan();
+});
+
+// ── Day selection ──
+function selectDay(day) {
+  selectedDay = day;
+  document.querySelectorAll(".day-btn").forEach(b => {
+    b.classList.toggle("active", Number(b.dataset.day) === day);
+  });
+  loadExistingPlan();
+}
+
+// ── Load catalog ──
+async function loadCatalog() {
+  try {
+    const res  = await fetch(`${WORKER}/recital/catalog`);
+    catalogData = await res.json();
+    renderCatalog();
+  } catch(e) {
+    document.getElementById("catalog-list").innerHTML =
+      `<div style="color:#c0392b;font-size:13px">Failed to load catalog</div>`;
+  }
+}
+
+function renderCatalog() {
+  const el = document.getElementById("catalog-list");
+  let html = "";
+  for (const thousand of catalogData) {
+    if (!thousand.sections.length) continue;
+    html += `<div class="thousand-group">
+      <div class="thousand-name">${thousand.thousand_name}</div>`;
+    for (const sec of thousand.sections) {
+      html += `<div class="section-card" onclick="openSectionModal(${sec.section_id}, '${escHtml(sec.section_name)}')">
+        <div class="section-card-name">${sec.section_name}</div>
+        <div class="section-card-arrow">›</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ── Load existing plan ──
+async function loadExistingPlan() {
+  const mobile = localStorage.getItem("mobile");
+  try {
+    const res  = await fetch(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${selectedDay}`);
+    const data = await res.json();
+    if (data.plan && data.items.length) {
+      selectedItems = data.items.map(item => ({
+        entity_type: item.entity_type,
+        entity_id:   item.entity_id,
+        label:       buildLabel(item.entity_type, item.entity_id)
+      }));
+      renderSelected();
+    }
+  } catch(e) {}
+}
+
+// ── Section modal ──
+async function openSectionModal(section_id, section_name) {
+  modalStack = [];
+
+  if (!PATHU_SECTIONS.has(section_id) && !THIRUMOZHI_SECTIONS.has(section_id)) {
+    // Type 3 — standalone, just add directly
+    addItem("section", section_id, section_name);
+    return;
+  }
+
+  // Fetch children
+  const res  = await fetch(`${WORKER}/recital/catalog?section_id=${section_id}`);
+  const data = await res.json();
+
+  modalStack.push({ section_id, section_name, data, level: "section" });
+  renderModal();
+  openModal();
+}
+
+function renderModal() {
+  const frame = modalStack[modalStack.length - 1];
+  document.getElementById("modal-title").textContent = frame.section_name;
+  document.getElementById("modal-back").classList.toggle("show", modalStack.length > 1);
+
+  let html = "";
+
+  if (frame.level === "section") {
+    // Full section option
+    html += `<div class="modal-option">
+      <input type="checkbox" id="chk-full-section"
+             onchange="toggleFullSection(${frame.section_id}, '${escHtml(frame.section_name)}', this.checked)">
+      <label class="modal-option-label" for="chk-full-section">
+        Full ${frame.section_name}
+      </label>
+    </div>`;
+    html += `<div class="modal-divider">— OR select specific —</div>`;
+
+    if (frame.data.type === "pathu") {
+      for (const p of frame.data.items) {
+        const checked = isSelected("pathu", p.pathu_id) ? "checked" : "";
+        html += `<div class="modal-option">
+          <input type="checkbox" ${checked}
+                 onchange="togglePathu(${frame.section_id}, '${escHtml(frame.section_name)}', ${p.pathu_id}, '${escHtml(p.pathu_name)}', ${p.pathu_no}, this.checked)">
+          <div class="modal-option-label">${p.pathu_name}</div>
+          <div class="modal-option-drill"
+               onclick="openPathuModal(${frame.section_id}, '${escHtml(frame.section_name)}', ${p.pathu_no}, '${escHtml(p.pathu_name)}')">
+            Select Thirumozhi ›
+          </div>
+        </div>`;
+      }
+    } else if (frame.data.type === "thirumozhi") {
+      for (const t of frame.data.items) {
+        const checked = isSelected("thirumozhi", t.thirumozhi_id) ? "checked" : "";
+        html += `<div class="modal-option">
+          <input type="checkbox" ${checked}
+                 onchange="toggleThirumozhi(${t.thirumozhi_id}, '${escHtml(t.thirumozhi_name)}', this.checked)">
+          <div class="modal-option-label">${t.thirumozhi_no}. ${t.thirumozhi_name}
+            <span style="font-size:11px;color:#999;font-weight:400">
+              — ${t.thirumozhi_heading || ""}
+            </span>
+          </div>
+        </div>`;
+      }
+    }
+  }
+
+  if (frame.level === "pathu") {
+    // Full pathu option
+    html += `<div class="modal-option">
+      <input type="checkbox" id="chk-full-pathu"
+             onchange="togglePathu(${frame.section_id}, '${escHtml(frame.section_name)}', ${frame.pathu_id}, '${escHtml(frame.pathu_name)}', ${frame.pathu_no}, this.checked)">
+      <label class="modal-option-label" for="chk-full-pathu">
+        Full ${frame.pathu_name}
+      </label>
+    </div>`;
+    html += `<div class="modal-divider">— OR select specific Thirumozhi —</div>`;
+
+    for (const t of frame.data.items) {
+      const label   = `${frame.pathu_name} — ${t.pathu_subunit_name}`;
+      const checked = isSelected("pathu", t.pathu_id) ? "checked" : "";
+      html += `<div class="modal-option">
+        <input type="checkbox" ${checked}
+               onchange="toggleThirumozhiFromPathu(${t.pathu_id}, '${escHtml(label)}', this.checked)">
+        <div class="modal-option-label">${t.sub_unit_no}. ${t.pathu_subunit_name}
+          <span style="font-size:11px;color:#999;font-weight:400">
+            — ${t.thirumozhi_heading || ""}
+          </span>
+        </div>
+      </div>`;
+    }
+  }
+
+  document.getElementById("modal-content").innerHTML = html;
+}
+
+// ── Open pathu drill down ──
+async function openPathuModal(section_id, section_name, pathu_no, pathu_name) {
+  const res  = await fetch(`${WORKER}/recital/catalog?section_id=${section_id}&pathu_no=${pathu_no}`);
+  const data = await res.json();
+
+  // Find pathu_id from existing catalog frame
+  const frame   = modalStack[0];
+  const pathuRow = frame.data.items.find(p => p.pathu_no === pathu_no);
+  const pathu_id = pathuRow ? pathuRow.pathu_id : null;
+
+  modalStack.push({
+    level:        "pathu",
+    section_id,
+    section_name,
+    pathu_id,
+    pathu_no,
+    pathu_name,
+    data
+  });
+  renderModal();
+}
+
+// ── Modal back ──
+function modalGoBack() {
+  if (modalStack.length > 1) {
+    modalStack.pop();
+    renderModal();
+  }
+}
+
+// ── Toggle helpers ──
+function toggleFullSection(section_id, section_name, checked) {
+  if (checked) {
+    // Remove any existing items from this section
+    selectedItems = selectedItems.filter(i =>
+      !(i.entity_type === "section" && i.entity_id === section_id)
+    );
+    addItem("section", section_id, section_name);
+  } else {
+    removeItem("section", section_id);
+  }
+}
+
+function togglePathu(section_id, section_name, pathu_id, pathu_name, pathu_no, checked) {
+  const label = `${section_name} — ${pathu_name}`;
+  if (checked) {
+    addItem("pathu", pathu_id, label);
+  } else {
+    removeItem("pathu", pathu_id);
+  }
+}
+
+function toggleThirumozhi(thirumozhi_id, thirumozhi_name, checked) {
+  if (checked) {
+    addItem("thirumozhi", thirumozhi_id, thirumozhi_name);
+  } else {
+    removeItem("thirumozhi", thirumozhi_id);
+  }
+}
+
+function toggleThirumozhiFromPathu(pathu_id, label, checked) {
+  if (checked) {
+    addItem("pathu", pathu_id, label);
+  } else {
+    removeItem("pathu", pathu_id);
+  }
+}
+
+// ── Add / remove items ──
+function addItem(entity_type, entity_id, label) {
+  if (isSelected(entity_type, entity_id)) return;
+  selectedItems.push({ entity_type, entity_id, label });
+  renderSelected();
+}
+
+function removeItem(entity_type, entity_id) {
+  selectedItems = selectedItems.filter(
+    i => !(i.entity_type === entity_type && i.entity_id === entity_id)
+  );
+  renderSelected();
+}
+
+function isSelected(entity_type, entity_id) {
+  return selectedItems.some(
+    i => i.entity_type === entity_type && i.entity_id === entity_id
+  );
+}
+
+// ── Render selected list ──
+function renderSelected() {
+  const list  = document.getElementById("selected-list");
+  const empty = document.getElementById("selected-empty");
+
+  if (!selectedItems.length) {
+    list.innerHTML = `<div class="selected-empty" id="selected-empty">Nothing selected yet</div>`;
+    return;
+  }
+
+  let html = "";
+  selectedItems.forEach((item, i) => {
+    html += `<div class="selected-item" draggable="true"
+              ondragstart="dragStart(${i})"
+              ondragover="dragOver(event, ${i})"
+              ondrop="dragDrop(${i})"
+              ondragend="dragEnd()">
+      <div class="selected-item-drag">☰</div>
+      <div class="selected-item-label">${item.label}</div>
+      <div class="selected-item-remove"
+           onclick="removeItem('${item.entity_type}', ${item.entity_id})">✕</div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+// ── Drag to reorder ──
+function dragStart(i)          { dragSrcIndex = i; }
+function dragEnd()             { dragSrcIndex = null; }
+function dragOver(e, i)        { e.preventDefault(); }
+function dragDrop(targetIndex) {
+  if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+  const moved = selectedItems.splice(dragSrcIndex, 1)[0];
+  selectedItems.splice(targetIndex, 0, moved);
+  renderSelected();
+}
+
+// ── Pasuram lookup ──
+async function lookupPasuram() {
+  const no      = document.getElementById("pasuram-no-input").value.trim();
+  const preview = document.getElementById("pasuram-preview");
+
+  if (!no || isNaN(Number(no))) {
+    preview.className = "pasuram-preview show";
+    preview.innerHTML = `<span style="color:#c0392b">Please enter a valid pasuram number</span>`;
+    return;
+  }
+
+  try {
+    const res  = await fetch(`${WORKER}/recital/catalog/pasuram?no=${no}`);
+    const data = await res.json();
+
+    if (data.error) {
+      preview.className = "pasuram-preview show";
+      preview.innerHTML = `<span style="color:#c0392b">Pasuram ${no} not found</span>`;
+      return;
+    }
+
+    const label = `Pasuram ${data.global_no} — ${data.section_name}` +
+                  (data.pathu_name ? ` — ${data.pathu_name}` : "") +
+                  (data.thirumozhi_name ? ` — ${data.thirumozhi_name}` : "");
+
+    preview.className = "pasuram-preview show";
+    preview.innerHTML = `
+      <span style="color:var(--brown);font-weight:700">${label}</span>
+      <button onclick="confirmAddPasuram(${data.global_no}, '${escHtml(label)}')"
+              style="margin-left:10px;padding:4px 12px;background:var(--brown2);
+                     color:#fff;border:none;border-radius:6px;font-size:12px;
+                     font-weight:700;cursor:pointer">
+        Confirm Add
+      </button>`;
+  } catch(e) {
+    preview.className = "pasuram-preview show";
+    preview.innerHTML = `<span style="color:#c0392b">Error looking up pasuram</span>`;
+  }
+}
+
+function confirmAddPasuram(global_no, label) {
+  addItem("pasuram", global_no, label);
+  document.getElementById("pasuram-no-input").value = "";
+  document.getElementById("pasuram-preview").className = "pasuram-preview";
+}
+
+// ── Apply priority ordering before save ──
+function applyPriorityOrder(items) {
+  const priority = [];
+  const rest     = [];
+
+  // Pull section 1 and section 8 items out
+  const sec1 = items.filter(i => i.entity_type === "section" && i.entity_id === 1);
+  const sec8 = items.filter(i => i.entity_type === "section" && i.entity_id === 8);
+  const others = items.filter(i =>
+    !(i.entity_type === "section" && (i.entity_id === 1 || i.entity_id === 8))
+  );
+
+  return [...sec1, ...sec8, ...others];
+}
+
+// ── Save plan ──
+async function savePlan() {
+  const mobile  = localStorage.getItem("mobile");
+  const saveMsg = document.getElementById("save-msg");
+
+  if (!selectedItems.length) {
+    saveMsg.className = "save-msg show";
+    saveMsg.style.color = "#c0392b";
+    saveMsg.textContent = "Please select at least one item";
+    return;
+  }
+
+  const orderedItems = applyPriorityOrder(selectedItems);
+
+  try {
+    const res  = await fetch(`${WORKER}/recital/plan`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        mobile,
+        day_of_week: selectedDay,
+        plan_name:   `My Recital — Day ${selectedDay}`,
+        items:       orderedItems.map(i => ({
+          entity_type: i.entity_type,
+          entity_id:   i.entity_id
+        }))
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      saveMsg.className   = "save-msg show";
+      saveMsg.style.color = "var(--gold)";
+      saveMsg.textContent = "Plan saved successfully 🙏";
+      selectedItems = orderedItems;
+      renderSelected();
+    } else {
+      throw new Error(data.error || "Save failed");
+    }
+  } catch(e) {
+    saveMsg.className   = "save-msg show";
+    saveMsg.style.color = "#c0392b";
+    saveMsg.textContent = "Error saving plan: " + e.message;
+  }
+}
+
+// ── Modal helpers ──
+function openModal()  {
+  document.getElementById("modal-overlay").classList.add("open");
+}
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+  modalStack = [];
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById("modal-overlay")) closeModal();
+}
+
+// ── Label builder for loaded plans ──
+function buildLabel(entity_type, entity_id) {
+  // Best effort label from catalog data
+  if (entity_type === "section") {
+    for (const t of catalogData) {
+      const sec = t.sections.find(s => s.section_id === entity_id);
+      if (sec) return sec.section_name;
+    }
+  }
+  return `${entity_type} ${entity_id}`;
+}
+
+// ── Escape HTML ──
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/'/g,"&#39;")
+    .replace(/"/g,"&quot;");
+}
+</script>
+</head>
+<body>
+<div id="header"></div>
+
+<div class="setup-wrap">
+
+  <div class="setup-title">🙏 Recital Plan Setup</div>
+  <div class="setup-sub">Build your daily recital plan</div>
+
+  <!-- Day selector -->
+  <div class="catalog-label">Assign to day</div>
+  <div class="day-row">
+    <button class="day-btn" data-day="0" onclick="selectDay(0)">Sun</button>
+    <button class="day-btn" data-day="1" onclick="selectDay(1)">Mon</button>
+    <button class="day-btn" data-day="2" onclick="selectDay(2)">Tue</button>
+    <button class="day-btn" data-day="3" onclick="selectDay(3)">Wed</button>
+    <button class="day-btn" data-day="4" onclick="selectDay(4)">Thu</button>
+    <button class="day-btn" data-day="5" onclick="selectDay(5)">Fri</button>
+    <button class="day-btn" data-day="6" onclick="selectDay(6)">Sat</button>
+    <button class="day-btn active" data-day="7" onclick="selectDay(7)">All Days</button>
+  </div>
+
+  <!-- Selected items -->
+  <div class="selected-wrap">
+    <div class="selected-label">Your Selection</div>
+    <div id="selected-list">
+      <div class="selected-empty" id="selected-empty">Nothing selected yet</div>
+    </div>
+  </div>
+
+  <!-- Pasuram box -->
+  <div class="pasuram-box">
+    <div class="pasuram-box-label">Add a specific Pasuram — enter pasuram number</div>
+    <div class="pasuram-input-row">
+      <input type="number" class="pasuram-input" id="pasuram-no-input"
+             placeholder="e.g. 474" min="1" max="4000">
+      <button class="pasuram-add-btn" onclick="lookupPasuram()">Add</button>
+    </div>
+    <div class="pasuram-preview" id="pasuram-preview"></div>
+  </div>
+
+  <!-- Catalog -->
+  <div class="catalog-label">Select Prabandham</div>
+  <div id="catalog-list">
+    <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">
+      Loading...
+    </div>
+  </div>
+
+  <!-- Save -->
+  <button class="save-btn" onclick="savePlan()">Save Plan 🙏</button>
+  <div class="save-msg" id="save-msg"></div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-back" id="modal-back" onclick="modalGoBack()">← Back</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<script src="js/layout.js" defer></script>
+<script>
+window.addEventListener("DOMContentLoaded", function() {
+  if (typeof loadLayout === "function") loadLayout();
+});
+</script>
