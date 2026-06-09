@@ -266,9 +266,18 @@ async function handleRender(request, env) {
 
     // ── Step 3: section thaniyans ──
     // allSectionIds: all sections in this plan (for display items, closing, prosody)
-    // uniqueSectionIds: only sections with thaniyan_display_mode != 0 (for thaniyans)
+    // uniqueSectionIds: sections that should show thaniyans
+    // thaniyan_display_mode = 0 means "suppress when a preceding section is present"
+    // For section 2: mode=0 → suppress thaniyan only when section 1 is also in the plan
+    // If section 1 is absent, section 2 thaniyan should show
     const allSectionIds    = [...new Set(sectionIds.filter(Boolean))];
-    const uniqueSectionIds = allSectionIds.filter(sid => sectionModeMap[sid] !== 0);
+    const uniqueSectionIds = allSectionIds.filter(sid => {
+      const mode = sectionModeMap[sid];
+      if (mode !== 0) return true;           // mode 1/2 → always show
+      // mode 0 → show only if section_id - 1 is NOT in the plan
+      // (e.g. section 2 shows thaniyan only when section 1 is absent)
+      return !allSectionIds.includes(sid - 1);
+    });
     const sectionThaniyans = {};
     await Promise.all(uniqueSectionIds.map(sid =>
       env.db.prepare(`SELECT l.line_no, l.line_text, l.line_type, l.line_role, l.line_group, l.prosody_id FROM thaniyan_line_master l WHERE l.thaniyan_ref = ? ORDER BY l.line_no`).bind(`section_${sid}`).all()
@@ -420,9 +429,11 @@ async function handleRender(request, env) {
       const item       = items[i];
       const section_id = sectionIds[i];
       const mode       = section_id ? (sectionModeMap[section_id] ?? 2) : 2;
+      // mode=0 means suppress thaniyan only when preceding section is present
+      const showThaniyan = mode !== 0 || !allSectionIds.includes(section_id - 1);
 
       // Section thaniyan — once per section
-      if (section_id && mode !== 0 && !shownSectionThaniyans.has(section_id)) {
+      if (section_id && showThaniyan && !shownSectionThaniyans.has(section_id)) {
         if (sectionThaniyans[section_id])
           blocks.push({ block_type: "section_thaniyan", section_id, lines: sectionThaniyans[section_id] });
         shownSectionThaniyans.add(section_id);
