@@ -59,6 +59,21 @@
       text-transform:uppercase; letter-spacing:.08em;
       margin-bottom:6px;
     }
+    .thaniyan-group {
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #e8d8a0;
+    }
+    .thaniyan-group:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .thaniyan-gap {
+      margin-top: 12px;
+      border-top: 1px dashed #e8d8a0;
+      margin-bottom: 4px;
+    }
     .thaniyan-line {
       text-align:left;
       font-size:calc(var(--pf) * 1.0); line-height:1.9; color:#2a1a00;
@@ -229,18 +244,24 @@
     }
 
     function renderThaniyan(badge, lines) {
-      // line_role values from DB:
-      // 'title'   → main section heading (e.g. "பொது தனியன்கள்") — centered bold large
-      // 'subhead' → thaniyan name / author line — centered italic small
-      // null      → actual thaniyan body lines — left aligned normal
+      // Render lines in exact DB order (line_no order)
+      // line_role: 'title'=heading centered bold, 'subhead'=name/author centered italic, null=body left
+      // line_group: body lines with same group belong together; gap when group changes
       let html = `<div class="thaniyan-container">`;
+      let curGroup = null;
       for (const l of lines) {
-        const role = l.line_role || null;
+        const role  = l.line_role || null;
+        const group = l.line_group ?? 0;
         if (role === "title") {
           html += `<div class="thaniyan-title">${l.line_text}</div>`;
         } else if (role === "subhead") {
           html += `<div class="thaniyan-subhead">${l.line_text}</div>`;
         } else {
+          // Body line — add gap when group changes
+          if (curGroup !== null && group !== curGroup) {
+            html += `<div class="thaniyan-gap"></div>`;
+          }
+          curGroup = group;
           html += `<div class="thaniyan-line">${l.line_text}</div>`;
         }
       }
