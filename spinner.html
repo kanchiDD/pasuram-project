@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Divyadesam Spinner</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=860">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil&display=swap" rel="stylesheet">
+  <script src="./js/layout.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    :root { --pf: 15px; }
+    body { background:#fffdf5; min-height:100vh; display:flex; flex-direction:column;
+           font-family:"Noto Sans Tamil",sans-serif; }
+    #header { width:100%; }
+    #footer  { width:100%; margin-top:auto; }
+
+    .sp-wrap {
+      max-width:680px; margin:0 auto;
+      padding:16px 14px 130px; flex:1;
+    }
+
+    /* Day badge */
+    .sp-day-badge {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; margin:14px auto 16px;
+      width:88px; height:88px; border-radius:50%;
+      background:linear-gradient(135deg,#7a4d00,#b38b2e);
+      color:#fff; box-shadow:0 4px 16px rgba(122,77,0,.35);
+    }
+    .sp-day-n   { font-size:24px; font-weight:900; line-height:1; }
+    .sp-day-lbl { font-size:10px; opacity:.85; margin-top:1px; }
+    .sp-day-max { font-size:10px; opacity:.7; }
+
+    .sp-status {
+      text-align:center; font-size:12px; font-weight:700;
+      letter-spacing:.05em; text-transform:uppercase;
+      margin-bottom:16px; color:#27ae60;
+    }
+    .sp-status.paused   { color:#e67e22; }
+    .sp-status.cancelled { color:#aaa; }
+
+    /* ── Thaniyan — matching SS1/SS2 ── */
+    .thaniyan-container {
+      border:1.5px solid #c8a84b;
+      border-radius:10px;
+      background:#fff9ed;
+      padding:14px 16px;
+      margin-bottom:14px;
+    }
+    .thaniyan-badge {
+      text-align:center;
+      font-size:11px; font-weight:700; color:#b38b2e;
+      text-transform:uppercase; letter-spacing:.08em;
+      margin-bottom:6px;
+    }
+    .thaniyan-line {
+      text-align:left;
+      font-size:calc(var(--pf) * 1.0); line-height:1.9; color:#2a1a00;
+      font-family:"Noto Sans Tamil",sans-serif;
+    }
+    .thaniyan-title {
+      text-align:center; font-weight:700;
+      font-size:calc(var(--pf) * 1.1); color:#4a2c00;
+      font-family:"Noto Sans Tamil",sans-serif;
+      margin:8px 0 4px;
+    }
+    .thaniyan-subhead {
+      text-align:center; font-style:italic;
+      font-size:calc(var(--pf) * 0.85); color:#7a4d00;
+      font-family:"Noto Sans Tamil",sans-serif;
+      margin-bottom:2px;
+    }
+
+    /* ── Desam block ── */
+    .sp-desam-block {
+      background:#fff; border:1px solid #e8d8a0;
+      border-radius:8px; padding:10px 14px; margin-bottom:10px;
+    }
+    .sp-desam-header {
+      display:flex; justify-content:space-between; align-items:baseline;
+      border-bottom:1px solid #f0e0b0; padding-bottom:5px; margin-bottom:8px;
+    }
+    .sp-desam-name { font-size:13px; font-weight:700; color:#7a4d00; }
+    .sp-desam-gno  { font-size:10px; color:#b38b2e; }
+
+    /* Pasuram lines — recital_group split */
+    .sp-recital-group { margin-bottom:10px; }
+    .sp-pasuram-line {
+      font-size:calc(var(--pf) * 1.0);
+      line-height:1.9; color:#2a1a00;
+    }
+
+    /* ── Floating nav — matching recital.html ── */
+    .r-float-nav {
+      position:fixed; right:12px; bottom:80px;
+      display:flex; flex-direction:column; gap:8px; z-index:100;
+    }
+    .r-float-btn {
+      width:42px; height:42px; border-radius:50%;
+      background:#7a4d00; color:#fff; border:none;
+      font-size:16px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 3px 10px rgba(0,0,0,.25);
+    }
+    .r-float-btn:active { background:#4a2c00; }
+    .r-float-btn.font-btn { font-size:12px; font-weight:700; }
+
+    /* ── Action bar ── */
+    .sp-action-bar {
+      position:fixed; bottom:0; left:0; right:0;
+      background:#fff9ed; border-top:1.5px solid #e8d8a0;
+      padding:10px 16px env(safe-area-inset-bottom,12px);
+      display:flex; gap:8px; justify-content:center; z-index:99;
+    }
+    .sp-btn {
+      flex:1; max-width:200px; padding:10px 8px;
+      border:none; border-radius:8px;
+      font-size:13px; font-weight:700; font-family:inherit; cursor:pointer;
+    }
+    .sp-btn-pause  { background:#7a4d00; color:#fff; }
+    .sp-btn-resume { background:#27ae60; color:#fff; }
+    .sp-btn-cancel { background:#f5f0e8; color:#c0392b; border:1px solid #ddd; }
+    .sp-empty { text-align:center; padding:40px 20px; color:#aaa; font-size:15px; }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+
+  <div class="sp-wrap" id="sp-stage">
+    <div style="text-align:center;padding:60px;font-size:32px">🪷</div>
+  </div>
+
+  <!-- Floating nav -->
+  <div class="r-float-nav" id="sp-float-nav" style="display:none">
+    <button class="r-float-btn" onclick="window.location.href='index.html'" title="Home">🏠</button>
+    <button class="r-float-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">↑</button>
+    <button class="r-float-btn" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Bottom">▼</button>
+    <button class="r-float-btn" onclick="history.back()" title="Back">◀</button>
+    <button class="r-float-btn font-btn" onclick="adjustFont(1)" title="Font+">A+</button>
+    <button class="r-float-btn font-btn" onclick="adjustFont(-1)" title="Font-">A-</button>
+  </div>
+
+  <div id="footer"></div>
+
+  <script>
+    const WORKER = "https://recitalworker.kanchitrust.workers.dev";
+
+    // Font adjuster
+    function adjustFont(delta) {
+      const root = document.documentElement;
+      const cur  = parseFloat(getComputedStyle(root).getPropertyValue("--pf")) || 15;
+      const next = Math.min(22, Math.max(11, cur + delta));
+      root.style.setProperty("--pf", next + "px");
+    }
+
+    async function init() {
+      const mobile = localStorage.getItem("mobile");
+      const stage  = document.getElementById("sp-stage");
+      if (!mobile) {
+        stage.innerHTML = `<div class="sp-empty">Please <a href="register.html">sign in</a> to use Divyadesam Spinner.</div>`;
+        return;
+      }
+      try {
+        const params  = new URLSearchParams(window.location.search);
+      const isAdmin = params.get("admin") === "1";
+      const testDay = isAdmin ? params.get("day") : null;
+      const spinUrl = testDay !== null
+        ? `${WORKER}/recital/spinner?mobile=${encodeURIComponent(mobile)}&test_day=${testDay}`
+        : `${WORKER}/recital/spinner?mobile=${encodeURIComponent(mobile)}`;
+      const res  = await fetch(spinUrl);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        render(data);
+      } catch(e) {
+        stage.innerHTML = `<div class="sp-empty">Error: ${e.message}</div>`;
+      }
+    }
+
+    function render(data) {
+      const stage  = document.getElementById("sp-stage");
+      const paused = data.paused;
+      const day    = (data.spin_day ?? 0) + 1;
+      const maxDay = data.max_day || 247;
+      let html = "";
+
+      // Day badge
+      html += `<div class="sp-day-badge">
+        <div class="sp-day-n">${day}</div>
+        <div class="sp-day-lbl">Day</div>
+        <div class="sp-day-max">of ${maxDay}</div>
+      </div>`;
+
+      // Status
+      const sc = paused===1?"paused":paused===-1?"cancelled":"";
+      const st = paused===1?"⏸ Paused — Day "+day:paused===-1?"✕ Cancelled":"🔄 Active";
+      html += `<div class="sp-status ${sc}">${st}</div>`;
+
+      // Global thaniyan
+      if (data.global_thaniyan?.length) {
+        html += renderThaniyan("பொது தனியன்", data.global_thaniyan);
+      }
+
+      // Section thaniyans
+      for (const sid of Object.keys(data.section_thaniyans || {})) {
+        const lines = data.section_thaniyans[sid];
+        if (lines?.length) html += renderThaniyan("தனியன்", lines);
+      }
+
+      // Desam blocks
+      for (const b of (data.desam_blocks || [])) {
+        html += `<div class="sp-desam-block">
+          <div class="sp-desam-header">
+            <span class="sp-desam-name">${b.canonical_name}</span>
+            <span class="sp-desam-gno">${b.global_no}</span>
+          </div>
+          ${renderPasuram(b.lines || [])}
+        </div>`;
+      }
+
+      stage.innerHTML = html;
+      document.getElementById("sp-float-nav").style.display = "flex";
+      renderActionBar(paused);
+    }
+
+    function renderThaniyan(badge, lines) {
+      // line_role values from DB:
+      // 'title'   → main section heading (e.g. "பொது தனியன்கள்") — centered bold large
+      // 'subhead' → thaniyan name / author line — centered italic small
+      // null      → actual thaniyan body lines — left aligned normal
+      let html = `<div class="thaniyan-container">`;
+      for (const l of lines) {
+        const role = l.line_role || null;
+        if (role === "title") {
+          html += `<div class="thaniyan-title">${l.line_text}</div>`;
+        } else if (role === "subhead") {
+          html += `<div class="thaniyan-subhead">${l.line_text}</div>`;
+        } else {
+          html += `<div class="thaniyan-line">${l.line_text}</div>`;
+        }
+      }
+      html += `</div>`;
+      return html;
+    }
+
+    function renderPasuram(lines) {
+      if (!lines.length) return "";
+      // Split by recital_group
+      const groups = [];
+      let cur = null;
+      for (const l of lines) {
+        const g = l.recital_group ?? 1;
+        if (cur === null || g !== cur.group) {
+          cur = { group: g, lines: [] };
+          groups.push(cur);
+        }
+        cur.lines.push(l);
+      }
+      return groups.map(g =>
+        `<div class="sp-recital-group">${
+          g.lines.map(l => `<div class="sp-pasuram-line">${l.line_text}</div>`).join("")
+        }</div>`
+      ).join("");
+    }
+
+    function renderActionBar(paused) {
+      document.getElementById("sp-action-bar")?.remove();
+      const bar = document.createElement("div");
+      bar.id = "sp-action-bar";
+      bar.className = "sp-action-bar";
+      if (paused === -1) {
+        bar.innerHTML = `<button class="sp-btn sp-btn-resume" onclick="doAction('restart')">🔄 Restart Spinner</button>`;
+      } else if (paused === 1) {
+        bar.innerHTML = `
+          <button class="sp-btn sp-btn-resume" onclick="doAction('resume')">▶ Resume</button>
+          <button class="sp-btn sp-btn-cancel" onclick="confirmCancel()">✕ Cancel</button>`;
+      } else {
+        bar.innerHTML = `
+          <button class="sp-btn sp-btn-pause" onclick="doAction('pause')">⏸ Pause</button>
+          <button class="sp-btn sp-btn-cancel" onclick="confirmCancel()">✕ Cancel</button>`;
+      }
+      document.body.appendChild(bar);
+    }
+
+    async function doAction(action) {
+      const mobile = localStorage.getItem("mobile");
+      if (!mobile) return;
+      try {
+        await fetch(`${WORKER}/recital/spinner`, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ mobile, action })
+        });
+        init();
+      } catch(e) { alert("Error: " + e.message); }
+    }
+
+    function confirmCancel() {
+      if (confirm("Cancel your Divyadesam Spinner?\nYou can restart it anytime."))
+        doAction("cancel");
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

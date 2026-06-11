@@ -39,6 +39,7 @@ export function renderOptions() {
         <div class="tree-item" onclick="openAzhwarThirunatchathra()">Azhwar Thirunatcharam Goshti</div>
         <div class="tree-item" onclick="openRegister()">Register / Sign In</div>
         <div class="tree-item" onclick="openRecitalPlan()">My Recital Plan</div>
+        <div class="tree-item" onclick="openDivyadesamSpinner()">Divyadesam Spinner</div>
 
         <!-- 🔥 FULL BOOK IMAGE -->
         <div class="book-image-card" onclick="showFullNaalayiram()">
@@ -214,6 +215,10 @@ window.openRegister = function() {
 window.openRecitalPlan = function() {
   state.level = "RECITAL";
   import("./layout.js").then(m => m.render());
+};
+
+window.openDivyadesamSpinner = function() {
+  window.location.href = "spinner.html";
 };
 
 
