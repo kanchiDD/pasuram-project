@@ -4,7 +4,7 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const APP_VERSION   = 'arulicheyal-v1';
+const APP_VERSION   = 'arulicheyal-v2';
 const SHELL_CACHE   = APP_VERSION + '-shell';
 const CONTENT_CACHE = APP_VERSION + '-content';
 
@@ -199,7 +199,7 @@ self.addEventListener('fetch', event => {
   // ── 6a. NETWORK ONLY (user data, live sessions) ───────────
   if (isNetworkOnly(url)) {
     event.respondWith(
-      fetch(event.request).catch(() =>
+      fetch(event.request, { redirect: 'follow' }).catch(() =>
         new Response(
           JSON.stringify({ error: 'offline', message: 'No network connection' }),
           { status: 503, headers: { 'Content-Type': 'application/json' } }
@@ -223,7 +223,7 @@ self.addEventListener('fetch', event => {
 
   // ── 6d. EVERYTHING ELSE — network with cache fallback ─────
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request, { redirect: 'follow' }).catch(() => caches.match(event.request))
   );
 });
 
@@ -242,7 +242,7 @@ async function cacheThenNetwork(request) {
 
   // Cache stale or missing — fetch fresh
   try {
-    const fresh = await fetch(request);
+    const fresh = await fetch(request, { redirect: 'follow' });
     if (fresh.ok) {
       cache.put(request, stampResponse(fresh.clone()));
     }
@@ -263,7 +263,7 @@ async function cacheThenNetwork(request) {
 
 // Silent background cache refresh
 function refreshCache(request, cache) {
-  fetch(request)
+  fetch(request, { redirect: 'follow' })
     .then(fresh => {
       if (fresh.ok) cache.put(request, stampResponse(fresh.clone()));
     })
@@ -288,7 +288,12 @@ async function shellAssetStrategy(request) {
 
   // Not in cache — fetch and cache it
   try {
-    const fresh = await fetch(request);
+    const fresh = await fetch(request, { redirect: 'follow' });
+    // type 'opaqueredirect' means Cloudflare redirected (http→https etc)
+    // Don't cache it — just follow it transparently
+    if (fresh.type === 'opaqueredirect') {
+      return fetch(request, { redirect: 'follow' });
+    }
     if (fresh.ok) {
       cache.put(request, fresh.clone());
     }
