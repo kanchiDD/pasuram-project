@@ -32,6 +32,7 @@ export default {
     if (url.pathname.includes("/recital/pasuram-lines"))  return handlePasuramLines(request, env);
     if (url.pathname.includes("/recital/plan"))           return handlePlan(request, env);
     if (url.pathname.includes("/recital/render"))         return handleRender(request, env);
+    if (url.pathname.includes("/recital/spinner"))        return handleSpinner(request, env);
     if (url.pathname.includes("/recital/ghoshti"))        return handleGhoshti(request, env);
     if (url.pathname.includes("/auth/register"))          return handleAuthRegister(request, env);
     if (url.pathname.includes("/recital/rettai"))         return handleRettai(request, env);
@@ -489,6 +490,156 @@ async function handleRender(request, env) {
 // ─────────────────────────────────────────────────────────────────────────────
 // GHOSHTI
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SPINNER
+// ─────────────────────────────────────────────────────────────────────────────
+async function handleSpinner(request, env) {
+  try {
+    const url    = new URL(request.url);
+    const mobile = request.method === "GET"
+      ? url.searchParams.get("mobile")
+      : (await request.clone().json()).mobile;
+
+    if (!mobile)
+      return new Response(JSON.stringify({ error: "mobile required" }), { status: 400, headers: CORS });
+
+    if (request.method === "POST") {
+      const body   = await request.json();
+      const action = body.action; // "pause" | "resume" | "cancel" | "restart"
+
+      // Get current user state
+      const user = await env.db.prepare(
+        `SELECT created_at, spinner_paused, spinner_paused_day FROM user_master WHERE mobile = ? LIMIT 1`
+      ).bind(mobile).first();
+      if (!user) return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: CORS });
+
+      const epoch   = new Date(user.created_at);
+      epoch.setHours(0, 0, 0, 0);
+      const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+      const dayNow  = Math.floor((todayMid - epoch) / 86400000);
+      const curDay  = user.spinner_paused === 1 ? (user.spinner_paused_day ?? 0) : dayNow;
+
+      if (action === "pause") {
+        await env.db.prepare(
+          `UPDATE user_master SET spinner_paused = 1, spinner_paused_day = ? WHERE mobile = ?`
+        ).bind(curDay, mobile).run();
+      } else if (action === "resume") {
+        await env.db.prepare(
+          `UPDATE user_master SET spinner_paused = 0, spinner_paused_day = NULL WHERE mobile = ?`
+        ).bind(mobile).run();
+      } else if (action === "cancel") {
+        await env.db.prepare(
+          `UPDATE user_master SET spinner_paused = -1, spinner_paused_day = NULL WHERE mobile = ?`
+        ).bind(mobile).run();
+      } else if (action === "restart") {
+        // Reset epoch by updating created_at to now so day counter restarts
+        await env.db.prepare(
+          `UPDATE user_master SET spinner_paused = 0, spinner_paused_day = NULL, created_at = datetime('now') WHERE mobile = ?`
+        ).bind(mobile).run();
+      }
+      return new Response(JSON.stringify({ success: true }), { headers: CORS });
+    }
+
+    // GET — fetch today's spinner
+    const user = await env.db.prepare(
+      `SELECT created_at, spinner_paused, spinner_paused_day FROM user_master WHERE mobile = ? LIMIT 1`
+    ).bind(mobile).first();
+    if (!user) return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: CORS });
+
+    const paused    = user.spinner_paused ?? 0;
+    const epoch     = new Date(user.created_at);
+    epoch.setHours(0, 0, 0, 0); // normalize to midnight
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const dayNow    = Math.floor((todayMidnight - epoch) / 86400000);
+    // test_day param lets you preview any day without changing state
+    const testDay   = url.searchParams.get("test_day");
+    const spinDay   = testDay !== null ? Number(testDay)
+                    : paused === 1 ? (user.spinner_paused_day ?? 0) : dayNow;
+
+    // ── Fetch all divyadesams in canonical order ──
+    const desams = await env.db.prepare(
+      `SELECT divyadesam_id, canonical_name FROM divyadesam_master ORDER BY divyadesam_id`
+    ).all();
+
+    // ── For each desam, get today's pasuram ──
+    const MAX_DAY = 247; // Srirangam count — one full round
+    const desamBlocks = await Promise.all(desams.results.map(async d => {
+      // Get all pasurams for this desam in global_no order
+      const pasurams = await env.db.prepare(
+        `SELECT m.global_no, l.line_text, l.line_no, l.recital_group
+         FROM pasuram_divyadesam_map m
+         JOIN pasuram_line_master l ON m.global_no = l.global_no
+         WHERE m.divyadesam_id = ?
+         ORDER BY m.global_no, l.line_no`
+      ).bind(d.divyadesam_id).all();
+
+      if (!pasurams.results.length) return null;
+
+      // Group lines by global_no
+      const pMap = new Map();
+      for (const row of pasurams.results) {
+        if (!pMap.has(row.global_no)) pMap.set(row.global_no, []);
+        pMap.get(row.global_no).push(row);
+      }
+      const pList = [...pMap.entries()]; // [[global_no, lines[]], ...]
+
+      // Pick today's pasuram by day modulo
+      const idx = spinDay % pList.length;
+      const [global_no, lines] = pList[idx];
+
+      return {
+        divyadesam_id:   d.divyadesam_id,
+        canonical_name:  d.canonical_name,
+        global_no,
+        lines
+      };
+    }));
+
+    const validBlocks = desamBlocks.filter(Boolean);
+
+    // ── Global thaniyan ──
+    const globalThaniyan = await env.db.prepare(
+      `SELECT l.line_no, l.line_text, l.line_role, l.line_group
+       FROM thaniyan_line_master l WHERE l.thaniyan_ref = 'global' ORDER BY l.line_no`
+    ).all();
+
+    // ── Section thaniyans for sections appearing today ──
+    // Dedup: sections sharing a thaniyan group only show once
+    // Group rules: 1-2 share, 11-13 share (use lowest section_id as key)
+    const THANIYAN_GROUP = { 2:1, 12:11, 13:11 };
+    const rawSectionIds = [...new Set(
+      (await Promise.all(validBlocks.map(b =>
+        env.db.prepare(`SELECT section_id FROM pasuram_master WHERE global_no = ? LIMIT 1`)
+          .bind(b.global_no).first()
+      ))).filter(Boolean).map(r => r.section_id)
+    )];
+    // Map each section to its canonical thaniyan ref (deduped)
+    const canonicalRefs = [...new Set(rawSectionIds.map(sid => THANIYAN_GROUP[sid] || sid))];
+
+    const sectionThaniyans = {};
+    await Promise.all(canonicalRefs.map(async sid => {
+      const rows = await env.db.prepare(
+        `SELECT l.line_no, l.line_text, l.line_role, l.line_group
+         FROM thaniyan_line_master l WHERE l.thaniyan_ref = ? ORDER BY l.line_no`
+      ).bind(`section_${sid}`).all();
+      if (rows.results.length) sectionThaniyans[sid] = rows.results;
+    }));
+
+    return new Response(JSON.stringify({
+      spin_day:         spinDay,
+      max_day:          MAX_DAY,
+      paused,
+      global_thaniyan:  globalThaniyan.results,
+      section_thaniyans: sectionThaniyans,
+      desam_blocks:     validBlocks
+    }), { headers: CORS });
+
+  } catch(err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+  }
+}
+
 async function handleGhoshti(request, env) {
   const url = new URL(request.url);
   try {
