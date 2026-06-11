@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arulicheyal — Offline</title>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f5c242">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arulicheyal">
+<link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #f5c242;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    text-align: center;
+  }
+
+  .logo-ring {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 3px solid #f5c242;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    font-size: 52px;
+  }
+
+  h1 {
+    font-size: 24px;
+    color: #f5c242;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+
+  .adiyen {
+    font-size: 13px;
+    color: #e0b030;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: #e0b030;
+    margin: 14px auto 20px;
+    border-radius: 2px;
+  }
+
+  p {
+    font-size: 15px;
+    color: #c9a84c;
+    line-height: 1.7;
+    max-width: 300px;
+    margin-bottom: 10px;
+  }
+
+  .tip {
+    margin-top: 24px;
+    background: rgba(245, 194, 66, 0.08);
+    border: 1px solid rgba(245, 194, 66, 0.25);
+    border-radius: 10px;
+    padding: 16px 20px;
+    max-width: 320px;
+  }
+
+  .tip-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #e0b030;
+    margin-bottom: 8px;
+  }
+
+  .tip p {
+    font-size: 13px;
+    color: #a08030;
+    margin: 0;
+  }
+
+  .retry-btn {
+    margin-top: 28px;
+    background: #f5c242;
+    color: #000;
+    border: none;
+    padding: 13px 36px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+  }
+
+  .retry-btn:active {
+    background: #e0b030;
+  }
+
+  .signal-icon {
+    font-size: 13px;
+    color: #555;
+    margin-top: 18px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="logo-ring">🙏</div>
+
+  <h1>Arulicheyal</h1>
+  <div class="adiyen">Adiyen 🙏,</div>
+  <div class="divider"></div>
+
+  <p>You are currently offline.</p>
+  <p>Pages you have visited before will load from your device automatically.</p>
+
+  <div class="tip">
+    <div class="tip-title">For Temple Use</div>
+    <p>Open the app once at home on Wi-Fi before going to the temple — all your recital content will be ready offline.</p>
+  </div>
+
+  <button class="retry-btn" onclick="window.location.reload()">
+    Try Again
+  </button>
+
+  <div class="signal-icon">📡 Waiting for connection…</div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(function (reg) {
+          console.log('[SW] Registered ✅ scope:', reg.scope);
+        })
+        .catch(function (err) {
+          console.warn('[SW] Registration failed:', err);
+        });
+    });
+  }
+</script>
+</body>
+</html>
