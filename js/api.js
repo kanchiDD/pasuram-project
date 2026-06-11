@@ -9,7 +9,7 @@ function safeRender() {
 
 export async function fetchThousand() {
   if (state.thousandData) return;
-  const res = await fetch("https://cdnaalayiram-api.kanchitrust.workers.dev/api/thousand");
+  const res = await fetch("https://cacheproxy.kanchitrust.workers.dev/api/thousand");
   state.thousandData = await res.json();
   safeRender();
 }
@@ -22,7 +22,7 @@ export async function fetchSections() {
   }
 
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId
+    "https://cacheproxy.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId
   );
 
   const data = await res.json();
@@ -33,7 +33,7 @@ export async function fetchSections() {
 
 export async function fetchThaniyan() {
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/thaniyan?section_id=" + state.selectedSectionId
+    "https://cacheproxy.kanchitrust.workers.dev/api/thaniyan?section_id=" + state.selectedSectionId
   );
 
   const data = await res.json();
@@ -49,7 +49,7 @@ export async function fetchMadal() {
   const sectionId = state.selectedSectionId;
 
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/madal?section_id=" + sectionId
+    "https://cacheproxy.kanchitrust.workers.dev/api/madal?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -57,7 +57,7 @@ export async function fetchMadal() {
 
   try {
     const displayRes = await fetch(
-      "https://cdnaalayiram-api.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -82,7 +82,7 @@ export async function fetchKootrirukkai() {
   const sectionId = state.selectedSectionId;
 
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/kootrirukkai?section_id=" + sectionId
+    "https://cacheproxy.kanchitrust.workers.dev/api/kootrirukkai?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -90,7 +90,7 @@ export async function fetchKootrirukkai() {
 
   try {
     const displayRes = await fetch(
-      "https://cdnaalayiram-api.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -120,7 +120,7 @@ export async function fetchPasuram() {
   if (!sectionId) return;
 
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/pasuram?section_id=" + sectionId
+    "https://cacheproxy.kanchitrust.workers.dev/api/pasuram?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -132,7 +132,7 @@ export async function fetchPasuram() {
 
   try {
     const displayRes = await fetch(
-      "https://cdnaalayiram-api.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -155,7 +155,7 @@ export async function fetchPasuram() {
 
 export async function fetchThirumozhiList(sectionId) {
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/thirumozhi?section_id=" + sectionId
+    "https://cacheproxy.kanchitrust.workers.dev/api/thirumozhi?section_id=" + sectionId
   );
   const data = await res.json();
   console.log("THIRUMOZHI LIST:", data);
@@ -163,7 +163,7 @@ export async function fetchThirumozhiList(sectionId) {
 }
 
 export async function fetchEntitySearch() {
-  const res = await fetch("https://cdnaalayiram-api.kanchitrust.workers.dev/api/entity-search");
+  const res = await fetch("https://cacheproxy.kanchitrust.workers.dev/api/entity-search");
   const data = await res.json();
 
   state.entitySearchData = data || [];
