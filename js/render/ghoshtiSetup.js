@@ -1128,6 +1128,73 @@ function registerGhoshtiBindings() {
   };
 
   // ── Save ghoshti ──
+  // ── Ghoshti selection validator ──────────────────────────────────────────────
+  async function validateGhoshtiSelections() {
+    if (!ghoshtiMeta?.date || !ghoshtiMeta?.time) return { valid: true, removed: [] };
+
+    const ghoshtiDate = ghoshtiMeta.date;           // 'YYYY-MM-DD'
+    const ghoshtiHour = parseInt(ghoshtiMeta.time.split(':')[0], 10);
+    const isEvening   = ghoshtiHour >= 12;
+
+    // Fetch panchangam for ghoshti date
+    let panchangam = null;
+    try {
+      const res = await fetch(`${WORKER}/recital/panchangam?date=${ghoshtiDate}`);
+      panchangam = await res.json();
+    } catch(e) {}
+
+    const isAnadhyayana = panchangam?.is_anadhyayana === 1;
+    const isMargazhi    = panchangam?.is_margazhi    === 1;
+
+    const ALLOWED_DURING_ANA = new Set([24, 25, 27, 28, 29, 30, 31]);
+    const MORNING_ONLY       = new Set([3, 8]); // Thiruppavai, Thiruppaliyezhuchi
+
+    const removed  = [];
+    const messages = [];
+
+    // Apply rules to each selected item
+    selectedItems = selectedItems.filter(item => {
+      const sid = Number(item.section_id);
+
+      // Rule 1: Evening — sections 3 and 8 not allowed
+      if (isEvening && MORNING_ONLY.has(sid)) {
+        removed.push(item.label);
+        return false;
+      }
+
+      // Rule 2: Anadhyayana Kalam
+      if (isAnadhyayana) {
+        // During Margazhi: sections 3 & 8 allowed (morning only still applies via Rule 1)
+        if (isMargazhi && (sid === 3 || sid === 8)) return true;
+        // Ithara prabandham (thousand_id=99 items have no section_id or section 99+)
+        if (!sid || sid >= 99) return true;
+        // Only allowed sections during anadhyayana
+        if (!ALLOWED_DURING_ANA.has(sid)) {
+          removed.push(item.label);
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (removed.length > 0) {
+      if (isEvening && removed.some(l =>
+        selectedItems.length === 0 ||
+        [3, 8].some(s => l.includes("திருப்பாவை") || l.includes("திருப்பள்ளி")))) {
+        messages.push("Adiyen, Thiruppavai and Thiruppaliyezhuchi are not recited during evening Ghoshtis and hence have been deselected. 🙏");
+      }
+      if (isAnadhyayana && !isMargazhi) {
+        messages.push("Adiyen, during Anadhyayana Kalam only selected Prabandhas (Upadesarathinamalai, Thiruvaimozhi Nootrandadhi and Ithara Prabandham) are permitted. Other selections have been deselected. 🙏");
+      }
+      if (isAnadhyayana && isMargazhi) {
+        messages.push("Adiyen, during Anadhyayana Kalam, only Thiruppavai, Thiruppaliyezhuchi (morning only) and selected Prabandhas are permitted. Other selections have been deselected. 🙏");
+      }
+    }
+
+    return { valid: true, removed, messages };
+  }
+
   window._ghoshtiSave = async () => {
     if (_isSaving) return; // prevent double-save
     const mobile  = localStorage.getItem("mobile");
@@ -1139,6 +1206,31 @@ function registerGhoshtiBindings() {
     }
     if (!selectedItems.length) { showToast("Please select at least one item before saving."); return; }
     if (!ghoshtiMeta) { showToast("Ghoshti details missing. Please go back and try again."); return; }
+
+    // Validate selections against time and Anadhyayana Kalam rules
+    const validation = await validateGhoshtiSelections();
+    if (validation.removed.length > 0) {
+      renderSelected(); // refresh UI
+      for (const msg of validation.messages) {
+        await new Promise(resolve => {
+          // Show polite message and wait for user to acknowledge
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+          overlay.innerHTML = `<div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;padding:24px;max-width:400px;text-align:center;font-family:inherit;">
+            <div style="font-size:22px;margin-bottom:12px;">🙏</div>
+            <div style="font-size:14px;line-height:1.8;color:#2a1a00;margin-bottom:16px;">${msg}</div>
+            <button onclick="this.closest('div[style]').remove();document.body.style.overflow='';" 
+              style="background:#7a4d00;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;">
+              Understood 🙏
+            </button>
+          </div>`;
+          document.body.appendChild(overlay);
+          document.body.style.overflow = 'hidden';
+          overlay.querySelector('button').addEventListener('click', resolve);
+        });
+      }
+      if (!selectedItems.length) { showToast("No items remaining after validation."); _isSaving = false; return; }
+    }
 
     const orderedItems = applyPriorityOrder(selectedItems);
     const workerItems  = _buildWorkerItems(orderedItems);

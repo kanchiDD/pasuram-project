@@ -204,7 +204,8 @@
 
   <!-- Welcome popup -->
   <div class="g-welcome-overlay" id="g-welcome-overlay">
-    <div class="g-welcome-box">
+    <div class="g-welcome-box" style="position:relative;">
+      <button onclick="dismissWelcome(false)" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:20px;cursor:pointer;color:#7a4d00;line-height:1;" title="Close">✕</button>
       <div class="g-welcome-hands">🙏</div>
       <div class="g-welcome-title">Adiyen — Raamanuja Daasan</div>
       <div class="g-welcome-desc">
@@ -455,6 +456,7 @@
             return;
           }
           activeTab = "my";
+          document.getElementById("ghoshti-app").innerHTML = "";
           renderMyGhoshtiList().then(() => {
             showToast("Ghoshti created! Link is ready to share 🙏");
           });
