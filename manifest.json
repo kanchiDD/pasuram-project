@@ -11,7 +11,6 @@
   "lang": "en",
   "dir": "ltr",
   "categories": ["religion", "education", "lifestyle"],
-
   "icons": [
     {
       "src": "/assets/icons/icon-72x72.png",
@@ -74,7 +73,50 @@
       "purpose": "maskable"
     }
   ],
-
+  "screenshots": [
+    {
+      "src": "/assets/images/screenshot-tree.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Browse 4000 Divya Prabandham pasurams"
+    },
+    {
+      "src": "/assets/images/screenshot-vedam.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Vedam — Rig, Yajur, Sama and Atharvana"
+    },
+    {
+      "src": "/assets/images/screenshot-voice.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Voice search in Tamil, English or Mixed"
+    },
+    {
+      "src": "/assets/images/screenshot-ghoshti.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Organise a Divya Prabandham Ghoshti"
+    },
+    {
+      "src": "/assets/images/screenshot-register.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Register to access recital and ghoshti"
+    },
+    {
+      "src": "/assets/images/screenshot-index.jpg",
+      "sizes": "591x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Read pasurams in Tamil, Roman, Devanagari and more"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Daily Recital",
@@ -98,6 +140,5 @@
       "icons": [{ "src": "/assets/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
-
   "prefer_related_applications": false
 }
