@@ -1152,12 +1152,24 @@ function registerGhoshtiBindings() {
     const removed  = [];
     const messages = [];
 
+    // ── Evening consent for Thiruppavai / Thiruppaliyezhuchi ──
+    let eveningConsent = false;
+    if (isEvening) {
+      const hasEveningRestricted = selectedItems.some(item => MORNING_ONLY.has(Number(item.section_id)));
+      if (hasEveningRestricted) {
+        eveningConsent = confirm(
+          "Adiyen 🙏\n\nThiruppavai and Thiruppaliyezhuchi are traditionally not recited in the evenings.\n\nDo you still wish to include them in this Ghoshti?"
+        );
+      }
+    }
+
     // Apply rules to each selected item
     selectedItems = selectedItems.filter(item => {
       const sid = Number(item.section_id);
 
-      // Rule 1: Evening — sections 3 and 8 not allowed
-      if (isEvening && MORNING_ONLY.has(sid)) {
+      // Rule 1: Evening — sections 3 and 8 (Thiruppavai, Thiruppaliyezhuchi)
+      // User is asked — handled by confirm before this filter runs (see eveningConsent)
+      if (isEvening && MORNING_ONLY.has(sid) && !eveningConsent) {
         removed.push(item.label);
         return false;
       }
@@ -1179,10 +1191,9 @@ function registerGhoshtiBindings() {
     });
 
     if (removed.length > 0) {
-      if (isEvening && removed.some(l =>
-        selectedItems.length === 0 ||
-        [3, 8].some(s => l.includes("திருப்பாவை") || l.includes("திருப்பள்ளி")))) {
-        messages.push("Adiyen, Thiruppavai and Thiruppaliyezhuchi are not recited during evening Ghoshtis and hence have been deselected. 🙏");
+      if (isEvening && !eveningConsent && removed.some(l =>
+        l.includes("திருப்பாவை") || l.includes("திருப்பள்ளி"))) {
+        messages.push("Adiyen, Thiruppavai and Thiruppaliyezhuchi have been removed as they are not recited during evening Ghoshtis. 🙏");
       }
       if (isAnadhyayana && !isMargazhi) {
         messages.push("Adiyen, during Anadhyayana Kalam only selected Prabandhas (Upadesarathinamalai, Thiruvaimozhi Nootrandadhi and Ithara Prabandham) are permitted. Other selections have been deselected. 🙏");
@@ -1196,24 +1207,6 @@ function registerGhoshtiBindings() {
   }
 
   window._ghoshtiSave = async () => {
-    // ── Evening warning for Thiruppavai / Thiruppaliyezhuchi ──
-    const ghoshtiTime = ghoshtiMeta && ghoshtiMeta.time ? ghoshtiMeta.time : "";
-    const hour = ghoshtiTime ? parseInt(ghoshtiTime.split(":")[0], 10) : -1;
-    const isEvening = hour >= 17; // 5 PM onwards
-    if (isEvening) {
-      const hasEveningRestricted = selectedItems.some(item =>
-        item.label && (
-          item.label.includes("திருப்பாவை") ||
-          item.label.includes("திருப்பள்ளியெழுச்சி")
-        )
-      );
-      if (hasEveningRestricted) {
-        const proceed = confirm(
-          "Adiyen \uD83D\uDE4F\n\nThiruppavai and Thiruppaliyezhuchi are traditionally not recited in the evenings.\n\nDo you still wish to include them in this Ghoshti?"
-        );
-        if (!proceed) return;
-      }
-    }
     if (_isSaving) return; // prevent double-save
     const mobile  = localStorage.getItem("mobile");
     const saveMsg = document.getElementById("r-save-msg");

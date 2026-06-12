@@ -530,7 +530,7 @@
         </div>`;
       if (data.plan_id) {
         html += `<div style="margin-top:12px;text-align:center">
-          <a href="recital.html?plan_id=${data.plan_id}"
+          <a href="recital.html?plan_id=${data.plan_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}"
              style="display:inline-block;padding:10px 24px;background:#7a4d00;color:#fff;
                     border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
             🙏 View Full Recital
@@ -767,7 +767,7 @@
           </div>
           ${data.plan_id ? `
           <div style="padding:0 16px 40px;text-align:center">
-            <a href="recital.html?plan_id=${data.plan_id}"
+            <a href="recital.html?plan_id=${data.plan_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}"
                style="display:inline-block;padding:14px 32px;background:#7a4d00;color:#fff;
                       border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;
                       box-shadow:0 4px 12px rgba(74,44,0,0.2)">

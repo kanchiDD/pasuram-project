@@ -32,6 +32,7 @@ export default {
     if (url.pathname.includes("/recital/pasuram-lines"))  return handlePasuramLines(request, env);
     if (url.pathname.includes("/recital/plan"))           return handlePlan(request, env);
     if (url.pathname.includes("/recital/render"))         return handleRender(request, env);
+    if (url.pathname.includes("/recital/panchangam"))      return handlePanchangam(request, env);
     if (url.pathname.includes("/recital/spinner"))        return handleSpinner(request, env);
     if (url.pathname.includes("/recital/ghoshti"))        return handleGhoshti(request, env);
     if (url.pathname.includes("/auth/register"))          return handleAuthRegister(request, env);
@@ -490,6 +491,27 @@ async function handleRender(request, env) {
 // ─────────────────────────────────────────────────────────────────────────────
 // GHOSHTI
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// PANCHANGAM
+// ─────────────────────────────────────────────────────────────────────────────
+async function handlePanchangam(request, env) {
+  const url  = new URL(request.url);
+  const date = url.searchParams.get("date"); // YYYY-MM-DD
+  try {
+    if (!date)
+      return new Response(JSON.stringify({ error: "date= required" }), { status: 400, headers: CORS });
+    const row = await env.db.prepare(
+      `SELECT p_date, tamil_month_no, tamil_month, star_no, star_name, is_margazhi, is_anadhyayana
+       FROM panchangam WHERE p_date = ? LIMIT 1`
+    ).bind(date).first();
+    if (!row)
+      return new Response(JSON.stringify({ error: "Date not found in panchangam", date }), { status: 404, headers: CORS });
+    return new Response(JSON.stringify(row), { headers: CORS });
+  } catch(err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SPINNER
 // ─────────────────────────────────────────────────────────────────────────────

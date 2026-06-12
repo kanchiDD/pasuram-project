@@ -1025,28 +1025,41 @@
 
     // ── Main ──
     async function init() {
-      const mobile  = localStorage.getItem("mobile");
-      const stage   = document.getElementById("recital-stage");
-      const today   = new Date().getDay();
-      const dayName = DAY_NAMES[today];
-      const urlPlanId = new URLSearchParams(window.location.search).get("plan_id");
+      const mobile    = localStorage.getItem("mobile");
+      const stage     = document.getElementById("recital-stage");
+      const today     = new Date().getDay();
+      const dayName   = DAY_NAMES[today];
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPlanId = urlParams.get("plan_id");
+      const ghoshtiName = urlParams.get("ghoshti_name")
+        ? decodeURIComponent(urlParams.get("ghoshti_name"))
+        : null;
 
-      if (!mobile) {
+      // If opened via ghoshti share link (plan_id in URL) — no login required
+      const isGhoshtiView = !!urlPlanId;
+
+      if (!isGhoshtiView && !mobile) {
         stage.innerHTML = `
           <div class="r-page-title">🙏 My Daily Recital</div>
           <div class="r-no-plan">Please <a href="register.html">sign in</a> to view your daily recital.</div>`;
         return;
       }
 
+      const pageTitle   = isGhoshtiView
+        ? (ghoshtiName ? `🙏 ${ghoshtiName}` : "🙏 Ghoshti Recital")
+        : "🙏 My Daily Recital";
+      const pageSubtitle = isGhoshtiView
+        ? "Arulicheyal — Naalayira Divya Prabandham"
+        : dayName + " — Today's Recital";
+
       stage.innerHTML = `
-        <div class="r-page-title">🙏 My Daily Recital</div>
-        <div class="r-day-label">${urlPlanId ? "Ghoshti Recital" : dayName + " — Today's Recital"}</div>
+        <div class="r-page-title">${pageTitle}</div>
+        <div class="r-day-label">${pageSubtitle}</div>
         <div class="r-spinner"><span class="lotus">🪷</span>Loading...</div>`;
 
       try {
         let planId;
-        if (urlPlanId) {
-          // Direct plan_id from URL (e.g. from ghoshti link)
+        if (isGhoshtiView) {
           planId = urlPlanId;
         } else {
           const planRes  = await fetch(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${today}`);
@@ -1071,8 +1084,8 @@
         const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
         stage.innerHTML = `
-          <div class="r-page-title">🙏 My Daily Recital</div>
-          <div class="r-day-label">${dayName} — Today's Recital</div>
+          <div class="r-page-title">${pageTitle}</div>
+          <div class="r-day-label">${pageSubtitle}</div>
           ${indexHTML}
           ${contentHTML}`;
 
