@@ -49,8 +49,11 @@ function injectCSS() {
     }
     .fsat-selector {
       font-family: "Noto Sans Tamil","Latha","Bamini",serif;
-      font-size: 14px;
-      padding: 6px 12px;
+      font-size: 13px !important;
+      padding: 6px 10px;
+      max-width: 100%;
+      width: 100%;
+      box-sizing: border-box;
       border-radius: 8px;
       border: 1.5px solid #b38b2e;
       background: #fffdf5;
@@ -103,7 +106,7 @@ function injectCSS() {
     .fsat-dual-mark {
       color: #1a7abf;
       font-weight: 900;
-      font-size: 14px;
+      font-size: 13px !important;
       margin-right: 5px;
     }
     /* ── Separator between sequence items ── */
@@ -215,7 +218,7 @@ function injectCSS() {
       text-align: center;
       color: red;
       padding: 40px;
-      font-size: 14px;
+      font-size: 13px !important;
     }
   `;
   document.head.appendChild(style);
