@@ -1196,6 +1196,24 @@ function registerGhoshtiBindings() {
   }
 
   window._ghoshtiSave = async () => {
+    // ── Evening warning for Thiruppavai / Thiruppaliyezhuchi ──
+    const ghoshtiTime = ghoshtiMeta && ghoshtiMeta.time ? ghoshtiMeta.time : "";
+    const hour = ghoshtiTime ? parseInt(ghoshtiTime.split(":")[0], 10) : -1;
+    const isEvening = hour >= 17; // 5 PM onwards
+    if (isEvening) {
+      const hasEveningRestricted = selectedItems.some(item =>
+        item.label && (
+          item.label.includes("திருப்பாவை") ||
+          item.label.includes("திருப்பள்ளியெழுச்சி")
+        )
+      );
+      if (hasEveningRestricted) {
+        const proceed = confirm(
+          "Adiyen \uD83D\uDE4F\n\nThiruppavai and Thiruppaliyezhuchi are traditionally not recited in the evenings.\n\nDo you still wish to include them in this Ghoshti?"
+        );
+        if (!proceed) return;
+      }
+    }
     if (_isSaving) return; // prevent double-save
     const mobile  = localStorage.getItem("mobile");
     const saveMsg = document.getElementById("r-save-msg");

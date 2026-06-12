@@ -501,7 +501,7 @@
       result.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading Ghoshti...</div>`;
 
       try {
-        const res  = await fetch(`${WORKER}/recital/ghoshti?id=${val}&mobile=${encodeURIComponent(mobile)}`);
+        const res  = await fetch(`${WORKER}/recital/ghoshti?id=${val}`);
         const data = await res.json();
         if (data.expired) { result.innerHTML = `<div class="g-empty">This Ghoshti session has ended. 🙏</div>`; return; }
         if (data.error)   { result.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
@@ -735,15 +735,62 @@
       return String(str || "").replace(/&/g,"&amp;").replace(/'/g,"&#39;").replace(/"/g,"&quot;");
     }
 
-    // ── Init ──
+    // ── Standalone public ghoshti view (share link) ──
+    async function renderStandaloneGhoshti(id) {
+      const app = document.getElementById("ghoshti-app");
+      app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading Ghoshti...</div>`;
+      try {
+        const res  = await fetch(`${WORKER}/recital/ghoshti?id=${id}`);
+        const data = await res.json();
+        if (data.expired) {
+          app.innerHTML = `<div class="g-empty" style="padding:60px 20px">
+            <div style="font-size:36px;margin-bottom:12px">🙏</div>
+            <div style="font-size:16px;font-weight:700;color:#4a2c00;margin-bottom:8px">Ghoshti Concluded</div>
+            <div style="font-size:13px;color:#7a5a20">This Ghoshti session has concluded. Adiyen Vanakkam.</div>
+          </div>`;
+          return;
+        }
+        if (data.error) {
+          app.innerHTML = `<div class="g-empty">${data.error}</div>`;
+          return;
+        }
+        // Show ghoshti title, date, time prominently — then recital link
+        const link = `https://arulicheyal.org/ghoshti.html?id=${data.ghoshti_id}`;
+        app.innerHTML = `
+          <div style="text-align:center;padding:24px 16px 0">
+            <div style="font-size:13px;font-weight:700;color:#b38b2e;letter-spacing:.06em;margin-bottom:8px">🙏 ADIYEN VANAKKAM</div>
+            <div style="font-size:22px;font-weight:900;color:#4a2c00;margin-bottom:8px">${escHtml(data.ghoshti_name || "Ghoshti")}</div>
+            <div style="font-size:14px;color:#7a5a20;margin-bottom:4px">📅 ${formatDate(data.start_time)}</div>
+            <div style="font-size:14px;color:#7a5a20;margin-bottom:4px">🕐 ${formatTime(data.start_time)}</div>
+            ${data.host_name ? `<div style="font-size:13px;color:#b38b2e;margin-bottom:16px">Host: ${escHtml(data.host_name)}</div>` : ""}
+            <div style="width:60px;height:2px;background:#C9A84C;margin:16px auto"></div>
+          </div>
+          ${data.plan_id ? `
+          <div style="padding:0 16px 40px;text-align:center">
+            <a href="recital.html?plan_id=${data.plan_id}"
+               style="display:inline-block;padding:14px 32px;background:#7a4d00;color:#fff;
+                      border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;
+                      box-shadow:0 4px 12px rgba(74,44,0,0.2)">
+              🙏 Begin Recital
+            </a>
+            <div style="margin-top:12px;font-size:12px;color:#b38b2e">
+              Tap above to follow along with the full pasuram content
+            </div>
+          </div>` : ""}`;
+      } catch(e) {
+        app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
+      }
+    }
+
+        // ── Init ──
     async function init() {
       mobile = localStorage.getItem("mobile") || "";
 
       const urlId = new URLSearchParams(window.location.search).get("id");
       if (urlId) {
         document.getElementById("g-welcome-overlay").style.display = "none";
-        activeTab = "view";
-        renderViewTab(urlId);
+        // Public share link — show standalone ghoshti view, no tabs, no login needed
+        renderStandaloneGhoshti(urlId);
         return;
       }
 

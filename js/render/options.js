@@ -25,11 +25,11 @@ export function renderOptions() {
       <p>Select an Option</p>
 
       <div class="tree-list">
-        <div class="tree-item" onclick="openDualRecital(null)">Rettai/Star Pasurams</div>
-        <div class="tree-item" onclick="openFullThaniyans(null)">Nallayira Thaniyangal</div>
+        <div class="tree-item" onclick="openDualRecital(null)">Irattai/Star Pasurams</div>
+        <div class="tree-item" onclick="openFullThaniyans(null)">Naalaayira Thaniyangal</div>
         <div class="tree-item" onclick="openAzhwars(null)">Azhwars</div>
         <div class="tree-item" onclick="openDivyadesam(null)">Divyadesam</div>
-        <div class="tree-item" onclick="openNithyanusandhanam()">Nithyaanusandanam</div>
+        <div class="tree-item" onclick="openNithyanusandhanam()">Nityaanusandhanam</div>
         <div class="tree-item" onclick="openMunnadiPinnadi(null)">Munnadi Pinnadi</div>
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
