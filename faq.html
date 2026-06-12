@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+  <title>FAQ — Arulicheyal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=860">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    .faq-container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .faq-title {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .faq-title h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #3B2410;
+    }
+    .faq-title p {
+      font-size: 13px;
+      color: #8B6A45;
+      margin-top: 6px;
+    }
+    .faq-divider {
+      width: 60px;
+      height: 3px;
+      background: #C9A84C;
+      border-radius: 2px;
+      margin: 16px auto 32px;
+    }
+    .faq-item {
+      border: 1.5px solid #E8D5A8;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: #FFFDF7;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .faq-item.open {
+      border-color: #C9A84C;
+    }
+    .faq-question {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 18px;
+      cursor: pointer;
+      gap: 12px;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .faq-question:hover {
+      background: #FFF8E8;
+    }
+    .faq-q-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #3B2410;
+      line-height: 1.5;
+      flex: 1;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .faq-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #F5E6C8;
+      border: 1.5px solid #C9A84C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.25s;
+      color: #4A3728;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1;
+    }
+    .faq-item.open .faq-icon {
+      background: #C9A84C;
+      color: #fff;
+      transform: rotate(45deg);
+    }
+    .faq-answer {
+      display: none;
+      padding: 10px 18px 18px 18px;
+      font-size: 14px;
+      color: #4A2E10;
+      line-height: 1.9;
+      border-top: 1px solid #F0E0B8;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .faq-item.open .faq-answer {
+      display: block;
+      animation: faqFadeIn 0.2s ease;
+    }
+    @keyframes faqFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .faq-answer a {
+      color: #7B3F00;
+      text-decoration: underline;
+    }
+    .faq-badge {
+      display: inline-block;
+      font-size: 11px;
+      background: #FFF0CC;
+      border: 1px solid #C9A84C;
+      color: #7A5C3A;
+      border-radius: 20px;
+      padding: 2px 9px;
+      margin-left: 6px;
+      vertical-align: middle;
+      font-weight: 500;
+    }
+    .faq-contact-box {
+      margin-top: 36px;
+      background: #FFF8E8;
+      border: 1.5px solid #C9A84C;
+      border-radius: 12px;
+      padding: 22px 20px;
+      text-align: center;
+    }
+    .faq-contact-box h3 {
+      font-size: 16px;
+      color: #3B2410;
+      margin-bottom: 8px;
+    }
+    .faq-contact-box p {
+      font-size: 13px;
+      color: #7A5C3A;
+      line-height: 1.8;
+    }
+    .faq-contact-box a {
+      color: #7B3F00;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .faq-contact-box a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+
+  <div class="faq-container">
+    <div class="faq-title">
+      <h1>Frequently Asked Questions</h1>
+      <p>Everything you need to know about Arulicheyal</p>
+    </div>
+    <div class="faq-divider"></div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">What is Arulicheyal.org?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Arulicheyal.org is a dedicated effort to present the sacred Naalayira Divya Prabandham in an orderly, accessible format. Unlike static resources available elsewhere, we serve all content dynamically from our own database — making this one of a kind in how it delivers the Prabandham to devotees across devices.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">How are you different from other Naalayiram websites?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Most other sites serve static pages. We render all content dynamically from our database, which means content can be combined, filtered, and personalised in ways a static site cannot. Our Voice Search feature is a first step in this direction — speak your query in Tamil, English, or a mix of both, and we present the relevant content without requiring you to navigate through pages.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">What is the Naalayiram Tree?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        The Naalayiram Tree presents the 4000 Divya Prabandham pasurams in every meaningful combination a devotee might need:<br><br>
+        • By thousand — Mudhal, Iranda, Moonram, Naankam Ayiram<br>
+        • By Azhwar, Divyadesam, district, state, or mandalam<br>
+        • Rettai (dual recital) pasurams only<br>
+        • Special sections — Thirunaangur, Rettai Thiruppathi, Koil Thirumozhi, Thiruvaimozhi, Munnadi Pinnadi<br>
+        • Azhwar Thirunakshatram Ghoshti content<br>
+        • Self-animating Divyadesam Archanai with speed control<br>
+        • Full 1000 and complete 4000 as a single downloadable<br><br>
+        Whatever occasion you need content for, you can find it here in one place.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">What is My Recital Plan? <span class="faq-badge">Registered users</span></span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        My Recital Plan lets you select the pasurams you wish to recite each day. You can set different pasurams for each day of the week, or the same content for every day. Once saved, visiting the Recital page will automatically load your selected pasurams — complete with thaniyan and related content. Sattrumurai integration is coming soon. Registration is free and required only so the system can save your personal selections.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">What is Ghoshti? <span class="faq-badge">Registered users</span></span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Many of us conduct ghoshtis at home for Azhwar or Acharya Thirunakshatrams, 60th and 80th birthdays, and other special occasions — but keeping enough books for all guests is difficult and printing is costly. Ghoshti solves this.<br><br>
+        Select the pasurams to be recited, save the ghoshti, and share the link with your participants. They simply click the link and follow along on their phones — no registration, no app download needed. You can update the list right up to the day before. Sattrumurai integration is underway so a complete, well-structured content will come through the link automatically.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">What is the Divyadesam Spinner? <span class="faq-badge">Registered users</span></span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        The Divyadesam Spinner rotates through all 108 Divyadesam pasurams on a daily cycle. One Divyadesam is presented each day and the cycle runs for 247 days — by which time Srirangam's pasurams are fully covered and many other Divyadesams have been visited multiple times.<br><br>
+        Remembering which pasuram you recited yesterday and which comes tomorrow for 108 Divyadesams is an enormous task. The Spinner handles this automatically, giving you the quiet satisfaction of having recited all pasurams of all Divyadesams over the full cycle.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">Do I need to register to use the site?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        All content on the site is fully free and accessible without registration. Registration is required only for features that need to store personal data — Daily Recital, Ghoshti, and the Divyadesam Spinner. Registration is free. We do not require a Google sign-in or any social login, and we will never share your information with anyone.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">Are you the definitive source for the Naalayiram text?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        We do not claim to be the sole authority. Different sampradayas and Divyadesams follow their own traditions in recitation, pausing, and sattrumurai. We have followed the most widely accepted model that serves the broadest community of devotees. Where variations exist, we aim to represent them over time.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">Do you have Sandhai (learning mode) for the pasurams?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Sandhai mode — where each pasuram line is presented for learning at your own pace — is planned for an upcoming release. This will allow devotees to learn the Prabandham independently, without being tied to fixed class schedules.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">Do you have audio for the pasurams?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Linking audio to each individual pasuram is a significant undertaking and is planned for our next release. We currently have Vedam audio available. Please watch for updates.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">I don't read Tamil — can I still use the site?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        Yes. We are in the process of releasing content in seven Indian scripts — Tamil, Roman (transliteration), Devanagari, Telugu, Kannada, Malayalam, Bengali, and Gujarati. This feature is coming soon and will allow devotees from all linguistic backgrounds to read the Prabandham in the script they are most comfortable with.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">Do you organise Divyadesam tours?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        We currently focus entirely on presenting the sacred content of the Prabandham. Organising Divyadesam tours is something we hope to explore in the future.
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-question">
+        <span class="faq-q-text">How can I contribute to this effort?</span>
+        <span class="faq-icon">+</span>
+      </div>
+      <div class="faq-answer">
+        All our services are completely free. We welcome contributions to support server and maintenance costs. The site is promoted by Sri Kanchi Divya Desam Kaingarya Trust, which serves the healthcare and education needs of temple priests and non-salaried temple employees. Contributions to the Trust go directly to this noble cause. Please write to us at <a href="mailto:kanchitrust@zohomail.in">kanchitrust@zohomail.in</a> for contribution details. An online payment link will be available soon.
+      </div>
+    </div>
+
+    <div class="faq-contact-box">
+      <h3>🙏 Still have a question?</h3>
+      <p>
+        Call us: <a href="tel:+918056021869">80560 21869</a> &nbsp;|&nbsp; <a href="tel:+919791355059">97913 55059</a><br>
+        Email: <a href="mailto:kanchitrust@zohomail.in">kanchitrust@zohomail.in</a>
+      </p>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script>
+    function toggleFaq(item) {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function (reg) { console.log('[SW] Registered ✅ scope:', reg.scope); })
+          .catch(function (err) { console.warn('[SW] Registration failed:', err); });
+      });
+    }
+  </script>
+</body>
+</html>
