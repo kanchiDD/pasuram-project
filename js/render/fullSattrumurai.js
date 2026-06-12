@@ -41,25 +41,70 @@ function injectCSS() {
       background: #b38b2e;
       margin: 8px auto 16px;
     }
-    /* ── Selector dropdown ── */
+    /* ── Custom dropdown ── */
     .fsat-selector-wrap {
       display: flex;
       justify-content: center;
       margin-bottom: 20px;
+      position: relative;
     }
-    .fsat-selector {
-      font-family: "Noto Sans Tamil","Latha","Bamini",serif;
-      font-size: 13px !important;
-      padding: 6px 10px;
-      max-width: 100%;
+    .fsat-custom-select {
+      position: relative;
       width: 100%;
-      box-sizing: border-box;
+      max-width: 360px;
+      font-family: "Noto Sans Tamil","Latha","Bamini",serif;
+    }
+    .fsat-custom-selected {
+      font-family: "Noto Sans Tamil","Latha","Bamini",serif;
+      font-size: 13px;
+      padding: 8px 36px 8px 12px;
       border-radius: 8px;
       border: 1.5px solid #b38b2e;
       background: #fffdf5;
       color: #4a2c00;
       cursor: pointer;
+      user-select: none;
+      position: relative;
+      white-space: normal;
+      line-height: 1.5;
     }
+    .fsat-custom-selected::after {
+      content: "▾";
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #b38b2e;
+      font-size: 14px;
+    }
+    .fsat-custom-options {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fffdf5;
+      border: 1.5px solid #b38b2e;
+      border-radius: 8px;
+      margin-top: 4px;
+      z-index: 999;
+      max-height: 260px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .fsat-custom-options.open { display: block; }
+    .fsat-custom-option {
+      font-family: "Noto Sans Tamil","Latha","Bamini",serif;
+      font-size: 13px;
+      padding: 10px 14px;
+      color: #4a2c00;
+      cursor: pointer;
+      line-height: 1.6;
+      border-bottom: 1px solid #f0e0b0;
+    }
+    .fsat-custom-option:last-child { border-bottom: none; }
+    .fsat-custom-option:hover { background: #fff4d6; }
+    .fsat-custom-option.selected { background: #ffedb0; font-weight: 700; }
     /* ── Double border box ── */
     .fsat-box {
       background: #ffffff;
@@ -106,7 +151,7 @@ function injectCSS() {
     .fsat-dual-mark {
       color: #1a7abf;
       font-weight: 900;
-      font-size: 13px !important;
+      font-size: 14px;
       margin-right: 5px;
     }
     /* ── Separator between sequence items ── */
@@ -218,7 +263,7 @@ function injectCSS() {
       text-align: center;
       color: red;
       padding: 40px;
-      font-size: 13px !important;
+      font-size: 14px;
     }
   `;
   document.head.appendChild(style);
@@ -307,18 +352,46 @@ export async function renderFullSattrumurai(sattrumuraiId) {
   const { sattrumurai, sequence } = data;
 
   // ── Dropdown — only if more than one sattrumurai ──────────
+  const selectedLabel = allSattrumurai.find(s => s.sattrumurai_id == sattrumuraiId);
   const dropdownHtml = allSattrumurai.length > 1 ? `
     <div class="fsat-selector-wrap">
-      <select class="fsat-selector" onchange="fsatSwitch(this.value)">
-        ${allSattrumurai.map(s => `
-          <option value="${s.sattrumurai_id}"
-            ${s.sattrumurai_id == sattrumuraiId ? "selected" : ""}>
-            ${s.tamil_name || s.name}
-          </option>
-        `).join("")}
-      </select>
+      <div class="fsat-custom-select" id="fsatDropdown">
+        <div class="fsat-custom-selected" id="fsatSelected" onclick="fsatToggleDropdown()">
+          ${selectedLabel ? (selectedLabel.tamil_name || selectedLabel.name) : ""}
+        </div>
+        <div class="fsat-custom-options" id="fsatOptions">
+          ${allSattrumurai.map(s => `
+            <div class="fsat-custom-option ${s.sattrumurai_id == sattrumuraiId ? 'selected' : ''}"
+              onclick="fsatPickOption(${s.sattrumurai_id}, '${(s.tamil_name || s.name).replace(/'/g, "\'")}')">
+              ${s.tamil_name || s.name}
+            </div>
+          `).join("")}
+        </div>
+      </div>
     </div>
   ` : "";
+
+  window.fsatToggleDropdown = function() {
+    const opts = document.getElementById("fsatOptions");
+    if (opts) opts.classList.toggle("open");
+  };
+
+  window.fsatPickOption = function(id, label) {
+    const opts = document.getElementById("fsatOptions");
+    const sel = document.getElementById("fsatSelected");
+    if (opts) opts.classList.remove("open");
+    if (sel) sel.textContent = label;
+    fsatSwitch(id);
+  };
+
+  // Close dropdown on outside click
+  document.addEventListener("click", function fsatOutside(e) {
+    const dd = document.getElementById("fsatDropdown");
+    if (dd && !dd.contains(e.target)) {
+      const opts = document.getElementById("fsatOptions");
+      if (opts) opts.classList.remove("open");
+    }
+  }, { once: false });
 
   window.fsatSwitch = function(newId) {
     state.sattrumuraiId = Number(newId);
