@@ -19,7 +19,7 @@
 function loadLayout() {
 
   /* ================= HEADER ================= */
-  fetch("components/header.html")
+  fetch("components/header.html?v=" + Date.now())
     .then(response => {
       if (!response.ok) {
         throw new Error("Header not found: " + response.status);
