@@ -120,6 +120,27 @@ document.addEventListener("DOMContentLoaded", function () {
       navigator.serviceWorker.register('/service-worker.js')
         .then(function (reg) {
           console.log('[SW] Registered ✅ scope:', reg.scope);
+
+          // Force check for new service worker immediately
+          reg.update();
+
+          // If new SW is waiting — activate it immediately
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          }
+
+          // When new SW installs and waits — activate immediately
+          reg.addEventListener('updatefound', function () {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', function () {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                // New SW ready — purge old cache and reload
+                navigator.serviceWorker.controller.postMessage({ type: 'PURGE_CACHE' });
+                setTimeout(() => window.location.reload(), 500);
+              }
+            });
+          });
         })
         .catch(function (err) {
           console.warn('[SW] Registration failed:', err);

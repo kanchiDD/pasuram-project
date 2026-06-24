@@ -312,6 +312,10 @@ async function shellAssetStrategy(request) {
 // ── 9. MESSAGE HANDLER — force purge from app ─────────────────
 // Call this from your app: navigator.serviceWorker.controller.postMessage({ type: 'PURGE_CACHE' })
 self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
   if (event.data?.type === 'PURGE_CACHE') {
     caches.keys()
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
