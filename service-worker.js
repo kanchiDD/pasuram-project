@@ -4,9 +4,9 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v4';  // was v3
-const SHELL_CACHE   = APP_VERSION + '-shell';
-const CONTENT_CACHE = APP_VERSION + '-content';
+const CACHE_VERSION = 'v4';
+const SHELL_CACHE   = CACHE_VERSION + '-shell';
+const CONTENT_CACHE = CACHE_VERSION + '-content';
 
 // ── 1. APP SHELL ─────────────────────────────────────────────
 // Cached at install. Served instantly. Always fresh in background.
