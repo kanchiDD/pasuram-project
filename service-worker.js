@@ -4,7 +4,7 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const SHELL_CACHE   = CACHE_VERSION + '-shell';
 const CONTENT_CACHE = CACHE_VERSION + '-content';
 
@@ -30,7 +30,6 @@ const APP_SHELL = [
   '/components/header.html',
   '/components/footer.html',
   '/css/main.css',
-  '/js/layout.js',
   '/js/state.js',
   '/js/api.js',
   '/js/navigation.js',
