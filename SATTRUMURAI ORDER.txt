@@ -1,0 +1,178 @@
+
+SATTRUMURAI ORDER 
+3	திருப்பாவை   pasuram number mask (502/503) mask both each pasuram dual recital
+note
+Thiruppaavai normally comes in all sattrumurai however we can give option to deselect that also if evenings or user dont want
+
+2	பெரியாழ்வார் திருமொழி
+        1st pathu-116/117 mask both  both each pasuram dual recital
+        2nd pathu 221/222 mask both  both each pasuram dual recital
+        3rd pathu 326/327 mask both  both each pasuram dual recital
+        4th pathu 431/432 mask both  both each pasuram dual recital
+        5th pathu 472/473 mask both  both each pasuram dual recital
+
+        if full periyazhwar thirumizhi selected 472/473 mask this 2 only  both each pasuram dual recital
+
+Note : saatrumurai is applicable only if the full of any above is selected only if only one pathu_id or thirumozhi selected no automated fetches (however user if he want can add with our add global no feature) however if full rettai or pathu rettai selected we can automate satturumurai
+
+4	நாச்சியார் திருமொழி pasuruam no 645/646 mask both  both each pasuram dual recital
+
+Note : saatrumurai is applicable only if the full of nachiarthirumozhi is selected only if only  thirumozhi selected no automated fetches (however user if he want can add with our add global no feature)however if full rettai selected we can automate satturumurai
+
+
+5	பெருமாள் திருமொழி pasuram no 750/751 mask both both each pasuram dual recital
+
+Note : saatrumurai is applicable only if the full of perumal thirumozhi is selected only if only  thirumozhi selected no automated fetches (however user if he want can add with our add global no feature)however if full rettai selected we can automate satturumurai
+
+
+6	திருச்சந்தவிருத்தம் pasuram no 870/871 mask both  both each pasuram dual recital
+
+Note : saatrumurai is applicable only if the full of thiruchandaviruththam  is selected only else  automated fetches (however user if he want can add with our add global no feature)however if full rettai selected we can automate satturumurai
+
+7	திருமாலை pasuram no 915/916 mask both   both each pasuram dual recital
+
+Note : saatrumurai is applicable only if the full of thirumalai  is selected only else  automated fetches (however user if he want can add with our add global no feature)however if full rettai selected we can automate satturumurai
+
+
+8	திருப்பள்ளியெழுச்சி no saatrumurai for this
+section  dont have any sattrumurai
+
+9	அமலானதிபிரான் 935/936 mask both  both each pasuram dual recital
+
+
+Note : saatrumurai is applicable only if the full of amalanaathipiraan  is selected only else  automated fetches (however user if he want can add with our add global no feature)however if full rettai selected we can automate satturumurai
+
+
+11	பெரிய திருமொழி 
+	1st pathu- 1046/1047 mask both    both each pasuram dual recital
+	2nd pathu - 1146/1147 mask both  both each pasuram dual recital
+	3rd pathu - 1246/1247 mask both  both each pasuram dual recital
+	4th pathu - 1346/1347 mask both  both each pasuram dual recital
+	5th pathu - 1446/1447 mask both  both each pasuram dual recital
+	6th pathu-  1546/1547 mask both   both each pasuram dual recital
+	7th pathu   1646/1647 mask both  both each pasuram dual recital
+        8th pathu   1746/1747 mask both   both each pasuram dual recital
+        9th pathu   1846/1847 mask both   both each pasuram dual recital
+        10th pathu  1950/1951 mask both  both each pasuram dual recital
+
+        11th pathu  2029/2030/2031 (here few places have 2029 included some dont have so if 2029 included manually selected mask all three pasuram if only 2 selected then mask 2030/2031)  both each pasuram dual recital
+
+if full periya thirumozhi selected then 2029/2030/2031 (here few places have 2029 included some dont have so if 2029 included manually selected mask all three pasuram if only 2 selected then mask 2030/2031) we can consider automate saatrumurai if rettai selected for pathu or full thrumozhi   each pasuram dual recital
+
+
+12	திருகுறுந்தாண்டகம்   pasuram  2050/2051 mask both  each pasuram dual recital
+
+automate sattrumurai only if full or full rettai selected
+
+13	திருநெடுந்தாண்டகம்  pasuram 2080/2081 mask both   each pasuram dual recital
+
+
+automate sattrumurai only if full or full rettai selected
+
+
+14	முதல்‌ திருவந்தாதி pasuram sattrumurai display order 2180/2181 each pasuram dual recital
+then 2082 one time only mask only 2180/2181
+
+automate sattrumurai only if full or full rettai selected
+
+
+15	இரண்டாம்‌ திருவந்தாதி   pasuram sattrumurai display order 2280/2281 each pasuram dual recital
+then 2182   one time only  mask only 2280/2281
+
+automate sattrumurai only if full or full rettai selected
+
+
+16	மூன்றாம்‌ திருவந்தாதி   pasuram sattrumurai display order 2380/2381 each pasuram dual recital
+then 2282 one time only   mask only 2380/2381
+
+automate sattrumurai only if full or full rettai selected
+
+17	நான்முகன்‌திருவந்தாதி pasuram sattrumurai display order 2476/2477 each pasuram dual recital
+then 2382  one time only  mask only 2476/2477
+
+automate sattrumurai only if full or full rettai selected
+
+
+18	திருவிருத்தம்  pasuram sattrumurai display order 2576/2577 each pasuram dual recital
+then 2478n  one time only  mask only 2576/2577
+
+automate sattrumurai only if full or full rettai selected
+
+
+19	திருவாசிரியம்  no saattrumurai for this 
+
+automate sattrumurai only if full or full rettai selected
+
+
+20	பெரியதிருவந்தாதி  pasuram sattrumurai display order 2670/2671   each pasuram dual recital
+then 2585  one time only mask only 2670/2671
+
+automate sattrumurai only if full or full rettai selected
+
+21	திருவெழுகூற்றிருக்கை no saatrumurai for this
+
+22	சிறியதிருமடல் mask only the lines in couplets which are ref for each madal_sattrumurai_line_master
+
+ref tables 
+madal_sattrumurai_line_master
+madal_sattrumurai_master
+
+23	பெரியதிருமடல் mask only the lines in couplets which are ref for each madal_sattrumurai_line_master
+
+
+ref tables
+
+madal_sattrumurai_line_master
+madal_sattrumurai_master
+
+26	திருவாய்மொழி
+		1st pathu  - 2783/2784 mask both pasuram  each pasuram dual recital
+
+		2n pathu    2895/2896 mask both pasuram  each pasuram dual recital
+
+		3rd pathu   3005/3006  mask both pasuram  each pasuram dual recital
+
+		4th pathu   3115/3116  mask both pasuram   each pasuram dual recital
+
+		5th pathu   3225/3226  mask both pasuram  each pasuram dual recital
+
+		6th pathu   3335/3336  mask both pasuram   each pasuram dual recital
+
+		7th pathu   3445/3446  mask both pasuram   each pasuram dual recital
+
+		8th pathu   3555/3556 mask both pasuram   each pasuram dual recital
+
+		9th pathu   3665/3666 mask both pasuram  each pasuram dual recital
+
+		10th pathu  3775/3776 each pasuram dual recital
+and then 2675 only one time  mask both pasuram 3775/3776 and then 
+
+add kanninun siruththambu hardcode this 4 lines 
+வேறொன்றும்‌ நானறியேன்‌ வேதம் தமிழ்செய்த
+மாறன்சடகோபன்‌ வண்குருகூர்‌ ஏறு
+எங்கள்வாழ்வாம்‌ என்றேத்தும்‌ மதுரகவியார்‌
+எம்மையாள்வார்‌ அவரேயரண் 
+
+then 937 two time and  then 946 and 947 2 times and then again 937 one time
+
+10	கண்ணிநுண்சிறுத்தாம்பு taken care above 
+
+
+24	இராமாநுச நூற்றந்தாதி (IF SELECTED) pasruam number 106/107/108 (all 2 times) and then pasuramnumber 1 (single time)
+
+automate sattrumurai only if full or full rettai selected
+
+ELSE GO TO PALLANDU 
+after this pallandu pasurm 1 and 2 (each 1 time)
+
+
+25	உபதேசரத்தினமாலை (IF SELECTED) pasuram number 72/73 (each 2 times) 74 (single time )
+
+ 
+27	திருவாய்மொழி நூற்றந்தாதி (IF SELECTED) pasuram number 99/100 (each 2 times)  and then 1st pasruam (single time)
+
+
+fixed text 1
+fixed text 2 (an option to deselect)
+
+vazhi thirunamam multiselect dropdown

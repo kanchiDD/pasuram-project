@@ -421,7 +421,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   if (isSelected(entity_type, entity_id)) return;
 
   const storedPathuId = entity_type === "pathu"
-    ? (is_child ? pathu_id : (pathu_id && pathu_id !== entity_id ? pathu_id : entity_id))
+    ? (is_child ? pathu_id : (pathu_id == null ? null : (pathu_id !== entity_id ? pathu_id : entity_id)))
     : (pathu_id || null);
 
   const conflict = findSuperiorConflict(entity_type, entity_id, section_id, storedPathuId, is_child);

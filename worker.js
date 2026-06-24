@@ -121,6 +121,10 @@ if (url.pathname.includes("/api/vedam")) {
   return handleVedam(request, env);
 }
 
+if (url.pathname.includes("/api/vazhi-thaniyan")) {
+  return handleVazhiThaniyan(request, env);
+}
+
     return new Response("Not Found", { status: 404 });
   }
 };
@@ -3885,16 +3889,18 @@ async function handleVedam(request, env) {
 
     const { results } = await env.db.prepare(`
       SELECT
-        vm.veda_id,
-        vm.veda_name,
-        va.audio_id,
-        va.title,
-        va.audio_url,
-        va.display_order
-      FROM veda_master vm
-      LEFT JOIN veda_audio_master va
-        ON vm.veda_id = va.veda_id
-      ORDER BY vm.veda_id, va.display_order
+  vm.veda_id,
+  vm.veda_name,
+  va.audio_id,
+  va.title,
+  va.audio_url,
+  va.duration_minutes,
+  va.display_order
+  FROM veda_master vm
+  LEFT JOIN veda_audio_master va
+  ON vm.veda_id = va.veda_id
+   ORDER BY vm.veda_id,
+         va.display_order
     `).all();
 
     return new Response(
@@ -3912,6 +3918,119 @@ async function handleVedam(request, env) {
     return new Response(
       JSON.stringify({
         error: err.message
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    );
+
+  }
+}
+
+async function handleVazhiThaniyan(request, env) {
+
+  try {
+
+    const acharyas = await env.db.prepare(`
+      SELECT
+        acharya_id,
+        canonical_name,
+        tamil_month,
+        star
+      FROM acharya_master
+      ORDER BY acharya_id
+    `).all();
+
+    const thaniyan = await env.db.prepare(`
+      SELECT
+        m.acharya_id,
+        m.thaniyan_id,
+        m.title,
+        l.line_no,
+        l.line_text
+      FROM acharya_thaniyan_master m
+      JOIN acharya_thaniyan_line_master l
+        ON m.thaniyan_id = l.thaniyan_id
+      ORDER BY
+        m.acharya_id,
+        m.thaniyan_id,
+        l.line_no
+    `).all();
+
+    const vazhi = await env.db.prepare(`
+      SELECT
+        m.acharya_id,
+        m.vazhi_id,
+        m.title,
+        l.line_no,
+        l.line_text
+      FROM acharya_vazhi_thirunamam_master m
+      JOIN acharya_vazhi_thirunamam_line_master l
+        ON m.vazhi_id = l.vazhi_id
+      ORDER BY
+        m.acharya_id,
+        m.vazhi_id,
+        l.line_no
+    `).all();
+
+    const naalpattu = await env.db.prepare(`
+      SELECT
+        m.acharya_id,
+        m.naalpattu_id,
+        m.title,
+        l.line_no,
+        l.line_text
+      FROM acharya_naalpattu_master m
+      JOIN acharya_naalpattu_line_master l
+        ON m.naalpattu_id = l.naalpattu_id
+      ORDER BY
+        m.acharya_id,
+        m.naalpattu_id,
+        l.line_no
+    `).all();
+
+    const thongal = await env.db.prepare(`
+      SELECT
+        m.acharya_id,
+        m.thongal_id,
+        m.title,
+        l.line_no,
+        l.line_text
+      FROM acharya_thongal_master m
+      JOIN acharya_thongal_line_master l
+        ON m.thongal_id = l.thongal_id
+      ORDER BY
+        m.acharya_id,
+        m.thongal_id,
+        l.line_no
+    `).all();
+
+    return new Response(
+      JSON.stringify({
+        acharyas: acharyas.results || [],
+        thaniyan: thaniyan.results || [],
+        vazhi: vazhi.results || [],
+        naalpattu: naalpattu.results || [],
+        thongal: thongal.results || []
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
+    );
+
+  } catch (err) {
+
+    return new Response(
+      JSON.stringify({
+        error: err.message,
+        stack: err.stack
       }),
       {
         status: 500,
