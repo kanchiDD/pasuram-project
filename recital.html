@@ -198,6 +198,17 @@
     }
 
     /* Sattrumurai */
+    .r-sattrumurai-main-heading { text-align:center;font-size:20px;font-weight:900;color:#4a2c00;margin:0 0 20px;padding:12px;border-top:2px solid #C9A84C;border-bottom:2px solid #C9A84C; }
+    .gsat-wrap-r { max-width:720px;margin:0 auto;padding:20px 16px 90px; }
+    .gsat-section-r { background:#FFFDF7;border:1.5px solid #E8D5A8;border-radius:10px;margin-bottom:14px;overflow:hidden; }
+    .gsat-section-head-r { background:#FFF4D6;padding:8px 14px;font-size:12px;font-weight:700;color:#4a2c00;border-bottom:1px solid #E8D5A8; }
+    .gsat-pasuram-item-r { display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #F5EDD5; }
+    .gsat-pasuram-item-r:last-child { border-bottom:none; }
+    .gsat-pasuram-text-r { flex:1;font-size:var(--pf);color:#4a2c00;line-height:1.7; }
+    .gsat-pasuram-marker-r { font-weight:900;color:#b38b2e;margin-right:4px; }
+    .gsat-pasuram-line-r { display:block;font-size:var(--pf); }
+    .gsat-sat-back-r { display:block;text-align:center;font-size:13px;color:#b38b2e;text-decoration:underline;cursor:pointer;margin-bottom:16px; }
+    .gsat-sat-gap-r { height:6px;display:block; }
     .r-sattrumurai {
       text-align: center; background: #fef3d0;
       border: 2px solid #e8c060; border-radius: 10px;
@@ -631,6 +642,83 @@
       return html;
     }
 
+    function renderSattrumurai(data) {
+      if (!data || !data.pasurams || !data.pasurams.length) return "";
+      function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+      let html = '<div class="gsat-wrap-r">';
+      html += '<span class="gsat-sat-back-r" onclick="showRecital()">← Back to Recital</span>';
+      html += '<div class="r-sattrumurai-main-heading">Sattrumurai</div>';
+      let openSection = false;
+      data.pasurams.forEach(p => {
+        if (p.type === "heading") {
+          if (openSection) { html += "</div>"; openSection = false; }
+          html += '<div class="gsat-section-r"><div class="gsat-section-head-r">' + escH(p.text||"") + "</div>";
+          openSection = true; return;
+        }
+        if (p.type === "text_block") {
+          if (openSection) { html += "</div>"; openSection = false; }
+          html += '<div class="gsat-section-r"><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">' + (p.lines||[]).map(l=>{ const t=typeof l==="object"?l.text:l; return '<span class="gsat-pasuram-line-r">'+escH(t)+"</span>"; }).join("") + "</div></div></div>";
+          return;
+        }
+        if (p.type === "kanninun_full") {
+          if (openSection) { html += "</div>"; openSection = false; }
+          html += '<div class="gsat-section-r"><div class="gsat-section-head-r">Kanninun Siruthambu</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r" style="font-style:italic">(Full text recited once)</div></div></div>';
+          return;
+        }
+        if (p.type === "madal_lines") {
+          if (!openSection) { html += '<div class="gsat-section-r">'; openSection = true; }
+          (p.lines||[]).forEach(l => {
+            const pfx = l.is_dual ? '<span class="gsat-pasuram-marker-r">** </span>' : "";
+            html += '<div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">' + pfx + '<span class="gsat-pasuram-line-r">' + escH(l.line_text) + "</span></div></div>";
+          });
+          return;
+        }
+        const isDual = p.dual;
+        const lines = (p.lines||[]).map(l => typeof l==="object" ? l : {text:l,group:1});
+        const g1 = lines.filter(l=>(l.group||1)===1);
+        const g2 = lines.filter(l=>(l.group||1)===2);
+        if (!openSection) { html += '<div class="gsat-section-r">'; openSection = true; }
+        let lh = "";
+        if (g1.length) { const pfx = isDual ? '<span class="gsat-pasuram-marker-r">** </span>' : ""; lh += g1.map((l,li)=>'<span class="gsat-pasuram-line-r">'+(li===0?pfx:"")+escH(l.text)+"</span>").join(""); }
+        if (g2.length) { lh += '<span class="gsat-sat-gap-r"></span>'; lh += g2.map(l=>'<span class="gsat-pasuram-line-r">'+escH(l.text)+"</span>").join(""); }
+        if (!lh && lines.length) { const pfx = isDual ? '<span class="gsat-pasuram-marker-r">** </span>' : ""; lh = lines.map((l,li)=>'<span class="gsat-pasuram-line-r">'+(li===0?pfx:"")+escH(l.text||l)+"</span>").join(""); }
+        html += '<div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">' + lh + "</div></div>";
+      });
+      if (openSection) { html += "</div>"; }
+      (data.fixed_blocks||[]).forEach(fb => {
+        html += '<div class="gsat-section-r"><div style="padding:10px 0">';
+        (fb.lines||[]).forEach(l => {
+          const text = l.line_text || l;
+          if (text.startsWith("(") && text.endsWith(")")) { html += '<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;padding:6px 14px 2px">' + escH(text) + "</div>"; }
+          else { html += '<span class="gsat-pasuram-line-r" style="display:block;padding:0 14px">' + escH(text) + "</span>"; }
+        });
+        html += "</div></div>";
+      });
+      (data.vazhi_blocks||[]).forEach(vb => {
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r">' + escH(vb.author_name||"") + "</div>";
+        const groups = {};
+        (vb.lines||[]).forEach(l => { const g=l.vazhi_group||1; if(!groups[g]) groups[g]=[]; groups[g].push(l); });
+        let vh = '<div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
+        Object.keys(groups).sort((a,b)=>Number(a)-Number(b)).forEach((g,gi) => {
+          if (gi>0) vh += '<span class="gsat-sat-gap-r" style="height:8px"></span>';
+          groups[g].forEach(l => { vh += '<span class="gsat-pasuram-line-r">' + escH(l.line_text||l) + "</span>"; });
+        });
+        html += vh + "</div></div></div>";
+      });
+      if (data.muktaka_lines && data.muktaka_lines.length) {
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">Muktaka Mangalam</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
+        data.muktaka_lines.forEach(l => {
+          const text = l.line_text || l;
+          html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
+          if (String(text).trimEnd().endsWith("||")) html += '<span class="gsat-sat-gap-r"></span>';
+        });
+        html += '</div></div><div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">Muktaka Mangalam Concluded</div></div>';
+      }
+      html += '<span class="gsat-sat-back-r" onclick="showRecital()" style="margin-top:24px">← Back to Recital</span>';
+      html += "</div>";
+      return html;
+    }
+
     function buildAll(rawBlocks) {
       if (!rawBlocks?.length) return { indexHTML: "", contentHTML: `<div class="r-no-plan">No content.</div>` };
 
@@ -1012,6 +1100,32 @@
             </div>
           </div>`;
 
+        } else if (block.block_type === "sattrumurai_heading") {
+          contentHTML += `<div class="r-sattrumurai-heading" id="${anchorId}">
+            <div style="background:#7a4d00;color:#fef0c0;text-align:center;font-size:15px;font-weight:700;padding:14px;margin:10px 0;border-radius:8px">
+              🙏 ${block.section_name || "சாற்றுமுறை பாசுரங்கள்"}
+            </div>
+          </div>`;
+          blockIdx++; continue;
+
+        } else if (block.block_type === "fixed_text") {
+          contentHTML += `<div class="r-section-box" id="${anchorId}">
+            <div class="r-section-box-header">${block.label || block.text_type}</div>
+            <div class="r-section-box-body" style="padding:12px 14px;color:#7a5a20;font-style:italic">
+              (${block.label || block.text_type} — உரை இங்கே சேர்க்கப்படும்)
+            </div>
+          </div>`;
+          blockIdx++; continue;
+
+        } else if (block.block_type === "vazhi") {
+          contentHTML += `<div class="r-section-box" id="${anchorId}">
+            <div class="r-section-box-header">வாழி திருநாமம்</div>
+            <div class="r-section-box-body" style="padding:12px 14px;color:#7a5a20">
+              ${(block.vazhi_ids || []).map(id => `<div>வாழி ${id}</div>`).join("")}
+            </div>
+          </div>`;
+          blockIdx++; continue;
+
         } else if (block.block_type === "sattrumurai") {
           contentHTML += `<div class="r-sattrumurai" id="${anchorId}">
             <div class="r-thaniyan-badge">Sattrumurai</div>
@@ -1030,9 +1144,16 @@
       const today     = new Date().getDay();
       const dayName   = DAY_NAMES[today];
       const urlParams = new URLSearchParams(window.location.search);
-      const urlPlanId = urlParams.get("plan_id");
+      const urlPlanId  = urlParams.get("plan_id");
+      const urlGhoshtiId = urlParams.get("ghoshti_id");
       const ghoshtiName = urlParams.get("ghoshti_name")
         ? decodeURIComponent(urlParams.get("ghoshti_name"))
+        : null;
+      const ghoshtiDate = urlParams.get("ghoshti_date")
+        ? decodeURIComponent(urlParams.get("ghoshti_date"))
+        : null;
+      const ghoshtiTime = urlParams.get("ghoshti_time")
+        ? decodeURIComponent(urlParams.get("ghoshti_time"))
         : null;
 
       // If opened via ghoshti share link (plan_id in URL) — no login required
@@ -1049,7 +1170,9 @@
         ? (ghoshtiName ? `🙏 ${ghoshtiName}` : "🙏 Ghoshti Recital")
         : "🙏 My Daily Recital";
       const pageSubtitle = isGhoshtiView
-        ? "Arulicheyal — Naalayira Divya Prabandham"
+        ? (ghoshtiDate && ghoshtiTime
+            ? `📅 ${ghoshtiDate}  🕐 ${ghoshtiTime}`
+            : "Arulicheyal — Naalayira Divya Prabandham")
         : dayName + " — Today's Recital";
 
       stage.innerHTML = `
@@ -1083,11 +1206,31 @@
 
         const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
-        stage.innerHTML = `
+        // Fetch sattrumurai if ghoshti_id present — bypass cache
+        let _satData = null;
+        if (urlGhoshtiId) {
+          try {
+            const gsRes = await fetch(`${WORKER}/recital/ghoshti?id=${urlGhoshtiId}`, { cache: "no-store" });
+            const gsData = await gsRes.json();
+            if (gsData && gsData.sattrumurai_data) _satData = gsData.sattrumurai_data;
+          } catch(e) {}
+        }
+
+        const satBtn = _satData
+          ? `<div style="text-align:center;margin:32px 0 16px"><button onclick="window._showSattrumurai()" style="background:#7a4d00;color:#fef0c0;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">View Sattrumurai</button></div>`
+          : "";
+
+        const _fullHTML = `
           <div class="r-page-title">${pageTitle}</div>
           <div class="r-day-label">${pageSubtitle}</div>
           ${indexHTML}
-          ${contentHTML}`;
+          ${contentHTML}
+          ${satBtn}`;
+
+        stage.innerHTML = _fullHTML;
+
+        window._showSattrumurai = function() { if (_satData) stage.innerHTML = renderSattrumurai(_satData); };
+        window.showRecital = function() { stage.innerHTML = _fullHTML; };
 
         // Show floating nav
         document.getElementById("r-float-nav").style.display = "flex";
@@ -1103,6 +1246,9 @@
           <div class="r-error">Error: ${e.message}</div>`;
       }
     }
+
+    window._showSattrumurai = function() {};
+    window.showRecital = function() {};
 
     init();
   </script>
