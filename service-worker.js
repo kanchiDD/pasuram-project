@@ -75,7 +75,6 @@ const APP_SHELL = [
 
 // NEVER cache — always live (user-specific or real-time)
 const NETWORK_ONLY = [
-  '/css/main.css', 
   '/recital/render',
   '/recital/plan',
   '/recital/spinner',
