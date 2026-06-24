@@ -453,18 +453,43 @@
       const app = document.getElementById("ghoshti-app");
       app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading selection...</div>`;
       try {
-        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js?v=2");
+        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js");
         renderGhoshtiSetup(meta, app, function(result) {
           if (!result) {
             renderMyGhoshtiList();
             showCreateForm(meta);
             return;
           }
-          activeTab = "my";
-          document.getElementById("ghoshti-app").innerHTML = "";
-          renderMyGhoshtiList().then(() => {
-            showToast("Ghoshti created! Link is ready to share 🙏");
-          });
+          // Show sattrumurai prompt after successful save
+          const savedGhoshtiId = result.ghoshti_id;
+          const savedLink      = result.link || `https://arulicheyal.org/ghoshti.html?id=${savedGhoshtiId}`;
+          document.getElementById("ghoshti-app").innerHTML = `
+            <div style="max-width:500px;margin:0 auto;padding:24px 16px;text-align:center">
+              <div style="font-size:36px;margin-bottom:12px">🙏</div>
+              <div style="font-size:18px;font-weight:900;color:#4a2c00;margin-bottom:6px">
+                Ghoshti Saved!
+              </div>
+              <div style="font-size:13px;color:#7a5a20;margin-bottom:16px">
+                Link is ready to share with your Ghoshti members.
+              </div>
+              <div class="g-ghoshti-link-box" onclick="copyLink('${savedLink}')"
+                style="margin-bottom:20px;text-align:left">
+                <span style="flex:1;font-size:12px">${savedLink}</span>
+                <span class="g-copy-hint">📋 Copy</span>
+              </div>
+              <button onclick="openSattrumurai('${savedGhoshtiId}')"
+                style="width:100%;padding:14px;background:#7a4d00;color:#fef0c0;
+                       border:none;border-radius:10px;font-size:15px;font-weight:700;
+                       cursor:pointer;margin-bottom:10px">
+                🙏 Add Sattrumurai
+              </button>
+              <button onclick="activeTab='my';renderMyGhoshtiList()"
+                style="width:100%;padding:12px;background:#fff;color:#7a4d00;
+                       border:1.5px solid #C9A84C;border-radius:10px;font-size:14px;
+                       cursor:pointer">
+                Back to My Ghoshtis
+              </button>
+            </div>`;
         });
       } catch(e) {
         app.innerHTML = `<div class="g-empty">Error loading setup: ${e.message}</div>`;
@@ -530,7 +555,7 @@
         </div>`;
       if (data.plan_id) {
         html += `<div style="margin-top:12px;text-align:center">
-          <a href="recital.html?plan_id=${data.plan_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}"
+          <a href="recital.html?plan_id=${data.plan_id}&ghoshti_id=${data.ghoshti_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}&ghoshti_date=${encodeURIComponent(formatDate(data.start_time))}&ghoshti_time=${encodeURIComponent(formatTime(data.start_time))}"
              style="display:inline-block;padding:10px 24px;background:#7a4d00;color:#fff;
                     border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;">
             🙏 View Full Recital
@@ -767,7 +792,7 @@
           </div>
           ${data.plan_id ? `
           <div style="padding:0 16px 40px;text-align:center">
-            <a href="recital.html?plan_id=${data.plan_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}"
+            <a href="recital.html?plan_id=${data.plan_id}&ghoshti_id=${data.ghoshti_id}&ghoshti_name=${encodeURIComponent(data.ghoshti_name || 'Ghoshti Recital')}&ghoshti_date=${encodeURIComponent(formatDate(data.start_time))}&ghoshti_time=${encodeURIComponent(formatTime(data.start_time))}"
                style="display:inline-block;padding:14px 32px;background:#7a4d00;color:#fff;
                       border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;
                       box-shadow:0 4px 12px rgba(74,44,0,0.2)">
@@ -809,6 +834,115 @@
     init();
   </script>
 <script>
+  // ── Build sections array (for sattrumurai) from render blocks ─────
+  function buildSectionsFromBlocks(blocks) {
+    const result = [];
+    const seen = new Set();
+    blocks.forEach(b => {
+      // Include both pasurams blocks AND madal blocks (sections 22/23)
+      if (b.block_type !== "pasurams" && b.block_type !== "madal") return;
+      const sid = b.section_id;
+      if (!sid) return;
+      let pathuNo  = b.pasurams?.[0]?.pathu_no || null;
+      if (b.entity_type === "koil") {
+        pathuNo = (Number(sid) === 11) ? 11 : 10;
+      }
+      // Full pathu: entity_id === parent_pathu_id (entity IS the parent)
+      // Individual thirumozhi: entity_id !== parent_pathu_id
+      // Madal blocks (22/23) are always full
+      const isFull   = b.block_type === "madal" ||
+                       b.entity_type === "section" ||
+                       b.entity_type === "koil" ||
+                       (b.entity_type === "pathu" &&
+                        (b.parent_pathu_id == null || b.entity_id === b.parent_pathu_id));
+      const isRettai = !!b.is_rettai;
+      const key = `${sid}_${pathuNo}_${isFull}_${isRettai}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      result.push({
+        section_id: Number(sid),
+        pathu_no:   pathuNo ? Number(pathuNo) : null,
+        is_full:    isFull,
+        is_rettai:  isRettai
+      });
+    });
+    return result;
+  }
+
+  // ── Open Sattrumurai screen ──────────────────────────────────────
+  async function openSattrumurai(ghoshtiId) {
+    const app = document.getElementById("ghoshti-app");
+    app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading Sattrumurai...</div>`;
+
+    // Get ghoshti meta (name + sections) for sattrumurai wiring
+    try {
+      const res  = await fetch(`${WORKER}/recital/ghoshti?id=${ghoshtiId}`);
+      const data = await res.json();
+      if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
+
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=6");
+      await renderGhoshtiSattrumurai(app, ghoshtiId, {
+        name:     data.ghoshti_name || "",
+        sections: buildSectionsFromBlocks(data.blocks || []),
+      });
+    } catch(e) {
+      app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
+    }
+  }
+
+  // ── Build sections array (for sattrumurai) from render blocks ─────
+  function buildSectionsFromBlocks(blocks) {
+    const result = [];
+    const seen = new Set();
+    blocks.forEach(b => {
+      // Include both pasurams blocks AND madal blocks (sections 22/23)
+      if (b.block_type !== "pasurams" && b.block_type !== "madal") return;
+      const sid = b.section_id;
+      if (!sid) return;
+      let pathuNo  = b.pasurams?.[0]?.pathu_no || null;
+      if (b.entity_type === "koil") {
+        pathuNo = (Number(sid) === 11) ? 11 : 10;
+      }
+      // Full pathu: entity_id === parent_pathu_id (entity IS the parent)
+      // Individual thirumozhi: entity_id !== parent_pathu_id
+      // Madal blocks (22/23) are always full
+      const isFull   = b.block_type === "madal" ||
+                       b.entity_type === "section" ||
+                       b.entity_type === "koil" ||
+                       (b.entity_type === "pathu" &&
+                        (b.parent_pathu_id == null || b.entity_id === b.parent_pathu_id));
+      const isRettai = !!b.is_rettai;
+      const key = `${sid}_${pathuNo}_${isFull}_${isRettai}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      result.push({
+        section_id: Number(sid),
+        pathu_no:   pathuNo ? Number(pathuNo) : null,
+        is_full:    isFull,
+        is_rettai:  isRettai
+      });
+    });
+    return result;
+  }
+
+  // ── Open Sattrumurai screen ──────────────────────────────────────
+  async function openSattrumurai(ghoshtiId) {
+    const app = document.getElementById("ghoshti-app");
+    app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading Sattrumurai...</div>`;
+    try {
+      const res  = await fetch(`${WORKER}/recital/ghoshti?id=${ghoshtiId}`);
+      const data = await res.json();
+      if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=6");
+      await renderGhoshtiSattrumurai(app, ghoshtiId, {
+        name:     data.ghoshti_name || "",
+        sections: buildSectionsFromBlocks(data.blocks || []),
+      });
+    } catch(e) {
+      app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
+    }
+  }
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('/service-worker.js')
