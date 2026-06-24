@@ -75,6 +75,8 @@ const APP_SHELL = [
 
 // NEVER cache — always live (user-specific or real-time)
 const NETWORK_ONLY = [
+  '/recital.html',
+  '/ghoshti.html',
   '/recital/render',
   '/recital/plan',
   '/recital/spinner',
@@ -83,7 +85,6 @@ const NETWORK_ONLY = [
   '/auth/',
   '/recital/resolve-labels',
 ];
-
 // CACHE THEN NETWORK — serve cache instantly, refresh in background
 // TTL: 24 hours — your D1 changes are visible within a day max
 const CACHE_THEN_NETWORK = [
