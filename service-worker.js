@@ -149,23 +149,21 @@ function stampResponse(response) {
 }
 
 // ── 4. INSTALL — cache app shell ─────────────────────────────
-self.addEventListener('install', event => {
+self.addEventListener('activate', event => {
+  self.skipWaiting(); // ← ADD THIS LINE HERE
   event.waitUntil(
-    caches.open(SHELL_CACHE)
-      .then(cache => {
-        // Cache what we can — don't fail install if one file is missing
-        return Promise.allSettled(
-          APP_SHELL.map(url =>
-            cache.add(url).catch(err =>
-              console.warn('[SW] Shell cache miss:', url, err.message)
-            )
-          )
-        );
-      })
-      .then(() => {
-        console.log('[SW] App shell cached ✅');
-        return self.skipWaiting(); // activate immediately, don't wait
-      })
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(key => key !== SHELL_CACHE && key !== CONTENT_CACHE)
+            .map(key => {
+              console.log('[SW] Deleting old cache:', key);
+              return caches.delete(key);
+            })
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
