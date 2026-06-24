@@ -849,9 +849,13 @@ window.gsatSave = async function() {
     }
   });
 
-  // explicit sections are now already in pasuramItems (auto or toggled)
-  // so finalPasurams already contains them in correct order — no extra handling needed
-  const sequence = finalPasurams;
+  // Remove orphan headings (headings with no pasurams following them)
+  const sequence = finalPasurams.filter((item, idx) => {
+    if (item.type !== "heading") return true;
+    // Check if next non-heading item exists and belongs to same group
+    const next = finalPasurams[idx + 1];
+    return next && next.type !== "heading";
+  });
 
   // Build fixed text blocks in fixedOrder
   const fixed_blocks = [];
