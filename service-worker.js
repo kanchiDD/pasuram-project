@@ -149,8 +149,28 @@ function stampResponse(response) {
 }
 
 // ── 4. INSTALL — cache app shell ─────────────────────────────
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(SHELL_CACHE)
+      .then(cache => {
+        return Promise.allSettled(
+          APP_SHELL.map(url =>
+            cache.add(url).catch(err =>
+              console.warn('[SW] Shell cache miss:', url, err.message)
+            )
+          )
+        );
+      })
+      .then(() => {
+        console.log('[SW] App shell cached ✅');
+        return self.skipWaiting();
+      })
+  );
+});
+
+// ── 5. ACTIVATE — clean old caches ───────────────────────────
 self.addEventListener('activate', event => {
-  self.skipWaiting(); // ← ADD THIS LINE HERE
+  self.skipWaiting();
   event.waitUntil(
     caches.keys()
       .then(keys =>
@@ -164,24 +184,6 @@ self.addEventListener('activate', event => {
         )
       )
       .then(() => self.clients.claim())
-  );
-});
-
-// ── 5. ACTIVATE — clean old caches ───────────────────────────
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys =>
-        Promise.all(
-          keys
-            .filter(key => key !== SHELL_CACHE && key !== CONTENT_CACHE)
-            .map(key => {
-              console.log('[SW] Deleting old cache:', key);
-              return caches.delete(key);
-            })
-        )
-      )
-      .then(() => self.clients.claim()) // take control of all open pages
   );
 });
 
