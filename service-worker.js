@@ -4,7 +4,7 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const SHELL_CACHE   = CACHE_VERSION + '-shell';
 const CONTENT_CACHE = CACHE_VERSION + '-content';
 
@@ -75,6 +75,7 @@ const APP_SHELL = [
 
 // NEVER cache — always live (user-specific or real-time)
 const NETWORK_ONLY = [
+  '/css/main.css', 
   '/recital/render',
   '/recital/plan',
   '/recital/spinner',
