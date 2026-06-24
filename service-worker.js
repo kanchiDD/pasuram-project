@@ -4,7 +4,7 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const APP_VERSION   = 'arulicheyal-v3';
+const CACHE_VERSION = 'v4';  // was v3
 const SHELL_CACHE   = APP_VERSION + '-shell';
 const CONTENT_CACHE = APP_VERSION + '-content';
 
