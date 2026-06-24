@@ -34,6 +34,11 @@ export default {
     if (url.pathname.includes("/recital/render"))         return handleRender(request, env);
     if (url.pathname.includes("/recital/panchangam"))      return handlePanchangam(request, env);
     if (url.pathname.includes("/recital/spinner"))        return handleSpinner(request, env);
+    if (url.pathname.includes("/recital/ghoshti-sattrumurai")) return handleGhoshtiSattrumurai(request, env);
+    if (url.pathname.includes("/recital/madal-sattrumurai"))    return handleMadalSattrumurai(request, env);
+    if (url.pathname.includes("/recital/vazhi-list"))           return handleVazhiList(request, env);
+    if (url.pathname.includes("/recital/vazhi-lines"))          return handleVazhiLines(request, env);
+    if (url.pathname.includes("/recital/fixed-text"))           return handleFixedText(request, env);
     if (url.pathname.includes("/recital/ghoshti"))        return handleGhoshti(request, env);
     if (url.pathname.includes("/auth/register"))          return handleAuthRegister(request, env);
     if (url.pathname.includes("/recital/rettai"))         return handleRettai(request, env);
@@ -732,7 +737,7 @@ async function handleGhoshti(request, env) {
       }
       if (!id)
         return new Response(JSON.stringify({ error: "id= required" }), { status: 400, headers: CORS });
-      const session = await env.db.prepare(`SELECT ghoshti_id, plan_id, mobile, ghoshti_name, start_time, expires_at, is_active FROM ghoshti_session WHERE ghoshti_id = ?`).bind(id).first();
+      const session = await env.db.prepare(`SELECT ghoshti_id, plan_id, mobile, ghoshti_name, start_time, expires_at, is_active, sattrumurai_data FROM ghoshti_session WHERE ghoshti_id = ?`).bind(id).first();
       if (!session)
         return new Response(JSON.stringify({ error: "Ghoshti session not found" }), { status: 404, headers: CORS });
       const now = new Date(); const exp = new Date(session.expires_at);
@@ -740,10 +745,9 @@ async function handleGhoshti(request, env) {
         return new Response(JSON.stringify({ expired: true, message: "This ghoshti session has ended" }), { headers: CORS });
       const today = new Date(); const ghoshtiDay = new Date(session.start_time);
       today.setHours(0,0,0,0); ghoshtiDay.setHours(0,0,0,0);
-      const isCreator   = mobile && mobile === session.mobile;
+      const isCreator    = mobile && mobile === session.mobile;
       const isGhoshtiDay = today >= ghoshtiDay;
-      if (!isGhoshtiDay && !isCreator)
-        return new Response(JSON.stringify({ error: "This ghoshti is not yet open for viewing" }), { status: 403, headers: CORS });
+      // Anyone with the link can view — no date restriction
       const host = await env.db.prepare(`SELECT name FROM user_master WHERE mobile = ? LIMIT 1`).bind(session.mobile).first();
       const renderUrl = new URL(request.url);
       renderUrl.pathname = "/recital/render";
@@ -759,7 +763,8 @@ async function handleGhoshti(request, env) {
         is_creator:  isCreator,
         can_edit:    isCreator && !isGhoshtiDay,
         plan_id:     session.plan_id,
-        blocks:      renderData.blocks
+        blocks:      renderData.blocks,
+        sattrumurai_data: session.sattrumurai_data ? JSON.parse(session.sattrumurai_data) : null
       }), { headers: CORS });
     }
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: CORS });
@@ -923,5 +928,146 @@ async function handleResolveLabels(request, env) {
     return new Response(JSON.stringify({ labels }), { headers: CORS });
   } catch(err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+  }
+}
+
+// ── Vazhi list ────────────────────────────────────────────────────
+// ── Fixed text lines ─────────────────────────────────────────────
+async function handleFixedText(request, env) {
+  const url = new URL(request.url);
+  const id  = Number(url.searchParams.get("id"));
+  if (!id) return new Response(JSON.stringify({ success: false, error: "id required" }), { status: 400, headers: CORS });
+  try {
+    const master = await env.db.prepare(
+      `SELECT fixed_id, name FROM fixed_text_master WHERE fixed_id = ?`
+    ).bind(id).first();
+    if (!master) return new Response(JSON.stringify({ success: false, error: "not found" }), { status: 404, headers: CORS });
+    const lines = await env.db.prepare(
+      `SELECT line_no, line_text FROM fixed_text_line_master WHERE fixed_id = ? ORDER BY line_no`
+    ).bind(id).all();
+    return new Response(JSON.stringify({
+      success: true,
+      fixed_id: master.fixed_id,
+      name: master.name,
+      lines: lines.results
+    }), { headers: CORS });
+  } catch(e) {
+    return new Response(JSON.stringify({ success: false, error: e.message }), { headers: CORS });
+  }
+}
+
+// ── Vazhi thirunamam lines ────────────────────────────────────────
+async function handleVazhiLines(request, env) {
+  const url = new URL(request.url);
+  const id  = Number(url.searchParams.get("id"));
+  if (!id) return new Response(JSON.stringify({ success: false, error: "id required" }), { status: 400, headers: CORS });
+  try {
+    const master = await env.db.prepare(`
+      SELECT v.vazhi_id, v.entity_id, a.canonical_name AS author_name
+      FROM vazhi_thirunamam_master v
+      LEFT JOIN author_master a ON a.author_id = v.entity_id
+      WHERE v.vazhi_id = ?
+    `).bind(id).first();
+    if (!master) return new Response(JSON.stringify({ success: false, error: "not found" }), { status: 404, headers: CORS });
+    const lines = await env.db.prepare(
+      `SELECT line_no, line_text, vazhi_group FROM vazhi_thirunamam_line_master WHERE vazhi_id = ? ORDER BY vazhi_group, line_no`
+    ).bind(id).all();
+    return new Response(JSON.stringify({
+      success: true,
+      vazhi_id: master.vazhi_id,
+      author_name: master.author_name || "",
+      lines: lines.results
+    }), { headers: CORS });
+  } catch(e) {
+    return new Response(JSON.stringify({ success: false, error: e.message }), { headers: CORS });
+  }
+}
+
+async function handleVazhiList(request, env) {
+  try {
+    const rows = await env.db.prepare(`
+      SELECT v.vazhi_id, v.entity_id, v.display_order,
+             a.canonical_name AS author_name,
+             (SELECT line_text FROM vazhi_thirunamam_line_master
+              WHERE vazhi_id = v.vazhi_id AND line_no = 1 LIMIT 1) AS vazhi_name
+      FROM vazhi_thirunamam_master v
+      LEFT JOIN author_master a ON a.author_id = v.entity_id
+      ORDER BY v.display_order ASC
+    `).all();
+    return new Response(JSON.stringify({ success: true, vaazhis: rows.results }), { headers: CORS });
+  } catch(e) {
+    return new Response(JSON.stringify({ success: false, error: e.message }), { headers: CORS });
+  }
+}
+
+// ── Madal sattrumurai lines ───────────────────────────────────────
+async function handleMadalSattrumurai(request, env) {
+  const url = new URL(request.url);
+  const id  = Number(url.searchParams.get("id"));
+  if (!id) return new Response(JSON.stringify({ success: false, error: "id required" }), { status: 400, headers: CORS });
+  try {
+    const master = await env.db.prepare(`
+      SELECT madal_sattrumurai_id, title, notes FROM madal_sattrumurai_master WHERE madal_sattrumurai_id = ?
+    `).bind(id).first();
+    if (!master) return new Response(JSON.stringify({ success: false, error: "not found" }), { status: 404, headers: CORS });
+    const lines = await env.db.prepare(`
+      SELECT line_no, line_text, is_dual_recital FROM madal_sattrumurai_line_master
+      WHERE madal_sattrumurai_id = ? ORDER BY line_no ASC
+    `).bind(id).all();
+    return new Response(JSON.stringify({
+      success: true,
+      title:   master.title,
+      notes:   master.notes,
+      lines:   lines.results,
+    }), { headers: CORS });
+  } catch(e) {
+    return new Response(JSON.stringify({ success: false, error: e.message }), { headers: CORS });
+  }
+}
+
+// ── Ghoshti sattrumurai save ──────────────────────────────────────
+async function handleGhoshtiSattrumurai(request, env) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+
+  if (request.method !== "POST")
+    return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: CORS });
+
+  let body;
+  try { body = await request.json(); } catch(e) {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: CORS });
+  }
+
+  const { ghoshti_id, pasurams, explicit, vaazhis, fixed_text_1, fixed_text_2, madal, fixed_blocks, vazhi_blocks, muktaka_lines } = body;
+  if (!ghoshti_id)
+    return new Response(JSON.stringify({ error: "ghoshti_id required" }), { status: 400, headers: CORS });
+
+  try {
+    // Store sattrumurai payload as JSON in ghoshti_session
+    const sattrumurai_data = JSON.stringify({
+      pasurams:     pasurams     || [],
+      explicit:     explicit     || [],
+      vaazhis:      vaazhis      || [],
+      fixed_text_1: fixed_text_1 !== false,
+      fixed_text_2: fixed_text_2 === true,
+      madal:        madal        || [],
+      fixed_blocks: fixed_blocks || [],
+      vazhi_blocks: vazhi_blocks || [],
+      muktaka_lines: muktaka_lines || [],
+      saved_at:     new Date().toISOString(),
+    });
+
+    // Check if column exists — add if not (safe migration)
+    await env.db.prepare(`
+      UPDATE ghoshti_session SET sattrumurai_data = ? WHERE ghoshti_id = ?
+    `).bind(sattrumurai_data, ghoshti_id).run();
+
+    return new Response(JSON.stringify({ success: true, ghoshti_id }), { headers: CORS });
+  } catch(e) {
+    // Column may not exist yet — return helpful error
+    return new Response(JSON.stringify({
+      success: false,
+      error: e.message,
+      hint: "Run: ALTER TABLE ghoshti_session ADD COLUMN sattrumurai_data TEXT"
+    }), { status: 500, headers: CORS });
   }
 }
