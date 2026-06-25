@@ -208,16 +208,16 @@ const SPECIAL_DESTINATIONS = [
 // ═══════════════════════════════════════════════════════
 
 const PATHU_ORDINALS = [
-  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்"] },
-  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்"] },
-  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்"] },
-  { num:4,  keys:["fourth","4th","naangaam","நான்காம்"] },
-  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்"] },
+  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்","mudal","முதலாம்"] },
+  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்","ரெண்டாம்","rendaam"] },
+  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்","மூணாம்","moonam","munam"] },
+  { num:4,  keys:["fourth","4th","naangaam","நான்காம்","நாலாம்","naalaam"] },
+  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்","ஐஞ்சாம்","ainjaam"] },
   { num:6,  keys:["sixth","6th","aaram","ஆறாம்"] },
   { num:7,  keys:["seventh","7th","ezhaam","ஏழாம்"] },
   { num:8,  keys:["eighth","8th","ettaam","எட்டாம்"] },
-  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham"] },
-  { num:10, keys:["tenth","10th","pattham","பத்தாம்"] },
+  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham","ஒம்பதாம்"] },
+  { num:10, keys:["tenth","10th","pattham","பத்தாம்","பத்து"] },
   { num:11, keys:["eleventh","11th","pathinondram","பதினொன்றாம்"] }
 ];
 
@@ -243,9 +243,6 @@ function scoreMatch(transcript, aliases) {
     const a  = normalize(alias);
     const af = normTamil(alias);
     if (t === a || tf === af)              { best = Math.max(best, 100); continue; }
-    // No-space compare — catches "துயில் உணர்த்துதல்" vs "துயிலுணர்த்துதல்"
-    const tns = tf.replace(/\s+/g,""); const ans = af.replace(/\s+/g,"");
-    if (tns && ans && (tns === ans || tns.includes(ans) || ans.includes(tns))) { best = Math.max(best, 90); continue; }
     if (t.includes(a) || tf.includes(af)) { best = Math.max(best, 80);  continue; }
     if (a.includes(t) || af.includes(tf)) { best = Math.max(best, 60);  continue; }
     const tW = tf.split(" ").filter(w => w.length > 1);
@@ -265,6 +262,42 @@ function extractPathuNum(t) {
   const tn = normalize(t);
   for (const p of PATHU_ORDINALS) {
     if (p.keys.some(k => tn.includes(normalize(k)))) return p.num;
+  }
+  return null;
+}
+
+// Extract thirumozhi number — the SECOND ordinal in transcript
+// e.g. "இரண்டாம் பத்து மூணாம் திருமொழி" → pathu=2, thirumozhi=3
+function extractThirumozhibNum(t) {
+  const tn = normalize(t);
+  // Keywords that signal "pathu" context — ordinal before these = pathu num
+  const pathuMarkers = ["pathu","பத்து","பத்தி"];
+  // Keywords that signal "thirumozhi" context — ordinal before these = thirumozhi num
+  const thiruMarkers = ["thirumozhi","திருமொழி","mozhi","மொழி"];
+
+  let pathuIdx = -1;
+  let thiruIdx = -1;
+
+  for (const m of pathuMarkers) {
+    const i = tn.indexOf(normalize(m));
+    if (i > -1 && (pathuIdx === -1 || i < pathuIdx)) pathuIdx = i;
+  }
+  for (const m of thiruMarkers) {
+    const i = tn.indexOf(normalize(m));
+    if (i > -1 && (thiruIdx === -1 || i < thiruIdx)) thiruIdx = i;
+  }
+
+  // If thirumozhi marker comes after pathu marker, find ordinal between them
+  if (pathuIdx > -1 && thiruIdx > pathuIdx) {
+    // Look for ordinal between pathuIdx and thiruIdx
+    const segment = tn.slice(pathuIdx, thiruIdx + 20);
+    for (const p of PATHU_ORDINALS) {
+      if (p.keys.some(k => {
+        const kn = normalize(k);
+        const ki = segment.indexOf(kn);
+        return ki > 0; // after pathu marker
+      })) return p.num;
+    }
   }
   return null;
 }
@@ -537,25 +570,6 @@ export async function resolveVoiceQuery(transcript) {
 
   // ── 5. Section match ──
   const pathuNum = extractPathuNum(t);
-
-  // ── 5a. Section-specific thaniyan — check BEFORE generic thaniyan destination ──
-  const tTamil = normTamil(t);
-  const wantsThaniyans = tTamil.includes("தனியன") || t.includes("thaniyan") || t.includes("thaniyangal");
-  if (wantsThaniyans) {
-    for (const sec of SECTIONS) {
-      const secScore = scoreMatch(t, [sec.name, ...sec.aliases]);
-      if (secScore >= 50) {
-        results.push({
-          label: sec.name + " தனியன்கள்",
-          sublabel: sec.name + " — தனியன்கள் மட்டும்",
-          fn: "openFullThaniyans",
-          args: [sec.id],
-          score: secScore + 20
-        });
-      }
-    }
-  }
-
   for (const sec of SECTIONS) {
     const score = scoreMatch(t, [sec.name, ...sec.aliases]);
     if (score < 20) continue;
@@ -577,7 +591,31 @@ export async function resolveVoiceQuery(transcript) {
       });
       continue;
     }
-    if (sec.hasPathu && pathuNum) {
+    // Check if user wants rettai/irattai pasurams of this section
+    const tN = normTamil(t);
+    const wantsRettai = tN.includes("இரட்ட") || tN.includes("ரெட்ட") ||
+                        t.includes("rettai") || t.includes("irattai") || t.includes("dual");
+    if (wantsRettai && score >= 40) {
+      const thousandId = sec.id <= 10 ? 1 : sec.id <= 17 ? 2 : sec.id <= 23 ? 3 : 4;
+      results.push({
+        label: sec.name + " — இரட்டை பாசுரங்கள்",
+        sublabel: sec.name + " — Dual recital pasurams",
+        fn: "openDualRecital",
+        args: [thousandId],
+        score: score + 15
+      });
+    }
+
+    if (sec.hasPathu && pathuNum && thiruNum) {
+      // Specific pathu + specific thirumozhi
+      results.push({
+        label: `${sec.name} — ${pathuNum}${getOrdSuffix(pathuNum)} பத்து ${thiruNum}${getOrdSuffix(thiruNum)} திருமொழி`,
+        sublabel: `${pathuNum}${getOrdSuffix(pathuNum)} பத்து · ${thiruNum}${getOrdSuffix(thiruNum)} திருமொழி`,
+        fn: "_selectSectionWithPathu",
+        args: [sec.id, sec.name, pathuNum],
+        score: score + 20
+      });
+    } else if (sec.hasPathu && pathuNum) {
       results.push({
         label: sec.name, sublabel: `${pathuNum}${getOrdSuffix(pathuNum)} பத்து`,
         fn: "_selectSectionWithPathu", args: [sec.id, sec.name, pathuNum],
@@ -721,18 +759,15 @@ async function searchEntityTags(transcript) {
           score
         });
       } else if (row.entity_type === "pathu") {
-        // pathu entity_id is a raw pathu_id with no section_id info
-        // Skip — anchor map already handles thirumozhi-level navigation better
-        // Only add if score is very high (exact match) as a hint
-        if (score >= 80) {
-          results.push({
-            label: tag,
-            sublabel: `பாடல் — ${tag}`,
-            fn: "_openGlobalPasuram",
-            args: [row.entity_id],
-            score: score - 20
-          });
-        }
+        // pathu entity_id is pathu_id in periya thirumozhi (section 11)
+        // Route to section 11 (பெரிய திருமொழி) with pathu number
+        results.push({
+          label: tag,
+          sublabel: `பெரிய திருமொழி — ${tag}`,
+          fn: "_selectSectionWithPathu",
+          args: [11, "பெரிய திருமொழி", row.entity_id],
+          score
+        });
       } else if (row.entity_type === "thirumozhi") {
         results.push({
           label: tag,
