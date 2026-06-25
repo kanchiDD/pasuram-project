@@ -243,6 +243,9 @@ function scoreMatch(transcript, aliases) {
     const a  = normalize(alias);
     const af = normTamil(alias);
     if (t === a || tf === af)              { best = Math.max(best, 100); continue; }
+    // No-space compare — catches "துயில் உணர்த்துதல்" vs "துயிலுணர்த்துதல்"
+    const tns = tf.replace(/\s+/g,""); const ans = af.replace(/\s+/g,"");
+    if (tns && ans && (tns === ans || tns.includes(ans) || ans.includes(tns))) { best = Math.max(best, 90); continue; }
     if (t.includes(a) || tf.includes(af)) { best = Math.max(best, 80);  continue; }
     if (a.includes(t) || af.includes(tf)) { best = Math.max(best, 60);  continue; }
     const tW = tf.split(" ").filter(w => w.length > 1);
@@ -534,6 +537,25 @@ export async function resolveVoiceQuery(transcript) {
 
   // ── 5. Section match ──
   const pathuNum = extractPathuNum(t);
+
+  // ── 5a. Section-specific thaniyan — check BEFORE generic thaniyan destination ──
+  const tTamil = normTamil(t);
+  const wantsThaniyans = tTamil.includes("தனியன") || t.includes("thaniyan") || t.includes("thaniyangal");
+  if (wantsThaniyans) {
+    for (const sec of SECTIONS) {
+      const secScore = scoreMatch(t, [sec.name, ...sec.aliases]);
+      if (secScore >= 50) {
+        results.push({
+          label: sec.name + " தனியன்கள்",
+          sublabel: sec.name + " — தனியன்கள் மட்டும்",
+          fn: "openFullThaniyans",
+          args: [sec.id],
+          score: secScore + 20
+        });
+      }
+    }
+  }
+
   for (const sec of SECTIONS) {
     const score = scoreMatch(t, [sec.name, ...sec.aliases]);
     if (score < 20) continue;
@@ -699,15 +721,18 @@ async function searchEntityTags(transcript) {
           score
         });
       } else if (row.entity_type === "pathu") {
-        // pathu entity_id is pathu_id in periya thirumozhi (section 11)
-        // Route to section 11 (பெரிய திருமொழி) with pathu number
-        results.push({
-          label: tag,
-          sublabel: `பெரிய திருமொழி — ${tag}`,
-          fn: "_selectSectionWithPathu",
-          args: [11, "பெரிய திருமொழி", row.entity_id],
-          score
-        });
+        // pathu entity_id is a raw pathu_id with no section_id info
+        // Skip — anchor map already handles thirumozhi-level navigation better
+        // Only add if score is very high (exact match) as a hint
+        if (score >= 80) {
+          results.push({
+            label: tag,
+            sublabel: `பாடல் — ${tag}`,
+            fn: "_openGlobalPasuram",
+            args: [row.entity_id],
+            score: score - 20
+          });
+        }
       } else if (row.entity_type === "thirumozhi") {
         results.push({
           label: tag,
