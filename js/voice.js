@@ -16,7 +16,19 @@
  * }
  */
 
-import { resolveVoiceQueryExtended as resolveVoiceQuery } from "./voiceSearch.js?v=3";
+import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js";
+
+// Use extended if available, fall back to base
+async function resolveVoiceQuery(transcript) {
+  try {
+    if (typeof _resolveExtended === "function") {
+      return await _resolveExtended(transcript);
+    }
+  } catch(e) {
+    console.warn("[Voice] extended resolver failed, using base:", e);
+  }
+  return await _resolveBase(transcript);
+}
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -47,9 +59,11 @@ window.startVoiceSearch = function () {
   }
 
   recognition = new SpeechRecognition();
-  recognition.lang            = "ta-IN";   // Tamil primary
+  // ta-IN works on Android Chrome; some devices need en-IN fallback
+  // We set ta-IN but accept mixed Tamil/English input
+  recognition.lang            = "ta-IN";
   recognition.interimResults  = false;
-  recognition.maxAlternatives = 3;
+  recognition.maxAlternatives = 5;  // more alternatives improves match rate
   recognition.continuous      = false;
 
   showListening();
@@ -71,7 +85,12 @@ window.startVoiceSearch = function () {
     let usedTranscript = alternatives[0];
 
     for (const alt of alternatives) {
-      results = await resolveVoiceQuery(alt);
+      try {
+        results = await resolveVoiceQuery(alt);
+      } catch(e) {
+        console.error("[Voice] resolve error:", e);
+        results = [];
+      }
       if (results.length > 0) {
         usedTranscript = alt;
         break;
@@ -88,12 +107,22 @@ window.startVoiceSearch = function () {
   // ── Error handling ───────────────────────────────
   recognition.onerror = function (event) {
     setMicState(false);
+    console.warn("[Voice] error:", event.error);
     if (event.error === "no-speech") {
       showOffTopic("(no speech detected)");
     } else if (event.error === "not-allowed") {
       showPermissionError();
+    } else if (event.error === "language-not-supported") {
+      // Tamil not supported — retry with en-IN
+      recognition.lang = "en-IN";
+      try { recognition.start(); return; } catch(e) {}
+      showOffTopic("(language not supported)");
+    } else if (event.error === "network") {
+      showOffTopic("(network error — check connection)");
+    } else if (event.error === "audio-capture") {
+      showPermissionError();
     } else {
-      closePopup();
+      showOffTopic("(mic error: " + event.error + ")");
     }
   };
 
@@ -106,11 +135,16 @@ window.startVoiceSearch = function () {
 
 // Demo chips — simulate a voice result without mic
 window.runDemo = async function (transcript) {
-  const results = await resolveVoiceQuery(transcript);
-  if (results.length === 0) {
+  try {
+    const results = await resolveVoiceQuery(transcript);
+    if (results.length === 0) {
+      showOffTopic(transcript);
+    } else {
+      showResults(transcript, results);
+    }
+  } catch(e) {
+    console.error("[Voice] runDemo error:", e);
     showOffTopic(transcript);
-  } else {
-    showResults(transcript, results);
   }
 };
 
