@@ -659,6 +659,10 @@ const TAG_ROUTE_MAP = {
   "காப்பிடல்":            { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
   "kappidal":              { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
   "திருமஞ்சனம்":          { fn: "openNithyanusandhanam", args: [], label: "திருமஞ்சனம்",         sublabel: "நித்யானுஸந்தானம் — திருமஞ்சனம்" },
+  // பரிபாலனம் — திருவாய்மொழி 10th pathu 9th thiruvaimozhi (recited when soul departs)
+  "பரிபாலனம்":            { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
+  "paripaalanam":          { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
+  "ஸ்ரீகூர்ணபரிபாலனம்": { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
 };
 
 async function searchEntityTags(transcript) {
@@ -736,6 +740,24 @@ async function searchEntityTags(transcript) {
 export async function resolveVoiceQueryExtended(transcript) {
   // Check TAG_ROUTE_MAP FIRST — these are hardcoded concepts that must win
   const t = normTamil(transcript);
+
+  // Special case: பரிபாலனம் → show TWO options
+  const pariTags = ["பரிபாலனம", "paripaalanam", "ஸரகூரணபரிபாலனம", "srikoornaparipaalanam"];
+  if (pariTags.some(p => t.includes(p) || p.includes(t))) {
+    return [
+      {
+        label: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி",
+        sublabel: "சூழ்விசும்பு அணிமுகில் — பரிபாலனம்",
+        fn: "_openParipaalanamTVM", args: [], score: 110
+      },
+      {
+        label: "திருவிருத்தம்",
+        sublabel: "நம்மாழ்வார் — 100 பாசுரங்கள்",
+        fn: "_openParipaalanamViruttham", args: [], score: 105
+      }
+    ];
+  }
+
   for (const [tag, route] of Object.entries(TAG_ROUTE_MAP)) {
     const tagN = normTamil(tag);
     if (t === tagN || t.includes(tagN) || tagN.includes(t)) {

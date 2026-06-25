@@ -26,8 +26,8 @@
 
 <!-- ✅ NAV (CRITICAL WRAPPER) -->
 <div class="nav">
-  <a href="/tree.html">🌳 Naalayiram Tree</a>
-  <a href="/voice.html">🎤 Voice</a>
+  <a href="/tree.html">Naalayiram Tree</a>
+  <a href="/voice.html">Voice Search</a>
   <a href="/vedam.html">Vedam</a>
   <a href="/register.html">Register</a>
   <a href="/recital.html">Recital</a>
@@ -59,3 +59,28 @@
 
 <!-- OVERLAY -->
 <div id="overlay" onclick="toggleMenu()"></div>
+
+<!-- Global Mic Button — opens voice search on any page -->
+<style>
+.global-mic-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 14px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #4A3728;
+  border: 2.5px solid #C9A84C;
+  color: #C9A84C;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 9998;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.global-mic-btn:hover { background: #5a4535; }
+</style>
+<a class="global-mic-btn" href="/voice.html" title="Voice Search">🎤</a>

@@ -80,6 +80,14 @@ function executeVoiceNav(nav) {
     voiceSelectWithThirumozhi(2, "பெரியாழ்வார் திருமொழி", 2, "இந்திரனோடு");
     return;
   }
+  if (fn === "_openParipaalanamTVM") {
+    voiceOpenParipaalanamTVM();
+    return;
+  }
+  if (fn === "_openParipaalanamViruttham") {
+    voiceSelectSection(18, "திருவிருத்தம்");
+    return;
+  }
   if (fn === "_openThousandSections") {
     voiceOpenThousandSections(args[0]);
     return;
@@ -342,9 +350,11 @@ function voiceOpenSpecialGroup(groupKey) {
 
 // ── நீராட்டம் — custom set ──────────────────────────────────────────────────
 // Section 2 pathu 2 thirumozhi 4 (வெண்ணையலைந்த) + global_nos 2046,2047,2498,246,252
+// 2046/2047 from section 12, 2498 from section 18, 246/252 from section 2
 async function voiceOpenNeeratam() {
   const EXTRA_GLOBAL_NOS = [2046, 2047, 2498, 246, 252];
 
+  // Step 1: Fetch section 2 for pathu 2 thirumozhi 4
   state.selectedSectionId      = 2;
   state.selectedSectionName    = "பெரியாழ்வார் திருமொழி";
   state.pasuramData            = null;
@@ -352,42 +362,51 @@ async function voiceOpenNeeratam() {
   state.isPathuSelectionActive = false;
 
   fetchThaniyan();
-
-  // Wait for pasuram data to load
   await fetchPasuram();
 
   if (!state.pasuramData || !state.pasuramData.length) return;
 
-  const allData = state.pasuramData;
+  const sec2Data = state.pasuramData;
 
-  // Step 1: pathu 2, thirumozhi 4 — filter by pathu_name containing இரண்டாம்
-  const byPathu2 = allData.filter(p => {
+  // pathu 2, thirumozhi 4 pasurams
+  const byPathu2 = sec2Data.filter(p => {
     const pn = norm(p.pathu_name || "");
-    return pn.includes("இரணடாம") || pn.includes("2") || pn.includes("irandaam");
+    return pn.includes("இரணடாம") || pn.includes("2nd") || pn.includes("irandaam") || pn.includes("second");
   });
 
-  // Group thirumozhi headings in pathu 2, pick 4th unique heading
   const headings = [];
-  const seen = new Set();
+  const seenH = new Set();
   for (const p of byPathu2) {
     const h = p.thirumozhi_heading || p.pathu_subunit_name || "";
-    if (h && !seen.has(h)) { seen.add(h); headings.push(h); }
+    if (h && !seenH.has(h)) { seenH.add(h); headings.push(h); }
   }
-  const heading4 = headings[3]; // 0-indexed → 4th thirumozhi
+  const heading4 = headings[3];
   const thirumozhi4 = heading4
     ? byPathu2.filter(p => (p.thirumozhi_heading || p.pathu_subunit_name) === heading4)
-    : [];
+    : byPathu2.slice(0, 11);
 
-  // Step 2: Extra pasurams in exact order
-  const extraPasurams = EXTRA_GLOBAL_NOS
-    .map(gno => allData.find(p => p.global_no === gno))
-    .filter(Boolean);
+  // Step 2: Fetch extra pasurams 2046/2047 (sec 12) and 2498 (sec 18) via API
+  const extraFromApi = await Promise.all([
+    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2046`).then(r=>r.json()).catch(()=>null),
+    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2047`).then(r=>r.json()).catch(()=>null),
+    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2498`).then(r=>r.json()).catch(()=>null),
+  ]);
 
-  // Step 3: Combine
-  const combined = [...thirumozhi4, ...extraPasurams];
+  // Step 3: 246/252 from section 2 data
+  const p246 = sec2Data.find(p => p.global_no === 246);
+  const p252 = sec2Data.find(p => p.global_no === 252);
+
+  // Step 4: Combine in exact order
+  const combined = [
+    ...thirumozhi4,
+    ...(extraFromApi[0] ? [extraFromApi[0]] : []),
+    ...(extraFromApi[1] ? [extraFromApi[1]] : []),
+    ...(extraFromApi[2] ? [extraFromApi[2]] : []),
+    ...(p246 ? [p246] : []),
+    ...(p252 ? [p252] : []),
+  ].filter(Boolean);
 
   if (!combined.length) {
-    // Fallback — just show pathu 2
     voiceSelectWithPathu(2, "பெரியாழ்வார் திருமொழி", 2);
     return;
   }
@@ -396,4 +415,15 @@ async function voiceOpenNeeratam() {
   state.filteredPasuram = combined;
   state.level           = "PASURAM";
   render();
+}
+
+// ── பரிபாலனம் — two options ──────────────────────────────────────────────────
+// திருவாய்மொழி 10th pathu 9th thiruvaimozhi (சூழ்விசும்பு) OR திருவிருத்தம்
+// voiceSearch returns this fn — but we need TWO options shown to user
+// We handle by storing both in sessionStorage as choices before navigating
+// Actually handled via voice popup radio — so we push TWO results from voiceSearch
+// This fn is called when user confirms the first option
+function voiceOpenParipaalanamTVM() {
+  // திருவாய்மொழி 10th pathu 9th thiruvaimozhi
+  voiceSelectWithThirumozhi(26, "திருவாய்மொழி", 10, "சூழ்விசும்பு");
 }
