@@ -652,12 +652,12 @@ const TAG_ROUTE_MAP = {
   "நைச்சாநுஸந்தானம்":   { fn: "openNithyanusandhanam", args: [], label: "நைச்சாநுஸந்தானம்",  sublabel: "Nithyanusandhanam section" },
   "சாற்றுமுறை":           { fn: "openSattrumurai",       args: [null], label: "சாற்றுமுறை",     sublabel: "Sattrumurai" },
   "முன்னடி பின்னடி":     { fn: "openMunnadiPinnadi",    args: [null], label: "முன்னடி பின்னடி", sublabel: "Munnadi Pinnadi" },
-  "நீராட்டம்":            { fn: "openNithyanusandhanam", args: [], label: "நீராட்டம்",           sublabel: "நித்யானுஸந்தானம் — நீராட்டம்" },
-  "neerattam":             { fn: "openNithyanusandhanam", args: [], label: "நீராட்டம்",           sublabel: "நித்யானுஸந்தானம் — நீராட்டம்" },
-  "பூச்சூட்டல்":          { fn: "openNithyanusandhanam", args: [], label: "பூச்சூட்டல்",         sublabel: "நித்யானுஸந்தானம் — பூச்சூட்டல்" },
-  "poochoottal":           { fn: "openNithyanusandhanam", args: [], label: "பூச்சூட்டல்",         sublabel: "நித்யானுஸந்தானம் — பூச்சூட்டல்" },
-  "காப்பிடல்":            { fn: "openNithyanusandhanam", args: [], label: "காப்பிடல்",           sublabel: "நித்யானுஸந்தானம் — காப்பிடல்" },
-  "kappidal":              { fn: "openNithyanusandhanam", args: [], label: "காப்பிடல்",           sublabel: "நித்யானுஸந்தானம் — காப்பிடல்" },
+  "நீராட்டம்":            { fn: "_openNeeratam",   args: [], label: "நீராட்டம்",           sublabel: "பெரியாழ்வார் திருமொழி — நீராட்டம் பாசுரங்கள்" },
+  "neerattam":             { fn: "_openNeeratam",   args: [], label: "நீராட்டம்",           sublabel: "பெரியாழ்வார் திருமொழி — நீராட்டம் பாசுரங்கள்" },
+  "பூச்சூட்டல்":          { fn: "_openPoochoottal", args: [], label: "பூச்சூட்டல்",         sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 7ம் திருமொழி" },
+  "poochoottal":           { fn: "_openPoochoottal", args: [], label: "பூச்சூட்டல்",         sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 7ம் திருமொழி" },
+  "காப்பிடல்":            { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
+  "kappidal":              { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
   "துயில் உணர்த்துதல்":  { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
   "துயிலுணர்த்துதல்":    { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
   "திருமஞ்சனம்":          { fn: "openNithyanusandhanam", args: [], label: "திருமஞ்சனம்",         sublabel: "நித்யானுஸந்தானம் — திருமஞ்சனம்" },
@@ -667,11 +667,12 @@ async function searchEntityTags(transcript) {
   const t = normTamil(transcript);
   const results = [];
 
-  // Check special route tags first (exact concept match)
+  // Check special route tags first — score 110 beats all entity tag matches
   for (const [tag, route] of Object.entries(TAG_ROUTE_MAP)) {
     const tagN = normTamil(tag);
-    if (t.includes(tagN) || tagN.includes(t)) {
-      results.push({ ...route, score: 85 });
+    if (t === tagN || t.includes(tagN) || tagN.includes(t)) {
+      results.push({ ...route, score: 110 });
+      return results; // exact concept match — no need to search further
     }
   }
 
@@ -735,6 +736,15 @@ async function searchEntityTags(transcript) {
 // Hook entity tag search into resolveVoiceQuery
 // Call this AFTER the existing resolveVoiceQuery to extend results
 export async function resolveVoiceQueryExtended(transcript) {
+  // Check TAG_ROUTE_MAP FIRST — these are hardcoded concepts that must win
+  const t = normTamil(transcript);
+  for (const [tag, route] of Object.entries(TAG_ROUTE_MAP)) {
+    const tagN = normTamil(tag);
+    if (t === tagN || t.includes(tagN) || tagN.includes(t)) {
+      return [{ ...route, score: 110 }];
+    }
+  }
+
   const [base, entity] = await Promise.all([
     resolveVoiceQuery(transcript),
     searchEntityTags(transcript)
