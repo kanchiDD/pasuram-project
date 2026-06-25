@@ -532,7 +532,7 @@ export async function resolveVoiceQuery(transcript) {
   // ── 4. Special destinations ──
   for (const dest of SPECIAL_DESTINATIONS) {
     const score = scoreMatch(t, dest.aliases);
-    if (score >= 20) results.push({ ...dest, score });
+    if (score >= 40) results.push({ ...dest, score });
   }
 
   // ── 5. Section match ──

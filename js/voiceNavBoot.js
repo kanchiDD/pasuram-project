@@ -389,16 +389,48 @@ async function voiceOpenNeeratam() {
   const p246 = sec2Data.find(p => p.global_no === 246);
   const p252 = sec2Data.find(p => p.global_no === 252);
 
-  // Step 3: Fetch 2046/2047 (section 12) and 2498 (section 18) separately
-  const API_BASE = "https://cdnaalayiram-api.kanchitrust.workers.dev";
-  const [sec12Data, sec18Data] = await Promise.all([
-    fetch(`${API_BASE}/api/pasuram?section_id=12`, {cache:"no-store"}).then(r=>r.json()).catch(()=>[]),
-    fetch(`${API_BASE}/api/pasuram?section_id=18`, {cache:"no-store"}).then(r=>r.json()).catch(()=>[]),
-  ]);
-
-  const p2046 = (sec12Data || []).find(p => p.global_no === 2046);
-  const p2047 = (sec12Data || []).find(p => p.global_no === 2047);
-  const p2498 = (sec18Data || []).find(p => p.global_no === 2498);
+  // Step 3: Hardcode pasurams 2046/2047/2498 with exact lines from DB
+  const p2046 = {
+    global_no: 2046, local_no: 1, section_id: 12, section_name: "திருகுறுந்தாண்டகம்",
+    pathu_name: "", thirumozhi_heading: "நீராட்டம்",
+    lines: [
+      {text: "முன்பொலா இராவணன்தன்‌",        group: "A"},
+      {text: "முதுமதிள்‌ இலங்கைவேவித்து",    group: "A"},
+      {text: "அன்பினால்‌ அனுமன்வந்து",       group: "A"},
+      {text: "ஆங்கடியிணை பணியநின்றார்க்கு",     group: "A"},
+      {text: "என்பெலாம்‌ உருகியுக்கிட்டு",   group: "B"},
+      {text: "என்னுடை நெஞ்சமென்னும்‌",       group: "B"},
+      {text: "அன்பினால்‌ ஞானநீர்கொண்டு",    group: "B"},
+      {text: "ஆட்டுவன்‌ அடியனேனே",           group: "B"}
+    ]
+  };
+  const p2047 = {
+    global_no: 2047, local_no: 2, section_id: 12, section_name: "திருகுறுந்தாண்டகம்",
+    pathu_name: "", thirumozhi_heading: "நீராட்டம்",
+    lines: [
+      {text: "மாயமான்‌ மாயச்செற்று",          group: "A"},
+      {text: "மருதிற நடந்து",                     group: "A"},
+      {text: "வையம்‌ தாயமா பரவைபொங்கத்‌", group: "A"},
+      {text: "தடவரை திரித்து",                    group: "A"},
+      {text: "வானோர்க்கு ஈயுமால்‌ எம்பிரானார்க்கு", group: "B"},
+      {text: "என்னுடைச்‌ சொற்கள் என்னும்‌",    group: "B"},
+      {text: "தூயமா மாலைகொண்டு",                  group: "B"},
+      {text: "சூட்டுவன்‌ தொண்டனேனே",          group: "B"}
+    ]
+  };
+  const p2498 = {
+    global_no: 2498, local_no: 1, section_id: 18, section_name: "திருவிருத்தம்",
+    pathu_name: "", thirumozhi_heading: "நீராட்டம்",
+    lines: [
+      {text: "சூட்டுநன்மாலைகள்‌",             group: "A"},
+      {text: "தூயனவேந்தி",                        group: "A"},
+      {text: "விண்ணோர்கள்‌ நன்னீராட்டி",      group: "A"},
+      {text: "அந்தூபம்தரா நிற்கவேயங்கு",          group: "B"},
+      {text: "ஓர்மாயையினால்‌ ஈட்டியவெண்ணை தொடுவுண்ணப்‌ போந்திமிலேற்றுவன்கூன்‌", group: "B"},
+      {text: "கோட்டிடையாடினை கூத்து",             group: "B"},
+      {text: "அடலாயர்தம்‌ கொம்பினுக்கே",      group: "B"}
+    ]
+  };
 
   // Step 4: Combine in exact order
   const combined = [
