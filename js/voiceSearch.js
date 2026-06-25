@@ -572,7 +572,7 @@ export async function resolveVoiceQuery(transcript) {
   const ddMap = await getDDMap();
   for (const [id, dd] of ddMap) {
     const ddScore = scoreMatch(t, dd.aliases);
-    if (ddScore >= 20) {
+    if (ddScore >= 35) {
       results.push({
         label: dd.name, sublabel: "திவ்யதேசம் — அனைத்து பாசுரங்கள்",
         fn: "_openDivyadesamById", args: [id, dd.name], score: ddScore + 10
@@ -658,7 +658,7 @@ async function searchEntityTags(transcript) {
   const t = normTamil(transcript);
   const results = [];
 
-  // Check special route tags first
+  // Check special route tags first (exact concept match)
   for (const [tag, route] of Object.entries(TAG_ROUTE_MAP)) {
     const tagN = normTamil(tag);
     if (t.includes(tagN) || tagN.includes(t)) {
@@ -666,14 +666,17 @@ async function searchEntityTags(transcript) {
     }
   }
 
-  // Search entity tags for pasuram/pathu/section/thirumozhi
+  // Search entity tags
   try {
     const tags = await getEntityTags();
     const seen = new Set();
 
     for (const row of tags) {
-      const score = scoreMatch(transcript, [row.tag]);
-      if (score < 30) continue;
+      const tag = row.meta_value || "";
+      if (!tag.trim()) continue;
+
+      const score = scoreMatch(transcript, [tag]);
+      if (score < 55) continue;  // raised from 30 to 55
 
       const key = `${row.entity_type}:${row.entity_id}`;
       if (seen.has(key)) continue;
@@ -681,30 +684,36 @@ async function searchEntityTags(transcript) {
 
       if (row.entity_type === "pasuram") {
         results.push({
-          label: row.tag,
-          sublabel: `பாசுரம் ${row.entity_id} — ${row.tag}`,
-          fn: "_openGlobalPasuram", args: [row.entity_id],
+          label: tag,
+          sublabel: `பாசுரம் ${row.entity_id} — ${tag}`,
+          fn: "_openGlobalPasuram",
+          args: [row.entity_id],
           score: score + 5
         });
       } else if (row.entity_type === "section") {
         results.push({
-          label: row.tag,
-          sublabel: `Section — ${row.tag}`,
-          fn: "_selectSection", args: [row.entity_id, row.tag],
+          label: tag,
+          sublabel: `Section — ${tag}`,
+          fn: "_selectSection",
+          args: [row.entity_id, tag],
           score
         });
       } else if (row.entity_type === "pathu") {
+        // pathu entity_id is pathu_id in periya thirumozhi (section 11)
+        // Route to section 11 (பெரிய திருமொழி) with pathu number
         results.push({
-          label: row.tag,
-          sublabel: `பத்து — ${row.tag}`,
-          fn: "_selectSection", args: [row.entity_id, row.tag],
+          label: tag,
+          sublabel: `பெரிய திருமொழி — ${tag}`,
+          fn: "_selectSectionWithPathu",
+          args: [11, "பெரிய திருமொழி", row.entity_id],
           score
         });
       } else if (row.entity_type === "thirumozhi") {
         results.push({
-          label: row.tag,
-          sublabel: `திருமொழி — ${row.tag}`,
-          fn: "_selectSection", args: [row.entity_id, row.tag],
+          label: tag,
+          sublabel: `திருமொழி — ${tag}`,
+          fn: "_selectSection",
+          args: [row.entity_id, tag],
           score
         });
       }
