@@ -68,6 +68,18 @@ function executeVoiceNav(nav) {
     voiceOpenGlobalPasuram(args[0]);
     return;
   }
+  if (fn === "_openNeeratam") {
+    voiceOpenNeeratam();
+    return;
+  }
+  if (fn === "_openPoochoottal") {
+    voiceSelectWithThirumozhi(2, "பெரியாழ்வார் திருமொழி", 2, "ஆனிரை");
+    return;
+  }
+  if (fn === "_openKappidal") {
+    voiceSelectWithThirumozhi(2, "பெரியாழ்வார் திருமொழி", 2, "இந்திரனோடு");
+    return;
+  }
   if (fn === "_openThousandSections") {
     voiceOpenThousandSections(args[0]);
     return;
@@ -326,4 +338,62 @@ function voiceOpenSpecialGroup(groupKey) {
       console.warn("voiceNavBoot: ddOpenSpecial not found for group", groupKey);
     }
   }, 150);
+}
+
+// ── நீராட்டம் — custom set ──────────────────────────────────────────────────
+// Section 2 pathu 2 thirumozhi 4 (வெண்ணையலைந்த) + global_nos 2046,2047,2498,246,252
+async function voiceOpenNeeratam() {
+  const EXTRA_GLOBAL_NOS = [2046, 2047, 2498, 246, 252];
+
+  state.selectedSectionId      = 2;
+  state.selectedSectionName    = "பெரியாழ்வார் திருமொழி";
+  state.pasuramData            = null;
+  state.filteredPasuram        = null;
+  state.isPathuSelectionActive = false;
+
+  fetchThaniyan();
+
+  // Wait for pasuram data to load
+  await fetchPasuram();
+
+  if (!state.pasuramData || !state.pasuramData.length) return;
+
+  const allData = state.pasuramData;
+
+  // Step 1: pathu 2, thirumozhi 4 — filter by pathu_name containing இரண்டாம்
+  const byPathu2 = allData.filter(p => {
+    const pn = norm(p.pathu_name || "");
+    return pn.includes("இரணடாம") || pn.includes("2") || pn.includes("irandaam");
+  });
+
+  // Group thirumozhi headings in pathu 2, pick 4th unique heading
+  const headings = [];
+  const seen = new Set();
+  for (const p of byPathu2) {
+    const h = p.thirumozhi_heading || p.pathu_subunit_name || "";
+    if (h && !seen.has(h)) { seen.add(h); headings.push(h); }
+  }
+  const heading4 = headings[3]; // 0-indexed → 4th thirumozhi
+  const thirumozhi4 = heading4
+    ? byPathu2.filter(p => (p.thirumozhi_heading || p.pathu_subunit_name) === heading4)
+    : [];
+
+  // Step 2: Extra pasurams in exact order
+  const extraPasurams = EXTRA_GLOBAL_NOS
+    .map(gno => allData.find(p => p.global_no === gno))
+    .filter(Boolean);
+
+  // Step 3: Combine
+  const combined = [...thirumozhi4, ...extraPasurams];
+
+  if (!combined.length) {
+    // Fallback — just show pathu 2
+    voiceSelectWithPathu(2, "பெரியாழ்வார் திருமொழி", 2);
+    return;
+  }
+
+  state.pasuramData     = combined;
+  state.filteredPasuram = combined;
+  state.level           = "PASURAM";
+  render();
 }

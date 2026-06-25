@@ -658,8 +658,6 @@ const TAG_ROUTE_MAP = {
   "poochoottal":           { fn: "_openPoochoottal", args: [], label: "பூச்சூட்டல்",         sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 7ம் திருமொழி" },
   "காப்பிடல்":            { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
   "kappidal":              { fn: "_openKappidal",    args: [], label: "காப்பிடல்",           sublabel: "பெரியாழ்வார் திருமொழி 2ம் பத்து 8ம் திருமொழி" },
-  "துயில் உணர்த்துதல்":  { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
-  "துயிலுணர்த்துதல்":    { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
   "திருமஞ்சனம்":          { fn: "openNithyanusandhanam", args: [], label: "திருமஞ்சனம்",         sublabel: "நித்யானுஸந்தானம் — திருமஞ்சனம்" },
 };
 
