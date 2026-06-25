@@ -16,7 +16,7 @@
  * }
  */
 
-import { resolveVoiceQuery } from "./voiceSearch.js";
+import { resolveVoiceQuery, resolveVoiceQueryExtended } from "./voiceSearch.js";
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -71,7 +71,7 @@ window.startVoiceSearch = function () {
     let usedTranscript = alternatives[0];
 
     for (const alt of alternatives) {
-      results = await resolveVoiceQuery(alt);
+      results = await resolveVoiceQueryExtended(alt);
       if (results.length > 0) {
         usedTranscript = alt;
         break;
@@ -106,7 +106,7 @@ window.startVoiceSearch = function () {
 
 // Demo chips — simulate a voice result without mic
 window.runDemo = async function (transcript) {
-  const results = await resolveVoiceQuery(transcript);
+  const results = await resolveVoiceQueryExtended(transcript);
   if (results.length === 0) {
     showOffTopic(transcript);
   } else {
@@ -141,7 +141,7 @@ function showListening() {
       <span></span><span></span><span></span>
     </div>
     <div class="vp-listen-text">
-      தேவரீர் திருவாக்கினை கேட்கிறோம்…
+      Adiyen, eager to hear you…
     </div>
     <div class="vp-actions">
       <button class="vp-btn-close" onclick="cancelVoice()">Cancel</button>

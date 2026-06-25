@@ -248,7 +248,12 @@ function scoreMatch(transcript, aliases) {
     const tW = tf.split(" ").filter(w => w.length > 1);
     const aW = af.split(" ").filter(w => w.length > 1);
     const ov = tW.filter(w => aW.includes(w)).length;
-    if (ov > 0) best = Math.max(best, ov * 20);
+    if (ov > 0) { best = Math.max(best, ov * 20); continue; }
+    // Partial word match — catches spelling variants and space differences
+    const partialMatch = tW.some(w => aW.some(aw =>
+      (w.length > 3 && aw.includes(w)) || (aw.length > 3 && w.includes(aw))
+    ));
+    if (partialMatch) best = Math.max(best, 25);
   }
   return best;
 }
@@ -307,10 +312,11 @@ async function getDDMap() {
         map.set(d.id, {
           name: d.name,
           aliases: [
+            normalize(d.name),
             normTamil(d.name),
-            ...(d.perumal ? [normTamil(d.perumal)] : []),
-            ...(d.thayar  ? [normTamil(d.thayar)]  : []),
-            ...(d.aliases || []).map(a => normTamil(a))
+            ...(d.perumal ? [normalize(d.perumal), normTamil(d.perumal)] : []),
+            ...(d.thayar  ? [normalize(d.thayar),  normTamil(d.thayar)]  : []),
+            ...(d.aliases || []).flatMap(a => [normalize(a), normTamil(a)])
           ].filter(Boolean)
         });
       }
@@ -381,7 +387,7 @@ async function searchFirstLines(transcript) {
       else if (ov === 1 && tW.length === 1) score = 30;
     }
 
-    if (score < 60) continue;
+    if (score < 40) continue;
 
     const sec = SECTIONS.find(s => s.id === row.section_id);
     const secName = sec?.name || `Section ${row.section_id}`;
@@ -566,7 +572,7 @@ export async function resolveVoiceQuery(transcript) {
   const ddMap = await getDDMap();
   for (const [id, dd] of ddMap) {
     const ddScore = scoreMatch(t, dd.aliases);
-    if (ddScore >= 40) {
+    if (ddScore >= 20) {
       results.push({
         label: dd.name, sublabel: "திவ்யதேசம் — அனைத்து பாசுரங்கள்",
         fn: "_openDivyadesamById", args: [id, dd.name], score: ddScore + 10
@@ -617,3 +623,122 @@ export async function resolveVoiceQuery(transcript) {
 getDDMap().catch(() => {});
 getAnchorMap().catch(() => {});
 getFirstLines().catch(() => {});
+
+// ═══════════════════════════════════════════════════════
+// ENTITY TAG SEARCH — NEW ADDITION
+// Searches entity_master search_flag=1 tags
+// Routes to correct destination based on entity_type
+// ═══════════════════════════════════════════════════════
+
+let _entityTagCache = null, _entityTagLoading = null;
+
+function getEntityTags() {
+  if (_entityTagCache) return Promise.resolve(_entityTagCache);
+  if (_entityTagLoading) return _entityTagLoading;
+  _entityTagLoading = (async () => {
+    try {
+      const data = await fetch(`${API_VOICE}/entity-tags`).then(r => r.json());
+      _entityTagCache = data || [];
+    } catch(e) { _entityTagCache = []; }
+    return _entityTagCache;
+  })();
+  return _entityTagLoading;
+}
+
+// Special tag → direct route mapping (no DB needed)
+const TAG_ROUTE_MAP = {
+  "நித்யாநுஸந்தானம்":  { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",  sublabel: "Full Nithyanusandhanam" },
+  "நித்யானுஸந்தானம்":  { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",  sublabel: "Full Nithyanusandhanam" },
+  "நைச்சாநுஸந்தானம்": { fn: "openNithyanusandhanam", args: [], label: "நைச்சாநுஸந்தானம்", sublabel: "Nithyanusandhanam section" },
+  "சாற்றுமுறை":        { fn: "openSattrumurai",       args: [null], label: "சாற்றுமுறை",     sublabel: "Sattrumurai" },
+  "முன்னடி பின்னடி":  { fn: "openMunnadiPinnadi",    args: [null], label: "முன்னடி பின்னடி", sublabel: "Munnadi Pinnadi" },
+};
+
+async function searchEntityTags(transcript) {
+  const t = normTamil(transcript);
+  const results = [];
+
+  // Check special route tags first
+  for (const [tag, route] of Object.entries(TAG_ROUTE_MAP)) {
+    const tagN = normTamil(tag);
+    if (t.includes(tagN) || tagN.includes(t)) {
+      results.push({ ...route, score: 85 });
+    }
+  }
+
+  // Search entity tags for pasuram/pathu/section/thirumozhi
+  try {
+    const tags = await getEntityTags();
+    const seen = new Set();
+
+    for (const row of tags) {
+      const score = scoreMatch(transcript, [row.tag]);
+      if (score < 30) continue;
+
+      const key = `${row.entity_type}:${row.entity_id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      if (row.entity_type === "pasuram") {
+        results.push({
+          label: row.tag,
+          sublabel: `பாசுரம் ${row.entity_id} — ${row.tag}`,
+          fn: "_openGlobalPasuram", args: [row.entity_id],
+          score: score + 5
+        });
+      } else if (row.entity_type === "section") {
+        results.push({
+          label: row.tag,
+          sublabel: `Section — ${row.tag}`,
+          fn: "_selectSection", args: [row.entity_id, row.tag],
+          score
+        });
+      } else if (row.entity_type === "pathu") {
+        results.push({
+          label: row.tag,
+          sublabel: `பத்து — ${row.tag}`,
+          fn: "_selectSection", args: [row.entity_id, row.tag],
+          score
+        });
+      } else if (row.entity_type === "thirumozhi") {
+        results.push({
+          label: row.tag,
+          sublabel: `திருமொழி — ${row.tag}`,
+          fn: "_selectSection", args: [row.entity_id, row.tag],
+          score
+        });
+      }
+    }
+  } catch(e) { /* non-fatal */ }
+
+  return results;
+}
+
+// Hook entity tag search into resolveVoiceQuery
+// Call this AFTER the existing resolveVoiceQuery to extend results
+export async function resolveVoiceQueryExtended(transcript) {
+  const [base, entity] = await Promise.all([
+    resolveVoiceQuery(transcript),
+    searchEntityTags(transcript)
+  ]);
+
+  // Merge — entity results only added if no strong base match
+  const hasStrong = base.some(r => r.score >= 70);
+  const combined = hasStrong
+    ? base
+    : [...base, ...entity];
+
+  const seen = new Set();
+  return combined
+    .sort((a, b) => b.score - a.score)
+    .filter(r => {
+      const key = `${r.fn}:${JSON.stringify(r.args)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
+}
+
+// Pre-warm entity tags
+getEntityTags().catch(() => {});
