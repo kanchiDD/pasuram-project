@@ -385,25 +385,29 @@ async function voiceOpenNeeratam() {
     ? byPathu2.filter(p => (p.thirumozhi_heading || p.pathu_subunit_name) === heading4)
     : byPathu2.slice(0, 11);
 
-  // Step 2: Fetch extra pasurams 2046/2047 (sec 12) and 2498 (sec 18) via API
-  const extraFromApi = await Promise.all([
-    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2046`).then(r=>r.json()).catch(()=>null),
-    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2047`).then(r=>r.json()).catch(()=>null),
-    fetch(`${API_VOICE.replace("/voice","")}/api/pasuram-display?global_no=2498`).then(r=>r.json()).catch(()=>null),
-  ]);
-
-  // Step 3: 246/252 from section 2 data
+  // Step 2: 246/252 are in section 2 data already
   const p246 = sec2Data.find(p => p.global_no === 246);
   const p252 = sec2Data.find(p => p.global_no === 252);
+
+  // Step 3: Fetch 2046/2047 (section 12) and 2498 (section 18) separately
+  const API_BASE = "https://cdnaalayiram-api.kanchitrust.workers.dev";
+  const [sec12Data, sec18Data] = await Promise.all([
+    fetch(`${API_BASE}/api/pasuram?section_id=12`, {cache:"no-store"}).then(r=>r.json()).catch(()=>[]),
+    fetch(`${API_BASE}/api/pasuram?section_id=18`, {cache:"no-store"}).then(r=>r.json()).catch(()=>[]),
+  ]);
+
+  const p2046 = (sec12Data || []).find(p => p.global_no === 2046);
+  const p2047 = (sec12Data || []).find(p => p.global_no === 2047);
+  const p2498 = (sec18Data || []).find(p => p.global_no === 2498);
 
   // Step 4: Combine in exact order
   const combined = [
     ...thirumozhi4,
-    ...(extraFromApi[0] ? [extraFromApi[0]] : []),
-    ...(extraFromApi[1] ? [extraFromApi[1]] : []),
-    ...(extraFromApi[2] ? [extraFromApi[2]] : []),
-    ...(p246 ? [p246] : []),
-    ...(p252 ? [p252] : []),
+    ...(p2046 ? [p2046] : []),
+    ...(p2047 ? [p2047] : []),
+    ...(p2498 ? [p2498] : []),
+    ...(p246  ? [p246]  : []),
+    ...(p252  ? [p252]  : []),
   ].filter(Boolean);
 
   if (!combined.length) {

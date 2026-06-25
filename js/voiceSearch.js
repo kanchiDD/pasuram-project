@@ -45,11 +45,11 @@ const SECTIONS = [
   { id:10, name:"கண்ணிநுண்சிறுத்தாம்பு", hasPathu:false,
     aliases:["kanninunsirutthambu","கண்ணிநுண்சிறுத்தாம்பு","kanninu","கண்ணி","madhurakavi","மதுரகவி"] },
   { id:11, name:"பெரிய திருமொழி",         hasPathu:true,
-    aliases:["periya thirumozhi","பெரிய திருமொழி","thirumangai","திருமங்கை","thirumangai azhwar","kaliyan","களியன்"] },
+    aliases:["periya thirumozhi","பெரிய திருமொழி","thirumangai","திருமங்கை","thirumangai azhwar","kaliyan","களியன்","thirumangai periya thirumozhi"] },
   { id:12, name:"திருகுறுந்தாண்டகம்",    hasPathu:false,
-    aliases:["thirukurunthantakam","திருகுறுந்தாண்டகம்","kurunthantakam","குறுந்தாண்டகம்"] },
+    aliases:["thirukurunthantakam","திருகுறுந்தாண்டகம்","kurunthantakam","குறுந்தாண்டகம்","thirumangai","திருமங்கை","kaliyan"] },
   { id:13, name:"திருநெடுந்தாண்டகம்",    hasPathu:false,
-    aliases:["thirunedunthantakam","திருநெடுந்தாண்டகம்","nedunthantakam","நெடுந்தாண்டகம்"] },
+    aliases:["thirunedunthantakam","திருநெடுந்தாண்டகம்","nedunthantakam","நெடுந்தாண்டகம்","thirumangai","திருமங்கை","kaliyan"] },
   { id:14, name:"முதல்‌ திருவந்தாதி",    hasPathu:false,
     aliases:["mudal thiruvandhathi","முதல் திருவந்தாதி","first thiruvandhathi","poigai azhwar","பொய்கை ஆழ்வார்","poigai"] },
   { id:15, name:"இரண்டாம்‌ திருவந்தாதி", hasPathu:false,
@@ -66,11 +66,14 @@ const SECTIONS = [
     aliases:["periya thiruvandhathi","பெரியதிருவந்தாதி","periya vandhathi"] },
   { id:21, name:"திருவெழுகூற்றிருக்கை",  hasPathu:false, isSpecial:true,
     aliases:["thiruvezhukootrarikkai","திருவெழுகூற்றிருக்கை","vezhukootrarikkai","எழுகூற்றிருக்கை",
-             "kootrarikkai","vezhukootru","எழுகூற்று","thiruvezhukootru","திருவெழுகூற்று"] },
+             "kootrarikkai","vezhukootru","எழுகூற்று","thiruvezhukootru","திருவெழுகூற்று",
+             "thirumangai","திருமங்கை","kaliyan"] },
   { id:22, name:"சிறியதிருமடல்",         hasPathu:false, isSpecial:true,
-    aliases:["siriya thirumadal","சிறியதிருமடல்","siriya madal","சிறிய மடல்","small madal","சிறிய திருமடல்"] },
+    aliases:["siriya thirumadal","சிறியதிருமடல்","siriya madal","சிறிய மடல்","small madal","சிறிய திருமடல்",
+             "thirumangai","திருமங்கை","kaliyan"] },
   { id:23, name:"பெரியதிருமடல்",         hasPathu:false, isSpecial:true,
-    aliases:["periya thirumadal","பெரியதிருமடல்","periya madal","பெரிய மடல்","big madal","பெரிய திருமடல்"] },
+    aliases:["periya thirumadal","பெரியதிருமடல்","periya madal","பெரிய மடல்","big madal","பெரிய திருமடல்",
+             "thirumangai","திருமங்கை","kaliyan"] },
   { id:24, name:"இராமாநுச நூற்றந்தாதி",  hasPathu:false,
     aliases:["ramanuja nurrandhadhi","இராமாநுச நூற்றந்தாதி","ramanuja","இராமாநுசர்","nurrandhadhi","நூற்றந்தாதி","thiruvarangathamudanar"] },
   { id:25, name:"உபதேசரத்தினமாலை",      hasPathu:false,
@@ -613,8 +616,10 @@ export async function resolveVoiceQuery(transcript) {
       return true;
     });
 
-  // Nammazhwar → 4 results; all others → 3
-  return unique.slice(0, nScore >= 20 ? 4 : 3);
+  // Nammazhwar → 4 results; Thirumangai → 6 results; all others → 3
+  const tmScore = scoreMatch(t, ["thirumangai","திருமங்கை","kaliyan","களியன்","thirumangai azhwar"]);
+  const limit = nScore >= 20 ? 4 : tmScore >= 20 ? 6 : 3;
+  return unique.slice(0, limit);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -777,6 +782,11 @@ export async function resolveVoiceQueryExtended(transcript) {
     : [...base, ...entity];
 
   const seen = new Set();
+  const t2 = normTamil(transcript);
+  const nS = scoreMatch(t2, NAMMAZHWAR_ALIASES);
+  const tS = scoreMatch(t2, ["thirumangai","திருமங்கை","kaliyan","களியன்"]);
+  const lim = nS >= 20 ? 4 : tS >= 20 ? 6 : 3;
+
   return combined
     .sort((a, b) => b.score - a.score)
     .filter(r => {
@@ -785,7 +795,7 @@ export async function resolveVoiceQueryExtended(transcript) {
       seen.add(key);
       return true;
     })
-    .slice(0, 3);
+    .slice(0, lim);
 }
 
 // Pre-warm entity tags
