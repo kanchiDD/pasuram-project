@@ -208,16 +208,16 @@ const SPECIAL_DESTINATIONS = [
 // ═══════════════════════════════════════════════════════
 
 const PATHU_ORDINALS = [
-  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்","mudal","முதலாம்"] },
-  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்","ரெண்டாம்","rendaam"] },
-  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்","மூணாம்","moonam","munam"] },
-  { num:4,  keys:["fourth","4th","naangaam","நான்காம்","நாலாம்","naalaam"] },
-  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்","ஐஞ்சாம்","ainjaam"] },
+  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்"] },
+  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்"] },
+  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்"] },
+  { num:4,  keys:["fourth","4th","naangaam","நான்காம்"] },
+  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்"] },
   { num:6,  keys:["sixth","6th","aaram","ஆறாம்"] },
   { num:7,  keys:["seventh","7th","ezhaam","ஏழாம்"] },
   { num:8,  keys:["eighth","8th","ettaam","எட்டாம்"] },
-  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham","ஒம்பதாம்"] },
-  { num:10, keys:["tenth","10th","pattham","பத்தாம்","பத்து"] },
+  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham"] },
+  { num:10, keys:["tenth","10th","pattham","பத்தாம்"] },
   { num:11, keys:["eleventh","11th","pathinondram","பதினொன்றாம்"] }
 ];
 
@@ -262,42 +262,6 @@ function extractPathuNum(t) {
   const tn = normalize(t);
   for (const p of PATHU_ORDINALS) {
     if (p.keys.some(k => tn.includes(normalize(k)))) return p.num;
-  }
-  return null;
-}
-
-// Extract thirumozhi number — the SECOND ordinal in transcript
-// e.g. "இரண்டாம் பத்து மூணாம் திருமொழி" → pathu=2, thirumozhi=3
-function extractThirumozhibNum(t) {
-  const tn = normalize(t);
-  // Keywords that signal "pathu" context — ordinal before these = pathu num
-  const pathuMarkers = ["pathu","பத்து","பத்தி"];
-  // Keywords that signal "thirumozhi" context — ordinal before these = thirumozhi num
-  const thiruMarkers = ["thirumozhi","திருமொழி","mozhi","மொழி"];
-
-  let pathuIdx = -1;
-  let thiruIdx = -1;
-
-  for (const m of pathuMarkers) {
-    const i = tn.indexOf(normalize(m));
-    if (i > -1 && (pathuIdx === -1 || i < pathuIdx)) pathuIdx = i;
-  }
-  for (const m of thiruMarkers) {
-    const i = tn.indexOf(normalize(m));
-    if (i > -1 && (thiruIdx === -1 || i < thiruIdx)) thiruIdx = i;
-  }
-
-  // If thirumozhi marker comes after pathu marker, find ordinal between them
-  if (pathuIdx > -1 && thiruIdx > pathuIdx) {
-    // Look for ordinal between pathuIdx and thiruIdx
-    const segment = tn.slice(pathuIdx, thiruIdx + 20);
-    for (const p of PATHU_ORDINALS) {
-      if (p.keys.some(k => {
-        const kn = normalize(k);
-        const ki = segment.indexOf(kn);
-        return ki > 0; // after pathu marker
-      })) return p.num;
-    }
   }
   return null;
 }
@@ -591,31 +555,7 @@ export async function resolveVoiceQuery(transcript) {
       });
       continue;
     }
-    // Check if user wants rettai/irattai pasurams of this section
-    const tN = normTamil(t);
-    const wantsRettai = tN.includes("இரட்ட") || tN.includes("ரெட்ட") ||
-                        t.includes("rettai") || t.includes("irattai") || t.includes("dual");
-    if (wantsRettai && score >= 40) {
-      const thousandId = sec.id <= 10 ? 1 : sec.id <= 17 ? 2 : sec.id <= 23 ? 3 : 4;
-      results.push({
-        label: sec.name + " — இரட்டை பாசுரங்கள்",
-        sublabel: sec.name + " — Dual recital pasurams",
-        fn: "openDualRecital",
-        args: [thousandId],
-        score: score + 15
-      });
-    }
-
-    if (sec.hasPathu && pathuNum && thiruNum) {
-      // Specific pathu + specific thirumozhi
-      results.push({
-        label: `${sec.name} — ${pathuNum}${getOrdSuffix(pathuNum)} பத்து ${thiruNum}${getOrdSuffix(thiruNum)} திருமொழி`,
-        sublabel: `${pathuNum}${getOrdSuffix(pathuNum)} பத்து · ${thiruNum}${getOrdSuffix(thiruNum)} திருமொழி`,
-        fn: "_selectSectionWithPathu",
-        args: [sec.id, sec.name, pathuNum],
-        score: score + 20
-      });
-    } else if (sec.hasPathu && pathuNum) {
+    if (sec.hasPathu && pathuNum) {
       results.push({
         label: sec.name, sublabel: `${pathuNum}${getOrdSuffix(pathuNum)} பத்து`,
         fn: "_selectSectionWithPathu", args: [sec.id, sec.name, pathuNum],
@@ -707,11 +647,20 @@ function getEntityTags() {
 
 // Special tag → direct route mapping (no DB needed)
 const TAG_ROUTE_MAP = {
-  "நித்யாநுஸந்தானம்":  { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",  sublabel: "Full Nithyanusandhanam" },
-  "நித்யானுஸந்தானம்":  { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",  sublabel: "Full Nithyanusandhanam" },
-  "நைச்சாநுஸந்தானம்": { fn: "openNithyanusandhanam", args: [], label: "நைச்சாநுஸந்தானம்", sublabel: "Nithyanusandhanam section" },
-  "சாற்றுமுறை":        { fn: "openSattrumurai",       args: [null], label: "சாற்றுமுறை",     sublabel: "Sattrumurai" },
-  "முன்னடி பின்னடி":  { fn: "openMunnadiPinnadi",    args: [null], label: "முன்னடி பின்னடி", sublabel: "Munnadi Pinnadi" },
+  "நித்யாநுஸந்தானம்":    { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",   sublabel: "Full Nithyanusandhanam" },
+  "நித்யானுஸந்தானம்":    { fn: "openNithyanusandhanam", args: [], label: "நித்யானுஸந்தானம்",   sublabel: "Full Nithyanusandhanam" },
+  "நைச்சாநுஸந்தானம்":   { fn: "openNithyanusandhanam", args: [], label: "நைச்சாநுஸந்தானம்",  sublabel: "Nithyanusandhanam section" },
+  "சாற்றுமுறை":           { fn: "openSattrumurai",       args: [null], label: "சாற்றுமுறை",     sublabel: "Sattrumurai" },
+  "முன்னடி பின்னடி":     { fn: "openMunnadiPinnadi",    args: [null], label: "முன்னடி பின்னடி", sublabel: "Munnadi Pinnadi" },
+  "நீராட்டம்":            { fn: "openNithyanusandhanam", args: [], label: "நீராட்டம்",           sublabel: "நித்யானுஸந்தானம் — நீராட்டம்" },
+  "neerattam":             { fn: "openNithyanusandhanam", args: [], label: "நீராட்டம்",           sublabel: "நித்யானுஸந்தானம் — நீராட்டம்" },
+  "பூச்சூட்டல்":          { fn: "openNithyanusandhanam", args: [], label: "பூச்சூட்டல்",         sublabel: "நித்யானுஸந்தானம் — பூச்சூட்டல்" },
+  "poochoottal":           { fn: "openNithyanusandhanam", args: [], label: "பூச்சூட்டல்",         sublabel: "நித்யானுஸந்தானம் — பூச்சூட்டல்" },
+  "காப்பிடல்":            { fn: "openNithyanusandhanam", args: [], label: "காப்பிடல்",           sublabel: "நித்யானுஸந்தானம் — காப்பிடல்" },
+  "kappidal":              { fn: "openNithyanusandhanam", args: [], label: "காப்பிடல்",           sublabel: "நித்யானுஸந்தானம் — காப்பிடல்" },
+  "துயில் உணர்த்துதல்":  { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
+  "துயிலுணர்த்துதல்":    { fn: "openNithyanusandhanam", args: [], label: "துயில் உணர்த்துதல்", sublabel: "நித்யானுஸந்தானம் — துயில் உணர்த்துதல்" },
+  "திருமஞ்சனம்":          { fn: "openNithyanusandhanam", args: [], label: "திருமஞ்சனம்",         sublabel: "நித்யானுஸந்தானம் — திருமஞ்சனம்" },
 };
 
 async function searchEntityTags(transcript) {
