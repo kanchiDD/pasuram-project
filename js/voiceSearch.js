@@ -165,8 +165,8 @@ const SPECIAL_DESTINATIONS = [
   {
     label:"Azhwars", sublabel:"ஆழ்வார்கள் — All 12 Azhwars",
     fn:"openAzhwars", args:[null],
-    aliases:["azhwars","ஆழ்வார்கள்","azhwar","ஆழ்வார்","12 azhwars","twelve azhwars",
-             "பன்னிரு ஆழ்வார்கள்","panniru azhwargal"]
+    aliases:["azhwars","ஆழ்வார்கள்","all azhwars","12 azhwars","twelve azhwars",
+             "பன்னிரு ஆழ்வார்கள்","panniru azhwargal","all 12 azhwars"]
   },
   {
     label:"Divyadesam", sublabel:"திவ்யதேசங்கள் — 108 Divyadesams",
