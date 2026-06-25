@@ -16,7 +16,7 @@
  * }
  */
 
-import { resolveVoiceQueryExtended as resolveVoiceQuery } from "./voiceSearch.js";
+import { resolveVoiceQueryExtended as resolveVoiceQuery } from "./voiceSearch.js?v=3";
 
 // ═══════════════════════════════════════════════════════
 // STATE

@@ -26,8 +26,8 @@
 
 <!-- ✅ NAV (CRITICAL WRAPPER) -->
 <div class="nav">
-  <a href="/tree.html">Naalayiram Tree</a>
-  <a href="/voice.html">Voice Search</a>
+  <a href="/tree.html">🌳 Naalayiram Tree</a>
+  <a href="/voice.html">🎤 Voice</a>
   <a href="/vedam.html">Vedam</a>
   <a href="/register.html">Register</a>
   <a href="/recital.html">Recital</a>
@@ -60,27 +60,31 @@
 <!-- OVERLAY -->
 <div id="overlay" onclick="toggleMenu()"></div>
 
-<!-- Global Mic Button — top right, small, doesn't interfere with floating nav -->
+<!-- Global Mic Button — just below header strip, right side -->
 <style>
 .global-mic-btn {
   position: fixed;
-  top: 12px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
+  top: 72px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #4A3728;
   border: 2px solid #C9A84C;
   color: #C9A84C;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
-  z-index: 9999;
+  z-index: 9000;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  line-height: 1;
 }
 .global-mic-btn:hover { background: #5a4535; }
+@media (max-width: 768px) {
+  .global-mic-btn { top: 58px; }
+}
 </style>
 <a class="global-mic-btn" href="/voice.html" title="Voice Search">🎤</a>
