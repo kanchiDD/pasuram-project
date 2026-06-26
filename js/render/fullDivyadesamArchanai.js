@@ -7,7 +7,6 @@ const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
 function injectCSS() {
   if (document.getElementById("farch-style")) return;
-
   const s = document.createElement("style");
   s.id = "farch-style";
   s.textContent = `
@@ -143,17 +142,9 @@ function injectCSS() {
 
 
     /* Lang toggle */
-    .farch-lang-wrap {
-      display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center;
-    }
-    .farch-lang-btn {
-      padding:6px 14px;border-radius:16px;
-      border:1.5px solid #c9a84c;background:transparent;
-      color:#c9a84c;font-size:13px;cursor:pointer;
-      font-family:"Noto Sans Tamil","Latha",serif;
-    }
+    .farch-lang-wrap { display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center; }
+    .farch-lang-btn { padding:6px 14px;border-radius:16px;border:1.5px solid #c9a84c;background:transparent;color:#c9a84c;font-size:13px;cursor:pointer; }
     .farch-lang-btn.active { background:#c9a84c;color:#1a0a00;font-weight:700; }
-
     /* Spinner */
     .farch-spinner {
       display:flex;flex-direction:column;align-items:center;
@@ -173,7 +164,7 @@ function injectCSS() {
 export function archanaiSpinner() {
   return `<div class="farch-spinner" style="background:#1a0a00;min-height:60vh;">
     <div class="farch-lotus">🪷</div>
-    <div class="farch-loading-text">Loading 108 Divyadesa Archanai...</div>
+    <div class="farch-loading-text">Loading Archanai...</div>
   </div>`;
 }
 
@@ -222,30 +213,65 @@ export async function renderFullDivyadesamArchanai() {
     return `<div class="farch-page">
       <div class="farch-title">108 Divyadesa Archanai</div>
       <div style="color:#c9a84c;text-align:center;padding:40px;">
-        Archanai data not available. Please try again.
+        Archanai data not available.
       </div>
     </div>`;
   }
 
   // Build desam array for controller
   const DESAMS = desams.map(d => ({
-    id:   d.divyadesam_id,
-    // Tamil
+    id:      d.divyadesam_id,
     name_ta: d.canonical_name || "",
-    nv_ta:   d.archana_namavalli || d.canonical_name || "",
-    // Devanagari
     name_hi: d.canonical_name_hi || d.canonical_name || "",
-    nv_hi:   d.archana_namavalli_hi || d.archana_namavalli || "",
-    // Telugu
     name_te: d.canonical_name_te || d.canonical_name || "",
-    nv_te:   d.archana_namavalli_te || d.archana_namavalli || "",
-    // Kannada
     name_kn: d.canonical_name_kn || d.canonical_name || "",
-    nv_kn:   d.archana_namavalli_kn || d.archana_namavalli || "",
-    // Malayalam
     name_ml: d.canonical_name_ml || d.canonical_name || "",
+    nv_ta:   d.archana_namavalli || "",
+    nv_hi:   d.archana_namavalli_hi || d.archana_namavalli || "",
+    nv_te:   d.archana_namavalli_te || d.archana_namavalli || "",
+    nv_kn:   d.archana_namavalli_kn || d.archana_namavalli || "",
     nv_ml:   d.archana_namavalli_ml || d.archana_namavalli || "",
   }));
+
+  // Current language
+  let _currentLang = "ta";
+
+  function _getName(d) { return d["name_" + _currentLang] || d.name_ta || ""; }
+  function _getNv(d)   { return d["nv_"   + _currentLang] || d.nv_ta   || ""; }
+
+  // Font map
+  const FONT_MAP = {
+    ta: '"Noto Sans Tamil","Latha",serif',
+    hi: '"Noto Sans Devanagari","Noto Sans",serif',
+    te: '"Noto Sans Telugu","Noto Sans",serif',
+    kn: '"Noto Sans Kannada","Noto Sans",serif',
+    ml: '"Noto Sans Malayalam","Noto Sans",serif',
+  };
+  const GFONT = {
+    hi: "Noto+Sans+Devanagari",
+    te: "Noto+Sans+Telugu",
+    kn: "Noto+Sans+Kannada",
+    ml: "Noto+Sans+Malayalam",
+  };
+  function _loadFont(lang) {
+    if (!GFONT[lang]) return;
+    const id = "gfont-" + lang;
+    if (document.getElementById(id)) return;
+    const lk = document.createElement("link");
+    lk.id = id; lk.rel = "stylesheet";
+    lk.href = "https://fonts.googleapis.com/css2?family=" + GFONT[lang] + "&display=swap";
+    document.head.appendChild(lk);
+  }
+  window.farchSetLang = function(lang) {
+    _currentLang = lang;
+    document.querySelectorAll(".farch-lang-btn").forEach(b =>
+      b.classList.toggle("active", b.dataset.lang === lang)
+    );
+    _loadFont(lang);
+    const root = document.getElementById("farch-root");
+    if (root) root.style.fontFamily = FONT_MAP[lang] || FONT_MAP.ta;
+    _farchShow(_idx);
+  };
 
   // ── Controller — registered on window BEFORE html is returned ──
   // innerHTML blocks <script> execution so we register functions
@@ -253,64 +279,6 @@ export async function renderFullDivyadesamArchanai() {
   // after layout.js sets app.innerHTML
 
   let _idx = 0, _playing = true, _speed = 8000, _timer = null;
-  let _currentLang = "ta"; // ta = Tamil (no conversion), hi = Devanagari
-
-  // Aksharamukha instance cache
-  let _akInstance = null;
-  async function _getAk() {
-    if (_akInstance) return _akInstance;
-    if (typeof Aksharamukha === "undefined") return null;
-    try { _akInstance = await Aksharamukha.new(); } catch(e) {}
-    return _akInstance;
-  }
-
-  // Transliterate Tamil text to target script (async)
-  async function _transliterate(text) {
-    if (_currentLang === "ta") return text;
-    const schemeMap = { "hi": "Devanagari", "te": "Telugu", "kn": "Kannada", "ml": "Malayalam" };
-    const target = schemeMap[_currentLang];
-    if (!target) return text;
-    try {
-      const ak = await _getAk();
-      if (ak) return await ak.process("Tamil", target, text);
-    } catch(e) { console.warn("Transliteration error:", e); }
-    return text;
-  }
-
-  // Switch language and re-render current desam
-  // Font map for each script
-  const FONT_MAP = {
-    "ta": { family: '"Noto Sans Tamil","Latha",serif',       google: null },
-    "hi": { family: '"Noto Sans Devanagari","Noto Sans",serif', google: "Noto+Sans+Devanagari" },
-    "te": { family: '"Noto Sans Telugu","Noto Sans",serif',   google: "Noto+Sans+Telugu" },
-    "kn": { family: '"Noto Sans Kannada","Noto Sans",serif',  google: "Noto+Sans+Kannada" },
-    "ml": { family: '"Noto Sans Malayalam","Noto Sans",serif',google: "Noto+Sans+Malayalam" },
-  };
-
-  function _loadFont(lang) {
-    const f = FONT_MAP[lang];
-    if (!f || !f.google) return;
-    const id = "gfont-" + lang;
-    if (document.getElementById(id)) return;
-    const link = document.createElement("link");
-    link.id   = id;
-    link.rel  = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${f.google}&display=swap`;
-    document.head.appendChild(link);
-  }
-
-  window.farchSetLang = async function(lang) {
-    _currentLang = lang;
-    document.querySelectorAll(".farch-lang-btn").forEach(b => {
-      b.classList.toggle("active", b.dataset.lang === lang);
-    });
-    _loadFont(lang);
-    const root = document.getElementById("farch-root");
-    if (root) {
-      root.style.fontFamily = (FONT_MAP[lang] || FONT_MAP["ta"]).family;
-    }
-    await _farchShowAsync(_idx);
-  };
 
   function _farchShow(i) {
     _idx = Math.max(0, Math.min(i, DESAMS.length - 1));
@@ -322,10 +290,10 @@ export async function renderFullDivyadesamArchanai() {
     if (!nv) return;
     nv.classList.add("fade");
     setTimeout(() => {
-      no.textContent   = (_idx + 1) + " / " + DESAMS.length;
-      name.textContent = _getText(d, "name");
-      nv.textContent   = _getText(d, "nv");
-      bar.style.width  = ((_idx + 1) / DESAMS.length * 100) + "%";
+      no.textContent  = (_idx + 1) + " / " + DESAMS.length;
+      name.textContent = _getName(d);
+      nv.textContent   = _getNv(d);
+      bar.style.width = ((_idx + 1) / DESAMS.length * 100) + "%";
       nv.classList.remove("fade");
     }, 400);
   }
@@ -400,10 +368,10 @@ export async function renderFullDivyadesamArchanai() {
 
   <div class="farch-lang-wrap">
     <button class="farch-lang-btn active" data-lang="ta" onclick="farchSetLang('ta')">அ Tamil</button>
-    <button class="farch-lang-btn" data-lang="hi"  onclick="farchSetLang('hi')">अ Devanagari</button>
-    <button class="farch-lang-btn" data-lang="te"  onclick="farchSetLang('te')">అ Telugu</button>
-    <button class="farch-lang-btn" data-lang="kn"  onclick="farchSetLang('kn')">ಅ Kannada</button>
-    <button class="farch-lang-btn" data-lang="ml"  onclick="farchSetLang('ml')">അ Malayalam</button>
+    <button class="farch-lang-btn" data-lang="hi" onclick="farchSetLang('hi')">अ Devanagari</button>
+    <button class="farch-lang-btn" data-lang="te" onclick="farchSetLang('te')">అ Telugu</button>
+    <button class="farch-lang-btn" data-lang="kn" onclick="farchSetLang('kn')">ಅ Kannada</button>
+    <button class="farch-lang-btn" data-lang="ml" onclick="farchSetLang('ml')">അ Malayalam</button>
   </div>
 
   <div class="farch-stage" id="farch-stage">
