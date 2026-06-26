@@ -4,7 +4,7 @@
 //             user-specific data, App Shell cached at install
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const SHELL_CACHE   = CACHE_VERSION + '-shell';
 const CONTENT_CACHE = CACHE_VERSION + '-content';
 
@@ -272,24 +272,13 @@ function refreshCache(request, cache) {
 }
 
 // ── 8. SHELL ASSET STRATEGY ───────────────────────────────────
-// For HTML/JS/CSS: serve cache first, update in background
-// If not cached yet: fetch and cache
+// Network-first for HTML/JS/CSS — always get fresh files
+// Cache only as offline fallback
 async function shellAssetStrategy(request) {
   const cache = await caches.open(SHELL_CACHE);
-  const cached = await cache.match(request);
 
-  if (cached) {
-    // Serve immediately from cache
-    // Refresh in background so next visit gets latest
-    refreshCache(request, cache);
-    return cached;
-  }
-
-  // Not in cache — fetch and cache it
   try {
     const fresh = await fetch(request, { redirect: 'follow' });
-    // type 'opaqueredirect' means Cloudflare redirected (http→https etc)
-    // Don't cache it — just follow it transparently
     if (fresh.type === 'opaqueredirect') {
       return fetch(request, { redirect: 'follow' });
     }
@@ -298,7 +287,9 @@ async function shellAssetStrategy(request) {
     }
     return fresh;
   } catch {
-    // Offline and not cached — show offline page
+    // Network failed — fall back to cache
+    const cached = await cache.match(request);
+    if (cached) return cached;
     const offline = await caches.match('/offline.html');
     return offline || new Response(
       '<h2 style="font-family:sans-serif;padding:20px">You are offline. Please connect to the internet and try again.</h2>',
