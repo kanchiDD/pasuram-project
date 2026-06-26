@@ -7,6 +7,15 @@ const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
 function injectCSS() {
   if (document.getElementById("farch-style")) return;
+
+  // Load Aksharamukha for transliteration
+  if (!document.getElementById("aksharamukha-script")) {
+    const ak = document.createElement("script");
+    ak.id  = "aksharamukha-script";
+    ak.src = "https://cdn.jsdelivr.net/npm/aksharamukha@2.0.3/dist/aksharamukha.min.js";
+    document.head.appendChild(ak);
+  }
+
   const s = document.createElement("style");
   s.id = "farch-style";
   s.textContent = `
@@ -141,6 +150,18 @@ function injectCSS() {
 }
 
 
+    /* Lang toggle */
+    .farch-lang-wrap {
+      display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center;
+    }
+    .farch-lang-btn {
+      padding:6px 14px;border-radius:16px;
+      border:1.5px solid #c9a84c;background:transparent;
+      color:#c9a84c;font-size:13px;cursor:pointer;
+      font-family:"Noto Sans Tamil","Latha",serif;
+    }
+    .farch-lang-btn.active { background:#c9a84c;color:#1a0a00;font-weight:700; }
+
     /* Spinner */
     .farch-spinner {
       display:flex;flex-direction:column;align-items:center;
@@ -227,6 +248,37 @@ export async function renderFullDivyadesamArchanai() {
   // after layout.js sets app.innerHTML
 
   let _idx = 0, _playing = true, _speed = 8000, _timer = null;
+  let _currentLang = "ta"; // ta = Tamil (no conversion), hi = Devanagari
+
+  // Transliterate Tamil text to target script
+  function _transliterate(text) {
+    if (_currentLang === "ta") return text;
+    try {
+      if (typeof Aksharamukha !== "undefined" && Aksharamukha.transliterate) {
+        const schemeMap = { "hi": "Devanagari", "te": "Telugu", "kn": "Kannada", "ml": "Malayalam" };
+        const target = schemeMap[_currentLang];
+        if (target) return Aksharamukha.transliterate("Tamil", target, text);
+      }
+    } catch(e) { console.warn("Transliteration error:", e); }
+    return text; // fallback to Tamil
+  }
+
+  // Switch language and re-render current desam
+  window.farchSetLang = function(lang) {
+    _currentLang = lang;
+    // Update button styles
+    document.querySelectorAll(".farch-lang-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.lang === lang);
+    });
+    // Update font for non-Tamil scripts
+    const root = document.getElementById("farch-root");
+    if (root) {
+      root.style.fontFamily = lang === "ta"
+        ? '"Noto Sans Tamil","Latha","Bamini",serif'
+        : '"Noto Sans Devanagari","Noto Sans Telugu","Noto Sans",serif';
+    }
+    _farchShow(_idx); // re-render current
+  };
 
   function _farchShow(i) {
     _idx = Math.max(0, Math.min(i, DESAMS.length - 1));
@@ -239,8 +291,8 @@ export async function renderFullDivyadesamArchanai() {
     nv.classList.add("fade");
     setTimeout(() => {
       no.textContent  = (_idx + 1) + " / " + DESAMS.length;
-      name.textContent = d.name;
-      nv.textContent  = d.nv;
+      name.textContent = _transliterate(d.name);
+      nv.textContent  = _transliterate(d.nv);
       bar.style.width = ((_idx + 1) / DESAMS.length * 100) + "%";
       nv.classList.remove("fade");
     }, 400);
@@ -313,6 +365,14 @@ export async function renderFullDivyadesamArchanai() {
 <div class="farch-page" id="farch-root">
   <div class="farch-title">திவ்யதேச அர்ச்சனை</div>
   <div class="farch-subtitle">108 திவ்யதேசங்கள் — நாமாவளி</div>
+
+  <div class="farch-lang-wrap">
+    <button class="farch-lang-btn active" data-lang="ta" onclick="farchSetLang('ta')">அ Tamil</button>
+    <button class="farch-lang-btn" data-lang="hi"  onclick="farchSetLang('hi')">अ Devanagari</button>
+    <button class="farch-lang-btn" data-lang="te"  onclick="farchSetLang('te')">అ Telugu</button>
+    <button class="farch-lang-btn" data-lang="kn"  onclick="farchSetLang('kn')">ಅ Kannada</button>
+    <button class="farch-lang-btn" data-lang="ml"  onclick="farchSetLang('ml')">അ Malayalam</button>
+  </div>
 
   <div class="farch-stage" id="farch-stage">
     <div class="farch-desam-no" id="farch-no">1 / ${DESAMS.length}</div>
