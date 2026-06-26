@@ -387,9 +387,31 @@ export async function renderFullDivyadesamArchanai() {
   };
 
   // initFarch called after app.innerHTML is set by layout.js
-  window._farchInit = function() {
+  window._farchInit = async function() {
     _idx = 0; _playing = true; _speed = 8000;
     clearInterval(_timer); _timer = null;
+
+    // Pre-initialize Aksharamukha so first render is instant
+    if (typeof Aksharamukha !== "undefined") {
+      try { _akInstance = await Aksharamukha.new(); } catch(e) {}
+    } else {
+      // Wait up to 10s for script to load
+      await new Promise(resolve => {
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          if (typeof Aksharamukha !== "undefined") {
+            clearInterval(poll);
+            try { _akInstance = await Aksharamukha.new(); } catch(e) {}
+            resolve();
+          } else if (attempts > 50) {
+            clearInterval(poll);
+            resolve();
+          }
+        }, 200);
+      });
+    }
+
     _farchShow(0);
     _farchStartTimer();
   };
