@@ -7,15 +7,6 @@ const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
 function injectCSS() {
   if (document.getElementById("farch-style")) return;
-
-  // Load Aksharamukha for transliteration
-  if (!document.getElementById("aksharamukha-script")) {
-    const ak = document.createElement("script");
-    ak.id  = "aksharamukha-script";
-    ak.src = "https://cdn.jsdelivr.net/npm/aksharamukha@latest/dist/index.global.js";
-    document.head.appendChild(ak);
-  }
-
   const s = document.createElement("style");
   s.id = "farch-style";
   s.textContent = `
@@ -150,18 +141,6 @@ function injectCSS() {
 }
 
 
-    /* Lang toggle */
-    .farch-lang-wrap {
-      display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:center;
-    }
-    .farch-lang-btn {
-      padding:6px 14px;border-radius:16px;
-      border:1.5px solid #c9a84c;background:transparent;
-      color:#c9a84c;font-size:13px;cursor:pointer;
-      font-family:"Noto Sans Tamil","Latha",serif;
-    }
-    .farch-lang-btn.active { background:#c9a84c;color:#1a0a00;font-weight:700; }
-
     /* Spinner */
     .farch-spinner {
       display:flex;flex-direction:column;align-items:center;
@@ -248,66 +227,8 @@ export async function renderFullDivyadesamArchanai() {
   // after layout.js sets app.innerHTML
 
   let _idx = 0, _playing = true, _speed = 8000, _timer = null;
-  let _currentLang = "ta"; // ta = Tamil (no conversion), hi = Devanagari
 
-  // Aksharamukha instance cache
-  let _akInstance = null;
-  async function _getAk() {
-    if (_akInstance) return _akInstance;
-    if (typeof Aksharamukha === "undefined") return null;
-    try { _akInstance = await Aksharamukha.new(); } catch(e) {}
-    return _akInstance;
-  }
-
-  // Transliterate Tamil text to target script (async)
-  async function _transliterate(text) {
-    if (_currentLang === "ta") return text;
-    const schemeMap = { "hi": "Devanagari", "te": "Telugu", "kn": "Kannada", "ml": "Malayalam" };
-    const target = schemeMap[_currentLang];
-    if (!target) return text;
-    try {
-      const ak = await _getAk();
-      if (ak) return await ak.process("Tamil", target, text);
-    } catch(e) { console.warn("Transliteration error:", e); }
-    return text;
-  }
-
-  // Switch language and re-render current desam
-  // Font map for each script
-  const FONT_MAP = {
-    "ta": { family: '"Noto Sans Tamil","Latha",serif',       google: null },
-    "hi": { family: '"Noto Sans Devanagari","Noto Sans",serif', google: "Noto+Sans+Devanagari" },
-    "te": { family: '"Noto Sans Telugu","Noto Sans",serif',   google: "Noto+Sans+Telugu" },
-    "kn": { family: '"Noto Sans Kannada","Noto Sans",serif',  google: "Noto+Sans+Kannada" },
-    "ml": { family: '"Noto Sans Malayalam","Noto Sans",serif',google: "Noto+Sans+Malayalam" },
-  };
-
-  function _loadFont(lang) {
-    const f = FONT_MAP[lang];
-    if (!f || !f.google) return;
-    const id = "gfont-" + lang;
-    if (document.getElementById(id)) return;
-    const link = document.createElement("link");
-    link.id   = id;
-    link.rel  = "stylesheet";
-    link.href = `https://fonts.googleapis.com/css2?family=${f.google}&display=swap`;
-    document.head.appendChild(link);
-  }
-
-  window.farchSetLang = async function(lang) {
-    _currentLang = lang;
-    document.querySelectorAll(".farch-lang-btn").forEach(b => {
-      b.classList.toggle("active", b.dataset.lang === lang);
-    });
-    _loadFont(lang);
-    const root = document.getElementById("farch-root");
-    if (root) {
-      root.style.fontFamily = (FONT_MAP[lang] || FONT_MAP["ta"]).family;
-    }
-    await _farchShowAsync(_idx);
-  };
-
-  async function _farchShowAsync(i) {
+  function _farchShow(i) {
     _idx = Math.max(0, Math.min(i, DESAMS.length - 1));
     const d    = DESAMS[_idx];
     const nv   = document.getElementById("farch-nv");
@@ -316,20 +237,14 @@ export async function renderFullDivyadesamArchanai() {
     const bar  = document.getElementById("farch-bar");
     if (!nv) return;
     nv.classList.add("fade");
-    const [tName, tNv] = await Promise.all([
-      _transliterate(d.name),
-      _transliterate(d.nv)
-    ]);
     setTimeout(() => {
-      no.textContent   = (_idx + 1) + " / " + DESAMS.length;
-      name.textContent = tName;
-      nv.textContent   = tNv;
-      bar.style.width  = ((_idx + 1) / DESAMS.length * 100) + "%";
+      no.textContent  = (_idx + 1) + " / " + DESAMS.length;
+      name.textContent = d.name;
+      nv.textContent  = d.nv;
+      bar.style.width = ((_idx + 1) / DESAMS.length * 100) + "%";
       nv.classList.remove("fade");
     }, 400);
   }
-
-  function _farchShow(i) { _farchShowAsync(i); }
 
   function _farchNext() {
     if (_idx >= DESAMS.length - 1) {
@@ -387,31 +302,9 @@ export async function renderFullDivyadesamArchanai() {
   };
 
   // initFarch called after app.innerHTML is set by layout.js
-  window._farchInit = async function() {
+  window._farchInit = function() {
     _idx = 0; _playing = true; _speed = 8000;
     clearInterval(_timer); _timer = null;
-
-    // Pre-initialize Aksharamukha so first render is instant
-    if (typeof Aksharamukha !== "undefined") {
-      try { _akInstance = await Aksharamukha.new(); } catch(e) {}
-    } else {
-      // Wait up to 10s for script to load
-      await new Promise(resolve => {
-        let attempts = 0;
-        const poll = setInterval(async () => {
-          attempts++;
-          if (typeof Aksharamukha !== "undefined") {
-            clearInterval(poll);
-            try { _akInstance = await Aksharamukha.new(); } catch(e) {}
-            resolve();
-          } else if (attempts > 50) {
-            clearInterval(poll);
-            resolve();
-          }
-        }, 200);
-      });
-    }
-
     _farchShow(0);
     _farchStartTimer();
   };
@@ -420,14 +313,6 @@ export async function renderFullDivyadesamArchanai() {
 <div class="farch-page" id="farch-root">
   <div class="farch-title">திவ்யதேச அர்ச்சனை</div>
   <div class="farch-subtitle">108 திவ்யதேசங்கள் — நாமாவளி</div>
-
-  <div class="farch-lang-wrap">
-    <button class="farch-lang-btn active" data-lang="ta" onclick="farchSetLang('ta')">அ Tamil</button>
-    <button class="farch-lang-btn" data-lang="hi"  onclick="farchSetLang('hi')">अ Devanagari</button>
-    <button class="farch-lang-btn" data-lang="te"  onclick="farchSetLang('te')">అ Telugu</button>
-    <button class="farch-lang-btn" data-lang="kn"  onclick="farchSetLang('kn')">ಅ Kannada</button>
-    <button class="farch-lang-btn" data-lang="ml"  onclick="farchSetLang('ml')">അ Malayalam</button>
-  </div>
 
   <div class="farch-stage" id="farch-stage">
     <div class="farch-desam-no" id="farch-no">1 / ${DESAMS.length}</div>
