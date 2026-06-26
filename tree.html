@@ -90,18 +90,6 @@ import './js/voiceNavBoot.js';
 </script>
 
 <!-- cover.js loaded via import inside options.js -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(function (reg) {
-          console.log('[SW] Registered ✅ scope:', reg.scope);
-        })
-        .catch(function (err) {
-          console.warn('[SW] Registration failed:', err);
-        });
-    });
-  }
-</script>
+
 </body>
 </html>
