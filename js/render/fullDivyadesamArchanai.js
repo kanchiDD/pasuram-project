@@ -12,7 +12,7 @@ function injectCSS() {
   if (!document.getElementById("aksharamukha-script")) {
     const ak = document.createElement("script");
     ak.id  = "aksharamukha-script";
-    ak.src = "https://cdn.jsdelivr.net/npm/aksharamukha@2.0.3/dist/aksharamukha.min.js";
+    ak.src = "https://cdn.jsdelivr.net/npm/aksharamukha@latest/dist/index.global.js";
     document.head.appendChild(ak);
   }
 
@@ -250,37 +250,64 @@ export async function renderFullDivyadesamArchanai() {
   let _idx = 0, _playing = true, _speed = 8000, _timer = null;
   let _currentLang = "ta"; // ta = Tamil (no conversion), hi = Devanagari
 
-  // Transliterate Tamil text to target script
-  function _transliterate(text) {
+  // Aksharamukha instance cache
+  let _akInstance = null;
+  async function _getAk() {
+    if (_akInstance) return _akInstance;
+    if (typeof Aksharamukha === "undefined") return null;
+    try { _akInstance = await Aksharamukha.new(); } catch(e) {}
+    return _akInstance;
+  }
+
+  // Transliterate Tamil text to target script (async)
+  async function _transliterate(text) {
     if (_currentLang === "ta") return text;
+    const schemeMap = { "hi": "Devanagari", "te": "Telugu", "kn": "Kannada", "ml": "Malayalam" };
+    const target = schemeMap[_currentLang];
+    if (!target) return text;
     try {
-      if (typeof Aksharamukha !== "undefined" && Aksharamukha.transliterate) {
-        const schemeMap = { "hi": "Devanagari", "te": "Telugu", "kn": "Kannada", "ml": "Malayalam" };
-        const target = schemeMap[_currentLang];
-        if (target) return Aksharamukha.transliterate("Tamil", target, text);
-      }
+      const ak = await _getAk();
+      if (ak) return await ak.process("Tamil", target, text);
     } catch(e) { console.warn("Transliteration error:", e); }
-    return text; // fallback to Tamil
+    return text;
   }
 
   // Switch language and re-render current desam
-  window.farchSetLang = function(lang) {
+  // Font map for each script
+  const FONT_MAP = {
+    "ta": { family: '"Noto Sans Tamil","Latha",serif',       google: null },
+    "hi": { family: '"Noto Sans Devanagari","Noto Sans",serif', google: "Noto+Sans+Devanagari" },
+    "te": { family: '"Noto Sans Telugu","Noto Sans",serif',   google: "Noto+Sans+Telugu" },
+    "kn": { family: '"Noto Sans Kannada","Noto Sans",serif',  google: "Noto+Sans+Kannada" },
+    "ml": { family: '"Noto Sans Malayalam","Noto Sans",serif',google: "Noto+Sans+Malayalam" },
+  };
+
+  function _loadFont(lang) {
+    const f = FONT_MAP[lang];
+    if (!f || !f.google) return;
+    const id = "gfont-" + lang;
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id   = id;
+    link.rel  = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${f.google}&display=swap`;
+    document.head.appendChild(link);
+  }
+
+  window.farchSetLang = async function(lang) {
     _currentLang = lang;
-    // Update button styles
     document.querySelectorAll(".farch-lang-btn").forEach(b => {
       b.classList.toggle("active", b.dataset.lang === lang);
     });
-    // Update font for non-Tamil scripts
+    _loadFont(lang);
     const root = document.getElementById("farch-root");
     if (root) {
-      root.style.fontFamily = lang === "ta"
-        ? '"Noto Sans Tamil","Latha","Bamini",serif'
-        : '"Noto Sans Devanagari","Noto Sans Telugu","Noto Sans",serif';
+      root.style.fontFamily = (FONT_MAP[lang] || FONT_MAP["ta"]).family;
     }
-    _farchShow(_idx); // re-render current
+    await _farchShowAsync(_idx);
   };
 
-  function _farchShow(i) {
+  async function _farchShowAsync(i) {
     _idx = Math.max(0, Math.min(i, DESAMS.length - 1));
     const d    = DESAMS[_idx];
     const nv   = document.getElementById("farch-nv");
@@ -289,14 +316,20 @@ export async function renderFullDivyadesamArchanai() {
     const bar  = document.getElementById("farch-bar");
     if (!nv) return;
     nv.classList.add("fade");
+    const [tName, tNv] = await Promise.all([
+      _transliterate(d.name),
+      _transliterate(d.nv)
+    ]);
     setTimeout(() => {
-      no.textContent  = (_idx + 1) + " / " + DESAMS.length;
-      name.textContent = _transliterate(d.name);
-      nv.textContent  = _transliterate(d.nv);
-      bar.style.width = ((_idx + 1) / DESAMS.length * 100) + "%";
+      no.textContent   = (_idx + 1) + " / " + DESAMS.length;
+      name.textContent = tName;
+      nv.textContent   = tNv;
+      bar.style.width  = ((_idx + 1) / DESAMS.length * 100) + "%";
       nv.classList.remove("fade");
     }, 400);
   }
+
+  function _farchShow(i) { _farchShowAsync(i); }
 
   function _farchNext() {
     if (_idx >= DESAMS.length - 1) {
