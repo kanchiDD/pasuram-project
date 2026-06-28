@@ -304,18 +304,20 @@ function findSuperiorConflict(entity_type, entity_id, section_id, pathu_id, is_c
     }
 
     // ── 2. Full pathu blocks new children of that pathu ──────
-    // A pathu item is "full" only when is_child=false (stored on item by addItem)
-    if (item.entity_type === "pathu" && !item.is_child) {
-      // item.entity_id IS the full pathu's id (parent id)
-      const itemPathuId = item.pathu_id; // = item.entity_id for full pathu
-      // Block: new child whose parent = this full pathu
-      if (is_child && entity_type === "pathu" && pathu_id === itemPathuId) {
+    // Full pathu: entity_type=pathu, pathu_id=null, is_child=false
+    // Its entity_id = first_child_id of the pathu group
+    if (item.entity_type === "pathu" && item.pathu_id === null && !item.is_child) {
+      const firstChildId = item.entity_id; // first child's pathu_id = group identifier
+      // Block: new child pathu whose parent group matches (pathu_id = firstChildId)
+      // Must also match section to avoid cross-section false positives
+      if (is_child && entity_type === "pathu"
+          && pathu_id === firstChildId
+          && Number(item.section_id) === Number(section_id)) {
         return { type: "block", existing: item };
       }
-      // Block: new thirumozhi belonging to this pathu (not standalone pasuram — pasuram has its own check)
-      if (entity_type === "thirumozhi" && pathu_id === itemPathuId) {
-        return { type: "block", existing: item };
-      }
+      // NOTE: do NOT block thirumozhi items here — thirumozhi sections (4,5) are
+      // completely separate from pathu sections (2,11,26) and pathu_id=null on
+      // thirumozhi items would cause null===null false match
     }
 
     // ── 3. Rettai group conflicts ─────────────────────────────
@@ -371,8 +373,10 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
       // Remove all children of this pathu: is_child=true AND pathu_id = first_child_id (entity_id)
       // Note: child 1 has entity_id === first_child_id, so the old entity_id !== entity_id
       // check wrongly excluded it. Use is_child flag instead.
+      // Child pathu: identified by pathu_id being non-null (full pathu has pathu_id=null)
+      // Do NOT use item.is_child — it may be undefined after reload from DB
       if (item.entity_type === "pathu"
-          && item.is_child
+          && item.pathu_id !== null
           && item.pathu_id === entity_id) {
         toRemove.push(item);
       }
@@ -839,11 +843,14 @@ async function loadExistingPlan() {
         };
       }
 
-      // For pathu items: restore pathu_id so parent/child detection works after reload
-      // A full pathu has pathu_id === entity_id; a child has pathu_id = parent's id
-      const restoredPathuId = item.pathu_id || dbItem.pathu_id || null;
+      // For pathu items: restore pathu_id from DB
+      // Full pathu: pathu_id=null in DB (worker convention) → restore as null → is_child=false
+      // Child pathu: pathu_id=first_child_id in DB (non-null) → restore as-is → is_child=true
+      const restoredPathuId = (item.pathu_id !== undefined && item.pathu_id !== null)
+        ? item.pathu_id
+        : (dbItem.pathu_id !== undefined ? dbItem.pathu_id : null);
       const finalPathuId = item.entity_type === "pathu"
-        ? (restoredPathuId || item.entity_id)  // fallback: treat as full pathu if unknown
+        ? restoredPathuId   // null = full pathu, non-null = child — no fallback
         : restoredPathuId;
 
       return {
@@ -853,7 +860,8 @@ async function loadExistingPlan() {
         global_no_start: item.entity_type === "pasuram" ? item.entity_id
                        : (item.global_no_start || dbItem.global_no_start || 0),
         section_id:      item.section_id  || dbItem.section_id  || null,
-        pathu_id:        finalPathuId
+        pathu_id:        finalPathuId,
+        is_child:        item.entity_type === "pathu" ? (finalPathuId !== null) : false
       };
     });
 
@@ -1479,6 +1487,7 @@ export function registerRecitalBindings() {
 
     // Expand rettai_group items into worker-ready format
     const workerItems = _buildWorkerItems(orderedItems);
+
 
     // If empty, still save — this marks it as a recital-free day
     // Worker must accept empty items array; if it returns 500 for empty,
