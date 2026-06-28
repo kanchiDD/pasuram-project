@@ -304,12 +304,13 @@ function findSuperiorConflict(entity_type, entity_id, section_id, pathu_id, is_c
     }
 
     // ── 2. full_pathu blocks new children of that pathu ─────
-    // A child pathu has pathu_id = first_child_id of its parent group
     if (item.entity_type === "full_pathu"
-        && Number(item.section_id) === Number(section_id)
-        && entity_type === "pathu" && is_child
-        && item.first_child_id === pathu_id) {
-      return { type: "block", existing: item };
+        && Number(item.section_id) === Number(section_id)) {
+      // Block child pathu: identified by pathu_id matching first_child_id of this full_pathu
+      if (entity_type === "pathu" && is_child
+          && item.first_child_id === pathu_id) {
+        return { type: "block", existing: item };
+      }
     }
 
     // ── 3. Rettai group conflicts ─────────────────────────────
@@ -333,13 +334,14 @@ function findSuperiorConflict(entity_type, entity_id, section_id, pathu_id, is_c
 
 // Check if inferior items exist that should be silently replaced by a new superior.
 // Only called when adding a FULL pathu or FULL section (never for children).
-function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_child, global_no_start, global_no_end, pathu_no, first_child_id) {
-  const newItemIsFullPathu  = entity_type === "full_pathu";
-  const newItemIsSection    = entity_type === "section";
+function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_child, global_no_start, global_no_end, pathu_no) {
+  // full_pathu is the explicit type for a whole pathu group selection
+  const newItemIsFullPathu = entity_type === "full_pathu";
+  const newItemIsSection   = entity_type === "section";
   const newItemIsThirumozhi = entity_type === "thirumozhi";
   const newItemIsChildPathu = entity_type === "pathu" && is_child;
 
-  // For thirumozhi or child pathu: remove pasurams in range
+  // For thirumozhi or child pathu: remove pasurams whose global_no falls in the range
   if (newItemIsThirumozhi || newItemIsChildPathu) {
     if (!global_no_start || !global_no_end) return [];
     return selectedItems.filter(i =>
@@ -354,39 +356,28 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
   const toRemove = [];
   for (const item of selectedItems) {
     if (newItemIsSection) {
-      // Full section replaces everything from same section (incl. full_pathu items)
-      if (Number(item.section_id) === Number(section_id) && item.entity_id !== entity_id) {
+      // Full section replaces everything from same section (pathu, child, pasuram, rettai)
+      if (item.section_id === section_id && item.entity_id !== entity_id) {
         toRemove.push(item);
       }
     } else if (newItemIsFullPathu) {
-      // full_pathu swallows child pathu items of same section + same parent (first_child_id)
+      // full_pathu swallows all children of the same section + pathu group
+      // Children are identified by pathu_id === first_child_id of the full_pathu
+      // first_child_id is passed as pathu_id arg when entity_type=full_pathu
       if (item.entity_type === "pathu" && item.is_child
           && Number(item.section_id) === Number(section_id)
-          && item.pathu_id === first_child_id) {
+          && item.pathu_id === pathu_id) {
         toRemove.push(item);
       }
-      // Swallow duplicate full_pathu for same section+pathu_no
-      if (item.entity_type === "full_pathu"
-          && Number(item.section_id) === Number(section_id)
-          && Number(item.pathu_no)   === Number(pathu_no)) {
-        toRemove.push(item);
-      }
-      // Swallow rettai_group items for same pathu
+      // Swallow rettai_group for children of this pathu
       if (item.entity_type === "rettai_group" && item.rettai_source
           && Number(item.section_id) === Number(section_id)
-          && (item.pathu_id === first_child_id
-              || item.rettai_source.entity_id === first_child_id)) {
+          && (item.pathu_id === pathu_id || item.rettai_source.entity_id === pathu_id)) {
         toRemove.push(item);
       }
-      // Swallow individual pasurams in this pathu's global range
+      // Swallow individual pasurams in range
       if (item.entity_type === "pasuram" && global_no_start && global_no_end &&
           item.entity_id >= global_no_start && item.entity_id <= global_no_end) {
-        toRemove.push(item);
-      }
-      // Swallow pasurams by pathu_no when range not available
-      if (item.entity_type === "pasuram" && pathu_no
-          && Number(item.section_id) === Number(section_id)
-          && item.pathu_no && Number(item.pathu_no) === Number(pathu_no)) {
         toRemove.push(item);
       }
     }
@@ -405,7 +396,7 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
 // ADD / REMOVE
 // ─────────────────────────────────────────────
 function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no, first_child_id) {
-  // For full_pathu: duplicate check is by section_id + pathu_no, not entity_id
+  // full_pathu: dedupe by section_id + pathu_no (entity_id = pathu_no, not a DB id)
   if (entity_type === "full_pathu") {
     if (isFullPathuSelected(section_id, pathu_no)) return;
   } else {
@@ -413,7 +404,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   }
 
   const storedPathuId = entity_type === "pathu"
-    ? (is_child ? pathu_id : null)
+    ? (is_child ? pathu_id : (pathu_id == null ? null : (pathu_id !== entity_id ? pathu_id : entity_id)))
     : (pathu_id || null);
 
   const conflict = findSuperiorConflict(entity_type, entity_id, section_id, storedPathuId, is_child);
@@ -422,7 +413,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
     return;
   }
 
-  const inferiors = findInferiorItems(entity_type, entity_id, section_id, storedPathuId, is_child, global_no_start, global_no_end, pathu_no, first_child_id);
+  const inferiors = findInferiorItems(entity_type, entity_id, section_id, storedPathuId, is_child, global_no_start, global_no_end, pathu_no);
   if (inferiors.length) {
     const removedLabels = inferiors.map(i => i.label).join(", ");
     inferiors.forEach(i => {
@@ -448,18 +439,10 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   renderSelected();
 }
 
-function removeItem(entity_type, entity_id, section_id, pathu_no) {
-  if (entity_type === "full_pathu") {
-    selectedItems = selectedItems.filter(
-      i => !(i.entity_type === "full_pathu"
-          && Number(i.section_id) === Number(section_id)
-          && Number(i.pathu_no)   === Number(pathu_no))
-    );
-  } else {
-    selectedItems = selectedItems.filter(
-      i => !(i.entity_type === entity_type && i.entity_id === entity_id)
-    );
-  }
+function removeItem(entity_type, entity_id) {
+  selectedItems = selectedItems.filter(
+    i => !(i.entity_type === entity_type && i.entity_id === entity_id)
+  );
   isDirty = true;
   renderSelected();
 }
@@ -470,7 +453,7 @@ function isSelected(entity_type, entity_id) {
   );
 }
 
-// Check if a full_pathu is selected for a given section + pathu_no
+// True only when a full_pathu (not just a child) is selected for this section+pathu_no
 function isFullPathuSelected(section_id, pathu_no) {
   return selectedItems.some(
     i => i.entity_type === "full_pathu"
@@ -656,7 +639,7 @@ function renderModalContent() {
           <span class="r-modal-drill"
                 onclick="window._recitalOpenPathu(
                   ${frame.section_id},'${escHtml(frame.section_name)}',
-                  ${p.pathu_no},'${escHtml(p.pathu_name)}',${p.pathu_id})">
+                  ${p.pathu_no},'${escHtml(p.pathu_name)}',${p.pathu_id},${p.global_no_start||0})">
             Thirumozhi ›
           </span>
         </div>`;
@@ -839,53 +822,52 @@ async function loadExistingPlan() {
         };
       }
 
-      // Restore pathu items — distinguish full_pathu from child by entity_id === pathu_id
-      const restoredPathuId  = item.pathu_id || dbItem.pathu_id || null;
-      const restoredEntityId = item.entity_id;
+      // Restore pathu items using pathu_no from DB to distinguish full_pathu from child
+      // Full pathu: entity_id === pathu_id AND pathu_no is stored
+      // Child: entity_id !== pathu_id, OR pathu_id is null (child 1 of group, old saves)
+      const restoredPathuId = item.pathu_id || dbItem.pathu_id || null;
+      const restoredPathuNo = item.pathu_no || dbItem.pathu_no || null;
 
       if (item.entity_type === "pathu") {
-        // Full pathu: entity_id === pathu_id (both non-null, equal)
-        // Child pathu: pathu_id is null (child 1) OR pathu_id !== entity_id (child N>1)
-        const isFullPathu = !!(restoredPathuId && restoredPathuId === restoredEntityId);
+        const isFullPathu = !!(restoredPathuId
+          && restoredPathuId === item.entity_id
+          && restoredPathuNo);
         if (isFullPathu) {
-          const restoredPathuNo = dbItem.pathu_no || null;
           return {
             entity_type:     "full_pathu",
-            entity_id:       restoredPathuNo || restoredEntityId,
+            entity_id:       restoredPathuNo,
             label:           item.label,
             global_no_start: item.global_no_start || dbItem.global_no_start || 0,
             section_id:      item.section_id || dbItem.section_id || null,
             pathu_id:        null,
             is_child:        false,
             pathu_no:        restoredPathuNo,
-            first_child_id:  restoredEntityId
+            first_child_id:  item.entity_id
           };
         } else {
-          // Child pathu — pathu_id may be null (child 1) or set to parent's first_child_id
-          // first_child_id: if pathu_id is set use it, else entity_id is child 1 so first_child_id = entity_id
-          const childFirstId = restoredPathuId || restoredEntityId;
+          // Child thirumozhi — first_child_id is the pathu_id stored
           return {
             entity_type:     "pathu",
-            entity_id:       restoredEntityId,
+            entity_id:       item.entity_id,
             label:           item.label,
             global_no_start: item.global_no_start || dbItem.global_no_start || 0,
             section_id:      item.section_id || dbItem.section_id || null,
-            pathu_id:        childFirstId,
+            pathu_id:        restoredPathuId,
             is_child:        true,
-            pathu_no:        dbItem.pathu_no || null,
-            first_child_id:  childFirstId
+            pathu_no:        restoredPathuNo,
+            first_child_id:  restoredPathuId || item.entity_id
           };
         }
       }
 
       return {
         entity_type:     item.entity_type,
-        entity_id:       restoredEntityId,
+        entity_id:       item.entity_id,
         label:           item.label,
-        global_no_start: item.entity_type === "pasuram" ? restoredEntityId
+        global_no_start: item.entity_type === "pasuram" ? item.entity_id
                        : (item.global_no_start || dbItem.global_no_start || 0),
-        section_id:      item.section_id || dbItem.section_id || null,
-        pathu_id:        restoredPathuId || null
+        section_id:      item.section_id  || dbItem.section_id  || null,
+        pathu_id:        restoredPathuId  || null
       };
     });
 
@@ -1078,7 +1060,7 @@ export function registerRecitalBindings() {
     await _switchToDay(0);
   }
 
-  // Build worker-ready items array from selectedItems (expands rettai_group and full_pathu)
+  // Build worker-ready items array from selectedItems (expands rettai_group)
   function _buildWorkerItems(items) {
     const result = [];
     for (const item of items) {
@@ -1092,28 +1074,24 @@ export function registerRecitalBindings() {
           global_no_start: item.global_no_start || 0
         });
       } else if (item.entity_type === "full_pathu") {
-        // Expand to what the worker expects: entity_type=pathu, entity_id=first_child_id,
-        // pathu_id=first_child_id (equal = full pathu signal to worker)
+        // Expand: worker expects entity_type=pathu, entity_id=first_child_id, pathu_id=first_child_id
+        // pathu_no tells worker (and reload) this is a full pathu group
         result.push({
           entity_type:     "pathu",
           entity_id:       item.first_child_id,
           section_id:      item.section_id      || null,
           pathu_id:        item.first_child_id,
-          global_no_start: item.global_no_start || 0
+          global_no_start: item.global_no_start || 0,
+          pathu_no:        item.pathu_no        || null
         });
       } else {
-        // For child pathu items where entity_id === pathu_id (child 1 of any pathu),
-        // store pathu_id=null to distinguish from full_pathu (which stores pathu_id=entity_id)
-        const savedPathuId = (item.entity_type === "pathu" && item.is_child
-          && item.pathu_id === item.entity_id)
-            ? null
-            : (item.pathu_id || null);
         result.push({
           entity_type:     item.entity_type,
           entity_id:       item.entity_id,
           section_id:      item.section_id || null,
-          pathu_id:        savedPathuId,
-          global_no_start: item.global_no_start || 0
+          pathu_id:        item.pathu_id   || null,
+          global_no_start: item.global_no_start || 0,
+          pathu_no:        item.pathu_no   || null
         });
       }
     }
@@ -1150,16 +1128,24 @@ export function registerRecitalBindings() {
     }
   };
 
-  // Pathu checkbox in modal — pathu_id here is the first child's id (from catalog)
+  // Pathu checkbox in modal
+  // pathu_id here = first_child_id from catalog; pathu_no = group number; global_no_start from catalog
   window._recitalTogglePathuCheck = (section_id, section_name, first_child_id, pathu_name, pathu_no, global_no_start, checked) => {
     if (checked) {
       const label = `${section_name} — ${pathu_name}`;
-      // Use entity_type="full_pathu" to distinguish from individual child thirumozhi
-      // entity_id = pathu_no (unique within section), first_child_id stored separately
+      // Use entity_type="full_pathu", entity_id=pathu_no (unique within section)
+      // first_child_id stored in pendingItem for save expansion
       showFullRettaiPopup("full_pathu", pathu_no, label, global_no_start||0,
         section_id, null, 0, false, pathu_no, first_child_id);
     } else {
-      removeItem("full_pathu", pathu_no, section_id, pathu_no);
+      // Remove by section_id + pathu_no
+      selectedItems = selectedItems.filter(
+        i => !(i.entity_type === "full_pathu"
+            && Number(i.section_id) === Number(section_id)
+            && Number(i.pathu_no)   === Number(pathu_no))
+      );
+      isDirty = true;
+      renderSelected();
     }
   };
 
@@ -1360,14 +1346,14 @@ export function registerRecitalBindings() {
   };
 
   // Pathu drill down
-  window._recitalOpenPathu = async (section_id, section_name, pathu_no, pathu_name, pathu_id) => {
+  window._recitalOpenPathu = async (section_id, section_name, pathu_no, pathu_name, pathu_id, global_no_start) => {
     const res  = await fetch(
       `${WORKER}/recital/catalog?section_id=${section_id}&pathu_no=${pathu_no}`
     );
     const data = await res.json();
     modalStack.push({
       level: "pathu", section_id, section_name,
-      pathu_id, pathu_no, pathu_name, data
+      pathu_id, pathu_no, pathu_name, global_no_start: global_no_start||0, data
     });
     renderModalContent();
   };
@@ -1387,7 +1373,13 @@ export function registerRecitalBindings() {
 
   window._recitalRemoveItem = (entity_type, entity_id, section_id, pathu_no) => {
     if (entity_type === "full_pathu") {
-      removeItem("full_pathu", null, Number(section_id), Number(pathu_no));
+      selectedItems = selectedItems.filter(
+        i => !(i.entity_type === "full_pathu"
+            && Number(i.section_id) === Number(section_id)
+            && Number(i.pathu_no)   === Number(pathu_no))
+      );
+      isDirty = true;
+      renderSelected();
     } else {
       removeItem(entity_type, Number(entity_id));
     }
