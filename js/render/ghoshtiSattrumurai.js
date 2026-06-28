@@ -294,11 +294,23 @@ function buildSattrumuraiPlan(sections) {
   sections.forEach(sel => {
     const sid = sel.section_id;
     if (NO_SATTRUMURAI.has(sid)) return;
-    // Sattrumurai only applies to full section/pathu or rettai selections
-    // Individual thirumozhi selections do NOT qualify
-    if (!sel.is_full && !sel.is_rettai) return;
+
+    // Derive is_full and is_rettai from item fields — do not rely on caller setting them
+    // Full section: entity_type=section or koil
+    // Full pathu: entity_type=pathu AND pathu_id===null AND !is_child
+    // Child thirumozhi: entity_type=pathu AND is_child=true — NOT eligible
+    // Full rettai (section or full pathu): entity_type=rettai_group AND !is_child — eligible
+    // Child rettai (single thirumozhi rettai): entity_type=rettai_group AND is_child=true — NOT eligible
+    // Individual pasuram: entity_type=pasuram — NOT eligible
+    const isFull = sel.entity_type === "section"
+      || sel.entity_type === "koil"
+      || (sel.entity_type === "pathu" && sel.pathu_id === null && !sel.is_child);
+    const isRettai = sel.entity_type === "rettai_group" && !sel.is_child;
+
+    if (!isFull && !isRettai) return;
+
     if (!bySection[sid]) bySection[sid] = [];
-    bySection[sid].push(sel);
+    bySection[sid].push({ ...sel, is_full: isFull, is_rettai: isRettai });
   });
 
   const CANONICAL_ORDER = [2, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 23, 26];

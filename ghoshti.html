@@ -847,23 +847,26 @@
       if (b.entity_type === "koil") {
         pathuNo = (Number(sid) === 11) ? 11 : 10;
       }
-      // Full pathu: entity_id === parent_pathu_id (entity IS the parent)
-      // Individual thirumozhi: entity_id !== parent_pathu_id
+      // Full pathu: parent_pathu_id === null (worker sets null for full pathu, non-null for child)
+      // Child thirumozhi: parent_pathu_id is non-null — NOT eligible for sattrumurai
       // Madal blocks (22/23) are always full
       const isFull   = b.block_type === "madal" ||
                        b.entity_type === "section" ||
                        b.entity_type === "koil" ||
-                       (b.entity_type === "pathu" &&
-                        (b.parent_pathu_id == null || b.entity_id === b.parent_pathu_id));
-      const isRettai = !!b.is_rettai;
+                       (b.entity_type === "pathu" && b.parent_pathu_id === null);
+      // Child rettai (single thirumozhi rettai) has parent_pathu_id non-null — not eligible
+      const isRettai = !!b.is_rettai && b.parent_pathu_id === null;
       const key = `${sid}_${pathuNo}_${isFull}_${isRettai}`;
       if (seen.has(key)) return;
       seen.add(key);
       result.push({
-        section_id: Number(sid),
-        pathu_no:   pathuNo ? Number(pathuNo) : null,
-        is_full:    isFull,
-        is_rettai:  isRettai
+        section_id:  Number(sid),
+        pathu_no:    pathuNo ? Number(pathuNo) : null,
+        entity_type: b.entity_type || null,
+        pathu_id:    b.parent_pathu_id !== undefined ? b.parent_pathu_id : null,
+        is_child:    b.entity_type === "pathu" && b.parent_pathu_id !== null,
+        is_full:     isFull,
+        is_rettai:   isRettai
       });
     });
     return result;
@@ -903,23 +906,26 @@
       if (b.entity_type === "koil") {
         pathuNo = (Number(sid) === 11) ? 11 : 10;
       }
-      // Full pathu: entity_id === parent_pathu_id (entity IS the parent)
-      // Individual thirumozhi: entity_id !== parent_pathu_id
+      // Full pathu: parent_pathu_id === null (worker sets null for full pathu, non-null for child)
+      // Child thirumozhi: parent_pathu_id is non-null — NOT eligible for sattrumurai
       // Madal blocks (22/23) are always full
       const isFull   = b.block_type === "madal" ||
                        b.entity_type === "section" ||
                        b.entity_type === "koil" ||
-                       (b.entity_type === "pathu" &&
-                        (b.parent_pathu_id == null || b.entity_id === b.parent_pathu_id));
-      const isRettai = !!b.is_rettai;
+                       (b.entity_type === "pathu" && b.parent_pathu_id === null);
+      // Child rettai (single thirumozhi rettai) has parent_pathu_id non-null — not eligible
+      const isRettai = !!b.is_rettai && b.parent_pathu_id === null;
       const key = `${sid}_${pathuNo}_${isFull}_${isRettai}`;
       if (seen.has(key)) return;
       seen.add(key);
       result.push({
-        section_id: Number(sid),
-        pathu_no:   pathuNo ? Number(pathuNo) : null,
-        is_full:    isFull,
-        is_rettai:  isRettai
+        section_id:  Number(sid),
+        pathu_no:    pathuNo ? Number(pathuNo) : null,
+        entity_type: b.entity_type || null,
+        pathu_id:    b.parent_pathu_id !== undefined ? b.parent_pathu_id : null,
+        is_child:    b.entity_type === "pathu" && b.parent_pathu_id !== null,
+        is_full:     isFull,
+        is_rettai:   isRettai
       });
     });
     return result;
