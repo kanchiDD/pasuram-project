@@ -682,8 +682,8 @@ async function handleGhoshti(request, env) {
       const ghoshtiDate = new Date(start_time);
       const nextDay     = new Date(ghoshtiDate);
       nextDay.setDate(nextDay.getDate() + 1);
-      nextDay.setHours(0, 0, 0, 0);
-      const expires_at = new Date(nextDay.getTime() + 12 * 60 * 60 * 1000).toISOString();
+      nextDay.setHours(0, 0, 0, 0); // midnight of next day = expiry
+      const expires_at = nextDay.toISOString(); // expires at 00:00 next day
       await env.db.prepare(`INSERT INTO ghoshti_session (ghoshti_id, plan_id, mobile, ghoshti_name, start_time, expires_at, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)`).bind(ghoshti_id, Number(plan_id), mobile, ghoshti_name || null, start_time, expires_at).run();
       return new Response(JSON.stringify({ success: true, ghoshti_id, link: `https://arulicheyal.org/ghoshti.html?id=${ghoshti_id}`, expires_at }), { headers: CORS });
     }
@@ -705,7 +705,8 @@ async function handleGhoshti(request, env) {
       let new_expires_at = null;
       if (start_time) {
         const nd = new Date(start_time); nd.setDate(nd.getDate()+1); nd.setHours(0,0,0,0);
-        new_expires_at = new Date(nd.getTime()+12*60*60*1000).toISOString();
+        nd.setHours(0, 0, 0, 0); // midnight
+        new_expires_at = nd.toISOString();
       }
       await env.db.prepare(`UPDATE ghoshti_session SET ghoshti_name=COALESCE(?,ghoshti_name), start_time=COALESCE(?,start_time), expires_at=COALESCE(?,expires_at), plan_id=COALESCE(?,plan_id) WHERE ghoshti_id=?`).bind(ghoshti_name||null, start_time||null, new_expires_at, plan_id?Number(plan_id):null, ghoshti_id).run();
       return new Response(JSON.stringify({ success: true, ghoshti_id, expires_at: new_expires_at }), { headers: CORS });
