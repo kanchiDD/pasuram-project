@@ -142,6 +142,14 @@
 	</div>
 
       <div class="reg-field">
+        <label>Sampradayam (Sect)</label>
+        <select id="reg-sect" style="width:100%;padding:11px 13px;border:1.5px solid #e8c060;border-radius:8px;font-size:15px;color:#4a2c00;background:#fffdf5;outline:none;">
+          <option value="T">தென்கலை (Thenkalai)</option>
+          <option value="V">வடகலை (Vadakalai)</option>
+        </select>
+      </div>
+
+      <div class="reg-field">
         <label>Full Name</label>
         <input type="text" id="reg-name" placeholder="Enter your name" autocomplete="name">
         <div class="reg-err" id="reg-err-name">Please enter your name</div>
@@ -227,7 +235,7 @@
   });
 
   // ── State ──
-  let regData = { name:"", mobile:"", googleEmail:"", googleId:"", googleName:"" };
+  let regData = { name:"", mobile:"", sect:"T", googleEmail:"", googleId:"", googleName:"" };
 
   // ── Step 1 → Step 2 ──
   function regStep2() {
@@ -257,8 +265,12 @@
     regData.name   = name;
     regData.mobile = iti.getNumber();
 
+    const sect = document.getElementById("reg-sect").value;
+    const sectLabel = sect === 'V' ? 'வடகலை (Vadakalai)' : 'தென்கலை (Thenkalai)';
+    regData.sect = sect;
+
     document.getElementById("reg-preview").innerHTML =
-      `<strong>Name</strong>${name}<strong style="margin-top:5px">Mobile</strong>${regData.mobile}`;
+      `<strong>Name</strong>${name}<strong style="margin-top:5px">Mobile</strong>${regData.mobile}<strong style="margin-top:5px">Sampradayam</strong>${sectLabel}`;
 
     regSetStep("reg-step2");
   }
@@ -321,6 +333,7 @@
   function regShowSuccess(data) {
     localStorage.setItem("mobile", data.mobile);
     localStorage.setItem("name", data.name);
+    localStorage.setItem("sect", data.sect || "T");
     localStorage.setItem("googleEmail", data.googleEmail);
     document.getElementById("reg-success-name").textContent = "Welcome Adiyen 🙏, " + data.name + "!";
     document.getElementById("reg-success-sub").innerHTML =
