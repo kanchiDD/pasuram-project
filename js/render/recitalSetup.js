@@ -421,7 +421,16 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
 // ADD / REMOVE
 // ─────────────────────────────────────────────
 function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no) {
-  if (isSelected(entity_type, entity_id)) return;
+  // For full pathu (pathu_id=null, is_child=false): skip early-return duplicate check
+  // because child 1 has the same entity_id and would wrongly block the full pathu from being added.
+  // Full pathu needs to proceed to findInferiorItems to swallow existing children.
+  const isFullPathu = entity_type === "pathu" && pathu_id === null && !is_child;
+  if (isFullPathu) {
+    // Dedupe full pathu by: same entity_id AND pathu_id===null AND !is_child
+    if (selectedItems.some(i => i.entity_type === "pathu" && i.entity_id === entity_id && i.pathu_id === null && !i.is_child)) return;
+  } else {
+    if (isSelected(entity_type, entity_id)) return;
+  }
 
   const storedPathuId = entity_type === "pathu"
     ? (is_child ? pathu_id : (pathu_id == null ? null : (pathu_id !== entity_id ? pathu_id : entity_id)))
@@ -1100,7 +1109,12 @@ export function registerRecitalBindings() {
       const label = `${section_name} — ${pathu_name}`;
       showFullRettaiPopup("pathu", pathu_id, label, global_no_start||0, section_id, null, 0, false, pathu_no);
     } else {
-      removeItem("pathu", pathu_id);
+      // Remove full pathu only (pathu_id=null, !is_child) — not a child with same entity_id
+      selectedItems = selectedItems.filter(
+        i => !(i.entity_type === "pathu" && i.entity_id === pathu_id && i.pathu_id === null && !i.is_child)
+      );
+      isDirty = true;
+      renderSelected();
     }
   };
 
