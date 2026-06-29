@@ -15,19 +15,23 @@ export async function fetchThousand() {
 }
 
 export async function fetchSections() {
-  if (state.sectionCache[state.selectedThousandId]) {
-    state.sectionData = state.sectionCache[state.selectedThousandId];
+  const sect = localStorage.getItem("sect") || "T";
+  // Cache key includes sect so T and V get separate caches
+  const cacheKey = state.selectedThousandId + "_" + sect;
+  if (state.sectionCache[cacheKey]) {
+    state.sectionData = state.sectionCache[cacheKey];
     safeRender();
     return;
   }
 
+  // Bypass cache proxy for section — sect-specific, cache proxy can't handle per-sect caching
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId
+    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId + "&sect=" + sect
   );
 
   const data = await res.json();
   state.sectionData = data;
-  state.sectionCache[state.selectedThousandId] = data;
+  state.sectionCache[cacheKey] = data;
   safeRender();
 }
 

@@ -1,5 +1,6 @@
 import { state } from "./state.js";
-import { fetchThaniyan, fetchPasuram, fetchEntitySearch } from "./api.js";
+import { getKoilThirumozhi, getKoilThiruvaimozhi } from "./utils/sectUtils.js";
+import { fetchThaniyan, fetchPasuram } from "./api.js";
 import { render } from "./render/layout.js";
 // ADD this import (alongside existing api.js imports)
 import { renderPasuramSplit } from "./render/pasuram_full.js";
@@ -29,26 +30,17 @@ export async function renderKoil(type) {
       : "கோயில் திருவாய்மொழி";
 
   state.isKoilMode = true;
-
   // 🔥 LOAD DATA
   await fetchThaniyan();
   await fetchPasuram();
-  await fetchEntitySearch();
-
   const pasurams = state.pasuramData || [];
-  const entity = state.entitySearchData || [];
 
-  // 🔥 FILTER
-  const koilPathuSet = new Set(
-    entity
-      .filter(e =>
-        e.meta_key === "tag" &&
-        e.meta_value &&
-        e.meta_value.trim() === state.koilTitle.trim() &&
-        e.entity_type === "pathu"
-      )
-      .map(e => Number(e.entity_id))
-  );
+  // 🔥 FILTER — use hardcoded sect-aware list from sectUtils
+  // This avoids needing Vadagalai tags in entity_master DB
+  const koilList = type === "THIRUMOZHI"
+    ? getKoilThirumozhi()
+    : getKoilThiruvaimozhi();
+  const koilPathuSet = new Set(koilList.map(k => k.pathuId));
 
   state.pasuramData = pasurams.filter(p =>
     koilPathuSet.has(p.pathu_id)

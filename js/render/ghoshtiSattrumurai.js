@@ -15,6 +15,8 @@
 //  7. "Add my Sattrumurai" -- compiles + appends to ghoshti, saves
 // ═══════════════════════════════════════════════════════════════════
 
+import { getUserSect, VAZHI_GHOSHTI_ALL, FIXED_DEFS_GHOSHTI, getDefaultFixedTextState } from "../utils/sectUtils.js";
+
 const WORKER_GET = "https://cacheproxy.kanchitrust.workers.dev";
 const WORKER_POST = "https://recitalworker.kanchitrust.workers.dev";
 
@@ -221,66 +223,24 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   gsatState.pasuramItems = [];
   gsatState.explicitToggles = {};
   gsatState.autoIncludedKeys = new Set();
-  gsatState.fixedText = { pothu: true, iyal: false, muktaka: false, surnikai: false };
+  gsatState.fixedText = getDefaultFixedTextState(); // pre-select based on user sect
   gsatState.fixedTextLines = {};
   gsatState.vazhiLines = {};
-  gsatState.fixedOrder = [2, 1];
+  gsatState.fixedOrder = [2, 1, 5]; // iyal, pothu_t, pothu_v
   gsatState.selectedVaazhis = new Set();
 
   container.innerHTML = '<div class="gsat-loading"><span class="gsat-lotus">LOTUS</span>Preparing Sattrumurai...</div>'.replace('LOTUS','\uD83E\uDE77');
 
-  // Hardcoded vazhi list - correct order and names
-  gsatState.allVaazhis = [
-    { vazhi_id:  1, author_name: "பெரிய பெருமாள்" },
-    { vazhi_id:  2, author_name: "பெரிய பிராட்டியார்" },
-    { vazhi_id: 26, author_name: "ஆண்டாள்" },
-    { vazhi_id: 27, author_name: "ஆண்டாள் நாள்பாட்டு" },
-    { vazhi_id:  3, author_name: "சேனைமுதலியார்" },
-    { vazhi_id:  4, author_name: "நம்மாழ்வார்" },
-    { vazhi_id: 28, author_name: "பொய்கை ஆழ்வார்" },
-    { vazhi_id: 29, author_name: "பூதத்தாழ்வார்" },
-    { vazhi_id: 30, author_name: "பேயாழ்வார்" },
-    { vazhi_id: 31, author_name: "திருமழிசை ஆழ்வார்" },
-    { vazhi_id: 32, author_name: "மதுரகவி ஆழ்வார்" },
-    { vazhi_id: 33, author_name: "பெரியாழ்வார்" },
-    { vazhi_id: 34, author_name: "குலசேகராழ்வார்" },
-    { vazhi_id: 35, author_name: "தொண்டரடிப்பொடி ஆழ்வார்" },
-    { vazhi_id: 36, author_name: "திருப்பாணாழ்வார்" },
-    { vazhi_id: 37, author_name: "திருமங்கை ஆழ்வார்" },
-    { vazhi_id: -4, author_name: "திருமங்கைமன்னன் வடிவழகு சூர்ணிகை", is_fixed: true, fixed_id: 4 },
-    { vazhi_id:  5, author_name: "ஸ்ரீமந்நாதமுனிகள்" },
-    { vazhi_id:  6, author_name: "உய்யக்கொண்டார்" },
-    { vazhi_id:  7, author_name: "மணக்கால்நம்பி" },
-    { vazhi_id:  8, author_name: "ஆளவந்தார்" },
-    { vazhi_id:  9, author_name: "பெரியநம்பிகள்" },
-    { vazhi_id: 10, author_name: "திருக்கச்சிநம்பிகள்" },
-    { vazhi_id: 11, author_name: "எம்பெருமானார்" },
-    { vazhi_id: 12, author_name: "எம்பெருமானார் நாள்பாட்டு" },
-    { vazhi_id: 13, author_name: "கூரத்தாழ்வான்" },
-    { vazhi_id: 14, author_name: "முதலியாண்டான்" },
-    { vazhi_id: 15, author_name: "திருவரங்கத்தமுதனார்" },
-    { vazhi_id: 16, author_name: "எம்பார்" },
-    { vazhi_id: 17, author_name: "பெரியபட்டர்" },
-    { vazhi_id: 18, author_name: "நஞ்சீயர்" },
-    { vazhi_id: 19, author_name: "நம்பிள்ளை" },
-    { vazhi_id: 20, author_name: "வடக்குத் திருவீதிப்பிள்ளை" },
-    { vazhi_id: 21, author_name: "பிள்ளைலோகாசாரியர்" },
-    { vazhi_id: 22, author_name: "கூரகுலோத்தம தாஸர்" },
-    { vazhi_id: 23, author_name: "திருவாய்மொழிப்பிள்ளை" },
-    { vazhi_id: 24, author_name: "மணவாளமாமுனிகள்" },
-    { vazhi_id: 25, author_name: "மணவாளமாமுனிகள் நாள்பாட்டு" },
-  ];
+  // Vazhi list from sectUtils — includes all (T+V) for ghoshti
+  // Ghoshti is multi-sect; user selects what they need
+  gsatState.allVaazhis = VAZHI_GHOSHTI_ALL;
 
   const plan = buildSattrumuraiPlan(gsatState.selectedSections);
   await fetchAllPasuramTexts(plan);
   gsatState.pasuramItems = plan;
 
-  // Pre-fetch fixed_id 1 (pothu — always included)
-  try {
-    const ftRes  = await fetch(`${WORKER_POST}/recital/fixed-text?id=1`);
-    const ftData = await ftRes.json();
-    if (ftData.success) gsatState.fixedTextLines[1] = ftData.lines;
-  } catch(e) {}
+  // Fixed text lines loaded on demand when user checks the checkbox
+  // No pre-fetch — both T (id=1) and V (id=5) loaded only when selected
 
   render(container);
 }
@@ -616,12 +576,7 @@ function renderFixedLines(lines) {
 }
 
 function renderFixedTextSection() {
-  const FIXED_DEFS = [
-    { id: 2, key: "iyal",     label: "இயல் சாத்து" },
-    { id: 1, key: "pothu",    label: "பொது சாற்றுமுறை", always: true },
-    { id: 3, key: "muktaka",  label: "முக்தக மங்களம்" },
-    { id: 4, key: "surnikai", label: "திருமங்கைமன்னன் வடிவழகு சூர்ணிகை" },
-  ];
+  const FIXED_DEFS = FIXED_DEFS_GHOSHTI; // from sectUtils — includes both T and V pothu
   let html = `<div class="gsat-section"><div class="gsat-section-head">\uD83D\uDCDC சாற்று</div>`;
   gsatState.fixedOrder.forEach((fid, orderIdx) => {
     const def = FIXED_DEFS.find(d => d.id === fid);

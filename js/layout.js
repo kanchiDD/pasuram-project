@@ -16,6 +16,25 @@
   document.head.appendChild(style);
 })();
 
+/* ================= SECT FETCH PATCH ================= */
+/* Auto-appends &sect= to all Cloudflare worker API calls */
+/* Reads sect from localStorage (set at registration)     */
+(function patchFetchForSect() {
+  const WORKER_DOMAINS = ['workers.dev', 'kanchitrust'];
+  const _origFetch = window.fetch;
+  window.fetch = function(url, opts) {
+    if (typeof url === 'string') {
+      const isWorkerCall = WORKER_DOMAINS.some(d => url.includes(d));
+      if (isWorkerCall && !url.includes('sect=')) {
+        const sect = localStorage.getItem('sect') || 'T';
+        const sep  = url.includes('?') ? '&' : '?';
+        url = `${url}${sep}sect=${sect}`;
+      }
+    }
+    return _origFetch.call(this, url, opts);
+  };
+})();
+
 function loadLayout() {
 
   /* ================= HEADER ================= */
