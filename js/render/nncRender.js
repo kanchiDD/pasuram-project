@@ -423,7 +423,10 @@ export async function renderSinglePasuram(refValue, anchor) {
 // ── Render koil ───────────────────────────────────────────────────────────────
 export async function renderKoil(refValue, anchor) {
   const sectionId = refValue === "THIRUMOZHI" ? 11 : 26;
-  const title     = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+  const baseTitle  = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+  // NNC is personal — use sect-specific tag
+  const sect  = localStorage.getItem("sect") || "T";
+  const title = sect === 'V' ? 'வடகலை ' + baseTitle : baseTitle;
   const [allPasurams, entityRes, thaniyanData, displayData] = await Promise.all([
     fetchPasurams({ section_id: sectionId }),
     fetch(`${API}/entity-search?section_id=${sectionId}&meta_key=tag`).then(r=>r.json()).catch(()=>[]),
