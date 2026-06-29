@@ -379,7 +379,8 @@ function showFullRettaiPopup(entity_type, entity_id, label, global_no_start, sec
 // ─────────────────────────────────────────────
 async function loadCatalog() {
   try {
-    const res   = await fetch(`${WORKER}/recital/catalog`);
+    const sect  = localStorage.getItem("sect") || "T";
+    const res   = await fetch(`${WORKER}/recital/catalog?sect=${sect}`);
     catalogData = await res.json();
     renderCatalogIntoDOM();
   } catch(e) {}
