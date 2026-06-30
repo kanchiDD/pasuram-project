@@ -8,7 +8,14 @@ import {
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
-const SKIP_THANIYAN_SECTIONS = new Set([1, 3, 7, 8, 9, 10, 12, 13, 24, 25]);
+const SKIP_THANIYAN_SECTIONS = new Set([
+  1, 3, 7, 8, 9, 10, 12, 13, 24, 25,
+  // Desika Prabandham sections (32-51) — each has its own explicit
+  // 'thaniyan' sequence row, so renderSection must NOT fetch/render
+  // its own thaniyan box again (was causing duplicate thaniyan display)
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+  42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+]);
 
 // ── Section header map — respectful full titles for content headings ──────────
 const SECTION_HEADER_MAP = {
@@ -423,10 +430,7 @@ export async function renderSinglePasuram(refValue, anchor) {
 // ── Render koil ───────────────────────────────────────────────────────────────
 export async function renderKoil(refValue, anchor) {
   const sectionId = refValue === "THIRUMOZHI" ? 11 : 26;
-  const baseTitle  = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-  // NNC is personal — use sect-specific tag
-  const sect  = localStorage.getItem("sect") || "T";
-  const title = sect === 'V' ? 'வடகலை ' + baseTitle : baseTitle;
+  const title     = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
   const [allPasurams, entityRes, thaniyanData, displayData] = await Promise.all([
     fetchPasurams({ section_id: sectionId }),
     fetch(`${API}/entity-search?section_id=${sectionId}&meta_key=tag`).then(r=>r.json()).catch(()=>[]),
@@ -597,9 +601,10 @@ const secDisp  = renderSectionDisplayItems(displayData);
 
 // ── Render thaniyan only ──────────────────────────────────────────────────────
 export async function renderThaniyanItem(refValue, refType) {
+  const sect = localStorage.getItem("sect") || "T";
   const url = refType === "thaniyan_global"
-    ? `${API}/thaniyan?type=global`
-    : `${API}/thaniyan?section_id=${refValue}`;
+    ? `${API}/thaniyan?type=global&sect=${sect}`
+    : `${API}/thaniyan?section_id=${refValue}&sect=${sect}`;
   const data = await fetch(url).then(r=>r.json());
   const rows = Array.isArray(data) ? data : (data.thaniyan || []);
   const prosodyMap = data.prosodyMap || {};
