@@ -22,22 +22,40 @@ async function loadVazhiThaniyan() {
   }
 }
 
-// ── DROPDOWN ─────────────────────────────────────────────────
+// ── CUSTOM DROPDOWN (replaces native <select> for mobile font control) ──
 function buildDropdown() {
-  const sel = document.getElementById("vtSelect");
-  vtData.forEach((a, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = (i + 1) + ". " + a.canonical_name;
-    sel.appendChild(opt);
-  });
+  const list = document.getElementById("vtDropdownList");
+  list.innerHTML = vtData.map((a, i) =>
+    `<div class="vt-dd-item" data-idx="${i}" onclick="vtJumpTo(${i})">${i + 1}. ${esc(a.canonical_name)}</div>`
+  ).join("");
 }
 
+window.vtToggleDropdown = function () {
+  document.getElementById("vtDropdown").classList.toggle("open");
+};
+
+// Close dropdown when clicking outside
+document.addEventListener("click", function (e) {
+  const dd = document.getElementById("vtDropdown");
+  if (dd && !dd.contains(e.target)) dd.classList.remove("open");
+});
+
 window.vtJumpTo = function (idx) {
-  if (idx === "") return;
+  if (idx === "" || idx === undefined) return;
   vtCurrent = Number(idx);
   const a = vtData[vtCurrent];
   if (!a) return;
+
+  // Update trigger text and close dropdown
+  const trigger = document.getElementById("vtDropdownTrigger");
+  if (trigger) trigger.textContent = (vtCurrent + 1) + ". " + a.canonical_name;
+  document.getElementById("vtDropdown")?.classList.remove("open");
+
+  // Mark selected item
+  document.querySelectorAll(".vt-dd-item").forEach(el => {
+    el.classList.toggle("selected", Number(el.dataset.idx) === vtCurrent);
+  });
+
   const el = document.getElementById("acharya-" + a.acharya_id);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 };
@@ -135,8 +153,13 @@ window.vtNext = function () {
 };
 
 function syncDropdown() {
-  const sel = document.getElementById("vtSelect");
-  if (sel) sel.value = vtCurrent;
+  const a = vtData[vtCurrent];
+  if (!a) return;
+  const trigger = document.getElementById("vtDropdownTrigger");
+  if (trigger) trigger.textContent = (vtCurrent + 1) + ". " + a.canonical_name;
+  document.querySelectorAll(".vt-dd-item").forEach(el => {
+    el.classList.toggle("selected", Number(el.dataset.idx) === vtCurrent);
+  });
 }
 
 function scrollToCard(idx) {

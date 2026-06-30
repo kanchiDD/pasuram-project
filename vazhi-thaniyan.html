@@ -60,9 +60,11 @@
       letter-spacing: 0.05em;
       margin-bottom: 8px;
     }
-    .vt-index-select {
+    /* Custom dropdown — replaces native <select> for full font control on mobile */
+    .vt-dd { position: relative; }
+    .vt-dd-trigger {
       width: 100%;
-      padding: 9px 12px;
+      padding: 9px 32px 9px 12px;
       border: 1.5px solid #e8d5a8;
       border-radius: 8px;
       background: #fff;
@@ -70,16 +72,49 @@
       color: #3a2000;
       cursor: pointer;
       box-sizing: border-box;
-      appearance: none;
+      text-align: left;
+      position: relative;
+      font-family: inherit;
+    }
+    .vt-dd-trigger::after {
+      content: "";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      width: 10px;
+      height: 7px;
+      transform: translateY(-50%);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b07a00' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 32px;
+      transition: transform 0.2s;
     }
-    .vt-index-select:focus {
-      outline: none;
-      border-color: #b07a00;
+    .vt-dd.open .vt-dd-trigger::after { transform: translateY(-50%) rotate(180deg); }
+    .vt-dd-list {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1.5px solid #e8d5a8;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      z-index: 50;
     }
+    .vt-dd.open .vt-dd-list { display: block; }
+    .vt-dd-item {
+      padding: 9px 12px;
+      font-size: 14px;
+      color: #3a2000;
+      cursor: pointer;
+      border-bottom: 1px solid #f0e6cc;
+      font-family: inherit;
+    }
+    .vt-dd-item:last-child { border-bottom: none; }
+    .vt-dd-item:hover, .vt-dd-item:active { background: #fff8e8; }
+    .vt-dd-item.selected { background: #fdf0c8; font-weight: bold; }
 
     /* Acharya card */
     .vt-card {
@@ -179,7 +214,8 @@
     @media (max-width: 480px) {
       .vt-acharya-name { font-size: 1.05rem; }
       .vt-item { font-size: 14px; }
-      .vt-index-select { font-size: 13px; padding: 8px 10px; }
+      .vt-dd-trigger { font-size: 13px; padding: 8px 28px 8px 10px; }
+      .vt-dd-item { font-size: 13px; padding: 8px 10px; }
       .vt-index-box label { font-size: 11px; }
     }
 
@@ -194,12 +230,13 @@
   <!-- Add My Acharya Info -->
   <a class="vt-update-btn" href="/update-acharya.html">🪷 Add My Acharya Info</a>
 
-  <!-- Dropdown Index -->
+  <!-- Dropdown Index (custom, for consistent font size on mobile) -->
   <div class="vt-index-box">
-    <label for="vtSelect">Browse to Acharya</label>
-    <select class="vt-index-select" id="vtSelect" onchange="vtJumpTo(this.value)">
-      <option value="">— Select —</option>
-    </select>
+    <label>Browse to Acharya</label>
+    <div class="vt-dd" id="vtDropdown">
+      <div class="vt-dd-trigger" id="vtDropdownTrigger" onclick="vtToggleDropdown()">— Select —</div>
+      <div class="vt-dd-list" id="vtDropdownList"></div>
+    </div>
   </div>
 
   <!-- Cards -->
