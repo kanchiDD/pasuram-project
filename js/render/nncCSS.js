@@ -46,7 +46,8 @@ export function injectNNCCSS() {
     .nnc-thaniyan-box { border:3px double #b38b2e; border-radius:8px; background:#fffbf0; margin:12px; padding:14px 12px; }
     .nnc-thaniyan-label { font-size:10px; font-weight:700; color:#b38b2e; text-transform:uppercase; letter-spacing:1px; text-align:center; margin-bottom:6px; }
     .nnc-thaniyan-box .thaniyan-title { font-size:13px; font-weight:700; text-align:center; color:#4a2c00; margin:6px 0 2px; }
-    .nnc-thaniyan-box .thaniyan-subhead { font-size:12px; text-align:center; color:#7a5a20; margin-bottom:4px; }
+    .nnc-thaniyan-box .thaniyan-subhead { font-size:12.5px; font-weight:600; text-align:center; color:#7a5a20; margin:8px 0 6px; letter-spacing:0.2px; }
+    .nnc-thaniyan-box .thaniyan-group { height:10px; }
     .nnc-thaniyan-box .thaniyan-line { font-size:var(--nf,15px) !important; text-align:left; line-height:1.8; color:#2a1a00; font-family:'Noto Sans Tamil','Latha','Bamini',serif; }
     .nnc-thaniyan-box .thaniyan-prosody { font-size:10px; color:#bbb; font-style:italic; text-align:center; }
     /* ── Pathu / Thirumozhi ── */
