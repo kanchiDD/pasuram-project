@@ -87,7 +87,8 @@ export async function fetchDisplayData(sectionId) {
 // Fetch thaniyan rows + prosodyMap — renderThaniyan() needs BOTH as separate args
 export async function fetchThaniyanWithProsody(sectionId) {
   const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
-  const res  = await fetch(`${API}/thaniyan?section_id=${sectionId}`);
+  const sect = localStorage.getItem("sect") || "T";
+  const res  = await fetch(`${API}/thaniyan?section_id=${sectionId}&sect=${sect}`);
   const data = await res.json();
   return {
     rows:       data.thaniyan || (Array.isArray(data) ? data : []),
