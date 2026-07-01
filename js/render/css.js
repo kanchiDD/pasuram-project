@@ -145,6 +145,38 @@ body, .pasuram-line, .thaniyan-line, .section-heading, .thaniyan-container {
       font-size: var(--nf) !important;
     }
 
+    /* ── Madal/Kootrirukkai couplet & line cards (shared module, "sp" prefix) ── */
+    .sp-madal-body { display:flex; flex-direction:column; gap:6px; }
+    .sp-madal-couplet-card {
+      background: #fffdfa;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .sp-madal-dual-block {
+      background: #fffbe8;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .sp-madal-line {
+      font-size: var(--nf) !important;
+      line-height: 1.7;
+      color: #2a1a00;
+      display: block;
+      text-align: left;
+    }
+    .sp-line-with-no { display: block; position: relative; }
+    .sp-line-with-no .sp-couplet-no { float: right; }
+    .sp-couplet-no { font-size: 10px !important; color: #999; margin-left: 8px; }
+    .sp-dual-mark { color: #b38b2e; font-weight: 700; font-size: 12px; margin-right: 2px; }
+    .sp-kootrirukkai-line-card {
+      background: #fffdfa;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+
     /* Modal styles untouched — controlled by existing site CSS */
 
     /* ══════════════════════════════════════════════════════════

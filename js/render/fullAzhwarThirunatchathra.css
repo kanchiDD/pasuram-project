@@ -160,5 +160,12 @@
   display: block;
 }
 
-/* ── Madal couplet line gap ── */
-.fathn-couplet-gap { display:block;margin-bottom:8px; }
+/* ── Madal / Kootrirukkai — couplet & line cards ── */
+.fathn-madal-body { display:flex;flex-direction:column;gap:8px; }
+.fathn-madal-couplet-card { background:#fffdfa;border:1px solid #e8d5a0;border-radius:7px;padding:8px 12px; }
+.fathn-madal-dual-block { background:#fffbe8;border:1px solid #e8d5a0;border-radius:7px;padding:8px 12px; }
+.fathn-madal-line { font-size:var(--base-font,18px);color:#1a2a00;line-height:1.9;text-align:left;display:block; }
+.fathn-line-with-no { display:block;position:relative; }
+.fathn-line-with-no .fathn-couplet-no { float:right; }
+.fathn-couplet-no { font-size:11px;color:#b38b2e;font-weight:600;margin-left:8px; }
+.fathn-kootrirukkai-line-card { background:#fffdfa;border:1px solid #e8d5a0;border-radius:7px;padding:8px 12px; }

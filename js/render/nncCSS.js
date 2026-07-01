@@ -78,12 +78,17 @@ export function injectNNCCSS() {
     .nnc-vazhi-lines { font-size:var(--nf,15px) !important; line-height:1.8; text-align:left; }
     .nnc-vazhi-line { display:block; font-size:var(--nf,15px) !important; text-align:left; line-height:1.8; }
     /* ── Madal ── */
-    .nnc-madal-plain-block { margin-bottom:22px; }
-    .nnc-madal-couplet { margin-bottom:22px; }
-    .nnc-madal-dual-block { background:#fffbee; padding:6px 8px; border-radius:4px; margin-bottom:22px; }
-    .nnc-madal-line { display:block; font-size:var(--nf,15px) !important; color:#1a2a00; line-height:1.55; text-align:left; }
-    .nnc-line-with-no { display:flex; justify-content:space-between; align-items:baseline; }
-    .nnc-couplet-no { font-size:11px; color:#bbb; margin-left:8px; flex-shrink:0; }
+    /* Madal body wrapper — same flex+gap pattern as recital.html's .r-madal-body */
+    .nnc-madal-body { display:flex; flex-direction:column; gap:6px; }
+    .nnc-madal-couplet-card { background:#fff; border:1px solid #e8d8a0; border-radius:6px; padding:6px 10px; }
+    .nnc-madal-dual-block { background:#fffbe8; border:1px solid #e8d8a0; border-radius:6px; padding:6px 10px; }
+    .nnc-madal-line { font-size:var(--nf,15px) !important; line-height:1.8; color:#2a1a00; display:block; text-align:left; }
+    .nnc-line-with-no { display:block; position:relative; }
+    .nnc-line-with-no .nnc-couplet-no { float:right; }
+    .nnc-couplet-no { font-size:10px; color:#999; flex-shrink:0; margin-left:8px; }
+    .nnc-dual-mark { color:#b38b2e; font-weight:700; font-size:12px; margin-right:2px; }
+    .nnc-kootrirukkai-line-card { background:#fff; border:1px solid #e8d8a0; border-radius:6px; padding:6px 10px; margin-bottom:6px; }
+    .nnc-kootrirukkai-line-card .nnc-madal-line { font-size:var(--nf,15px) !important; }
     /* ── Final closing ── */
     .nnc-final-closing { text-align:center; font-size:16px; font-weight:900; color:#4a2c00; padding:24px 12px; border-top:3px double #b38b2e; margin:12px; }
     /* ── Spinner ── */

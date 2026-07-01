@@ -6,6 +6,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./newThaniyan.js";
+import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 
 /* ================= HEADER MAP ================= */
 
@@ -81,94 +82,9 @@ export function renderMadal(data) {
 
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
 
-  const rules = data.rules || [];
-
-  function getBlockRule(c, l) {
-    return rules.find(r =>
-      r.rule_type === "block_repeat" &&
-      (
-        (c > r.start_couplet ||
-          (c === r.start_couplet && l >= r.start_line)) &&
-        (c < r.end_couplet ||
-          (c === r.end_couplet && l <= r.end_line))
-      )
-    );
-  }
-
-  function isLineDual(c, l) {
-    return rules.some(r =>
-      r.rule_type === "line_repeat" &&
-      r.start_couplet == c &&
-      r.line_no == l
-    );
-  }
-
-  const grouped = {};
-
-  data.units.forEach(u => {
-    const c = u.couplet_no;
-    if (!grouped[c]) grouped[c] = [];
-
-    for (let i = 1; i <= 8; i++) {
-      if (u[`line_${i}`]) {
-        grouped[c].push({
-          text: u[`line_${i}`],
-          line_no: i
-        });
-      }
-    }
-  });
-
-  const couplets = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-
   const maxCouplet = sectionName === "பெரியதிருமடல்" ? 148 : 77;
-
-  let prevBlockRule = null;
-
-  couplets.forEach(c => {
-
-    const lines = grouped[c];
-
-    html += `<div class="couplet">`;
-
-    lines.forEach((l, idx) => {
-
-      const isLast = idx === lines.length - 1;
-
-      const blockRule = getBlockRule(c, l.line_no);
-      const lineDual = isLineDual(c, l.line_no);
-
-      const isBlockStart = blockRule && blockRule !== prevBlockRule;
-      const isInsideBlock = !!blockRule;
-
-      let text = l.text;
-
-      if (isBlockStart) text = "** " + text;
-      if (lineDual && !isInsideBlock) text = "** " + text;
-
-      const cls = isInsideBlock
-        ? "dual-block"
-        : lineDual
-        ? "dual-line"
-        : "";
-
-      if (isLast && c <= maxCouplet) {
-        html += `
-          <div class="line-with-no ${cls}">
-            <span>${text}</span>
-            <span class="couplet-no">${c}</span>
-          </div>
-        `;
-      } else {
-        html += `<div class="line ${cls}">${text}</div>`;
-      }
-
-      prevBlockRule = blockRule || prevBlockRule;
-
-    });
-
-    html += `</div>`;
-  });
+  const madalHtml = buildMadalCoupletsHTML(data, "sp", maxCouplet);
+  html += `<div class="sp-madal-body">${madalHtml}</div>`;
 
   /* ✅ SECTION CLOSING */
 const closingText = state.sectionClosing?.[0]?.closing_text;
@@ -211,16 +127,8 @@ export function renderKootrirukkai(data) {
 
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
 
-  data.lines.forEach(l => {
-
-    const isDual = l.line_no == 41;
-
-    html += `
-      <div class="line ${isDual ? "dual-line" : ""}">
-        ${isDual ? "** " : ""}${l.line_text}
-      </div>
-    `;
-  });
+  const kootriHtml = buildKootrirukkaiLinesHTML(data, "sp", 41);
+  html += `<div class="sp-madal-body">${kootriHtml}</div>`;
 
   /* ✅ SECTION CLOSING */
 const closingText = state.sectionClosing?.[0]?.closing_text;

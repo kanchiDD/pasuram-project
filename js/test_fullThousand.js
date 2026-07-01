@@ -389,26 +389,15 @@ if (!selectedThousandId) {
 }
 
 // =========================
-// 🔥 FLOATING NAV (FINAL)
-// =========================
+// 🔥 FLOATING NAV — matches site-wide naal-float-nav style
 html += `
-  <div id="floating-nav" style="
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    z-index:999;
-  ">
-
-    <button onclick="goHome()">🏠<br><small>Home</small></button>
-    <button onclick="goIndex()">📑<br><small>Index</small></button>
-    <button onclick="goPrevPage()">◀️<br><small>Back</small></button>
-    <button onclick="goNextPage()">▶️<br><small>Next</small></button>
-    <button onclick="increaseFont()">A+<br><small>Zoom In</small></button>
-    <button onclick="decreaseFont()">A-<br><small>Zoom Out</small></button>
-
+  <div id="floating-nav" class="naal-float-nav" style="display:flex;">
+    <button onclick="goHome()" title="Home">🏠</button>
+    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">⬆</button>
+    <button onclick="goPrevPage()" title="Back">◀</button>
+    <button onclick="goNextPage()" title="Next">▶</button>
+    <button onclick="increaseFont()" title="Font+">A+</button>
+    <button onclick="decreaseFont()" title="Font−">A−</button>
   </div>
 `;
 // ✅ ONLY FOR FULL 4000 (STRICT)
@@ -486,28 +475,19 @@ window.goNextPage = function() {
 };
 
 window.increaseFont = function () {
-  let size = parseFloat(
-    getComputedStyle(document.documentElement)
-      .getPropertyValue('--base-font')
-  );
-
-  document.documentElement.style.setProperty(
-    '--base-font',
-    (size + 2) + 'px'
-  );
+  // Update both --base-font (used by this file) and --nf (used by shared madal module)
+  const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font')) || 18;
+  const next = cur + 2;
+  document.documentElement.style.setProperty('--base-font', next + 'px');
+  document.documentElement.style.setProperty('--nf', next + 'px');
 };
 
 window.decreaseFont = function () {
-  let size = parseFloat(
-    getComputedStyle(document.documentElement)
-      .getPropertyValue('--base-font')
-  );
-
-  if (size > 12) {
-    document.documentElement.style.setProperty(
-      '--base-font',
-      (size - 2) + 'px'
-    );
+  const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font')) || 18;
+  if (cur > 12) {
+    const next = cur - 2;
+    document.documentElement.style.setProperty('--base-font', next + 'px');
+    document.documentElement.style.setProperty('--nf', next + 'px');
   }
 };
 
@@ -522,5 +502,3 @@ window.decreaseFont = function () {
 function isSpecialSection(id) {
   return [21, 22, 23].includes(Number(id));
 }
-
-

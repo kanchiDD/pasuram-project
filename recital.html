@@ -275,8 +275,32 @@
       border-radius: 6px;
       padding: 6px 10px;
     }
+    /* Shared module card classes — prefix "r" -> r-madal-couplet-card etc */
+    .r-madal-couplet-card {
+      background: #fff;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .r-madal-dual-block {
+      background: #fffbe8;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .r-madal-line { font-size: var(--pf) !important; line-height: 1.8; color: #2a1a00; display: block; }
+    .r-line-with-no { display: block; position: relative; }
+    .r-line-with-no .r-couplet-no { float: right; }
+    .r-couplet-no { font-size: 10px; color: #999; margin-left: 8px; }
+    .r-dual-mark { color: #b38b2e; font-weight: 700; font-size: 12px; margin-right: 2px; }
+    .r-kootrirukkai-line-card {
+      background: #fff;
+      border: 1px solid #e8d8a0;
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
     .r-madal-line, .r-madal-line-cno {
-      font-size: 14px;
+      font-size: var(--pf) !important;
       line-height: 1.8;
       color: #2a1a00;
     }
@@ -310,6 +334,12 @@
       font-size: 13px;
     }
   </style>
+  <script type="module">
+    import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML }
+      from "./js/render/madalKootrirukkaiCore.js";
+    window._buildMadalCoupletsHTML     = buildMadalCoupletsHTML;
+    window._buildKootrirukkaiLinesHTML = buildKootrirukkaiLinesHTML;
+  </script>
 </head>
 <body>
 
@@ -553,15 +583,11 @@
       if (kDisp.length) html += renderDisp(kDisp);
       const kProsody = getProsodyName(2672, _specialProsodyScope, _specialProsodyMaster);
       if (kProsody) html += `<div class="r-prosody">${kProsody}</div>`;
-      html += `<div class="r-madal-body">`;
-      // Each line in its own container
-      data.lines.forEach(l => {
-        const isDual = l.line_no == 41;
-        html += `<div class="r-madal-couplet">
-          <div class="r-madal-line">${isDual ? "<span class='r-mmarker'>**</span> " : ""}${l.line_text}</div>
-        </div>`;
-      });
-      html += `</div>`;
+      // Kootrirukkai lines delegated to shared module — one card per line
+      const _kootriHtml = window._buildKootrirukkaiLinesHTML
+        ? window._buildKootrirukkaiLinesHTML(data, "r", 41)
+        : data.lines.map(l => `<div class="r-madal-couplet"><div class="r-madal-line">${l.line_no==41?"<span class='r-mmarker'>**</span> ":""}${l.line_text}</div></div>`).join("");
+      html += `<div class="r-madal-body">${_kootriHtml}</div>`;
       if (closing) html += `<div class="r-madal-closing">${closing}</div>`;
       html += `</div>`;
       return html;
@@ -602,41 +628,28 @@
       const gno = sectionId === 22 ? 2673 : 2674;
       const mProsody = getProsodyName(gno, _specialProsodyScope, _specialProsodyMaster);
       if (mProsody) html += `<div class="r-prosody">${mProsody}</div>`;
-      html += `<div class="r-madal-body">`;
-
-      let prevBlockRuleId = null;
-
-      for (const c of couplets) {
-        const lines = grouped[c];
-        const showLines = [];
-        lines.forEach((l, idx) => {
-          const blockRule = getBlockRule(c, l.line_no);
-          const lineDual  = isLineDual(c, l.line_no);
-          const isDual    = !!blockRule || lineDual;
-          if (isRettai && !isDual) return;
-          const isLast = idx === lines.length - 1;
-          const blockRuleId = blockRule ? (blockRule.start_couplet + "_" + blockRule.start_line) : null;
-          const isBlockStart = blockRule && blockRuleId !== prevBlockRuleId;
-          const showMarker = isBlockStart || lineDual;
-          if (blockRule) prevBlockRuleId = blockRuleId;
-          showLines.push({ text: l.text, isBlockLine: !!blockRule, showMarker,
-                           showCoupletNo: isLast && c <= maxCouplet, coupletNo: c });
-        });
-        if (!showLines.length) continue;
-
-        html += `<div class="r-madal-couplet">`;
-        showLines.forEach(l => {
-          const cls = l.isBlockLine ? "r-mdual-block" : "";
-          if (l.showCoupletNo) {
-            html += `<div class="r-madal-line-cno ${cls}">${l.showMarker ? "<span class='r-mmarker'>**</span> " : ""}${l.text}<span class="r-mcno">${l.coupletNo}</span></div>`;
-          } else {
-            html += `<div class="r-madal-line ${cls}">${l.showMarker ? "<span class='r-mmarker'>**</span> " : ""}${l.text}</div>`;
+      // Couplet rendering delegated to shared module
+      // isRettai: if true, filter data to dual lines only before passing to module
+      let madalData = data;
+      if (isRettai) {
+        // Filter units to only include dual lines (block_repeat or line_repeat)
+        const filteredUnits = (data.units || []).map(u => {
+          const filtered = {};
+          for (let i = 1; i <= 8; i++) {
+            const line = u[`line_${i}`];
+            if (!line) continue;
+            const inBlock = getBlockRule(u.couplet_no, i);
+            const isDual  = !!inBlock || isLineDual(u.couplet_no, i);
+            if (isDual) filtered[`line_${i}`] = line;
           }
-        });
-        html += `</div>`;
+          return Object.keys(filtered).length ? { ...u, ...filtered } : null;
+        }).filter(Boolean);
+        madalData = { ...data, units: filteredUnits };
       }
-
-      html += `</div>`;
+      const _madalBodyHtml = window._buildMadalCoupletsHTML
+        ? window._buildMadalCoupletsHTML(madalData, "r", maxCouplet)
+        : "";
+      html += `<div class="r-madal-body">${_madalBodyHtml}</div>`;
       if (closing) html += `<div class="r-madal-closing">${closing}</div>`;
       html += `</div>`;
       return html;

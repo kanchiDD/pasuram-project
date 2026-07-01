@@ -1,5 +1,6 @@
 // nncRender.js — content renderers using exact fullDualRecital.js patterns
 import { renderThaniyan } from "./thaniyan.js";
+import { buildMadalCoupletsHTML } from "./madalKootrirukkaiCore.js";
 import {
   fetchDisplayData, fetchThaniyanWithProsody,
   renderSectionDisplayItems, renderSectionProsody, renderAdivaravu,
@@ -485,103 +486,11 @@ const secDisp  = renderSectionDisplayItems(displayData);
     const globalNo   = Number(refValue) === 22 || Number(refValue) === 2673 ? 2673 : 2674;
     const maxCouplet = Number(refValue) === 22 || Number(refValue) === 2673 ? 77 : 148;
 
-    function isLineInBlock(c, lineNo) {
-      return rules.some(r => {
-        if (r.rule_type !== "block_repeat") return false;
-        const afterStart = (c > r.start_couplet) || (c === r.start_couplet && lineNo >= r.start_line);
-        const beforeEnd  = (c < r.end_couplet)   || (c === r.end_couplet   && lineNo <= r.end_line);
-        return afterStart && beforeEnd;
-      });
-    }
-    function isLineDual(c, lineNo) {
-      return rules.some(r =>
-        r.rule_type === "line_repeat" &&
-        r.start_couplet === c &&
-        r.line_no === lineNo
-      );
-    }
-
-    const coupletMap = new Map();
-    for (const u of units) {
-      const c = u.couplet_no;
-      if (!coupletMap.has(c)) coupletMap.set(c, []);
-      for (let i = 1; i <= 8; i++) {
-        if (u[`line_${i}`]) coupletMap.get(c).push({ text: u[`line_${i}`], lineNo: i });
-      }
-    }
-
-    // Segments tracked ACROSS couplets so block_repeat lines spanning
-    // multiple couplets merge into ONE nnc-madal-dual-block div
-    let html = "";
-    const couplets = [...coupletMap.keys()].sort((a, b) => a - b);
-    const allSegments = [];
-    let currentSegment = null;
-
-    for (const c of couplets) {
-      const lines = coupletMap.get(c);
-      for (let li = 0; li < lines.length; li++) {
-        const { text, lineNo } = lines[li];
-        const inBlock  = isLineInBlock(c, lineNo);
-        const lineDual = isLineDual(c, lineNo);
-        const isDual   = inBlock || lineDual;
-        const isLastInCouplet = li === lines.length - 1;
-        const showCoupletNo   = isLastInCouplet && c <= maxCouplet;
-
-        if (isDual) {
-          if (currentSegment && currentSegment.isDual) {
-            currentSegment.lines.push({ text, showCoupletNo, coupletNo: c });
-          } else {
-            if (currentSegment) allSegments.push(currentSegment);
-            currentSegment = { isDual: true, lines: [{ text, showCoupletNo, coupletNo: c }] };
-          }
-        } else {
-          if (currentSegment && !currentSegment.isDual) {
-            currentSegment.lines.push({ text, showCoupletNo, coupletNo: c });
-          } else {
-            if (currentSegment) allSegments.push(currentSegment);
-            currentSegment = { isDual: false, lines: [{ text, showCoupletNo, coupletNo: c }] };
-          }
-        }
-      }
-    }
-    if (currentSegment) allSegments.push(currentSegment);
-
-    for (const seg of allSegments) {
-      const linesHtml = seg.lines.map((l, idx) => {
-        const prefix = (seg.isDual && idx === 0) ? "** " : "";
-        if (l.showCoupletNo) {
-          return `<div class="nnc-madal-line nnc-line-with-no">
-            <span>${prefix}${l.text}</span>
-            <span class="nnc-couplet-no">${l.coupletNo}</span>
-          </div>`;
-        }
-        return `<div class="nnc-madal-line">${prefix}${l.text}</div>`;
-      }).join("");
-      if (seg.isDual) {
-        html += `<div class="nnc-madal-dual-block">${linesHtml}</div>`;
-      } else {
-        // For plain segments, wrap each couplet separately for spacing
-        // Split by couplet number boundaries
-        let coupletHtml = "";
-        let currentCoupletLines = [];
-        let currentCouplet = null;
-        for (const l of seg.lines) {
-          if (currentCouplet !== null && l.coupletNo !== currentCouplet) {
-            coupletHtml += `<div class="nnc-madal-couplet">${currentCoupletLines.join("")}</div>`;
-            currentCoupletLines = [];
-          }
-          currentCouplet = l.coupletNo;
-          const lineHtml = l.showCoupletNo
-            ? `<div class="nnc-madal-line nnc-line-with-no"><span>${l.text}</span><span class="nnc-couplet-no">${l.coupletNo}</span></div>`
-            : `<div class="nnc-madal-line">${l.text}</div>`;
-          currentCoupletLines.push(lineHtml);
-        }
-        if (currentCoupletLines.length) {
-          coupletHtml += `<div class="nnc-madal-couplet">${currentCoupletLines.join("")}</div>`;
-        }
-        html += coupletHtml;
-      }
-    }
+    // Couplet/line rendering now delegated to the shared core module
+    // (madalKootrirukkaiCore.js) — single source of truth used by
+    // NNC, Azhwar Thirunatchathram, special.js, and recital.html.
+    // Algorithm unchanged from before; adds couplet-container cards.
+    const html = buildMadalCoupletsHTML(data, "nnc", maxCouplet);
 
     return `
       <div class="nnc-section-box" ${anchor}>
@@ -589,7 +498,7 @@ const secDisp  = renderSectionDisplayItems(displayData);
         <div class="nnc-section-inner">
           ${secDisp}${prosody}
           <div class="nnc-global-no">${globalNo}</div>
-          ${html}
+          <div class="nnc-madal-body">${html}</div>
           ${closing ? `<div class="nnc-section-closing">${closing}</div>` : ""}
         </div>
       </div>`;

@@ -15,6 +15,8 @@
 //  custom_recital_entity        — named custom items (koil_thirumozhi etc.)
 // =============================================================
 
+import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
+
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
 const _cache = new Map();
@@ -488,12 +490,10 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
           for (const d of (s.display?.section || []))
             if (d.text && !d.text.includes("அடிவரவு"))
               html += `<div class="fathn-display-item">${d.text}</div>`;
-          html += `<div class="fathn-lines">`;
-          for (const l of (s.lines || [])) {
-            const isDual = l.dual_recital == 1 || l.line_no == 41;
-            html += `<span class="fathn-line">${isDual ? '<span class="fathn-dual-mark">★★</span>' : ""}${l.line_text}</span>`;
-          }
-          html += `</div>`;
+          // Line rendering delegated to shared core module — each line
+          // now wrapped in its own card (matches madal couplet treatment)
+          const kootriHtml = buildKootrirukkaiLinesHTML({ lines: s.lines || [] }, "fathn", 41);
+          html += `<div class="fathn-madal-body">${kootriHtml}</div>`;
           const adiv = (s.display?.section || []).find(d => d.text?.includes("அடிவரவு"));
           if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
           if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
@@ -508,20 +508,16 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
           for (const d of (s.display?.section || []))
             if (d.text && !d.text.includes("அடிவரவு"))
               html += `<div class="fathn-display-item">${d.text}</div>`;
-          const rules = s.rules || [];
-          for (const unit of (s.units || [])) {
-            html += `<div class="fathn-pasuram-block">`;
-            for (let i = 1; i <= 8; i++) {
-              const line = unit[`line_${i}`];
-              if (!line) continue;
-              const isLast = !unit[`line_${i+1}`];
-              const isDualLine = rules.some(r => r.rule_type === "line_repeat" && r.start_couplet == unit.couplet_no && r.line_no == i);
-              html += `<span class="fathn-line">${isDualLine ? '<span class="fathn-dual-mark">★★</span>' : ""}${line}`;
-              if (isLast) html += `<span class="fathn-local-no">${unit.couplet_no}</span>`;
-              html += `</span>`;
-            }
-            html += `</div>`;
-          }
+          // Couplet rendering delegated to shared core module — same
+          // algorithm/markup as NNC and recital.html. Uses fathn- prefix
+          // so existing fathn CSS classes apply (card-style couplets).
+          const maxCouplet = (s.display_name || "").includes("பெரிய") ? 148 : 77;
+          const madalHtml = buildMadalCoupletsHTML(
+            { units: s.units || [], rules: s.rules || [] },
+            "fathn",
+            maxCouplet
+          );
+          html += `<div class="fathn-madal-body">${madalHtml}</div>`;
           const adiv = (s.display?.section || []).find(d => d.text?.includes("அடிவரவு"));
           if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
           if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
