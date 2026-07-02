@@ -22,6 +22,53 @@ const globalNoMap = {
   "பெரியதிருமடல்": 2674
 };
 
+// Only sections listed here have actual split/recorded audio files.
+// Sections NOT in this map get NO audio controls at all — this
+// prevents the wrong section's audio being wired in by mistake.
+const SECTION_AUDIO_MAP = {
+  "திருவெழுகூற்றிருக்கை": {
+    thaniyanSrc: "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_thaniyan_1.mp3",
+    pasuramSrc:  "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_pasuram_2672.mp3"
+  }
+  // சிறியதிருமடல் (2673) and பெரியதிருமடல் (2674) — no split audio
+  // yet. Add entries here once those are recorded, split, and
+  // uploaded to R2 (same audio.arulicheyal.org pattern).
+};
+
+/* ================= MINIMAL AUDIO CONTROLS ================= */
+// Horizontal row, centered: play / stop / mute, each with a small
+// label underneath. No native timeline/seek bar. audioId must be
+// unique per element on the page.
+function buildMiniAudioControls(audioId, src) {
+  const btnStyle = "background:#3cb043;color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;";
+  const labelStyle = "font-size:10px;color:#666;margin-top:2px;";
+  const groupStyle = "display:flex;flex-direction:column;align-items:center;";
+
+  return `
+    <audio id="${audioId}" src="${src}" style="display:none;"></audio>
+    <div style="display:flex;gap:22px;justify-content:center;align-items:flex-start;margin:8px 0;">
+      <div style="${groupStyle}">
+        <button type="button" title="Play"
+          onclick="document.getElementById('${audioId}').play()"
+          style="${btnStyle}background:#3cb043;">▶</button>
+        <span style="${labelStyle}">Play</span>
+      </div>
+      <div style="${groupStyle}">
+        <button type="button" title="Stop"
+          onclick="var a=document.getElementById('${audioId}');a.pause();a.currentTime=0;"
+          style="${btnStyle}background:#555;">■</button>
+        <span style="${labelStyle}">Stop</span>
+      </div>
+      <div style="${groupStyle}">
+        <button type="button" title="Mute"
+          onclick="var a=document.getElementById('${audioId}');a.muted=!a.muted;this.textContent=a.muted?'🔇':'🔊';"
+          style="${btnStyle}background:#777;">🔊</button>
+        <span style="${labelStyle}">Mute</span>
+      </div>
+    </div>
+  `;
+}
+
 /* ================= HEADER ================= */
 
 function renderHeader() {
@@ -38,16 +85,31 @@ function renderHeader() {
     if (Array.isArray(allRows) && allRows.length > 0) {
       const globalRows  = allRows.filter(r => r.type === "global" || r.type === "thousand");
       const sectionRows = allRows.filter(r => r.type === "section");
-      if (globalRows.length  > 0) html += renderThaniyan(globalRows,  state.prosodyMap);
-      if (sectionRows.length > 0) html += renderThaniyan(sectionRows, state.prosodyMap);
+
+      // Global/common thaniyan is shared across many sections — plain,
+      // no audio controls (not part of this section's recording).
+      if (globalRows.length > 0) html += renderThaniyan(globalRows, state.prosodyMap);
+
+      // Section-specific thaniyan — only attach audio controls if THIS
+      // section actually has recorded/split audio. Otherwise render
+      // plain, with no controls, to avoid wiring the wrong audio in.
+      const sectionAudio = SECTION_AUDIO_MAP[state.selectedSectionName];
+
+      if (sectionRows.length > 0) {
+        const thaniyanControls = sectionAudio
+          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
+          : "";
+        html += renderThaniyan(sectionRows, state.prosodyMap, thaniyanControls);
+      }
+
       if (globalRows.length === 0 && sectionRows.length === 0) {
-        html += renderThaniyan(allRows, state.prosodyMap);
+        const fallbackControls = sectionAudio
+          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
+          : "";
+        html += renderThaniyan(allRows, state.prosodyMap, fallbackControls);
       }
     }
   }
-
-  /* Recital button — section title/display/prosody go inside content-box */
-  html += `<div class="recital-float" onclick="openRecital()" title="Recital Mode">🎤</div>`;
 
   return html;
 }
@@ -94,7 +156,9 @@ if (closingText) {
 
 html += `</div>`; // CLOSE CONTENT BOX
 
-  return `<div class="madal-container">${html}</div>`;
+  // data-recital-* attributes let recitalSync.js highlight this whole
+  // madal block in sync with audio playback.
+  return `<div class="madal-container" data-recital-type="pasuram" data-recital-id="${globalNo}">${html}</div>`;
 }
 
 /* ================= KOOTRIRUKKAI ================= */
@@ -127,6 +191,13 @@ export function renderKootrirukkai(data) {
 
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
 
+  // Minimal play/stop/mute controls — only if this section actually
+  // has recorded/split audio (see SECTION_AUDIO_MAP above).
+  const kootriSectionAudio = SECTION_AUDIO_MAP[sectionName];
+  if (kootriSectionAudio) {
+    html += buildMiniAudioControls("pasuramAudio_" + globalNo, kootriSectionAudio.pasuramSrc);
+  }
+
   const kootriHtml = buildKootrirukkaiLinesHTML(data, "sp", 41);
   html += `<div class="sp-madal-body">${kootriHtml}</div>`;
 
@@ -138,7 +209,10 @@ if (closingText) {
 
 html += `</div>`;
 
-  return `<div class="kootrirukkai-container">${html}</div>`;
+  // data-recital-* attributes let recitalSync.js highlight this whole
+  // pasuram block in sync with audio playback (recorded as a single
+  // continuous pasuram segment, not per-line).
+  return `<div class="kootrirukkai-container" data-recital-type="pasuram" data-recital-id="${globalNo}">${html}</div>`;
 }
 
 /* ================= RECITAL ================= */

@@ -7,7 +7,7 @@
 
 import { state } from "../state.js";
 
-export function renderThaniyan(data, prosodyMap) {
+export function renderThaniyan(data, prosodyMap, extraHtml = "") {
 
   // 🔥 CONTROL (SAFE — identical to original)
   if (!data) return "";
@@ -76,6 +76,7 @@ export function renderThaniyan(data, prosodyMap) {
 
   });
 
+  html += extraHtml;
   html += `</div></div>`;
 
   return html;
