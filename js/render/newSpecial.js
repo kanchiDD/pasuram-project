@@ -29,7 +29,12 @@ const SECTION_AUDIO_MAP = {
   "திருவெழுகூற்றிருக்கை": {
     thaniyanSrc: "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_thaniyan_1.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_pasuram_2672.mp3"
+  },
+  "சிறியதிருமடல்":{
+    thaniyanSrc: "https://audio.arulicheyal.org/siriyathirumadal_thaniyan_1.mp3",
+    pasuramSrc:  "https://audio.arulicheyal.org/siriyathirumadal_pasuram_2673.mp3"
   }
+   
   // சிறியதிருமடல் (2673) and பெரியதிருமடல் (2674) — no split audio
   // yet. Add entries here once those are recorded, split, and
   // uploaded to R2 (same audio.arulicheyal.org pattern).
@@ -143,6 +148,13 @@ export function renderMadal(data) {
   }
 
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
+
+  // Minimal play/stop/mute controls — only if this section actually
+  // has recorded/split audio (see SECTION_AUDIO_MAP above).
+  const madalSectionAudio = SECTION_AUDIO_MAP[sectionName];
+  if (madalSectionAudio) {
+    html += buildMiniAudioControls("pasuramAudio_" + globalNo, madalSectionAudio.pasuramSrc);
+  }
 
   const maxCouplet = sectionName === "பெரியதிருமடல்" ? 148 : 77;
   const madalHtml = buildMadalCoupletsHTML(data, "sp", maxCouplet);
