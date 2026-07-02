@@ -32,7 +32,7 @@ const SECTION_AUDIO_MAP = {
   },
   "சிறியதிருமடல்":{
     thaniyanSrc: "https://audio.arulicheyal.org/siriyathirumadal_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/siriyathirumadal_pasuram_2673.mp3"
+    pasuramSrc:  "https://audio.arulicheyal.org/siriyathirumadal_pasuram_2673_v2.mp3"
   }
    
   // சிறியதிருமடல் (2673) and பெரியதிருமடல் (2674) — no split audio
