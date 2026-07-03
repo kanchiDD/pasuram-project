@@ -134,6 +134,27 @@ window._fathnFont = function(delta) {
 export async function renderFullAzhwarThirunatchathra() {
   injectCSS();
 
+  // Gated the same way as ghoshti/spinner/recital — showing the wrong
+  // sect's content here would be actively misleading, not just a
+  // missed personalization, so this needs to know who's asking.
+  const mobile = localStorage.getItem("mobile");
+  if (!mobile) {
+    return `<div style="padding:24px;text-align:center">
+      <div style="font-size:15px;color:#4a2c00;margin-bottom:16px">
+        Please register (with your Sampradayam) to view Azhwar/Acharya
+        Thirunatchathra content correctly for your sect.
+      </div>
+      <button onclick="window.location.href='register.html'"
+        style="padding:12px 24px;background:#7a4d00;color:#fef0c0;
+               border:none;border-radius:8px;font-size:14px;
+               font-weight:700;cursor:pointer">
+        Sign In / Register
+      </button>
+    </div>`;
+  }
+
+  const sect = localStorage.getItem("sect") || "T";
+
   const azhwars  = AZHWARS.filter(a => a.type === "azhwar");
   const acharyas = AZHWARS.filter(a => a.type === "acharya");
 
@@ -165,7 +186,7 @@ export async function renderFullAzhwarThirunatchathra() {
     
     // Fetch independently so one failure doesn't kill the other
     try {
-      const seqRes = await fetch(`${API}/azhwar-recital?author_id=${authorId}`).then(r => r.json());
+      const seqRes = await fetch(`${API}/azhwar-recital?author_id=${authorId}&sect=${sect}`).then(r => r.json());
       sequence = Array.isArray(seqRes?.sequence) ? seqRes.sequence : [];
     } catch(e) { console.warn("azhwar-recital fetch failed", e); }
 
@@ -204,12 +225,36 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       custMap[String(c.custom_recital_entity_id)] = c.tamil_name;
   }
 
-  // Separate compulsory vs optional
-  const compulsory = sequence.filter(s => !s.is_optional);
-  const optional   = sequence.filter(s =>  s.is_optional);
+  // ── Monthly / Yearly mode — yearly is a superset (shows monthly
+  // content too, plus yearly-only extras), matching the DB design.
+  let currentMode = "yearly";
+  function recurrenceAllowed(recurrence, mode) {
+    if (mode === "monthly") return recurrence === "monthly" || recurrence === "ALL";
+    return recurrence === "yearly" || recurrence === "monthly" || recurrence === "ALL";
+  }
 
-  // Track user selections (all optional selected by default)
-  const selected = new Set(optional.map(s => s.sequence_no));
+  // These get recomputed every time the mode changes
+  let modeSequence, compulsory, optional, selected, sectionToChildren;
+
+  function recompute() {
+    modeSequence = sequence.filter(s => recurrenceAllowed(s.recurrence, currentMode));
+    compulsory   = modeSequence.filter(s => !s.is_optional);
+    optional     = modeSequence.filter(s =>  s.is_optional);
+    selected     = new Set(optional.map(s => s.sequence_no));
+
+    sectionToChildren = {};
+    for (const s of optional) {
+      if (s.entity_type === "section") {
+        const secId = s.entity_id;
+        const children = optional.filter(o =>
+          (o.entity_type === "thaniyan" && o.content?.ref === `section_${secId}`) ||
+          (o.entity_type === "pasuram"  && o.content?.section_id === secId)
+        ).map(o => o.sequence_no);
+        if (children.length) sectionToChildren[s.sequence_no] = children;
+      }
+    }
+  }
+  recompute();
 
   // Build lookup: section entity_id → short section name (for pasuram/thaniyan labels)
   const sectionNameById = {};
@@ -252,7 +297,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       return secName ? `${secName} — சாற்றுமுறை பாசுரம்` : `சாற்றுமுறை பாசுரம்`;
     }
     if (s.entity_type === "fixed_text") return `சாற்றுமுறை`;
-    if (s.entity_type === "vazhi") {
+    if (s.entity_type === "vazhi_thirunamam") {
       const vn = s.content?.vazhi_name;
       return vn ? `வாழித் திருநாமம் — ${vn}` : `வாழித் திருநாமம்`;
     }
@@ -267,10 +312,10 @@ function _showSelectionModal(azhwar, sequence, customItems) {
     // Thaniyan and sattrumurai pasurams are part of the section —
     // they come/go automatically when section is selected/deselected.
     // Each vazhi item is shown as its own row (some compulsory, some optional).
-    const SHOW_TYPES = new Set(["section", "custom", "vazhi"]);
+    const SHOW_TYPES = new Set(["section", "custom", "vazhi_thirunamam"]);
     const allRendered = [];
 
-    for (const s of sequence) {
+    for (const s of modeSequence) {
       if (!SHOW_TYPES.has(s.entity_type)) continue;
       const isOpt = !!s.is_optional;
       const label = itemLabel(s);
@@ -284,12 +329,29 @@ function _showSelectionModal(azhwar, sequence, customItems) {
         </div>`);
     }
 
+    const modeToggle = `
+      <div style="display:flex;gap:16px;justify-content:center;margin-bottom:12px;font-size:13px;color:#4a2c00;">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="radio" name="fathn-mode" value="monthly"
+            ${currentMode === "monthly" ? "checked" : ""}
+            onchange="window._fathnSetMode('monthly')" style="accent-color:#4a2c00;">
+          மாதாந்திரம்
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="radio" name="fathn-mode" value="yearly"
+            ${currentMode === "yearly" ? "checked" : ""}
+            onchange="window._fathnSetMode('yearly')" style="accent-color:#4a2c00;">
+          வருஷம்
+        </label>
+      </div>`;
+
     return `
       <div class="fathn-modal-overlay" id="fathn-modal-overlay"
            onclick="if(event.target===this)window._fathnCloseModal()">
         <div class="fathn-modal">
           <div class="fathn-modal-title">${azhwar.name}</div>
           ${azhwar.star ? `<div class="fathn-modal-sub">⭐ ${azhwar.month} மாதம் — ${azhwar.star} திருநட்சத்திரம்</div>` : ""}
+          ${modeToggle}
           <div class="fathn-modal-greeting">🙏 Adiyen — Select the Arulicheyal you want to recite.</div>
 
           ${allRendered.length ? allRendered.join("") : `
@@ -299,26 +361,19 @@ function _showSelectionModal(azhwar, sequence, customItems) {
 
           <div class="fathn-modal-actions">
             <button class="fathn-modal-btn cancel" onclick="window._fathnCloseModal()">close</button>
-            ${sequence.length ? `<button class="fathn-modal-btn confirm"
+            ${modeSequence.length ? `<button class="fathn-modal-btn confirm"
               onclick="window._fathnStartRecital(${azhwar.author_id})">🙏 Start</button>` : ""}
           </div>
         </div>
       </div>`;
   }
 
-  // Build map: section sequence_no → child sequence_nos (thaniyan + pasurams)
-  // so deselecting a section auto-deselects all its children
-  const sectionToChildren = {};
-  for (const s of optional) {
-    if (s.entity_type === "section") {
-      const secId = s.entity_id;
-      const children = optional.filter(o =>
-        (o.entity_type === "thaniyan" && o.content?.ref === `section_${secId}`) ||
-        (o.entity_type === "pasuram"  && o.content?.section_id === secId)
-      ).map(o => o.sequence_no);
-      if (children.length) sectionToChildren[s.sequence_no] = children;
-    }
-  }
+  window._fathnSetMode = function(mode) {
+    currentMode = mode;
+    recompute();
+    const root = document.getElementById("fathn-modal-root");
+    if (root) root.innerHTML = buildModalHtml();
+  };
 
   // Toggle optional selection
   window._fathnToggle = function(seqNo, checked) {
@@ -358,7 +413,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       ...optional.filter(s => selected.has(s.sequence_no)).map(s => s.sequence_no)
     ].sort((a, b) => a - b);
 
-    const html = await _renderRecital(azhwar, sequence, seqNos, customItems);
+    const html = await _renderRecital(azhwar, sequence, seqNos, customItems, currentMode);
     if (app) app.innerHTML = html;
   };
 
@@ -368,7 +423,8 @@ function _showSelectionModal(azhwar, sequence, customItems) {
 }
 
 // ── Render the actual recital ─────────────────────────────────
-async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
+async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mode = "yearly") {
+  const modeLabel = mode === "monthly" ? "மாதாந்திர" : "வருஷ";
 
   const selectedItems = sequence
     .filter(s => selectedSeqNos.includes(s.sequence_no))
@@ -391,7 +447,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
       </div>
 
       <div class="fathn-recital-header">
-        ${azhwar.name}
+        ${azhwar.name} ${modeLabel} திருநக்ஷத்ர அநுஸந்தானம்
       </div>
 
       ${azhwar.star ? `
@@ -648,7 +704,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
         if (!sattrumuraiStarted) {
           sattrumuraiStarted = true;
           html += `<div class="fathn-thaniyan-box" style="margin-top:4px;">
-            <div class="fathn-thaniyan-heading">${azhwar.name} சாற்றுமுறை</div>`;
+            <div class="fathn-thaniyan-heading">${azhwar.name} ${modeLabel} திருநக்ஷத்ர சாற்றுமுறை</div>`;
         }
 
         const p = item.content;
@@ -853,7 +909,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems) {
       // ─────────────────────────────────────────
       // VAZHI
       // ─────────────────────────────────────────
-      else if (item.entity_type === "vazhi") {
+      else if (item.entity_type === "vazhi_thirunamam") {
 
         const v = item.content;
         if (!v) continue;
