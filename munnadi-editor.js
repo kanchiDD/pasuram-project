@@ -1,4 +1,4 @@
-const API = "/api/munnadi-editor";
+const API = "https://pasuram-api.kanchitrust.workers.dev/api/munnadi-editor";
 
 let currentGlobal = 0;
 let dirty = false;
@@ -59,9 +59,11 @@ async function loadRecord(globalNo) {
 
     try {
 
-        const res = await fetch(
-            API + "?global_no=" + globalNo
-        );
+        const url = API + "?global_no=" + globalNo;
+
+console.log(url);
+
+const res = await fetch(url);
 
         const data = await res.json();
 
