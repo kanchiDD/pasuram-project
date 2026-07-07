@@ -221,8 +221,17 @@ const V_MADAM_KEYS = new Set([
   "pillaiyandhadhi", "adivan_adaikkalappathu", "lakshmi_adaikkalappathu"
 ]);
 const isMadamUser = () => (localStorage.getItem("subsect") || "") === "madam";
+// Madam ordering activates for Madam users OR when the Madam
+// Arulicheyals (sections 52/53) are part of the ghoshti selection —
+// reciting them implies the Madam sattrumurai order (per the
+// confirmation shown at selection time).
+function madamOrderActive() {
+  if (isMadamUser()) return true;
+  const secs = (typeof gsatState !== "undefined" && gsatState.selectedSections) || [];
+  return secs.some(id => Number(id) === 52 || Number(id) === 53);
+}
 function effBeforePallandu(sec) {
-  return sec.beforePallandu || (isMadamUser() && V_MADAM_KEYS.has(sec.key));
+  return sec.beforePallandu || (madamOrderActive() && V_MADAM_KEYS.has(sec.key));
 }
 
 const PALLANDU = [
@@ -661,7 +670,8 @@ function renderExplicitToggles() {
 function renderFixedLines(lines) {
   if (!lines || !lines.length) return "";
   return lines.map(l => {
-    const text = l.line_text || l;
+    const text = _lineText(l);
+        if (!text) return "";
     if (text.startsWith("(") && text.endsWith(")")) {
       return `<div style="text-align:center;font-size:12px;font-weight:700;color:#4a2c00;margin:6px 0 2px">${escHtml(text)}</div>`;
     }
@@ -708,7 +718,8 @@ function renderVazhiSection() {
       const isLoaded = vData && vData.length > 0;
       const linesHtml = isOn && isLoaded
         ? `<div style="width:100%;padding:4px 0 0 27px">${vData.map(l => {
-            const text = l.line_text || l;
+            const text = _lineText(l);
+        if (!text) return "";
             const endsWithBar = _mangalamGap(text);
             return `<div style="font-size:12px;color:#4a2c00;line-height:1.7;padding:2px 6px;background:#fef8e8;border-radius:4px;margin-bottom:2px">${escHtml(text)}</div>${endsWithBar ? '<div style="height:6px"></div>' : ''}`;
           }).join("")}</div>`
@@ -750,6 +761,14 @@ function renderVazhiSection() {
   return `<div class="gsat-section"><div class="gsat-section-head">\uD83C\uDF1F \u0bb5\u0bbe\u0bb4\u0bbf \u0ba4\u0bbf\u0bb0\u0bc1\u0ba8\u0bbe\u0bae\u0bae\u0bcd <span style="font-size:11px;color:#9a7a50;font-weight:400">(\u0baa\u0bb2\u0bb5\u0bb1\u0bcd\u0bb1\u0bc8 \u0ba4\u0bc7\u0bb0\u0bcd\u0bb5\u0bc1 \u0b9a\u0bc6\u0baf\u0bcd\u0baf\u0bb2\u0bbe\u0bae\u0bcd)</span></div><div class="gsat-vazhi-grid">${items}</div></div>`;
 }
 
+// Null-safe line text: rows may be strings, {line_text} objects, or
+// carry NULL/blank line_text (spacer rows) — never crash, just skip.
+function _lineText(l) {
+  if (l == null) return "";
+  if (typeof l === "string") return l;
+  return l.line_text != null ? String(l.line_text) : "";
+}
+
 // Line-gap after a completed śloka: both ASCII || and devanagari ॥
 function _mangalamGap(text) {
   return /(\|\||॥)$/.test(String(text).trimEnd());
@@ -763,7 +782,8 @@ function renderNamedMangalam(key, fid, heading, closing) {
   const isLoaded = lines && lines.length > 0;
   const linesHtml = isOn && isLoaded
     ? `<div style="padding:8px 14px">${lines.map(l => {
-        const text = l.line_text || l;
+        const text = _lineText(l);
+        if (!text) return "";
         const isSubhead = text.startsWith("(") && text.endsWith(")");
         if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;
         return `<div style="font-size:13px;color:#4a2c00;line-height:1.7;padding:3px 8px;background:#fef8e8;border-radius:4px;margin-bottom:3px">${escHtml(text)}</div>${_mangalamGap(text) ? '<div style="height:6px"></div>' : ''}`;
@@ -788,7 +808,8 @@ function renderMuktakaSection() {
   const isLoaded = lines && lines.length > 0;
   const linesHtml = isOn && isLoaded
     ? `<div style="padding:8px 14px">${lines.map(l => {
-        const text = l.line_text || l;
+        const text = _lineText(l);
+        if (!text) return "";
         const endsWithBar = _mangalamGap(text);
         const isSubhead = text.startsWith("(") && text.endsWith(")");
         if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;

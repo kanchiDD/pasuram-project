@@ -430,6 +430,12 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
 // ADD / REMOVE
 // ─────────────────────────────────────────────
 function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no) {
+  // Ahobila Madam Arulicheyals: inform before adding — their selection
+  // switches the sattrumurai to the Madam order.
+  if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)) {
+    const ok = confirm("Adiyen \ud83d\ude4f These Arulicheyals are recited by Sri Ahobilamadam followers, and selecting them will change the sattrumurai order. Do you wish to continue?");
+    if (!ok) return;
+  }
   // For full pathu (pathu_id=null, is_child=false): skip early-return duplicate check
   // because child 1 has the same entity_id and would wrongly block the full pathu from being added.
   // Full pathu needs to proceed to findInferiorItems to swallow existing children.

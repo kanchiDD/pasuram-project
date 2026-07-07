@@ -701,7 +701,8 @@
       (data.fixed_blocks||[]).forEach(fb => {
         html += '<div class="gsat-section-r"><div style="padding:10px 0">';
         (fb.lines||[]).forEach(l => {
-          const text = l.line_text || l;
+          const text = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
+          if (!text) return;
           if (text.startsWith("(") && text.endsWith(")")) { html += '<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;padding:6px 14px 2px">' + escH(text) + "</div>"; }
           else { html += '<span class="gsat-pasuram-line-r" style="display:block;padding:0 14px">' + escH(text) + "</span>"; }
         });
@@ -721,7 +722,8 @@
       if (data.muktaka_lines && data.muktaka_lines.length) {
         html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">Muktaka Mangalam</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
         data.muktaka_lines.forEach(l => {
-          const text = l.line_text || l;
+          const text = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
+          if (!text) return;
           html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
           if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
         });
@@ -737,7 +739,8 @@
         if (!mLines || !mLines.length) continue;
         html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mHead) + '</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
         mLines.forEach(l => {
-          const text = l.line_text || l;
+          const text = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
+          if (!text) return;
           html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
           if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
         });
