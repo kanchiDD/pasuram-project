@@ -723,9 +723,25 @@
         data.muktaka_lines.forEach(l => {
           const text = l.line_text || l;
           html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
-          if (String(text).trimEnd().endsWith("||")) html += '<span class="gsat-sat-gap-r"></span>';
+          if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
         });
         html += '</div></div><div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">Muktaka Mangalam Concluded</div></div>';
+      }
+      // ── தேஶிக மங்களம் + ஆதிவண்ஶடகோப மங்களம் ──
+      // Same markup/fonts as Muktaka; ruled order: muktaka → desika → adivan
+      const _mangalams = [
+        [data.desika_lines, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று"],
+        [data.adivan_lines, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று"],
+      ];
+      for (const [mLines, mHead, mClose] of _mangalams) {
+        if (!mLines || !mLines.length) continue;
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mHead) + '</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
+        mLines.forEach(l => {
+          const text = l.line_text || l;
+          html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
+          if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
+        });
+        html += '</div></div><div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">' + escH(mClose) + '</div></div>';
       }
       html += '<span class="gsat-sat-back-r" onclick="showRecital()" style="margin-top:24px">← Back to Recital</span>';
       html += "</div>";

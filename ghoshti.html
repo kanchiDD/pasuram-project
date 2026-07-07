@@ -589,7 +589,7 @@
       for (const block of blocks) {
         if (block.block_type === "global_thaniyan") {
           html += `<div class="thaniyan-block">
-            <div style="font-size:10px;font-weight:700;color:#b38b2e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Global Thaniyan</div>
+            <div style="font-size:10px;font-weight:700;color:#b38b2e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${block.label || "Global Thaniyan"}</div>
             ${renderThaniyanLines(block.lines)}
           </div>`;
         } else if (block.block_type === "section_thaniyan") {

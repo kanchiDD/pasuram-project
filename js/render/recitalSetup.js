@@ -2,6 +2,7 @@
 import { state } from "../state.js";
 
 const WORKER              = "https://recitalworker.kanchitrust.workers.dev";
+const KOIL_API            = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 const PATHU_SECTIONS      = new Set([2, 11, 26]);
 const THIRUMOZHI_SECTIONS = new Set([4, 5]);
 const SPECIAL_DIRECT      = new Set([21]); // no popup, no modal, add directly
@@ -16,6 +17,7 @@ let dragSrcIndex     = null;
 let pendingItem      = null;  // for Full/Rettai popup
 let isDirty          = false; // true when user has unsaved changes on current day
 let planLoadedForDay = null;  // which day's plan is currently shown
+let userOrdered      = false; // true → user set a custom recital order (is_user_ordered)
 
 // ─────────────────────────────────────────────
 // ENTRY POINT
@@ -100,7 +102,10 @@ function buildSetupHTML() {
     <div class="r-day-row">${dayBtns}</div>
 
     <div class="r-selected-wrap">
-      <div class="r-selected-label">Your Selection</div>
+      <div class="r-selected-label">Your Selection
+        <span style="float:right;font-size:12px;color:#7a4d00;cursor:pointer;text-decoration:underline;font-weight:400"
+              onclick="window._recitalReorder()">Reorder ⇅</span>
+      </div>
       <div id="r-selected-list">
         <div class="r-selected-empty">Nothing selected yet</div>
       </div>
@@ -579,6 +584,68 @@ function renderCatalogIntoDOM() {
 // ─────────────────────────────────────────────
 // SELECTED LIST
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// RE-ORDER MY SELECTION (Reorder ⇅ button)
+// Vadagalai sub-sect traditions carry their own recital orders —
+// this lets the user set one. Sets userOrdered only when the final
+// order differs from canonical.
+// ─────────────────────────────────────────────
+function showReorderScreen(onDone) {
+  let order = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
+  const canonicalKey = applyPriorityOrder(selectedItems)
+    .map(i => `${i.entity_type}_${i.entity_id}`).join("|");
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px";
+
+  const btnCss = "border:1px solid #c8a84b;background:#fff;color:#7a4d00;border-radius:6px;width:30px;height:30px;font-size:13px;cursor:pointer;flex-shrink:0";
+  const draw = () => {
+    overlay.innerHTML = `
+      <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
+        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</div>
+        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The recital will follow this order 🙏</div>
+        <div style="overflow-y:auto;padding:6px 16px;flex:1">
+          ${order.map((it, i) => `
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <span style="flex:1;font-size:13px;color:#2a1a00">${it.label}</span>
+              <button style="${btnCss};${i === 0 ? "opacity:.35" : ""}" ${i === 0 ? "disabled" : ""}
+                      onclick="window._rReorderMove(${i},-1)">▲</button>
+              <button style="${btnCss};${i === order.length - 1 ? "opacity:.35" : ""}" ${i === order.length - 1 ? "disabled" : ""}
+                      onclick="window._rReorderMove(${i},1)">▼</button>
+            </div>`).join("")}
+        </div>
+        <div style="padding:10px 16px 14px;display:flex;gap:8px">
+          <button class="recital-btn-secondary" style="flex:1"
+                  onclick="window._rReorderReset()">Reset order</button>
+          <button class="recital-btn-primary" style="flex:1"
+                  onclick="window._rReorderDone()">Apply 🙏</button>
+        </div>
+      </div>`;
+  };
+
+  window._rReorderMove = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    draw();
+  };
+  window._rReorderReset = () => { order = applyPriorityOrder(selectedItems); draw(); };
+  window._rReorderDone  = () => {
+    const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
+    userOrdered   = (newKey !== canonicalKey);
+    selectedItems = order;
+    isDirty       = true;
+    document.body.removeChild(overlay);
+    document.body.style.overflow = "";
+    renderSelected();
+    onDone();
+  };
+
+  draw();
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+}
+
 function renderSelected() {
   const el = document.getElementById("r-selected-list");
   if (!el) return;
@@ -586,8 +653,10 @@ function renderSelected() {
     el.innerHTML = `<div class="r-selected-empty">Nothing selected yet</div>`;
     return;
   }
-  // Always display in priority order: sec1 → sec8 → sec3 → others by global_no_start
-  const displayItems = applyPriorityOrder(selectedItems);
+  // Canonical priority order (sec1 → sec8 → sec3 → others by global_no_start)
+  // unless the user set a custom order via Reorder ⇅ (Vadagalai sub-sect
+  // traditions carry their own recital orders — is_user_ordered flag).
+  const displayItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
   let html = "";
   displayItems.forEach((item, i) => {
     // Find original index for drag-drop (drag operates on selectedItems array)
@@ -794,10 +863,13 @@ async function loadExistingPlan() {
       // No plan saved for this day — start blank (not a load error)
       selectedItems    = [];
       isDirty          = false;
+      userOrdered      = false;
       planLoadedForDay = dayToLoad;
       renderSelected();
       return;
     }
+    // Restore user-order flag for this day's plan
+    userOrdered = Number(data.plan.is_user_ordered) === 1;
 
     // Resolve proper labels from worker
     const labelRes  = await fetch(`${WORKER}/recital/resolve-labels`, {
@@ -973,7 +1045,11 @@ export function registerRecitalBindings() {
   // When leaving "All Days" with a selection: ask add-on vs replace
   async function _applyAllDaysToOtherDays() {
     const mobile       = localStorage.getItem("mobile");
-    const allDaysItems = [...selectedItems]; // current All Days selection
+    // BUG FIX: this branch previously used raw add-order — the per-day
+    // plans got sequence_no in the order items were TAPPED, while the
+    // display showed canonical order (the "Pallandu renders last" bug).
+    // Order exactly like the main save path before building worker items.
+    const allDaysItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
     const workerItems  = _buildWorkerItems(allDaysItems);
 
     const choice = confirm(
@@ -1037,7 +1113,8 @@ export function registerRecitalBindings() {
               mobile,
               day_of_week: d,
               plan_name:   `My Recital — Day ${d}`,
-              items:       workerItems
+              items:       workerItems,
+              is_user_ordered: userOrdered ? 1 : 0
             })
           });
         }
@@ -1082,17 +1159,69 @@ export function registerRecitalBindings() {
     return result;
   }
 
-  window._recitalAddKoil = (koilId) => {
-    const label = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-    const gns   = koilId === 1 ? 948 : 2675;
-    const sid   = koilId === 1 ? 11  : 26;
-    if (isSelected("koil", koilId)) { showToast(`"${label}" already added.`); return; }
-    const removed = selectedItems.filter(i => i.section_id === sid);
-    if (removed.length) selectedItems = selectedItems.filter(i => i.section_id !== sid);
-    selectedItems.push({ entity_type:"koil", entity_id:koilId, label,
-      global_no_start:gns, section_id:sid, pathu_id:null });
-    isDirty = true; renderSelected();
-    showToast(removed.length ? `Replaced with "${label}"` : `"${label}" added 🙏`);
+  // Koil card → checkbox modal of individual pathus (T + V groups from
+  // entity_master tags via /api/koil-pathus). Selected pathus save as
+  // ordinary pathu items. Covered pathus render disabled (auto-disable).
+  // Legacy plans with entity_type="koil" items still load/render.
+  window._recitalAddKoil = async (koilId) => {
+    const sid   = koilId === 1 ? 11 : 26;
+    const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+    if (isSelected("koil", koilId)) { showToast(`"${title}" already added — remove it first.`); return; }
+    let data;
+    try {
+      const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
+      data = await res.json();
+    } catch (e) { showToast("Could not load koil list. Please try again."); return; }
+    const fullSection = isSelected("section", sid);
+    const groupHtml = (glabel, arr) => {
+      if (!arr || !arr.length) return "";
+      return `<div style="font-weight:700;color:#7a4d00;margin:10px 0 4px">${glabel}</div>` +
+        arr.map(p => {
+          // Covered when: full section selected, this exact item selected,
+          // or the PARENT full pathu is selected (parent/children never coexist)
+          const parentSelected = selectedItems.some(i =>
+            i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+            i.entity_id === p.parent_pathu_id);
+          const covered = fullSection || isSelected("pathu", p.pathu_id) || parentSelected;
+          return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
+            <input type="checkbox" class="r-koil-cb" value="${p.pathu_id}"
+                   data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
+                   data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
+                   data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
+            <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
+          </label>`;
+        }).join("");
+    };
+    document.getElementById("r-modal-title").textContent = title;
+    const backEl = document.getElementById("r-modal-back");
+    if (backEl) backEl.style.display = "none";
+    document.getElementById("r-modal-content").innerHTML = `
+      <div style="font-size:12px;color:#b38b2e;margin-bottom:4px">Select the pathus to include 🙏</div>
+      ${groupHtml("தென்கலை", data.groups && data.groups.T)}
+      ${groupHtml("வடகலை", data.groups && data.groups.V)}
+      <button class="recital-btn-primary" style="width:100%;margin-top:12px"
+              onclick="window._recitalKoilConfirm()">Add Selected 🙏</button>`;
+    document.getElementById("r-modal-overlay").classList.add("open");
+  };
+
+  window._recitalKoilConfirm = () => {
+    const boxes = [...document.querySelectorAll(".r-koil-cb:checked")];
+    if (!boxes.length) { showToast("Nothing selected."); return; }
+    for (const b of boxes) {
+      const pid = Number(b.value);
+      // pathu_id arg = PARENT group id (like all child thirumozhis) so the
+      // parent/child conflict machinery sees koil children. Render is
+      // unaffected — it fetches by entity_id (WHERE p.pathu_id = entity_id).
+      addItem("pathu", pid, b.dataset.label, Number(b.dataset.gns) || 0,
+              Number(b.dataset.sid), Number(b.dataset.parent) || pid, true,
+              Number(b.dataset.gne) || undefined);
+    }
+    window._recitalCloseModal();
+  };
+
+  window._recitalReorder = () => {
+    if (!selectedItems.length) { showToast("Nothing selected yet."); return; }
+    showReorderScreen(() => { window._recitalSavePlan(true); });
   };
 
   window._recitalOpenSection = openSectionModal;
@@ -1484,7 +1613,7 @@ export function registerRecitalBindings() {
     const mobile  = localStorage.getItem("mobile");
     const saveMsg = document.getElementById("r-save-msg");
 
-    const orderedItems = applyPriorityOrder(selectedItems);
+    const orderedItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
 
     // Expand rettai_group items into worker-ready format
     const workerItems = _buildWorkerItems(orderedItems);
@@ -1530,7 +1659,8 @@ export function registerRecitalBindings() {
           mobile,
           day_of_week: selectedDay,
           plan_name:   `My Recital — Day ${selectedDay}`,
-          items:       workerItems
+          items:       workerItems,
+          is_user_ordered: userOrdered ? 1 : 0
         })
       });
       const data = await res.json();

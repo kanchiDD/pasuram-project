@@ -35,12 +35,26 @@ export async function renderKoil(type) {
   await fetchPasuram();
   const pasurams = state.pasuramData || [];
 
-  // 🔥 FILTER — use hardcoded sect-aware list from sectUtils
-  // This avoids needing Vadagalai tags in entity_master DB
-  const koilList = type === "THIRUMOZHI"
-    ? getKoilThirumozhi()
-    : getKoilThiruvaimozhi();
-  const koilPathuSet = new Set(koilList.map(k => k.pathuId));
+  // 🔥 FILTER — shared DB source of truth (entity_master koil tags),
+  // same tags recitalworker / azhwar-recital / NNC resolve from.
+  // sectUtils hardcoded lists remain ONLY as a fallback if the fetch
+  // fails (offline / worker down) — behavior then identical to before.
+  const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+  let koilPathuSet;
+  try {
+    const sect = localStorage.getItem("sect") || "T";
+    const res  = await fetch(
+      `${API}/koil-pathus?sub=${type === "THIRUMOZHI" ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=${sect}`
+    ).then(r => r.json());
+    koilPathuSet = new Set(res.pathu_ids || []);
+    if (!koilPathuSet.size) throw new Error("empty koil tag result");
+  } catch (e) {
+    console.warn("koil-pathus fetch failed — using sectUtils fallback", e);
+    const koilList = type === "THIRUMOZHI"
+      ? getKoilThirumozhi()
+      : getKoilThiruvaimozhi();
+    koilPathuSet = new Set(koilList.map(k => k.pathuId));
+  }
 
   state.pasuramData = pasurams.filter(p =>
     koilPathuSet.has(p.pathu_id)

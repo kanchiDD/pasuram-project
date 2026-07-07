@@ -1,5 +1,6 @@
 // ── ghoshtiSetup.js ──────────────────────────────────────────────
 const WORKER              = "https://recitalworker.kanchitrust.workers.dev";
+const KOIL_API            = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 const PATHU_SECTIONS      = new Set([2, 11, 26]);
 const THIRUMOZHI_SECTIONS = new Set([4, 5]);
 const SPECIAL_DIRECT      = new Set([21]); // no popup, no modal, add directly
@@ -16,6 +17,10 @@ let isDirty          = false;
 
 // ── Ghoshti-specific state ──────────────────
 let ghoshtiMeta      = null;   // { heading, date, time, ghoshti_id, plan_id }
+let userOrdered      = false;  // true → user set a custom recital order (is_user_ordered)
+let includePothuT    = true;   // pothu thaniyan checkboxes (ghoshti shows both by default)
+let includePothuV    = true;
+let includePothuM    = false;  // Kesavarya (Ahobila Madam) — default on for Madam creators
 let onSaveCallback   = null;   // called with result after save
 let _isSaving        = false; // true when user has unsaved changes on current day
 let planLoadedForDay = null;  // which day's plan is currently shown
@@ -30,6 +35,10 @@ export async function renderGhoshtiSetup(meta, appDiv, onSave) {
   selectedItems  = [];
   isDirty        = false;
   modalStack     = [];
+  userOrdered    = false;
+  includePothuT  = true;
+  includePothuV  = true;
+  includePothuM  = (localStorage.getItem("subsect") === "madam");
   appDiv.innerHTML = buildSetupHTML();
   loadCatalog();
   renderMetaBar();
@@ -57,6 +66,25 @@ function buildSetupHTML() {
     <div class="r-ghoshti-meta-bar">
       <div class="r-ghoshti-meta-heading" id="g-meta-heading"></div>
       <div class="r-ghoshti-meta-when" id="g-meta-when"></div>
+    </div>
+
+    <div class="r-selected-wrap" style="margin-bottom:10px">
+      <div class="r-selected-label">பொது தனியன்</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+        <input type="checkbox" id="g-pothu-t" checked
+               onchange="window._ghoshtiTogglePothu('T', this.checked)">
+        <span>பொது தனியன்கள்</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+        <input type="checkbox" id="g-pothu-m"
+               onchange="window._ghoshtiTogglePothu('M', this.checked)">
+        <span>பொது தனியன் — அஹோபிலமடம் (கேஶவார்ய)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+        <input type="checkbox" id="g-pothu-v" checked
+               onchange="window._ghoshtiTogglePothu('V', this.checked)">
+        <span>பொது தனியன்கள் (வடகலை)</span>
+      </label>
     </div>
 
     <div class="r-selected-wrap">
@@ -445,8 +473,9 @@ function renderSelected() {
     el.innerHTML = `<div class="r-selected-empty">Nothing selected yet</div>`;
     return;
   }
-  // Always display in priority order: sec1 → sec8 → sec3 → others by global_no_start
-  const displayItems = applyPriorityOrder(selectedItems);
+  // Canonical priority order (sec1 → sec8 → sec3 → others by global_no_start)
+  // unless the user set a custom order via the Re-order screen.
+  const displayItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
   let html = "";
   displayItems.forEach((item, i) => {
     // Find original index for drag-drop (drag operates on selectedItems array)
@@ -646,6 +675,21 @@ async function loadExistingGhoshtiPlan(plan_id) {
   try {
     const res  = await fetch(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&plan_id=${plan_id}`);
     const data = await res.json();
+    // Restore pothu thaniyan flags + user order flag from the plan
+    if (data.plan) {
+      if (data.plan.include_pothu_t != null || data.plan.include_pothu_v != null) {
+        includePothuT = Number(data.plan.include_pothu_t) === 1;
+        includePothuV = Number(data.plan.include_pothu_v) === 1;
+        includePothuM = Number(data.plan.include_pothu_m) === 1;
+        const tCb = document.getElementById("g-pothu-t");
+        const vCb = document.getElementById("g-pothu-v");
+        const mCb = document.getElementById("g-pothu-m");
+        if (tCb) tCb.checked = includePothuT;
+        if (vCb) vCb.checked = includePothuV;
+        if (mCb) mCb.checked = includePothuM;
+      }
+      userOrdered = Number(data.plan.is_user_ordered) === 1;
+    }
     if (!data.items || !data.items.length) { selectedItems=[]; isDirty=false; renderSelected(); return; }
     const labelRes  = await fetch(`${WORKER}/recital/resolve-labels`, {
       method:"POST", headers:{"Content-Type":"application/json"},
@@ -694,6 +738,67 @@ async function loadExistingGhoshtiPlan(plan_id) {
       })).then(()=>renderSelected());
     }
   } catch(e) { console.error("loadExistingGhoshtiPlan error:",e); }
+}
+
+// ─────────────────────────────────────────────
+// RE-ORDER MY SELECTION
+// Shown between selection and save. Up/down per block, reset to
+// canonical. Sets userOrdered only when the final order differs
+// from canonical — plans saved with canonical order stay flag-free.
+// ─────────────────────────────────────────────
+function showReorderScreen(onDone) {
+  let order = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
+  const canonicalKey = applyPriorityOrder(selectedItems)
+    .map(i => `${i.entity_type}_${i.entity_id}`).join("|");
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px";
+
+  const btnCss  = "border:1px solid #c8a84b;background:#fff;color:#7a4d00;border-radius:6px;width:30px;height:30px;font-size:13px;cursor:pointer;flex-shrink:0";
+  const draw = () => {
+    overlay.innerHTML = `
+      <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
+        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</div>
+        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The recital will follow this order 🙏</div>
+        <div style="overflow-y:auto;padding:6px 16px;flex:1">
+          ${order.map((it, i) => `
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <span style="flex:1;font-size:13px;color:#2a1a00">${it.label}</span>
+              <button style="${btnCss};${i === 0 ? "opacity:.35" : ""}" ${i === 0 ? "disabled" : ""}
+                      onclick="window._gReorderMove(${i},-1)">▲</button>
+              <button style="${btnCss};${i === order.length - 1 ? "opacity:.35" : ""}" ${i === order.length - 1 ? "disabled" : ""}
+                      onclick="window._gReorderMove(${i},1)">▼</button>
+            </div>`).join("")}
+        </div>
+        <div style="padding:10px 16px 14px;display:flex;gap:8px">
+          <button class="recital-btn-secondary" style="flex:1"
+                  onclick="window._gReorderReset()">Reset order</button>
+          <button class="recital-btn-primary" style="flex:1"
+                  onclick="window._gReorderDone()">Continue 🙏</button>
+        </div>
+      </div>`;
+  };
+
+  window._gReorderMove = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    draw();
+  };
+  window._gReorderReset = () => { order = applyPriorityOrder(selectedItems); draw(); };
+  window._gReorderDone  = () => {
+    const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
+    userOrdered   = (newKey !== canonicalKey);
+    selectedItems = order;
+    document.body.removeChild(overlay);
+    document.body.style.overflow = "";
+    renderSelected();
+    onDone();
+  };
+
+  draw();
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
 }
 
 // ─────────────────────────────────────────────
@@ -1119,18 +1224,76 @@ function registerGhoshtiBindings() {
     return result;
   }
 
-  window._ghoshtiAddKoil = (koilId) => {
-    const label = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-    const gns   = koilId === 1 ? 948 : 2675;
-    const sid   = koilId === 1 ? 11  : 26;
-    if (isSelected("koil", koilId)) { showToast(`"${label}" already added.`); return; }
-    const removed = selectedItems.filter(i => i.section_id === sid);
-    if (removed.length) selectedItems = selectedItems.filter(i => i.section_id !== sid);
-    selectedItems.push({ entity_type:"koil", entity_id:koilId, label,
-      global_no_start:gns, section_id:sid, pathu_id:null });
-    isDirty = true; renderSelected();
-    showToast(removed.length ? `Replaced with "${label}"` : `"${label}" added 🙏`);
+  // Koil card → checkbox modal of individual pathus (T + V groups from
+  // entity_master tags via /api/koil-pathus). Selected pathus save as
+  // ordinary pathu items — render already supports them. Pathus covered
+  // by a full-section selection are shown disabled (auto-disable ruling).
+  // Legacy plans with an old entity_type="koil" item still load/render.
+  window._ghoshtiAddKoil = async (koilId) => {
+    const sid   = koilId === 1 ? 11 : 26;
+    const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+    if (isSelected("koil", koilId)) { showToast(`"${title}" already added — remove it first.`); return; }
+    let data;
+    try {
+      const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
+      data = await res.json();
+    } catch (e) { showToast("Could not load koil list. Please try again."); return; }
+    const fullSection = isSelected("section", sid);
+    const groupHtml = (glabel, arr) => {
+      if (!arr || !arr.length) return "";
+      return `<div style="font-weight:700;color:#7a4d00;margin:10px 0 4px">${glabel}</div>` +
+        arr.map(p => {
+          // Covered when: full section selected, this exact item selected,
+          // or the PARENT full pathu is selected (parent/children never coexist)
+          const parentSelected = selectedItems.some(i =>
+            i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+            i.entity_id === p.parent_pathu_id);
+          const covered = fullSection || isSelected("pathu", p.pathu_id) || parentSelected;
+          return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
+            <input type="checkbox" class="g-koil-cb" value="${p.pathu_id}"
+                   data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
+                   data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
+                   data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
+            <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
+          </label>`;
+        }).join("");
+    };
+    document.getElementById("r-modal-title").textContent = title;
+    const backEl = document.getElementById("r-modal-back");
+    if (backEl) backEl.style.display = "none";
+    document.getElementById("r-modal-content").innerHTML = `
+      <div style="font-size:12px;color:#b38b2e;margin-bottom:4px">Select the pathus to include 🙏</div>
+      ${groupHtml("தென்கலை", data.groups && data.groups.T)}
+      ${groupHtml("வடகலை", data.groups && data.groups.V)}
+      <button class="recital-btn-primary" style="width:100%;margin-top:12px"
+              onclick="window._ghoshtiKoilConfirm()">Add Selected 🙏</button>`;
+    document.getElementById("r-modal-overlay").classList.add("open");
   };
+
+  window._ghoshtiKoilConfirm = () => {
+    const boxes = [...document.querySelectorAll(".g-koil-cb:checked")];
+    if (!boxes.length) { showToast("Nothing selected."); return; }
+    for (const b of boxes) {
+      const pid = Number(b.value);
+      // pathu_id arg = PARENT group id (like all child thirumozhis) so the
+      // parent/child conflict machinery sees koil children. Render is
+      // unaffected — it fetches by entity_id (WHERE p.pathu_id = entity_id).
+      addItem("pathu", pid, b.dataset.label, Number(b.dataset.gns) || 0,
+              Number(b.dataset.sid), Number(b.dataset.parent) || pid, true,
+              Number(b.dataset.gne) || undefined);
+    }
+    window._ghoshtiCloseModal();
+  };
+
+  window._ghoshtiTogglePothu = (which, checked) => {
+    if (which === "T")      includePothuT = !!checked;
+    else if (which === "M") includePothuM = !!checked;
+    else                    includePothuV = !!checked;
+    isDirty = true;
+  };
+  // Madam creators: pre-tick Kesavarya on entry
+  const mCbInit = document.getElementById("g-pothu-m");
+  if (mCbInit) mCbInit.checked = includePothuM;
 
   window._ghoshtiBack = () => {
     if (isDirty && !confirm("Adiyen, you have unsaved changes. Go back anyway?")) return;
@@ -1253,7 +1416,10 @@ function registerGhoshtiBindings() {
       if (!selectedItems.length) { showToast("No items remaining after validation."); _isSaving = false; return; }
     }
 
-    const orderedItems = applyPriorityOrder(selectedItems);
+    // ── Re-order my selection — shown after validation, before save ──
+    await new Promise(resolve => showReorderScreen(resolve));
+
+    const orderedItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
     const workerItems  = _buildWorkerItems(orderedItems);
     const start_time   = new Date(`${ghoshtiMeta.date}T${ghoshtiMeta.time}`).toISOString();
 
@@ -1272,7 +1438,11 @@ function registerGhoshtiBindings() {
           mobile,
           day_of_week: 8,
           plan_name:   ghoshtiMeta.heading,
-          items:       workerItems
+          items:       workerItems,
+          include_pothu_t: includePothuT ? 1 : 0,
+          include_pothu_m: includePothuM ? 1 : 0,
+          include_pothu_v: includePothuV ? 1 : 0,
+          is_user_ordered: userOrdered ? 1 : 0
         })
       });
       const planData = await planRes.json();

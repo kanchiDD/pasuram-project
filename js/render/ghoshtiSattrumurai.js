@@ -116,7 +116,13 @@ const SECTION_NAMES = {
 };
 
 // Maps section_id to explicit key
-const EXPLICIT_SECTION_MAP = { 24: "ramanusa", 25: "upadesa", 27: "thiruvaimozhi_nootrandhadhi" };
+const EXPLICIT_SECTION_MAP = {
+  24: "ramanusa", 25: "upadesa", 27: "thiruvaimozhi_nootrandhadhi",
+  // Vadagalai (Desika Prabandham) sattrumurai items
+  38: "adaikkalappathu", 33: "adhikara_sangraham",
+  49: "prabandha_saram", 51: "pillaiyandhadhi",
+  52: "adivan_adaikkalappathu", 53: "lakshmi_adaikkalappathu"
+};
 
 const EXPLICIT_SECTIONS = [
   {
@@ -146,8 +152,78 @@ const EXPLICIT_SECTIONS = [
       { no: 27100, dual: true },
       { no: 27001, dual: false },
     ]
+  },
+  // ── Vadagalai sattrumurai (Desika Prabandham) ──
+  // Array order IS the render order: after pallandu, following any
+  // selected Thenkalai items above (upadesa etc.), per sect-mix rule.
+  // All pasurams dual recital (** marker).
+  {
+    key: "adaikkalappathu", label: "அடைக்கலப்பத்து",
+    section_id: 38, beforePallandu: false,
+    pasurams: [
+      { no: 38010, dual: true },
+      { no: 38011, dual: true },
+    ]
+  },
+  {
+    key: "adhikara_sangraham", label: "அதிகாரசங்கிரகம்",
+    section_id: 33, beforePallandu: false,
+    pasurams: [
+      { no: 33055, dual: true },
+      { no: 33056, dual: true },
+    ]
+  },
+  {
+    key: "prabandha_saram", label: "ப்ரபந்தசாரம்",
+    section_id: 49, beforePallandu: false,
+    pasurams: [
+      { no: 49017, dual: true },
+      { no: 49018, dual: true },
+    ]
+  },
+  {
+    key: "pillaiyandhadhi", label: "பிள்ளையந்தாதி",
+    section_id: 51, beforePallandu: false,
+    pasurams: [
+      { no: 51019, dual: true },
+      { no: 51020, dual: true },
+      { no: 51001, dual: false },
+    ]
+  },
+  {
+    key: "adivan_adaikkalappathu",
+    label: "ஸ்ரீ ஆதிவண்ஶடகோப யதீந்த்ர மஹாதேஶிகன் அடைக்கலப்பத்து",
+    section_id: 52, beforePallandu: false,
+    pasurams: [
+      { no: 52010, dual: true },
+      { no: 52011, dual: true },
+      { no: 52001, dual: false },
+    ]
+  },
+  {
+    key: "lakshmi_adaikkalappathu",
+    label: "ஶ்ரீ லக்ஷ்மீந்ரு’ஸிம்ஹன் அடைக்கலப்பத்து",
+    section_id: 53, beforePallandu: false,
+    pasurams: [
+      { no: 53010, dual: true },
+      { no: 53011, dual: true },
+    ]
   }
 ];
+
+// ── Madam (Ahobila) ordering rule ─────────────────────────────
+// For Madam users the Vadagalai additional prabandhams recite
+// BEFORE Pallandu (after இராமானுச நூற்றந்தாதி), in array order:
+// 38 → 33 → 49 → 51 → 52 → 53, then Pallandu, then sattrumurai.
+// Thenkalai and plain Vadagalai keep the after-Pallandu placement.
+const V_MADAM_KEYS = new Set([
+  "adaikkalappathu", "adhikara_sangraham", "prabandha_saram",
+  "pillaiyandhadhi", "adivan_adaikkalappathu", "lakshmi_adaikkalappathu"
+]);
+const isMadamUser = () => (localStorage.getItem("subsect") || "") === "madam";
+function effBeforePallandu(sec) {
+  return sec.beforePallandu || (isMadamUser() && V_MADAM_KEYS.has(sec.key));
+}
 
 const PALLANDU = [
   { no: 1, dual: false },
@@ -235,9 +311,25 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   // Ghoshti is multi-sect; user selects what they need
   gsatState.allVaazhis = VAZHI_GHOSHTI_ALL;
 
+  // Mangalams: desika (7) + adivan (6) default-checked for Madam creators
+  gsatState.fixedText.desika = isMadamUser();
+  gsatState.fixedText.adivan = isMadamUser();
+
   const plan = buildSattrumuraiPlan(gsatState.selectedSections);
   await fetchAllPasuramTexts(plan);
   gsatState.pasuramItems = plan;
+
+  // Default-checked mangalams need their lines pre-fetched (the
+  // on-toggle fetch only fires on user interaction)
+  for (const [flag, fid] of [["desika", 7], ["adivan", 6]]) {
+    if (gsatState.fixedText[flag] && !gsatState.fixedTextLines[fid]) {
+      try {
+        const res  = await fetch(`${WORKER_POST}/recital/fixed-text?id=${fid}`);
+        const data = await res.json();
+        if (data.success) gsatState.fixedTextLines[fid] = data.lines;
+      } catch (e) {}
+    }
+  }
 
   // Fixed text lines loaded on demand when user checks the checkbox
   // No pre-fetch — both T (id=1) and V (id=5) loaded only when selected
@@ -351,7 +443,7 @@ function buildSattrumuraiPlan(sections) {
   gsatState.autoIncludedKeys = new Set();
   const selectedSectionIds = new Set(sections.map(s => s.section_id));
   EXPLICIT_SECTIONS.forEach(sec => {
-    if (selectedSectionIds.has(sec.section_id) && sec.beforePallandu) {
+    if (selectedSectionIds.has(sec.section_id) && effBeforePallandu(sec)) {
       gsatState.autoIncludedKeys.add(sec.key);
       const heading = `${sec.label} சாற்றுமுறை பாசுரங்கள்`;
       pushPasuramGroup(plan, `explicit_${sec.key}`, heading,
@@ -367,7 +459,7 @@ function buildSattrumuraiPlan(sections) {
 
   // Auto-include sections 25 and 27 (after pallandu) if selected in ghoshti
   EXPLICIT_SECTIONS.forEach(sec => {
-    if (selectedSectionIds.has(sec.section_id) && !sec.beforePallandu) {
+    if (selectedSectionIds.has(sec.section_id) && !effBeforePallandu(sec)) {
       gsatState.autoIncludedKeys.add(sec.key);
       const heading = `${sec.label} சாற்றுமுறை பாசுரங்கள்`;
       pushPasuramGroup(plan, `explicit_${sec.key}`, heading,
@@ -440,6 +532,8 @@ function render(container) {
       ${renderVazhiSection()}
       ${renderManualAddSection()}
       ${renderMuktakaSection()}
+      ${renderNamedMangalam("desika", 7, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று")}
+      ${renderNamedMangalam("adivan", 6, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று")}
       <button class="gsat-save-btn" onclick="gsatSave()" id="gsat-save-btn">Add my Sattrumurai \uD83D\uDE4F</button>
       <span class="gsat-back" onclick="gsatBack()">\u2190 Back to Ghoshti</span>
     </div>
@@ -615,7 +709,7 @@ function renderVazhiSection() {
       const linesHtml = isOn && isLoaded
         ? `<div style="width:100%;padding:4px 0 0 27px">${vData.map(l => {
             const text = l.line_text || l;
-            const endsWithBar = text.trimEnd().endsWith("||");
+            const endsWithBar = _mangalamGap(text);
             return `<div style="font-size:12px;color:#4a2c00;line-height:1.7;padding:2px 6px;background:#fef8e8;border-radius:4px;margin-bottom:2px">${escHtml(text)}</div>${endsWithBar ? '<div style="height:6px"></div>' : ''}`;
           }).join("")}</div>`
         : "";
@@ -656,6 +750,38 @@ function renderVazhiSection() {
   return `<div class="gsat-section"><div class="gsat-section-head">\uD83C\uDF1F \u0bb5\u0bbe\u0bb4\u0bbf \u0ba4\u0bbf\u0bb0\u0bc1\u0ba8\u0bbe\u0bae\u0bae\u0bcd <span style="font-size:11px;color:#9a7a50;font-weight:400">(\u0baa\u0bb2\u0bb5\u0bb1\u0bcd\u0bb1\u0bc8 \u0ba4\u0bc7\u0bb0\u0bcd\u0bb5\u0bc1 \u0b9a\u0bc6\u0baf\u0bcd\u0baf\u0bb2\u0bbe\u0bae\u0bcd)</span></div><div class="gsat-vazhi-grid">${items}</div></div>`;
 }
 
+// Line-gap after a completed śloka: both ASCII || and devanagari ॥
+function _mangalamGap(text) {
+  return /(\|\||॥)$/.test(String(text).trimEnd());
+}
+
+// Generic mangalam checkbox section — mirrors Muktaka Mangalam exactly
+// (same fonts/sizes) so தேஶிக / ஆதிவண்ஶடகோப render consistently.
+function renderNamedMangalam(key, fid, heading, closing) {
+  const isOn     = gsatState.fixedText[key];
+  const lines    = gsatState.fixedTextLines[fid];
+  const isLoaded = lines && lines.length > 0;
+  const linesHtml = isOn && isLoaded
+    ? `<div style="padding:8px 14px">${lines.map(l => {
+        const text = l.line_text || l;
+        const isSubhead = text.startsWith("(") && text.endsWith(")");
+        if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;
+        return `<div style="font-size:13px;color:#4a2c00;line-height:1.7;padding:3px 8px;background:#fef8e8;border-radius:4px;margin-bottom:3px">${escHtml(text)}</div>${_mangalamGap(text) ? '<div style="height:6px"></div>' : ''}`;
+      }).join("")}
+      <div style="text-align:center;font-size:12px;color:#7a5a20;margin-top:10px;font-style:italic">${escHtml(closing)}</div>
+    </div>`
+    : "";
+  return `<div class="gsat-section">
+    <div class="gsat-section-head" style="text-align:center">${escHtml(heading)}</div>
+    <div class="gsat-toggle-item">
+      <input type="checkbox" id="gsat-fixed-${key}" ${isOn ? "checked" : ""}
+        onchange="gsatToggleFixedText('${key}',${fid},this.checked)">
+      <label for="gsat-fixed-${key}" style="cursor:pointer">${escHtml(heading)} சேர்க்க</label>
+    </div>
+    ${linesHtml}
+  </div>`;
+}
+
 function renderMuktakaSection() {
   const isOn    = gsatState.fixedText.muktaka;
   const lines   = gsatState.fixedTextLines[3];
@@ -663,7 +789,7 @@ function renderMuktakaSection() {
   const linesHtml = isOn && isLoaded
     ? `<div style="padding:8px 14px">${lines.map(l => {
         const text = l.line_text || l;
-        const endsWithBar = text.trimEnd().endsWith("||");
+        const endsWithBar = _mangalamGap(text);
         const isSubhead = text.startsWith("(") && text.endsWith(")");
         if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;
         return `<div style="font-size:13px;color:#4a2c00;line-height:1.7;padding:3px 8px;background:#fef8e8;border-radius:4px;margin-bottom:3px">${escHtml(text)}</div>${endsWithBar ? '<div style="height:6px"></div>' : ''}`;
@@ -734,13 +860,33 @@ window.gsatToggleExplicit = async function(key, checked) {
         entry.lines = (data?.lines || []).filter(l => l.line_text).map(l => ({ text: l.line_text, group: l.recital_group || 1 }));
       } catch(e) { entry.lines = []; }
     }));
-    // Insert before or after pallandu
+    // Insert into the correct region (before/after pallandu per the
+    // EFFECTIVE flag — Madam users place V items before pallandu) and
+    // keep EXPLICIT_SECTIONS array order regardless of toggle order:
+    // insert before the first same-region explicit group that comes
+    // LATER in the array; default = region end.
     const pallanduIdx = gsatState.pasuramItems.findIndex(it => it.key === "pallandu_heading");
-    if (sec.beforePallandu && pallanduIdx >= 0) {
-      gsatState.pasuramItems.splice(pallanduIdx, 0, ...items);
-    } else {
-      gsatState.pasuramItems.push(...items);
+    const myBefore    = effBeforePallandu(sec);
+    const myIdx       = EXPLICIT_SECTIONS.findIndex(s => s.key === key);
+    const regionEnd   = (myBefore && pallanduIdx >= 0)
+      ? pallanduIdx
+      : gsatState.pasuramItems.length;
+    let insertAt = regionEnd;
+    for (let i = 0; i < regionEnd; i++) {
+      const it = gsatState.pasuramItems[i];
+      if (it.type === "heading" && it.key.startsWith("explicit_") && it.key.endsWith("_heading")) {
+        const otherKey = it.key.slice("explicit_".length, -("_heading".length));
+        const otherSec = EXPLICIT_SECTIONS.find(s => s.key === otherKey);
+        const otherIdx = EXPLICIT_SECTIONS.findIndex(s => s.key === otherKey);
+        if (!otherSec) continue;
+        // only compare within my region
+        if (effBeforePallandu(otherSec) !== myBefore) continue;
+        // after-pallandu region: skip anything before pallandu
+        if (!myBefore && pallanduIdx >= 0 && i < pallanduIdx) continue;
+        if (otherIdx > myIdx) { insertAt = i; break; }
+      }
     }
+    gsatState.pasuramItems.splice(insertAt, 0, ...items);
   } else {
     // Remove all items for this group
     gsatState.pasuramItems = gsatState.pasuramItems.filter(it =>
@@ -780,7 +926,76 @@ window.gsatToggleVazhi = async function(id, checked) {
   if (container) render(container);
 };
 
+// ── Re-order my sattrumurai — shown at finalize, heading blocks only ──
+// Groups = contiguous run from each heading (its pasurams, text blocks,
+// madal lines move with it). Continue proceeds to save in shown order.
+function gsatShowReorder(onDone) {
+  // Split pasuramItems into heading-led blocks
+  const blocks = [];
+  let cur = null;
+  gsatState.pasuramItems.forEach(it => {
+    if (it.type === "heading" || (it.type === "kanninun" && !cur)) {
+      cur = { label: it.text || it.label || "பாசுரங்கள்", items: [it] };
+      blocks.push(cur);
+    } else {
+      if (!cur) { cur = { label: "பாசுரங்கள்", items: [] }; blocks.push(cur); }
+      cur.items.push(it);
+    }
+  });
+  if (blocks.length < 2) { onDone(); return; }  // nothing to reorder
+
+  let order = [...blocks];
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px";
+  const btnCss = "border:1px solid #c8a84b;background:#fff;color:#7a4d00;border-radius:6px;width:30px;height:30px;font-size:13px;cursor:pointer;flex-shrink:0";
+
+  const draw = () => {
+    overlay.innerHTML = `
+      <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
+        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my sattrumurai ⇅</div>
+        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The sattrumurai will follow this order 🙏</div>
+        <div style="overflow-y:auto;padding:6px 16px;flex:1">
+          ${order.map((b, i) => `
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <span style="flex:1;font-size:13px;color:#2a1a00">${escHtml(b.label)}</span>
+              <button style="${btnCss};${i === 0 ? "opacity:.35" : ""}" ${i === 0 ? "disabled" : ""}
+                      onclick="window._gsatReorderMove(${i},-1)">▲</button>
+              <button style="${btnCss};${i === order.length - 1 ? "opacity:.35" : ""}" ${i === order.length - 1 ? "disabled" : ""}
+                      onclick="window._gsatReorderMove(${i},1)">▼</button>
+            </div>`).join("")}
+        </div>
+        <div style="padding:10px 16px 14px;display:flex;gap:8px">
+          <button style="flex:1;padding:11px;border:1px solid #c8a84b;background:#fff;color:#7a4d00;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit"
+                  onclick="window._gsatReorderReset()">Reset order</button>
+          <button style="flex:1;padding:11px;border:none;background:#7a4d00;color:#fef0c0;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit"
+                  onclick="window._gsatReorderDone()">Continue 🙏</button>
+        </div>
+      </div>`;
+  };
+
+  window._gsatReorderMove = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    draw();
+  };
+  window._gsatReorderReset = () => { order = [...blocks]; draw(); };
+  window._gsatReorderDone  = () => {
+    gsatState.pasuramItems = order.flatMap(b => b.items);
+    document.body.removeChild(overlay);
+    document.body.style.overflow = "";
+    onDone();
+  };
+
+  draw();
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+}
+
 window.gsatSave = async function() {
+  // Finalized — offer block reorder before compiling & saving
+  await new Promise(resolve => gsatShowReorder(resolve));
+
   const btn = document.getElementById("gsat-save-btn");
   if (btn) { btn.disabled = true; btn.textContent = "சேமிக்கிறது..."; }
 
@@ -868,6 +1083,8 @@ window.gsatSave = async function() {
     fixed_blocks,
     vazhi_blocks,
     muktaka_lines,
+    desika_lines: (gsatState.fixedText.desika && gsatState.fixedTextLines[7]) || [],
+    adivan_lines: (gsatState.fixedText.adivan && gsatState.fixedTextLines[6]) || [],
   };
 
   console.log("SATTRUMURAI PAYLOAD:", JSON.stringify(payload));

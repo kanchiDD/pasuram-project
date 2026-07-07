@@ -30,6 +30,15 @@
         const sep  = url.includes('?') ? '&' : '?';
         url = `${url}${sep}sect=${sect}`;
       }
+      /* Madam (Ahobila) sub-sect: appended AFTER sect so cache keys
+         are consistent (…&sect=V&subsect=madam). Only sent when the
+         user is Madam — everyone else's URLs are unchanged. */
+      if (isWorkerCall && !url.includes('subsect=')) {
+        if ((localStorage.getItem('subsect') || '') === 'madam') {
+          const sep2 = url.includes('?') ? '&' : '?';
+          url = `${url}${sep2}subsect=madam`;
+        }
+      }
     }
     return _origFetch.call(this, url, opts);
   };
