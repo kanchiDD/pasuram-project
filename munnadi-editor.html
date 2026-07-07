@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="ta">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
 <title>முன்னடி / பின்னடி Editor</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Tamil:wght@400;700&display=swap" rel="stylesheet">
@@ -18,151 +16,138 @@ box-sizing:border-box;
 }
 
 body{
-
 font-family:'Noto Serif Tamil',serif;
-background:#f5f5f5;
-padding:25px;
-
+background:#f2f2f2;
+padding:20px;
 }
 
 .container{
-
-max-width:850px;
+max-width:900px;
 margin:auto;
-background:white;
-border-radius:12px;
+background:#fff;
 padding:25px;
-box-shadow:0 0 20px rgba(0,0,0,.15);
-
+border-radius:12px;
+box-shadow:0 5px 20px rgba(0,0,0,.15);
 }
 
 h1{
-
 text-align:center;
-font-size:30px;
 margin-bottom:25px;
-color:#8B0000;
-
+font-size:32px;
+color:#8b0000;
 }
 
-.row{
-
+.toprow{
 display:flex;
 gap:10px;
 align-items:center;
-margin-bottom:20px;
-
+flex-wrap:wrap;
+margin-bottom:25px;
 }
 
 label{
-
 font-weight:bold;
 font-size:20px;
-
 }
 
-input{
-
+input[type=number]{
+width:160px;
 padding:10px;
 font-size:20px;
-border:1px solid #aaa;
-border-radius:5px;
-width:150px;
-
-}
-
-button{
-
-padding:10px 25px;
-font-size:18px;
-cursor:pointer;
-border:none;
-border-radius:5px;
-background:#0066cc;
-color:white;
-
-}
-
-button:hover{
-
-background:#004999;
-
+border:1px solid #bbb;
+border-radius:6px;
 }
 
 textarea{
-
 width:100%;
-height:170px;
-padding:12px;
-font-size:24px;
-font-family:'Noto Serif Tamil',serif;
-border:1px solid #999;
-border-radius:8px;
+height:180px;
 resize:vertical;
+padding:12px;
+font-size:25px;
+font-family:'Noto Serif Tamil',serif;
+border:1px solid #aaa;
+border-radius:8px;
 margin-top:8px;
-margin-bottom:20px;
+margin-bottom:22px;
+}
 
+button{
+padding:10px 20px;
+font-size:18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#0059b3;
+color:#fff;
+transition:.2s;
+}
+
+button:hover{
+background:#003d80;
 }
 
 .buttons{
-
 display:flex;
+gap:12px;
 justify-content:space-between;
-gap:10px;
+flex-wrap:wrap;
 margin-top:15px;
+}
 
+.buttons button{
+flex:1;
+min-width:140px;
 }
 
 #status{
-
-margin-top:20px;
+margin-top:22px;
+padding:12px;
+border-radius:6px;
+background:#eef7ee;
 font-size:18px;
 font-weight:bold;
 text-align:center;
-color:green;
-
+color:#006400;
 }
 
 .footer{
-
 margin-top:20px;
 text-align:center;
-font-size:16px;
+font-size:15px;
 color:#666;
-
+line-height:1.8;
 }
 
 @media(max-width:700px){
 
-.row{
-
-flex-direction:column;
-align-items:flex-start;
-
+body{
+padding:10px;
 }
 
-input{
+.container{
+padding:15px;
+}
 
+.toprow{
+flex-direction:column;
+align-items:flex-start;
+}
+
+input[type=number]{
 width:100%;
-
 }
 
 button{
-
 width:100%;
-
 }
 
 .buttons{
-
 flex-direction:column;
-
 }
 
 textarea{
-
 font-size:22px;
-
+height:160px;
 }
 
 }
@@ -177,133 +162,85 @@ font-size:22px;
 
 <h1>முன்னடி / பின்னடி Editor</h1>
 
-<div class="row">
+<div class="toprow">
 
-<label>Global No</label>
+<label for="global_no">Global No</label>
 
 <input
-type="number"
 id="global_no"
-placeholder="2675">
+type="number"
+placeholder="756"
+autocomplete="off">
 
-<button id="loadBtn">
-
-Load
-
-</button>
+<button id="loadBtn">Load</button>
 
 </div>
 
-<label>
-
-முன்னடி
-
-</label>
+<label for="line1">முன்னடி</label>
 
 <textarea
-id="line1"></textarea>
+id="line1"
+spellcheck="false"></textarea>
 
-<label>
-
-பின்னடி
-
-</label>
+<label for="line2">பின்னடி</label>
 
 <textarea
-id="line2"></textarea>
+id="line2"
+spellcheck="false"></textarea>
 
 <div class="buttons">
 
-<button id="prevBtn">
+<button id="prevBtn">⬅ Previous</button>
 
-⬅ Previous
+<button id="saveBtn">💾 Save</button>
 
-</button>
-
-<button id="saveBtn">
-
-💾 Save
-
-</button>
-
-<button id="nextBtn">
-
-Next ➡
-
-</button>
+<button id="nextBtn">Next ➜</button>
 
 </div>
 
 <div id="status">
-
 Ready
-
 </div>
 
 <div class="footer">
 
-Ctrl + S = Save
+Enter → Load<br>
+
+Ctrl + S → Save<br>
+
+Ctrl + Enter → Save
 
 </div>
 
 </div>
 
-<script src="munnadi-editor.js"></script>
-
-
-<script src="https://www.google.com/jsapi"></script>
-
-<script>
-
-google.load("elements", "1", {
-    packages: "transliteration"
-});
-
-google.setOnLoadCallback(function(){
-
-    var options = {
-
-        sourceLanguage:
-            google.elements.transliteration.LanguageCode.ENGLISH,
-
-        destinationLanguage:
-            [google.elements.transliteration.LanguageCode.TAMIL],
-
-        transliterationEnabled: true
-
-    };
-
-    var control =
-        new google.elements.transliteration.TransliterationControl(options);
-
-    control.makeTransliteratable([
-        "line1",
-        "line2"
-    ]);
-
-});
-
-</script>
 <script src="https://cdn.jsdelivr.net/gh/thamizha/tamilvisai@master/dist/tamilvisai.min.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
 
-    // Enable phonetic Tamil typing
-    if (window.TamilVisai) {
+document.addEventListener("DOMContentLoaded",function(){
 
-        TamilVisai.attach(document.getElementById("line1"), {
-            layout: "phonetic"
-        });
+if(window.TamilVisai){
 
-        TamilVisai.attach(document.getElementById("line2"), {
-            layout: "phonetic"
-        });
+TamilVisai.attach(
+document.getElementById("line1"),
+{
+layout:"phonetic"
+});
 
-    }
+TamilVisai.attach(
+document.getElementById("line2"),
+{
+layout:"phonetic"
+});
+
+}
 
 });
-</script>
-</body>
 
+</script>
+
+<script src="munnadi-editor.js"></script>
+
+</body>
 </html>

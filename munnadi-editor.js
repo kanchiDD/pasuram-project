@@ -1,11 +1,11 @@
-const API = "https://pasuram-api.kanchitrust.workers.dev/api/munnadi-editor";
+const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api/munnadi-editor";
 
 let currentGlobal = 0;
 let dirty = false;
 
-// =========================
+//--------------------------------------------------
 // ELEMENTS
-// =========================
+//--------------------------------------------------
 
 const txtGlobal = document.getElementById("global_no");
 const txtLine1 = document.getElementById("line1");
@@ -16,104 +16,109 @@ const btnSave = document.getElementById("saveBtn");
 const btnPrev = document.getElementById("prevBtn");
 const btnNext = document.getElementById("nextBtn");
 
-const status = document.getElementById("status");
+const statusBar = document.getElementById("status");
 
-// =========================
+//--------------------------------------------------
 
 function setStatus(msg, color = "green") {
-
-    status.innerHTML = msg;
-    status.style.color = color;
-
+    statusBar.innerHTML = msg;
+    statusBar.style.color = color;
 }
 
-// =========================
+//--------------------------------------------------
 
-txtLine1.addEventListener("input", () => dirty = true);
-txtLine2.addEventListener("input", () => dirty = true);
+function markDirty() {
+    dirty = true;
+}
 
-txtLine1.addEventListener("keydown", function (e) {
+txtLine1.addEventListener("input", markDirty);
+txtLine2.addEventListener("input", markDirty);
 
-    if (e.key === "Tab") {
-
-        e.preventDefault();
-
-        txtLine2.focus();
-
-    }
-
-});
-
-// =========================
+//--------------------------------------------------
 
 async function loadRecord(globalNo) {
 
     if (!globalNo || globalNo <= 0) {
-
-        alert("Enter Global Number");
+        alert("Enter a valid Global Number.");
+        txtGlobal.focus();
         return;
-
     }
 
     setStatus("Loading...", "blue");
 
     try {
 
-        const url = API + "?global_no=" + globalNo;
+        const response = await fetch(
+            `${API}?global_no=${globalNo}`,
+            {
+                cache: "no-store"
+            }
+        );
 
-console.log(url);
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+        }
 
-const res = await fetch(url);
+        const contentType =
+            response.headers.get("content-type") || "";
 
-        const data = await res.json();
+        if (!contentType.includes("application/json")) {
+
+            const text = await response.text();
+
+            console.error(text);
+
+            throw new Error(
+                "Worker returned HTML instead of JSON."
+            );
+        }
+
+        const data = await response.json();
 
         txtGlobal.value = globalNo;
 
         txtLine1.value = data.line_1 || "";
         txtLine2.value = data.line_2 || "";
-	txtLine1.focus();
+
         currentGlobal = globalNo;
-	txtGlobal.value = currentGlobal;
 
         dirty = false;
 
-        setStatus("✓ Record Loaded","green");
+        txtLine1.focus();
 
-    }
+        setStatus("✓ Record Loaded");
 
-    catch (e) {
+    } catch (err) {
 
-        console.log(e);
+        console.error(err);
 
-        setStatus("Load Failed", "red");
+        setStatus(err.message, "red");
+
+        alert(err.message);
 
     }
 
 }
 
-// =========================
+//--------------------------------------------------
 
 async function saveRecord() {
 
-    if (currentGlobal == 0) {
-
+    if (currentGlobal === 0) {
         alert("Load a record first.");
         return;
-
     }
 
-	setStatus("Saving...","orange");
+    setStatus("Saving...", "orange");
 
     try {
 
-        const res = await fetch(API, {
+        const response = await fetch(API, {
 
             method: "POST",
 
             headers: {
-
                 "Content-Type": "application/json"
-
             },
 
             body: JSON.stringify({
@@ -128,67 +133,71 @@ async function saveRecord() {
 
         });
 
-        const result = await res.json();
-
-        if (result.success) {
-
-            dirty = false;
-
-            
-
-            // Automatically move to next record
-
-            setStatus("✓ Saved Successfully");
-
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
         }
 
-        else {
+        const result = await response.json();
 
-            setStatus("❌ Save Failed","red");
-
+        if (!result.success) {
+            throw new Error(result.error || "Save Failed");
         }
 
-    }
+        dirty = false;
 
-    catch (e) {
+        setStatus("✓ Saved Successfully");
 
-        console.log(e);
+        txtLine1.focus();
 
-        setStatus("Save Failed", "red");
+    } catch (err) {
+
+        console.error(err);
+
+        setStatus(err.message, "red");
+
+        alert(err.message);
 
     }
 
 }
 
-// =========================
+//--------------------------------------------------
 
 function previousRecord() {
 
-    if (dirty) {
+    if (currentGlobal <= 1) {
 
-        if (!confirm("Unsaved changes.\nContinue?"))
-            return;
+        alert("Already first record.");
+
+        return;
 
     }
 
-    if (currentGlobal <= 1) {
+    if (dirty) {
 
-        alert("Already First Record");
-        return;
+        if (!confirm("Unsaved changes.\nContinue?")) {
+
+            return;
+
+        }
 
     }
 
     loadRecord(currentGlobal - 1);
 
 }
-// =========================
+
+//--------------------------------------------------
 
 function nextRecord() {
 
     if (dirty) {
 
-        if (!confirm("Unsaved changes.\nContinue?"))
+        if (!confirm("Unsaved changes.\nContinue?")) {
+
             return;
+
+        }
 
     }
 
@@ -196,41 +205,33 @@ function nextRecord() {
 
 }
 
-// =========================
+//--------------------------------------------------
 
-btnLoad.onclick = () => {
+btnLoad.addEventListener("click", () => {
 
-    loadRecord(
+    loadRecord(parseInt(txtGlobal.value));
 
-        parseInt(txtGlobal.value)
+});
 
-    );
+btnSave.addEventListener("click", saveRecord);
 
-};
+btnPrev.addEventListener("click", previousRecord);
 
-btnSave.onclick = saveRecord;
+btnNext.addEventListener("click", nextRecord);
 
-btnPrev.onclick = previousRecord;
+//--------------------------------------------------
 
-btnNext.onclick = nextRecord;
-
-// =========================
-
-txtGlobal.addEventListener("keydown", e => {
+txtGlobal.addEventListener("keydown", function (e) {
 
     if (e.key === "Enter") {
 
-        loadRecord(
-
-            parseInt(txtGlobal.value)
-
-        );
+        loadRecord(parseInt(txtGlobal.value));
 
     }
 
 });
 
-// =========================
+//--------------------------------------------------
 
 document.addEventListener("keydown", function (e) {
 
@@ -244,6 +245,8 @@ document.addEventListener("keydown", function (e) {
 
 });
 
+//--------------------------------------------------
+
 document.addEventListener("keydown", function (e) {
 
     if (e.ctrlKey && e.key === "Enter") {
@@ -256,7 +259,7 @@ document.addEventListener("keydown", function (e) {
 
 });
 
-// =========================
+//--------------------------------------------------
 
 window.addEventListener("beforeunload", function (e) {
 
@@ -270,6 +273,8 @@ window.addEventListener("beforeunload", function (e) {
 
 });
 
-// =========================
+//--------------------------------------------------
 
 setStatus("Ready");
+
+txtGlobal.focus();
