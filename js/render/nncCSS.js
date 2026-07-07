@@ -101,6 +101,9 @@ export function injectNNCCSS() {
     .nnc-fixed-subheading { font-size:11px; color:#7a5a20; text-align:center; padding:6px 0 2px; font-style:italic; }
     .nnc-fixed-line { font-size:var(--nf,15px) !important; color:#1a2a00; text-align:left; line-height:1.95; display:block; padding:1px 0; font-family:'Noto Sans Tamil','Latha','Bamini',serif; }
     .nnc-fixed-closing { font-size:14px; font-weight:900; color:#4a2c00; text-align:center; padding:10px 0 4px; border-top:1px dashed #d4a843; margin-top:8px; }
+    /* śloka card — one couplet (| line + || line) in a light container */
+    .nnc-sloka-card { background:#fffbe8; border:1px solid #e8d18a; border-radius:8px; padding:8px 12px; margin:5px 0; }
+    .nnc-sloka-card .nnc-fixed-line { display:block; padding:1px 0; }
     .nnc-section-closing { font-size:14px !important; font-weight:900 !important; color:#4a2c00 !important; text-align:center; }
     .nnc-float-nav { position:fixed; bottom:20px; right:14px; display:flex; flex-direction:column; gap:8px; z-index:999; }
     .nnc-float-nav button { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#c9a227,#e8c060); border:2px solid #b38b2e; color:#2a1a00; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans Tamil','Latha','Bamini',serif; }

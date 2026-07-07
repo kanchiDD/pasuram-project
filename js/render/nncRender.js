@@ -526,29 +526,53 @@ export async function renderFixed(refValue, label, anchor) {
   try {
     const data = await fetch(`${API}/nithyanusandhanam?sub=fixed&id=${refValue}`).then(r=>r.json());
     const lines = data.lines || [];
-    // First non-bracket line = section title (bold underlined)
-    const linesHtml = lines.map(l => {
+
+    // ── Group lines into śloka containers ────────────────────────
+    // Rule: lines ending ।  (single bar) open a group; the line ending
+    // ॥ (double bar) closes it. Each group renders in its own small
+    // card so the couplet structure is visually clear.
+    // Author subheadings, closing lines, and blank lines stay outside.
+    const _endsHalf   = t => /।$|[|]$/.test(t.trimEnd());
+    const _endsFull   = t => /॥$|\|\|$/.test(t.trimEnd());
+    const _isBracket  = t => t.startsWith("(") && t.endsWith(")");
+    const _isClosing  = t => t.includes("முற்றிற்று") || t.includes("ஸமாப்தம்");
+
+    let html = "";
+    let slokaLines = [];
+
+    const flushSloka = () => {
+      if (!slokaLines.length) return;
+      html += `<div class="nnc-sloka-card">
+        ${slokaLines.map(l => `<div class="nnc-fixed-line">${l}</div>`).join("")}
+      </div>`;
+      slokaLines = [];
+    };
+
+    for (const l of lines) {
       const t = (l.line_text || "").trim();
-      if (!t) return "";
-      // () bracket lines = author name subheading: small centered italic, strip brackets
-      if (t.startsWith("(") && t.endsWith(")")) {
-        const heading = t.slice(1, -1).trim();
-        return `<div class="nnc-fixed-subheading">${heading}</div>`;
+      if (!t) continue;
+      if (_isBracket(t)) {
+        flushSloka();
+        html += `<div class="nnc-fixed-subheading">${t.slice(1,-1).trim()}</div>`;
+        continue;
       }
-      // Closing line containing முற்றிற்று
-      if (t.includes("முற்றிற்று")) {
-        return `<div class="nnc-fixed-closing">${t}</div>`;
+      if (_isClosing(t)) {
+        flushSloka();
+        html += `<div class="nnc-fixed-closing">${t}</div>`;
+        continue;
       }
-      // All other lines = regular content
-      const endsVerse = t.endsWith("||");
-      return `<div class="nnc-fixed-line">${t}</div>${endsVerse ? '<div class="nnc-group-gap"></div>' : ""}`;
-    }).join("");
+      // verse line — accumulate
+      slokaLines.push(t);
+      if (_endsFull(t)) flushSloka();
+    }
+    flushSloka(); // flush any trailing lines
+
     return `
       <div class="nnc-section-box" ${anchor}>
         <div class="nnc-section-heading">${label}</div>
-        <div class="nnc-section-inner">${linesHtml}</div>
+        <div class="nnc-section-inner">${html}</div>
       </div>`;
-  } catch { return comingSoonBox(label, anchor); }
+  } catch(e) { return comingSoonBox(label, anchor); }
 }
 
 // ── Render vazhi thirunamam ───────────────────────────────────────────────────
