@@ -1079,9 +1079,16 @@ export function registerRecitalBindings() {
             `${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${d}`
           );
           const data = await res.json();
+          // Preserve pathu_id / section_id / global_no_start from DB so
+          // child thirumozhi items (is_child=true) survive the merge and
+          // reload correctly — stripping these fields collapses children
+          // to parent pathus on next load.
           const existingItems = (data.items || []).map(i => ({
-            entity_type: i.entity_type,
-            entity_id:   i.entity_id
+            entity_type:     i.entity_type,
+            entity_id:       i.entity_id,
+            section_id:      i.section_id      || null,
+            pathu_id:        i.pathu_id        ?? null,
+            global_no_start: i.global_no_start || 0
           }));
           // Merge: existing first, then allDays items not already in existing
           // Then apply priority order (sec1/sec8/sec3 first)
