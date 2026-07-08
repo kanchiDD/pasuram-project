@@ -26,15 +26,15 @@ function setPlaying(btn, isInline) {
   btn.classList.add("ga-playing");
   btn.style.color = "#c0392b";
   btn.style.borderColor = "#c0392b";
-  if (!isInline) btn.style.background = "#fff0f0";
+  btn.style.background = isInline ? "none" : "#fff0f0";
 }
 
 function setReady(btn, isInline) {
   btn.textContent = isInline ? "▶" : "▶ Listen";
   btn.classList.remove("ga-playing");
-  btn.style.color = isInline ? "#b38b2e" : "#7a4d00";
-  btn.style.borderColor = "#b38b2e";
-  btn.style.background = isInline ? "none" : "#fffdf5";
+  btn.style.color = "#2e7d32";
+  btn.style.borderColor = "#2e7d32";
+  btn.style.background = isInline ? "none" : "#f1f8e9";
 }
 
 function stopAll() {
@@ -82,18 +82,18 @@ window._gaBtn  = function(id) {
 };
 
 // ── Button builders ────────────────────────────────────────────
-const BTN_STYLE  = "display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1px solid #b38b2e;background:#fffdf5;color:#7a4d00;font-size:12px;cursor:pointer;margin:4px 0;font-family:inherit";
-const QBTN_STYLE = "display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;border:1.5px solid #b38b2e;background:#fffdf5;color:#7a4d00;font-size:12px;font-weight:600;cursor:pointer;margin:6px 0;font-family:inherit";
-const IBTN_STYLE = "background:none;border:none;color:#b38b2e;font-size:13px;cursor:pointer;padding:0 4px;vertical-align:middle;line-height:1";
+const BTN_STYLE  = "display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;border:1.5px solid #2e7d32;background:#f1f8e9;color:#2e7d32;font-size:12px;cursor:pointer;margin:4px 0;font-family:inherit";
+const QBTN_STYLE = "display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;border:1.5px solid #2e7d32;background:#f1f8e9;color:#2e7d32;font-size:12px;font-weight:600;cursor:pointer;margin:6px 0;font-family:inherit";
+const IBTN_STYLE = "background:none;border:none;color:#2e7d32;font-size:12px;cursor:pointer;padding:0 3px;vertical-align:middle;line-height:1;font-weight:700";
 
 export function sectionListenBtn(id, url) {
   _registry.set(id, url);
-  return `<button id="${id}" class="ga-listen-btn" onclick="_gaBtn('${id}')" style="${BTN_STYLE}">▶ Listen</button>`;
+  return `<div style="text-align:center;margin:6px 0"><button id="${id}" class="ga-listen-btn" onclick="_gaBtn('${id}')" style="${BTN_STYLE}">▶ Listen</button></div>`;
 }
 
 export function sectionQueueBtn(id, urls) {
   _registry.set(id, urls);
-  return `<button id="${id}" class="ga-listen-btn" onclick="_gaBtn('${id}')" style="${QBTN_STYLE}">▶ Listen</button>`;
+  return `<div style="text-align:center;margin:6px 0"><button id="${id}" class="ga-listen-btn" onclick="_gaBtn('${id}')" style="${QBTN_STYLE}">▶ Listen</button></div>`;
 }
 
 export function inlinePlayBtn(id, url) {
