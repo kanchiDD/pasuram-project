@@ -75,7 +75,7 @@ function playQueue(urls, btn) {
   btn.textContent = "Stop";
   btn.classList.add("ga-playing");
   function next() {
-    if (idx >= urls.length) { btn.textContent = "Listen"; btn.classList.remove("ga-playing"); return; }
+    if (idx >= urls.length) { btn.textContent = "▶ Listen"; btn.classList.remove("ga-playing"); btn.style.color="#7a4d00"; btn.style.borderColor="#b38b2e"; btn.style.background="#fffdf5"; return; }
     p.src = urls[idx++];
     p.play().catch(() => {});
     p.onended = next;
@@ -84,10 +84,13 @@ function playQueue(urls, btn) {
 }
 
 // ── Bind functions to window so inline onclick="" attributes work ──
-window._gaPlay      = (url, btnId) => playUrl(url, document.getElementById(btnId), false);
-window._gaPlayInline = (url, btnId) => playUrl(url, document.getElementById(btnId), true);
-window._gaQueue     = (urlsJson, btnId) => playQueue(JSON.parse(urlsJson), document.getElementById(btnId));
-window._gaStop      = stopAll;
+window._gaPlay          = (url, btnId) => playUrl(url, document.getElementById(btnId), false);
+window._gaPlayInline    = (url, btnId) => playUrl(url, document.getElementById(btnId), true);
+window._gaQueue         = (urlsJson, btnId) => playQueue(JSON.parse(urlsJson), document.getElementById(btnId));
+window._gaStop          = stopAll;
+window._gaPlayBtn       = (btn) => playUrl(btn.dataset.url, btn, false);
+window._gaPlayInlineBtn = (btn) => playUrl(btn.dataset.url, btn, true);
+window._gaQueueBtn      = (btn) => playQueue(JSON.parse(btn.dataset.queue), btn);
 
 // ── HTML builders ──────────────────────────────────────────────
 
