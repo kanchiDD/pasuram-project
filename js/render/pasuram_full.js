@@ -88,10 +88,12 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
   /* ================= THANIYAN ================= */
 
   if (!state.isFullRender && state.thaniyanData) {
-    const thaniyanHtml = renderThaniyan(
-      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
-      state.prosodyMap
-    );
+    const _thData = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
+    const _thSec  = Array.isArray(_thData) ? _thData.find(t => t.type === "section") : null;
+    const _thBtn  = (_thSec && _thSec.has_audio)
+      ? sectionListenBtn("ga-th-" + _thSec.thaniyan_id, THANIYAN_URL(_thSec.thaniyan_id))
+      : "";
+    const thaniyanHtml = renderThaniyan(_thData, state.prosodyMap, _thBtn);
 
     if (typeof thaniyanHtml === "string") {
       html += thaniyanHtml;
@@ -477,10 +479,12 @@ export function renderPasuramSplit(displayMapOverride, sectionClosingOverride) {
   // ── Thaniyan ──
   let thaniyanHtml = "";
   if (!state.isFullRender && state.thaniyanData) {
-    const t = renderThaniyan(
-      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
-      state.prosodyMap
-    );
+    const _thData2 = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
+    const _thSec2  = Array.isArray(_thData2) ? _thData2.find(t => t.type === "section") : null;
+    const _thBtn2  = (_thSec2 && _thSec2.has_audio)
+      ? sectionListenBtn("ga-th2-" + _thSec2.thaniyan_id, THANIYAN_URL(_thSec2.thaniyan_id))
+      : "";
+    const t = renderThaniyan(_thData2, state.prosodyMap, _thBtn2);
     if (typeof t === "string") thaniyanHtml = t;
   }
 

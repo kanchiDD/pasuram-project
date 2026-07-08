@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { PASURAM_URL, inlinePlayBtn } from "./globalAudio.js";
+import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionListenBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
@@ -89,10 +89,12 @@ if (state.kootrirukkaiData) {
   /* ================= THANIYAN ================= */
 
   if (!state.isFullRender && state.thaniyanData) {
-    const thaniyanHtml = renderThaniyan(
-      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
-      state.prosodyMap
-    );
+    const _thDataP = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
+    const _thSecP  = Array.isArray(_thDataP) ? _thDataP.find(t => t.type === "section") : null;
+    const _thBtnP  = (_thSecP && _thSecP.has_audio)
+      ? sectionListenBtn("ga-th-" + _thSecP.thaniyan_id, THANIYAN_URL(_thSecP.thaniyan_id))
+      : "";
+    const thaniyanHtml = renderThaniyan(_thDataP, state.prosodyMap, _thBtnP);
 
     if (typeof thaniyanHtml === "string") {
       html += thaniyanHtml;
@@ -393,11 +395,6 @@ html += '</div>';
   }
 
   state.pasuramData = originalData;
-/* ✅ MIC BUTTON */
-html += `
-  <div class="mic-btn" onclick="openRecital()">
-    🎤
-  </div>
-`;  
+
   return html;
 }
