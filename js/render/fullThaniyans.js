@@ -6,6 +6,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
+import { THANIYAN_URL, sectionListenBtn } from "./globalAudio.js";
 import { fetchThaniyanWithProsody } from "./displayHelper.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -310,9 +311,13 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       const heading = sectionHeaderMap[baseName] || baseName;
 
       // ONE heading only — no badge/tag inside, just the section name
+      const ftSRow = sectionRows[0];
+      const ftListenBtn = ftSRow?.has_audio
+        ? sectionListenBtn("ga-th-" + ftSRow.thaniyan_id, THANIYAN_URL(ftSRow.thaniyan_id))
+        : "";
       html += `
         <div class="ft-box">
-          <div class="ft-box-heading">${heading}</div>
+          <div class="ft-box-heading">${heading}${ftListenBtn}</div>
           ${renderThaniyan(sectionRows, sectionProsodyMap)}
         </div>
       `;

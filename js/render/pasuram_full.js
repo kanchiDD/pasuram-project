@@ -1,4 +1,5 @@
 import { state } from "../state.js";
+import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionListenBtn, sectionQueueBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
@@ -300,6 +301,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
       html += '<div class="tree-item pasuram-item">';
       html += '<b>' + p.global_no + '</b>';
+      if (p.has_audio) html += inlinePlayBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no));
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 

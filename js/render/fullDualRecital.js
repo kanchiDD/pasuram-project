@@ -5,6 +5,7 @@
 // =============================================================
 
 import { state } from "../state.js";
+import { PASURAM_URL, inlinePlayBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
@@ -183,7 +184,7 @@ function renderPasuramBlock(pasurams, pasuramDisplayMap) {
     html += `
       <div class="fdr-pasuram-block">
         ${displayItem}
-        <div class="fdr-global-no">${p.global_no}</div>
+        <div class="fdr-global-no">${p.global_no}${p.has_audio ? inlinePlayBtn("ga-p-"+p.global_no, PASURAM_URL(p.global_no)) : ""}</div>
         <div class="fdr-lines">${renderLinesWithGroups(p.lines)}</div>
         <div class="fdr-local-no">${p.local_no}</div>
       </div>

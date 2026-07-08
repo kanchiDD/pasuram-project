@@ -6,6 +6,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./newThaniyan.js";
+import { PASURAM_URL, THANIYAN_URL, sectionListenBtn, sectionQueueBtn } from "./globalAudio.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 
 /* ================= HEADER MAP ================= */
@@ -22,62 +23,7 @@ const globalNoMap = {
   "பெரியதிருமடல்": 2674
 };
 
-// Only sections listed here have actual split/recorded audio files.
-// Sections NOT in this map get NO audio controls at all — this
-// prevents the wrong section's audio being wired in by mistake.
-const SECTION_AUDIO_MAP = {
-  "திருவெழுகூற்றிருக்கை": {
-    thaniyanSrc: "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_pasuram_2672.mp3"
-  },
-  "சிறியதிருமடல்":{
-    thaniyanSrc: "https://audio.arulicheyal.org/siriyathirumadal_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/siriyathirumadal_pasuram_2673_v2.mp3"
-  },
-
-  "பெரியதிருமடல்": {
-    thaniyanSrc: "https://audio.arulicheyal.org/periyathirumadal_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/periyathirumadal_pasuram_2674.mp3"
-  }
-   
-  // சிறியதிருமடல் (2673) and பெரியதிருமடல் (2674) — no split audio
-  // yet. Add entries here once those are recorded, split, and
-  // uploaded to R2 (same audio.arulicheyal.org pattern).
-};
-
-/* ================= MINIMAL AUDIO CONTROLS ================= */
-// Horizontal row, centered: play / stop / mute, each with a small
-// label underneath. No native timeline/seek bar. audioId must be
-// unique per element on the page.
-function buildMiniAudioControls(audioId, src) {
-  const btnStyle = "background:#3cb043;color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;";
-  const labelStyle = "font-size:10px;color:#666;margin-top:2px;";
-  const groupStyle = "display:flex;flex-direction:column;align-items:center;";
-
-  return `
-    <audio id="${audioId}" src="${src}" style="display:none;"></audio>
-    <div style="display:flex;gap:22px;justify-content:center;align-items:flex-start;margin:8px 0;">
-      <div style="${groupStyle}">
-        <button type="button" title="Play"
-          onclick="document.getElementById('${audioId}').play()"
-          style="${btnStyle}background:#3cb043;">▶</button>
-        <span style="${labelStyle}">Play</span>
-      </div>
-      <div style="${groupStyle}">
-        <button type="button" title="Stop"
-          onclick="var a=document.getElementById('${audioId}');a.pause();a.currentTime=0;"
-          style="${btnStyle}background:#555;">■</button>
-        <span style="${labelStyle}">Stop</span>
-      </div>
-      <div style="${groupStyle}">
-        <button type="button" title="Mute"
-          onclick="var a=document.getElementById('${audioId}');a.muted=!a.muted;this.textContent=a.muted?'🔇':'🔊';"
-          style="${btnStyle}background:#777;">🔊</button>
-        <span style="${labelStyle}">Mute</span>
-      </div>
-    </div>
-  `;
-}
+// Audio now handled by globalAudio.js (PASURAM_URL, THANIYAN_URL, sectionListenBtn, sectionQueueBtn)
 
 /* ================= HEADER ================= */
 
@@ -103,20 +49,15 @@ function renderHeader() {
       // Section-specific thaniyan — only attach audio controls if THIS
       // section actually has recorded/split audio. Otherwise render
       // plain, with no controls, to avoid wiring the wrong audio in.
-      const sectionAudio = SECTION_AUDIO_MAP[state.selectedSectionName];
-
       if (sectionRows.length > 0) {
-        const thaniyanControls = sectionAudio
-          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
+        const sRow = sectionRows[0];
+        const thControls = sRow.has_audio
+          ? sectionListenBtn("ga-th-" + sRow.thaniyan_id, THANIYAN_URL(sRow.thaniyan_id))
           : "";
-        html += renderThaniyan(sectionRows, state.prosodyMap, thaniyanControls);
+        html += renderThaniyan(sectionRows, state.prosodyMap, thControls);
       }
-
       if (globalRows.length === 0 && sectionRows.length === 0) {
-        const fallbackControls = sectionAudio
-          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
-          : "";
-        html += renderThaniyan(allRows, state.prosodyMap, fallbackControls);
+        html += renderThaniyan(allRows, state.prosodyMap, "");
       }
     }
   }
@@ -156,9 +97,13 @@ export function renderMadal(data) {
 
   // Minimal play/stop/mute controls — only if this section actually
   // has recorded/split audio (see SECTION_AUDIO_MAP above).
-  const madalSectionAudio = SECTION_AUDIO_MAP[sectionName];
-  if (madalSectionAudio) {
-    html += buildMiniAudioControls("pasuramAudio_" + globalNo, madalSectionAudio.pasuramSrc);
+  if (data.has_audio) {
+    // Build queue: thaniyan (if flagged) + full pasuram
+    const thRow = (state.thaniyanData || []).find(t => t.type === "section" && t.has_audio);
+    const queue = [];
+    if (thRow) queue.push(THANIYAN_URL(thRow.thaniyan_id));
+    queue.push(PASURAM_URL(globalNo));
+    html += sectionQueueBtn("ga-sec-" + globalNo, queue);
   }
 
   const maxCouplet = sectionName === "பெரியதிருமடல்" ? 148 : 77;
@@ -210,9 +155,12 @@ export function renderKootrirukkai(data) {
 
   // Minimal play/stop/mute controls — only if this section actually
   // has recorded/split audio (see SECTION_AUDIO_MAP above).
-  const kootriSectionAudio = SECTION_AUDIO_MAP[sectionName];
-  if (kootriSectionAudio) {
-    html += buildMiniAudioControls("pasuramAudio_" + globalNo, kootriSectionAudio.pasuramSrc);
+  if (data.has_audio) {
+    const thRow = (state.thaniyanData || []).find(t => t.type === "section" && t.has_audio);
+    const queue = [];
+    if (thRow) queue.push(THANIYAN_URL(thRow.thaniyan_id));
+    queue.push(PASURAM_URL(globalNo));
+    html += sectionQueueBtn("ga-sec-" + globalNo, queue);
   }
 
   const kootriHtml = buildKootrirukkaiLinesHTML(data, "sp", 41);

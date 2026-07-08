@@ -6,6 +6,7 @@
 // =============================================================
 
 import { state } from "../state.js";
+import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionQueueBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./newThaniyan.js"; // isolated — only for section view
 import { renderMadal, renderKootrirukkai } from "./newSpecial.js";
 
@@ -269,6 +270,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
       html += '<div class="tree-item pasuram-item">';
       html += '<b>' + p.global_no + '</b>';
+      if (p.has_audio) html += inlinePlayBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no));
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 
@@ -403,4 +405,3 @@ html += `
 `;  
   return html;
 }
-

@@ -16,6 +16,7 @@
 // =============================================================
 
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
+import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionListenBtn } from "./globalAudio.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -301,7 +302,14 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       const vn = s.content?.vazhi_name;
       return vn ? `வாழித் திருநாமம் — ${vn}` : `வாழித் திருநாமம்`;
     }
-    if (s.entity_type === "pathu")      return `பத்து ${s.entity_id}`;
+    // Pathu / Thirumozhi — respectful section heading + unit name
+    // e.g. "ஸ்ரீ நம்மாழ்வார்... திருவாய்மொழி — நான்காம் பத்து — முதல் திருமொழி"
+    if (s.entity_type === "pathu" || s.entity_type === "thirumozhi") {
+      const base = _sectionHeading(s.content?.display_name || "");
+      const unit = s.content?.unit_name || "";
+      return [base, unit].filter(Boolean).join(" — ") ||
+             `${s.entity_type} ${s.entity_id}`;
+    }
     const heading = s.content?.display_name || s.content?.title || s.content?.name;
     if (heading) return _sectionHeading(heading);
     return `${s.entity_type} ${s.entity_id}`;
@@ -312,7 +320,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
     // Thaniyan and sattrumurai pasurams are part of the section —
     // they come/go automatically when section is selected/deselected.
     // Each vazhi item is shown as its own row (some compulsory, some optional).
-    const SHOW_TYPES = new Set(["section", "custom", "vazhi_thirunamam"]);
+    const SHOW_TYPES = new Set(["section", "pathu", "thirumozhi", "custom", "vazhi_thirunamam"]);
     const allRendered = [];
 
     for (const s of modeSequence) {
@@ -535,7 +543,12 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
       // pathu header once, thirumozhi header once,
       // display items once per group, adivaravu at end
       // ─────────────────────────────────────────
-      else if (item.entity_type === "section") {
+      else if (item.entity_type === "section" ||
+               item.entity_type === "pathu"   ||
+               item.entity_type === "thirumozhi") {
+        // pathu/thirumozhi content is hydrated by the worker in the
+        // exact same shape as a section (section_type "normal",
+        // closing_text ""), so the whole branch below works unchanged.
         const s = item.content;
         if (!s) continue;
 
@@ -661,7 +674,11 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           if (p.prosody) _lastProsody = p.prosody;
 
           // ── Adivaravu at end of pathu ──
-          const isLastOfPathu = p.pathu_id && (!next || next.pathu_id !== p.pathu_id);
+          // For a thirumozhi-only item the parent pathu's adivaravu
+          // (covering pasurams NOT recited) must not appear — only the
+          // thirumozhi-level adivaravu below applies.
+          const isLastOfPathu = item.entity_type !== "thirumozhi" &&
+                                p.pathu_id && (!next || next.pathu_id !== p.pathu_id);
           if (isLastOfPathu) {
             const pDisp = disp.pathu[String(p.pathu_id)] || [];
             const adiv  = pDisp.find(d => d.text && d.text.includes("அடிவரவு"));
@@ -688,7 +705,9 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           }
 
           // ── Section முற்றிற்று at very end ──
-          if (!next)
+          // Ruling: pathu/thirumozhi subsets show adivaravu only —
+          // no "முற்றிற்று" for a partial section recital.
+          if (!next && item.entity_type === "section")
             html += `<div class="fathn-section-final">${_sectionHeading(s.display_name)} முற்றிற்று</div>`;
         }
 
@@ -1064,7 +1083,7 @@ function _renderPasuram(p, isDualRecital = 0, lastProsody = null, useDoubleRecit
 
   return `
     <div class="fathn-pasuram-block">
-      <div class="fathn-global-no">${p.global_no || ""}</div>
+      <div class="fathn-global-no">${p.global_no || ""}${p.has_audio ? inlinePlayBtn("ga-p-"+p.global_no, PASURAM_URL(p.global_no)) : ""}</div>
       ${prosodyHtml}
       ${carnaticHtml}
       <div class="fathn-lines">${linesHtml}</div>
