@@ -492,7 +492,7 @@ export function renderPasuramSplit(displayMapOverride, sectionClosingOverride) {
     const _thData2 = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
     const _thSec2  = Array.isArray(_thData2) ? _thData2.find(t => t.type === "section") : null;
     const _thBtn2  = (_thSec2 && _thSec2.has_audio)
-      ? sectionListenBtn("ga-th2-" + _thSec2.thaniyan_id, THANIYAN_URL(_thSec2.section_id))
+      ? sectionListenBtn("ga-th2-" + _thSec2.section_id, THANIYAN_URL(_thSec2.section_id))
       : "";
     const t = renderThaniyan(_thData2, state.prosodyMap, _thBtn2);
     if (typeof t === "string") thaniyanHtml = t;
