@@ -7,6 +7,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./newThaniyan.js"; // isolated — only for section view
+import { THANIYAN_URL, PASURAM_URL, sectionListenBtn, sectionQueueBtn, inlinePlayBtn } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./newSpecial.js";
 
 const sectionHeaderMap = {
@@ -101,8 +102,13 @@ if (state.kootrirukkaiData) {
       const sectionRows = allRows.filter(r => r.type === "section");
       // Each gets its own bordered box via newThaniyan.js
       if (globalRows.length  > 0) html += renderThaniyan(globalRows,  state.prosodyMap);
-      if (sectionRows.length > 0) html += renderThaniyan(sectionRows, state.prosodyMap);
-      // Fallback: no type field — render all together
+      if (sectionRows.length > 0) {
+        const thSec = sectionRows[0];
+        const thBtn = (thSec.has_audio && thSec.section_id)
+          ? sectionListenBtn("ga-th-" + thSec.section_id, THANIYAN_URL(thSec.section_id))
+          : "";
+        html += renderThaniyan(sectionRows, state.prosodyMap, thBtn);
+      }
       if (globalRows.length === 0 && sectionRows.length === 0) {
         html += renderThaniyan(allRows, state.prosodyMap);
       }
@@ -269,6 +275,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
       html += '<div class="tree-item pasuram-item">';
       html += '<b>' + p.global_no + '</b>';
+      if (p.has_audio) html += inlinePlayBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no));
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 
@@ -395,12 +402,7 @@ html += '</div>';
 
   html += `</div>`; /* close content-outer */
 
-/* ✅ MIC BUTTON */
-html += `
-  <div class="mic-btn" onclick="openRecital()">
-    🎤
-  </div>
-`;  
+
+
   return html;
 }
-
