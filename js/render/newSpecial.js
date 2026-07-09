@@ -27,22 +27,17 @@ const globalNoMap = {
 // prevents the wrong section's audio being wired in by mistake.
 const SECTION_AUDIO_MAP = {
   "திருவெழுகூற்றிருக்கை": {
-    thaniyanSrc: "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/thiruvezhukkootrirukkai_pasuram_2672.mp3"
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_21.mp3",
+    pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2672.mp3"
   },
-  "சிறியதிருமடல்":{
-    thaniyanSrc: "https://audio.arulicheyal.org/siriyathirumadal_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/siriyathirumadal_pasuram_2673_v2.mp3"
+  "சிறியதிருமடல்": {
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_22.mp3",
+    pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2673.mp3"
   },
-
   "பெரியதிருமடல்": {
-    thaniyanSrc: "https://audio.arulicheyal.org/periyathirumadal_thaniyan_1.mp3",
-    pasuramSrc:  "https://audio.arulicheyal.org/periyathirumadal_pasuram_2674.mp3"
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_23.mp3",
+    pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2674.mp3"
   }
-   
-  // சிறியதிருமடல் (2673) and பெரியதிருமடல் (2674) — no split audio
-  // yet. Add entries here once those are recorded, split, and
-  // uploaded to R2 (same audio.arulicheyal.org pattern).
 };
 
 /* ================= MINIMAL AUDIO CONTROLS ================= */
