@@ -104,8 +104,9 @@ if (state.kootrirukkaiData) {
       if (globalRows.length  > 0) html += renderThaniyan(globalRows,  state.prosodyMap);
       if (sectionRows.length > 0) {
         const thSec = sectionRows.find(r => r.has_audio) || sectionRows[0];
-        const thBtn = (thSec.has_audio && thSec.section_id)
-          ? sectionListenBtn("ga-th-" + thSec.section_id, THANIYAN_URL(thSec.section_id))
+        const secId = thSec.section_id || state.selectedSectionId;
+        const thBtn = (thSec.has_audio && secId)
+          ? sectionListenBtn("ga-th-" + secId, THANIYAN_URL(secId))
           : "";
         html += renderThaniyan(sectionRows, state.prosodyMap, thBtn);
       }
