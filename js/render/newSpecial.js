@@ -27,15 +27,15 @@ const globalNoMap = {
 // prevents the wrong section's audio being wired in by mistake.
 const SECTION_AUDIO_MAP = {
   "திருவெழுகூற்றிருக்கை": {
-    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_21.mp3",
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_22.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2672.mp3"
   },
   "சிறியதிருமடல்": {
-    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_22.mp3",
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_23.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2673.mp3"
   },
   "பெரியதிருமடல்": {
-    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_23.mp3",
+    thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_24.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2674.mp3"
   }
 };
