@@ -52,7 +52,7 @@ function renderHeader() {
       if (sectionRows.length > 0) {
         const sRow = sectionRows[0];
         const thControls = sRow.has_audio
-          ? sectionListenBtn("ga-th-" + sRow.thaniyan_id, THANIYAN_URL(sRow.thaniyan_id))
+          ? sectionListenBtn("ga-th-" + sRow.section_id, THANIYAN_URL(sRow.section_id))
           : "";
         html += renderThaniyan(sectionRows, state.prosodyMap, thControls);
       }

@@ -313,7 +313,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       // ONE heading only — no badge/tag inside, just the section name
       const ftSRow = sectionRows[0];
       const ftListenBtn = ftSRow?.has_audio
-        ? sectionListenBtn("ga-th-" + ftSRow.thaniyan_id, THANIYAN_URL(ftSRow.thaniyan_id))
+        ? sectionListenBtn("ga-th-" + ftSRow.section_id, THANIYAN_URL(ftSRow.section_id))
         : "";
       html += `
         <div class="ft-box">

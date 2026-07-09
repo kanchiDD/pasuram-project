@@ -128,7 +128,7 @@ if (state.kootrirukkaiData) {
     })();
     const _pasurams = (state.pasuramData || []);
     const _queueUrls = [];
-    if (_thSec?.has_audio) _queueUrls.push(THANIYAN_URL(_thSec.thaniyan_id));
+    if (_thSec?.has_audio) _queueUrls.push(THANIYAN_URL(_thSec.section_id));
     _pasurams.forEach(p => { if (p.has_audio) _queueUrls.push(PASURAM_URL(p.global_no)); });
     const _secId = state.selectedSectionId || "0";
     const _playAllBtn = _queueUrls.length
