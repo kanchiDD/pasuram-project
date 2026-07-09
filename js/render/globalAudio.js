@@ -1,19 +1,29 @@
+// =============================================================
 // globalAudio.js  →  js/render/globalAudio.js
-// Single shared audio module. Uses a JS Map registry — no URL
-// embedding in HTML attributes, zero injection risk.
+// ONE audio design for the whole site:
+//   small round GREEN button, ▶ symbol, "Play" subscript below.
+//   While playing: RED button, ■ symbol, "Stop" subscript.
+//   Tap again to stop. Only one thing plays at a time.
 //
-// R2 URL conventions:
-//   thaniyan : https://audio.arulicheyal.org/thaniyans/thaniyan_{id}.mp3
-//   pasuram  : https://audio.arulicheyal.org/pasurams/pasuram_{no}.mp3
+// Levels:
+//   inline  (pasuram)        → 18px circle, next to global_no
+//   section (thaniyan/whole) → 26px circle, centered
+//
+// A button can hold ONE url or a QUEUE of urls (plays in order:
+// thaniyan → pasuram 1 → pasuram 2 → …).
+//
+// R2 conventions:
+//   thaniyans/thaniyan_{thaniyan_id}.mp3
+//   pasurams/pasuram_{global_no}.mp3
+// =============================================================
 
 const AUDIO_BASE = "https://audio.arulicheyal.org";
 export const THANIYAN_URL = id => `${AUDIO_BASE}/thaniyans/thaniyan_${id}.mp3`;
 export const PASURAM_URL  = no => `${AUDIO_BASE}/pasurams/pasuram_${no}.mp3`;
 
-// ── Registry: buttonGroupId → { audioId, urls[] } ─────────────
+// id → { urls: [] }
 const _registry = new Map();
 
-// ── Shared player ──────────────────────────────────────────────
 function getPlayer() {
   let p = document.getElementById("ga-player");
   if (!p) {
@@ -25,171 +35,78 @@ function getPlayer() {
   return p;
 }
 
-// ── Color helpers ──────────────────────────────────────────────
-// Section controls: Play button green → red when playing
-function _setPlayBtn(audioId, playing) {
-  const btn = document.getElementById("ga-play-" + audioId);
+// ── Button visual state ────────────────────────────────────────
+function setBtnState(btn, playing) {
   if (!btn) return;
+  const label = btn.parentElement?.querySelector(".ga-sub");
   if (playing) {
-    btn.style.background = "#c0392b"; // red when playing
-    btn.title = "Playing";
+    btn.style.background = "#c0392b";     // red
+    btn.textContent = "■";
+    btn.classList.add("ga-playing");
+    if (label) { label.textContent = "Stop"; label.style.color = "#c0392b"; }
   } else {
-    btn.style.background = "#3cb043"; // green when ready
-    btn.title = "Play";
+    btn.style.background = "#2e7d32";     // green
+    btn.textContent = "▶";
+    btn.classList.remove("ga-playing");
+    if (label) { label.textContent = label.dataset.idle || "Play"; label.style.color = "#2e7d32"; }
   }
 }
 
-// Inline pasuram ▶ button: green → red
-function _setInlineBtn(id, playing) {
-  const btn = document.getElementById(id);
-  if (!btn) return;
-  btn.style.color = playing ? "#c0392b" : "#2e7d32";
-  btn.textContent = playing ? "■" : "▶";
-}
-
-// Stop all currently playing audio and reset all buttons
 function stopAll() {
   const p = getPlayer();
-  p.pause();
-  p.src = "";
-  // Reset all section play buttons to green
-  document.querySelectorAll("[id^='ga-play-']").forEach(b => {
-    b.style.background = "#3cb043";
-  });
-  // Reset all inline buttons to green ▶
-  document.querySelectorAll(".ga-inline-btn").forEach(b => {
-    b.style.color = "#2e7d32";
-    b.textContent = "▶";
-  });
+  p.pause(); p.src = ""; p.onended = null;
+  document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
 }
 
-// ── Play a single URL ──────────────────────────────────────────
-window._gaPlay = function(audioId) {
-  const data = _registry.get(audioId);
-  if (!data) return;
-  const p = getPlayer();
-  // Toggle if already playing this track
-  if (!p.paused && p.src.endsWith(data.urls[0].split("/").pop())) {
-    stopAll(); return;
-  }
+// ── The single toggle used by every button ─────────────────────
+window._gaToggle = function (id) {
+  const btn  = document.getElementById(id);
+  const data = _registry.get(id);
+  if (!btn || !data || !data.urls.length) return;
+
+  // Tapping the playing button stops it
+  if (btn.classList.contains("ga-playing")) { stopAll(); return; }
+
   stopAll();
-  p.src = data.urls[0];
-  p.play().catch(() => {});
-  _setPlayBtn(audioId, true);
-  p.onended = () => _setPlayBtn(audioId, false);
-};
-
-// ── Stop a specific section ────────────────────────────────────
-window._gaStop = function(audioId) {
   const p = getPlayer();
-  p.pause(); p.src = "";
-  _setPlayBtn(audioId, false);
-};
-
-// ── Mute toggle ───────────────────────────────────────────────
-window._gaMute = function(audioId, btn) {
-  const p = getPlayer();
-  p.muted = !p.muted;
-  btn.textContent = p.muted ? "🔇" : "🔊";
-};
-
-// ── Play a queue (thaniyan → pasuram → ...) ───────────────────
-window._gaQueue = function(audioId) {
-  const data = _registry.get(audioId);
-  if (!data || !data.urls.length) return;
-  const p = getPlayer();
-  // Toggle off if playing
-  if (!p.paused) { stopAll(); return; }
-  stopAll();
   let idx = 0;
-  _setPlayBtn(audioId, true);
-  function next() {
-    if (idx >= data.urls.length) { _setPlayBtn(audioId, false); return; }
+  setBtnState(btn, true);
+  const next = () => {
+    if (idx >= data.urls.length) { setBtnState(btn, false); return; }
     p.src = data.urls[idx++];
-    p.play().catch(() => {});
+    p.play().catch(() => {});   // missing file → skip to next
+    p.onerror = next;           // 404 mp3 → skip, keep queue going
     p.onended = next;
-  }
+  };
   next();
 };
+window._gaStopAll = stopAll;
 
-// ── Inline pasuram ▶ toggle ───────────────────────────────────
-window._gaInline = function(btnId) {
-  const data = _registry.get(btnId);
-  if (!data) return;
-  const p = getPlayer();
-  const btn = document.getElementById(btnId);
-  if (btn && btn.textContent === "■") { stopAll(); return; }
-  stopAll();
-  p.src = data.urls[0];
-  p.play().catch(() => {});
-  _setInlineBtn(btnId, true);
-  p.onended = () => _setInlineBtn(btnId, false);
-};
-
-// ── Button builders ────────────────────────────────────────────
-
-const BTN  = "background:#3cb043;color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;";
-const STOP = "background:#555;color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;";
-const MUTE = "background:#777;color:#fff;border:none;border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;";
-const LBL  = "font-size:10px;color:#666;margin-top:2px;";
-const GRP  = "display:flex;flex-direction:column;align-items:center;";
-
-// Section-level: single file (thaniyan only)
-export function sectionListenBtn(id, url) {
-  _registry.set(id, { urls: [url] });
-  return `
-    <div style="display:flex;gap:22px;justify-content:center;align-items:flex-start;margin:8px 0;">
-      <div style="${GRP}">
-        <button id="ga-play-${id}" type="button" title="Play"
-          onclick="_gaPlay('${id}')" style="${BTN}">▶</button>
-        <span style="${LBL}">Play</span>
-      </div>
-      <div style="${GRP}">
-        <button type="button" title="Stop"
-          onclick="_gaStop('${id}')" style="${STOP}">■</button>
-        <span style="${LBL}">Stop</span>
-      </div>
-      <div style="${GRP}">
-        <button type="button" title="Mute"
-          onclick="_gaMute('${id}',this)" style="${MUTE}">🔊</button>
-        <span style="${LBL}">Mute</span>
-      </div>
-    </div>`;
-}
-
-// Section-level: queue (thaniyan → pasuram → ...)
-export function sectionQueueBtn(id, urls) {
-  _registry.set(id, { urls });
-  return `
-    <div style="display:flex;gap:22px;justify-content:center;align-items:flex-start;margin:8px 0;">
-      <div style="${GRP}">
-        <button id="ga-play-${id}" type="button" title="Play"
-          onclick="_gaQueue('${id}')" style="${BTN}">▶</button>
-        <span style="${LBL}">Play</span>
-      </div>
-      <div style="${GRP}">
-        <button type="button" title="Stop"
-          onclick="_gaStop('${id}')" style="${STOP}">■</button>
-        <span style="${LBL}">Stop</span>
-      </div>
-      <div style="${GRP}">
-        <button type="button" title="Mute"
-          onclick="_gaMute('${id}',this)" style="${MUTE}">🔊</button>
-        <span style="${LBL}">Mute</span>
-      </div>
-    </div>`;
-}
-
-// Pasuram-level: tiny inline ▶ next to global_no
-// Small green circle, red when playing, subscript "Play"/"Stop" label
-export function inlinePlayBtn(id, url) {
-  _registry.set(id, { urls: [url] });
-  return `<span style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin-left:4px;">
-    <button id="${id}" class="ga-inline-btn" type="button"
-      onclick="_gaInline('${id}')"
+// ── ONE builder ────────────────────────────────────────────────
+// size: "sm" (inline pasuram) | "lg" (thaniyan / section)
+// label: idle subscript text ("Play", "Play All")
+export function audioBtn(id, urls, size = "sm", label = "Play") {
+  _registry.set(id, { urls: Array.isArray(urls) ? urls : [urls] });
+  const d    = size === "lg" ? 26 : 18;
+  const fs   = size === "lg" ? 12 : 9;
+  const lfs  = size === "lg" ? 10 : 8;
+  return `<span class="ga-wrap" style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px;line-height:1">
+    <button id="${id}" class="ga-btn" type="button" onclick="_gaToggle('${id}')"
       style="background:#2e7d32;color:#fff;border:none;border-radius:50%;
-             width:18px;height:18px;font-size:9px;cursor:pointer;
-             line-height:1;padding:0;">▶</button>
-    <span style="font-size:8px;color:#2e7d32;margin-top:1px;line-height:1">Play</span>
+             width:${d}px;height:${d}px;font-size:${fs}px;cursor:pointer;
+             line-height:1;padding:0;display:flex;align-items:center;justify-content:center">▶</button>
+    <span class="ga-sub" data-idle="${label}"
+      style="font-size:${lfs}px;color:#2e7d32;margin-top:2px;line-height:1">${label}</span>
   </span>`;
+}
+
+// ── Compatibility wrappers (existing renderer imports keep working) ──
+export function inlinePlayBtn(id, url) {
+  return audioBtn(id, url, "sm", "Play");
+}
+export function sectionListenBtn(id, url) {
+  return `<div style="text-align:center;margin:6px 0">${audioBtn(id, url, "lg", "Play")}</div>`;
+}
+export function sectionQueueBtn(id, urls) {
+  return `<div style="text-align:center;margin:6px 0">${audioBtn(id, urls, "lg", "Play All")}</div>`;
 }

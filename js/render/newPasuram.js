@@ -6,7 +6,7 @@
 // =============================================================
 
 import { state } from "../state.js";
-import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionQueueBtn } from "./globalAudio.js";
+import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionListenBtn, sectionQueueBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./newThaniyan.js"; // isolated — only for section view
 import { renderMadal, renderKootrirukkai } from "./newSpecial.js";
 
@@ -100,10 +100,16 @@ if (state.kootrirukkaiData) {
     if (Array.isArray(allRows) && allRows.length > 0) {
       const globalRows  = allRows.filter(r => r.type === "global" || r.type === "thousand");
       const sectionRows = allRows.filter(r => r.type === "section");
-      // Each gets its own bordered box via newThaniyan.js
-      if (globalRows.length  > 0) html += renderThaniyan(globalRows,  state.prosodyMap);
-      if (sectionRows.length > 0) html += renderThaniyan(sectionRows, state.prosodyMap);
-      // Fallback: no type field — render all together
+      // Global thaniyan — no audio button (shared across sections)
+      if (globalRows.length > 0) html += renderThaniyan(globalRows, state.prosodyMap);
+      // Section thaniyan — Listen button if has_audio=1
+      if (sectionRows.length > 0) {
+        const thSec = sectionRows[0];
+        const thBtn = thSec.has_audio
+          ? sectionListenBtn("ga-th-" + thSec.thaniyan_id, THANIYAN_URL(thSec.thaniyan_id))
+          : "";
+        html += renderThaniyan(sectionRows, state.prosodyMap, thBtn);
+      }
       if (globalRows.length === 0 && sectionRows.length === 0) {
         html += renderThaniyan(allRows, state.prosodyMap);
       }
@@ -115,9 +121,22 @@ if (state.kootrirukkaiData) {
   {
     const sectionName = (!state.isFullRender && state.selectedSectionName) ? state.selectedSectionName : "";
     const title = sectionName ? (sectionHeaderMap[sectionName] || sectionName) : "";
+    // Build section queue: thaniyan (if any) + all has_audio pasurams
+    const _thSec = (() => {
+      const rows = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData || [];
+      return Array.isArray(rows) ? rows.find(t => t.type === "section") : null;
+    })();
+    const _pasurams = (state.pasuramData || []);
+    const _queueUrls = [];
+    if (_thSec?.has_audio) _queueUrls.push(THANIYAN_URL(_thSec.thaniyan_id));
+    _pasurams.forEach(p => { if (p.has_audio) _queueUrls.push(PASURAM_URL(p.global_no)); });
+    const _secId = state.selectedSectionId || "0";
+    const _playAllBtn = _queueUrls.length
+      ? sectionQueueBtn("ga-sec-" + _secId, _queueUrls)
+      : "";
     html += title
-      ? `<div class="content-outer"><div class="content-heading">${title}</div>`
-      : `<div class="content-outer">`;
+      ? `<div class="content-outer"><div class="content-heading">${title}</div>${_playAllBtn}`
+      : `<div class="content-outer">${_playAllBtn}`;
   }
 
   /* ================= SECTION DISPLAY ================= */
@@ -397,11 +416,5 @@ html += '</div>';
 
   html += `</div>`; /* close content-outer */
 
-/* ✅ MIC BUTTON */
-html += `
-  <div class="mic-btn" onclick="openRecital()">
-    🎤
-  </div>
-`;  
   return html;
 }
