@@ -111,10 +111,20 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
       sectionHeaderMap[sectionName] ||
       sectionName;
 
+    // Section-level Play All queue button
+    const _pfData = state.pasuramData || [];
+    const _pfThData = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData || [];
+    const _pfThSec = Array.isArray(_pfThData) ? _pfThData.find(t => t.type === "section") : null;
+    const _pfQ = [];
+    if (_pfThSec?.has_audio) _pfQ.push(THANIYAN_URL(_pfThSec.thaniyan_id));
+    _pfData.forEach(p => { if (p.has_audio) _pfQ.push(PASURAM_URL(p.global_no)); });
+    const _pfSecId = state.selectedSectionId || "0";
+    const _pfBtn = _pfQ.length ? sectionQueueBtn("ga-sec-" + _pfSecId, _pfQ) : "";
     html += `
       <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
         ${title}
       </div>
+      ${_pfBtn}
     `;
   }
 

@@ -54,7 +54,7 @@ function setBtnState(btn, playing) {
 
 function stopAll() {
   const p = getPlayer();
-  p.pause(); p.src = ""; p.onended = null;
+  p.pause(); p.src = ""; p.onended = null; p.onerror = null;
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
 }
 
@@ -74,9 +74,9 @@ window._gaToggle = function (id) {
   const next = () => {
     if (idx >= data.urls.length) { setBtnState(btn, false); return; }
     p.src = data.urls[idx++];
-    p.play().catch(() => {});   // missing file → skip to next
-    p.onerror = next;           // 404 mp3 → skip, keep queue going
     p.onended = next;
+    p.onerror = null;   // don't skip on error — let it stay stopped
+    p.play().catch(() => {});
   };
   next();
 };
