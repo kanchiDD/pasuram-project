@@ -1,5 +1,4 @@
 import { state } from "../state.js";
-import { PASURAM_URL, THANIYAN_URL, inlinePlayBtn, sectionListenBtn, sectionQueueBtn } from "./globalAudio.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
@@ -88,12 +87,10 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
   /* ================= THANIYAN ================= */
 
   if (!state.isFullRender && state.thaniyanData) {
-    const _thData = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
-    const _thSec  = Array.isArray(_thData) ? _thData.find(t => t.type === "section") : null;
-    const _thBtn  = (_thSec && _thSec.has_audio)
-      ? sectionListenBtn("ga-th-" + _thSec.section_id, THANIYAN_URL(_thSec.section_id))
-      : "";
-    const thaniyanHtml = renderThaniyan(_thData, state.prosodyMap, _thBtn);
+    const thaniyanHtml = renderThaniyan(
+      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
+      state.prosodyMap
+    );
 
     if (typeof thaniyanHtml === "string") {
       html += thaniyanHtml;
@@ -111,20 +108,10 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
       sectionHeaderMap[sectionName] ||
       sectionName;
 
-    // Section-level Play All queue button
-    const _pfData = state.pasuramData || [];
-    const _pfThData = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData || [];
-    const _pfThSec = Array.isArray(_pfThData) ? _pfThData.find(t => t.type === "section") : null;
-    const _pfQ = [];
-    if (_pfThSec?.has_audio) _pfQ.push(THANIYAN_URL(_pfThSec.section_id));
-    _pfData.forEach(p => { if (p.has_audio) _pfQ.push(PASURAM_URL(p.global_no)); });
-    const _pfSecId = state.selectedSectionId || "0";
-    const _pfBtn = _pfQ.length ? sectionQueueBtn("ga-sec-" + _pfSecId, _pfQ) : "";
     html += `
       <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
         ${title}
       </div>
-      ${_pfBtn}
     `;
   }
 
@@ -313,7 +300,6 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
       html += '<div class="tree-item pasuram-item">';
       html += '<b>' + p.global_no + '</b>';
-      if (p.has_audio) html += inlinePlayBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no));
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 
@@ -489,12 +475,10 @@ export function renderPasuramSplit(displayMapOverride, sectionClosingOverride) {
   // ── Thaniyan ──
   let thaniyanHtml = "";
   if (!state.isFullRender && state.thaniyanData) {
-    const _thData2 = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
-    const _thSec2  = Array.isArray(_thData2) ? _thData2.find(t => t.type === "section") : null;
-    const _thBtn2  = (_thSec2 && _thSec2.has_audio)
-      ? sectionListenBtn("ga-th2-" + _thSec2.section_id, THANIYAN_URL(_thSec2.section_id))
-      : "";
-    const t = renderThaniyan(_thData2, state.prosodyMap, _thBtn2);
+    const t = renderThaniyan(
+      state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
+      state.prosodyMap
+    );
     if (typeof t === "string") thaniyanHtml = t;
   }
 
