@@ -30,6 +30,7 @@ function getPlayer() {
   if (!p) {
     p = document.createElement("audio");
     p.id = "ga-player";
+    p.preload = "auto";
     p.style.display = "none";
     document.body.appendChild(p);
   }
@@ -72,12 +73,19 @@ window._gaToggle = function (id) {
   const p = getPlayer();
   let idx = 0;
   setBtnState(btn, true);
+  let preloader = null;
   const next = () => {
     if (idx >= data.urls.length) { setBtnState(btn, false); return; }
     p.src = data.urls[idx++];
     p.onended = next;
     p.onerror = null;   // don't skip on error — let it stay stopped
     p.play().catch(() => {});
+    // Warm the next track while the current one plays → minimal gap between pasurams
+    if (idx < data.urls.length) {
+      preloader = new Audio();
+      preloader.preload = "auto";
+      preloader.src = data.urls[idx];
+    }
   };
   next();
 };

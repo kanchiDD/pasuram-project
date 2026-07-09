@@ -103,7 +103,7 @@ if (state.kootrirukkaiData) {
       // Each gets its own bordered box via newThaniyan.js
       if (globalRows.length  > 0) html += renderThaniyan(globalRows,  state.prosodyMap);
       if (sectionRows.length > 0) {
-        const thSec = sectionRows[0];
+        const thSec = sectionRows.find(r => r.has_audio) || sectionRows[0];
         const thBtn = (thSec.has_audio && thSec.section_id)
           ? sectionListenBtn("ga-th-" + thSec.section_id, THANIYAN_URL(thSec.section_id))
           : "";
@@ -123,6 +123,26 @@ if (state.kootrirukkaiData) {
     html += title
       ? `<div class="content-outer"><div class="content-heading">${title}</div>`
       : `<div class="content-outer">`;
+  }
+
+  /* ============ SECTION PLAY ALL — thaniyan + every audio pasuram, in order ============ */
+
+  if (!state.isFullRender && Array.isArray(state.pasuramData) && state.pasuramData.length > 0) {
+    const queue = [];
+
+    // Lead with the section thaniyan if it has a recording
+    const secThaniyan = (state.thaniyanData || [])
+      .find(t => t.type === "section" && t.has_audio && t.section_id);
+    if (secThaniyan) queue.push(THANIYAN_URL(secThaniyan.section_id));
+
+    // Then every pasuram in the section, in order, that has an audio file
+    for (const p of state.pasuramData) {
+      if (p.has_audio) queue.push(PASURAM_URL(p.global_no));
+    }
+
+    if (queue.length > 0) {
+      html += sectionQueueBtn("ga-sec-" + (state.selectedSectionId || "x"), queue);
+    }
   }
 
   /* ================= SECTION DISPLAY ================= */
