@@ -1,6 +1,6 @@
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
-import { audioBtn, PASURAM_URL } from "./globalAudio.js";
+import { numLinePlay, PASURAM_URL } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
 const sectionHeaderMap = {
@@ -300,13 +300,8 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
       /* ===== PASURAM ===== */
 
       html += '<div class="tree-item pasuram-item">';
-      // Global number stays at the left; small green ▶ centered on the SAME line.
-      html += '<div class="ga-numline" style="position:relative;text-align:center;min-height:20px">';
-      html += '<b style="position:absolute;left:0;top:0">' + p.global_no + '</b>';
-      if (p.has_audio) {
-        html += audioBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no), 'sm', '');
-      }
-      html += '</div>';
+      // Number pinned left, small green ▶ (Play/Stop subscript) centered on the SAME line.
+      html += numLinePlay('<b>' + p.global_no + '</b>', 'ga-p-' + p.global_no, PASURAM_URL(p.global_no), p.has_audio);
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 

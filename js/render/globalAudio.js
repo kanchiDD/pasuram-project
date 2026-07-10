@@ -117,10 +117,22 @@ export function audioBtn(id, urls, size = "sm", label = "Play") {
 // centerPlayBtn : plays a single url (thaniyan / pasuram)
 // centerQueueBtn: plays a queue (section Play All) — same look
 export function centerPlayBtn(id, url) {
-  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, url, "sm", "")}</div>`;
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, url, "sm", "Play")}</div>`;
 }
 export function centerQueueBtn(id, urls) {
-  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, urls, "sm", "")}</div>`;
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, urls, "sm", "Play All")}</div>`;
+}
+
+// ── Pasuram number + play on ONE line (no extra row) ──
+// numberHtml : the view's own number markup (e.g. "<b>927</b>")
+// The number pins to the left; the small green ▶ (with Play/Stop
+// subscript that flips green→red automatically) centers on the SAME line.
+export function numLinePlay(numberHtml, id, url, hasAudio) {
+  const btn = hasAudio ? audioBtn(id, url, "sm", "Play") : "";
+  return `<div class="ga-numline" style="display:flex;align-items:center;min-height:24px">
+    <span style="flex:0 0 auto">${numberHtml}</span>
+    <span style="flex:1;display:flex;justify-content:center">${btn}</span>
+  </div>`;
 }
 
 // ── Compatibility wrappers (existing renderer imports keep working) ──
