@@ -6,6 +6,7 @@
 // =============================================================
 
 import { state } from "../state.js";
+import { centerPlayBtn, THANIYAN_URL } from "./globalAudio.js";
 
 export function renderThaniyan(data, prosodyMap, extraHtml = "") {
 
@@ -34,6 +35,14 @@ export function renderThaniyan(data, prosodyMap, extraHtml = "") {
 
     let currentGroup = null;
 
+    // Section thaniyan with audio → small green ▶ just below its heading.
+    // Fall back to the current section when the row's section_id is missing.
+    const secId  = section.section_id || state.selectedSectionId;
+    const btnHtml = (section.type === "section" && section.has_audio && secId)
+      ? centerPlayBtn("ga-th-" + secId + "-" + (section.thaniyan_id || "x"), THANIYAN_URL(secId))
+      : "";
+    let btnPlaced = false;
+
     section.lines.forEach(line => {
 
       const role  = line.line_role;
@@ -42,15 +51,18 @@ export function renderThaniyan(data, prosodyMap, extraHtml = "") {
 
       if (role === "title") {
         html += `<div class="thaniyan-title">${text}</div>`;
+        if (btnHtml && !btnPlaced) { html += btnHtml; btnPlaced = true; }
         currentGroup = null;
       }
 
       else if (role === "subhead") {
+        if (btnHtml && !btnPlaced) { html += btnHtml; btnPlaced = true; }
         html += `<div class="thaniyan-subhead">${text}</div>`;
         currentGroup = null;
       }
 
       else if (role === "line") {
+        if (btnHtml && !btnPlaced) { html += btnHtml; btnPlaced = true; }
 
         if (currentGroup !== group) {
           html += `<div class="thaniyan-group"></div>`;
@@ -76,7 +88,8 @@ export function renderThaniyan(data, prosodyMap, extraHtml = "") {
 
   });
 
-  html += extraHtml;
+  // (button now rendered below the heading, above; extraHtml kept for
+  //  signature compatibility but no longer appended at the bottom)
   html += `</div></div>`;
 
   return html;

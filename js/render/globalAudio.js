@@ -99,23 +99,37 @@ export function audioBtn(id, urls, size = "sm", label = "Play") {
   const d    = size === "lg" ? 26 : 18;
   const fs   = size === "lg" ? 12 : 9;
   const lfs  = size === "lg" ? 10 : 8;
+  // label omitted (empty) → no subscript, just the green circle
+  const sub  = label
+    ? `<span class="ga-sub" data-idle="${label}"
+        style="font-size:${lfs}px;color:#2e7d32;margin-top:2px;line-height:1">${label}</span>`
+    : "";
   return `<span class="ga-wrap" style="display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px;line-height:1">
     <button id="${id}" class="ga-btn" type="button" onclick="_gaToggle('${id}')"
       style="background:#2e7d32;color:#fff;border:none;border-radius:50%;
              width:${d}px;height:${d}px;font-size:${fs}px;cursor:pointer;
              line-height:1;padding:0;display:flex;align-items:center;justify-content:center">▶</button>
-    <span class="ga-sub" data-idle="${label}"
-      style="font-size:${lfs}px;color:#2e7d32;margin-top:2px;line-height:1">${label}</span>
+    ${sub}
   </span>`;
+}
+
+// ── Centered, label-less green ▶ (the ONE look used everywhere) ──
+// centerPlayBtn : plays a single url (thaniyan / pasuram)
+// centerQueueBtn: plays a queue (section Play All) — same look
+export function centerPlayBtn(id, url) {
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, url, "sm", "")}</div>`;
+}
+export function centerQueueBtn(id, urls) {
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, urls, "sm", "")}</div>`;
 }
 
 // ── Compatibility wrappers (existing renderer imports keep working) ──
 export function inlinePlayBtn(id, url) {
-  return audioBtn(id, url, "sm", "Play");
+  return audioBtn(id, url, "sm", "");
 }
 export function sectionListenBtn(id, url) {
-  return `<div style="text-align:center;margin:6px 0">${audioBtn(id, url, "lg", "Play")}</div>`;
+  return centerPlayBtn(id, url);
 }
 export function sectionQueueBtn(id, urls) {
-  return `<div style="text-align:center;margin:6px 0">${audioBtn(id, urls, "lg", "Play All")}</div>`;
+  return centerQueueBtn(id, urls);
 }
