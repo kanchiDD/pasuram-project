@@ -266,6 +266,10 @@ async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
   const displayData = await fetchDisplayData(sectionId);
   const pasurams    = await fetchPasuramRaw(sectionId);
 
+  // No pasurams for this section in this view → render nothing (no orphan
+  // thaniyan/heading). The azhwar's content for this section lives elsewhere.
+  if (!Array.isArray(pasurams) || pasurams.length === 0) return "";
+
   const sectionDisplayHtml = renderSectionDisplayItems(displayData);
   const prosodyHtml        = renderSectionProsody(displayData);
   const adivaravuHtml      = renderAdivaravu(displayData);

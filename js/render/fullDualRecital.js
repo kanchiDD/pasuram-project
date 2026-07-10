@@ -210,6 +210,11 @@ function floatingNav() {
 // ── Build section block ───────────────────────────────────────────────────────
 function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
 
+  // No ★★ pasurams in this section → render nothing at all (no orphan
+  // thaniyan/heading). The section's content lives elsewhere for this view.
+  const dualPasurams = pasurams.filter(p => p.double_recital === 1);
+  if (dualPasurams.length === 0) return "";
+
   // build lookup maps from display data
   const pasuramDisplayMap   = buildPasuramDisplayMap(displayData);
   const thirumozhiDisplayMap = buildThirumozhiDisplayMap(displayData);
@@ -226,8 +231,6 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
       ${renderThaniyan(thaniyanRows, thaniyanRows._prosodyMap || {})}
     </div>
   ` : "";
-
-  const dualPasurams = pasurams.filter(p => p.double_recital === 1);
 
   // group: pathu → thirumozhi
   const pathuMap = new Map();
