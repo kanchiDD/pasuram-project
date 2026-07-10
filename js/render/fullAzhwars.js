@@ -5,6 +5,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
+import { numLinePlay, PASURAM_URL } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
   injectDisplayCSS,
@@ -183,7 +184,7 @@ function renderPasuramBlock(pasurams, pasuramDisplayMap) {
     html += `
       <div class="faz-pasuram-block">
         ${displayItem}
-        <div class="faz-global-no">${p.global_no}</div>
+        ${numLinePlay(`<span class="faz-global-no">${p.global_no}</span>`, 'ga-p-' + p.global_no, PASURAM_URL(p.global_no), p.has_audio)}
         <div class="faz-lines">${renderLinesWithGroups(p.lines)}</div>
         <div class="faz-local-no">${p.local_no}</div>
       </div>
