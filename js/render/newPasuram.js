@@ -7,7 +7,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./newThaniyan.js"; // isolated — only for section view
-import { THANIYAN_URL, PASURAM_URL, sectionListenBtn, sectionQueueBtn, inlinePlayBtn } from "./globalAudio.js";
+import { THANIYAN_URL, PASURAM_URL, sectionListenBtn, sectionQueueBtn, inlinePlayBtn, numLinePlay } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./newSpecial.js";
 
 const sectionHeaderMap = {
@@ -295,8 +295,8 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
       /* ===== PASURAM ===== */
 
       html += '<div class="tree-item pasuram-item">';
-      html += '<b>' + p.global_no + '</b>';
-      if (p.has_audio) html += inlinePlayBtn('ga-p-' + p.global_no, PASURAM_URL(p.global_no));
+      // Number pinned left, small green ▶ (Play/Stop subscript) centered on the SAME line.
+      html += numLinePlay('<b>' + p.global_no + '</b>', 'ga-p-' + p.global_no, PASURAM_URL(p.global_no), p.has_audio);
 
      /* 🔥 FINAL — UNIVERSAL GROUP HANDLING (UPDATED) */
 
