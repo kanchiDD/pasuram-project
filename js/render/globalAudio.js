@@ -147,9 +147,19 @@ export function sectionAudioUrls(sectionId, thaniyanData, pasuramData) {
   const urls = [];
   const secThan = (rows || []).find(t => t.type === "section" && t.has_audio);
   if (secThan) urls.push(THANIYAN_URL(secThan.section_id || sectionId));
-  const pas = Array.isArray(pasuramData) ? pasuramData : [];
-  for (const p of pas) { if (p.has_audio) urls.push(PASURAM_URL(p.global_no)); }
+  // Regular pasurams AND special segments (madal/kootrirukkai) share the same
+  // shape: rows with global_no + has_audio, file pasuram_{global_no}.mp3.
+  const pas = normalizeSegments(pasuramData);
+  for (const p of pas) { if (p && p.has_audio && p.global_no != null) urls.push(PASURAM_URL(p.global_no)); }
   return urls;
+}
+
+// Accepts an array, or the {rows:[...]}/{data:[...]}/{pasurams:[...]}/{segments:[...]}
+// shapes that madal/kootrirukkai data may arrive in, and returns a flat row array.
+function normalizeSegments(d) {
+  if (!d) return [];
+  if (Array.isArray(d)) return d;
+  return d.rows || d.data || d.pasurams || d.segments || d.lines || [];
 }
 export function sectionPlayAll(sectionId, thaniyanData, pasuramData) {
   const urls = sectionAudioUrls(sectionId, thaniyanData, pasuramData);
@@ -179,6 +189,33 @@ export function thousandPlayAll(thousandId, thousandName, urls) {
       ${nameHtml}
     </span>
   </div>`;
+}
+
+// ── Special sections (kootrirukkai / madal) ──
+// These are single recorded works, NOT per-pasuram rows. The thaniyan file
+// is named by thaniyan_id (22/23/24), and the work by its global_no
+// (2672/2673/2674). Mirrors SECTION_AUDIO_MAP in newSpecial.js — keep in
+// sync if those files ever change. Keyed by both section_id and work global_no.
+const SPECIAL_AUDIO = {
+  21:   { thaniyan: 22, work: 2672 },  // திருவெழுகூற்றிருக்கை
+  2672: { thaniyan: 22, work: 2672 },
+  22:   { thaniyan: 23, work: 2673 },  // சிறியதிருமடல்
+  2673: { thaniyan: 23, work: 2673 },
+  23:   { thaniyan: 24, work: 2674 },  // பெரியதிருமடல்
+  2674: { thaniyan: 24, work: 2674 }
+};
+export function specialSectionUrls(sectionId) {
+  const m = SPECIAL_AUDIO[Number(sectionId)];
+  if (!m) return [];
+  return [
+    `${AUDIO_BASE}/thaniyans/thaniyan_${m.thaniyan}.mp3`,
+    `${AUDIO_BASE}/pasurams/pasuram_${m.work}.mp3`
+  ];
+}
+export function specialSectionPlayAll(sectionId) {
+  const urls = specialSectionUrls(sectionId);
+  if (!urls.length) return "";
+  return centerQueueBtn("ga-sec-" + sectionId, urls);
 }
 
 // ── Compatibility wrappers (existing renderer imports keep working) ──

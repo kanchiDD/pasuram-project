@@ -9,7 +9,7 @@ import {
   } from "./api.js";
 
 import { renderPasuram } from "./render/pasuram_full.js";
-import { sectionPlayAll, sectionAudioUrls, thousandPlayAll } from "./render/globalAudio.js";
+import { sectionPlayAll, sectionAudioUrls, thousandPlayAll, specialSectionUrls, specialSectionPlayAll } from "./render/globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
@@ -246,6 +246,8 @@ html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div
   html += `
     <div class="content-border">
 
+      ${specialSectionPlayAll(sectionId)}
+
       ${specialHtml}
 
       <div class="section-final-ending">
@@ -255,7 +257,9 @@ html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div
     </div>
   `;
 
-  thousandQueue.push(...sectionAudioUrls(sec.id, state.thaniyanData, null));
+  // Special sections use hardcoded work files (thaniyan_id / work global_no),
+  // not the generic per-row scheme — push those exact URLs.
+  thousandQueue.push(...specialSectionUrls(sectionId));
 
   continue;
 }
