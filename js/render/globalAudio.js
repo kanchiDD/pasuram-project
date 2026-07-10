@@ -135,6 +135,24 @@ export function numLinePlay(numberHtml, id, url, hasAudio) {
   </div>`;
 }
 
+// ── Section Play All (data-driven) ──
+// Builds a queue from ONLY the audio items in this section:
+//   section thaniyan (if it has audio) → each pasuram that has audio.
+// Returns "" when the section has no audio at all, so the button appears
+// on its own the moment has_audio is set in the DB — no .js changes needed.
+export function sectionPlayAll(sectionId, thaniyanData, pasuramData) {
+  const rows = Array.isArray(thaniyanData)
+    ? thaniyanData
+    : (thaniyanData?.thaniyan || thaniyanData?.data || thaniyanData?.rows || []);
+  const queue = [];
+  const secThan = (rows || []).find(t => t.type === "section" && t.has_audio);
+  if (secThan) queue.push(THANIYAN_URL(secThan.section_id || sectionId));
+  const pas = Array.isArray(pasuramData) ? pasuramData : [];
+  for (const p of pas) { if (p.has_audio) queue.push(PASURAM_URL(p.global_no)); }
+  if (!queue.length) return "";
+  return centerQueueBtn("ga-sec-" + (sectionId || "x"), queue);
+}
+
 // ── Compatibility wrappers (existing renderer imports keep working) ──
 export function inlinePlayBtn(id, url) {
   return audioBtn(id, url, "sm", "");

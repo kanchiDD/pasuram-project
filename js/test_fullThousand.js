@@ -9,6 +9,7 @@ import {
   } from "./api.js";
 
 import { renderPasuram } from "./render/pasuram_full.js";
+import { sectionPlayAll } from "./render/globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
@@ -304,6 +305,8 @@ if (hasPasuram) {
            style="scroll-margin-top:80px;">
         ${sectionTitle}
       </div>
+
+      ${sectionPlayAll(sec.id, state.thaniyanData, state.pasuramData)}
 
       ${renderPasuram(currentDisplayMap, currentSectionClosing)}
 
