@@ -5,7 +5,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
-import { numLinePlay, PASURAM_URL, sectionPlayAll } from "./globalAudio.js";
+import { numLinePlay, PASURAM_URL, sectionPlayAll, specialSectionPlayAll } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
   injectDisplayCSS,
@@ -338,6 +338,7 @@ async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
     <div class="faz-content-box">
       ${azhwarHeader}
       <div class="faz-section-heading">${heading}</div>
+      ${specialSectionPlayAll(sectionId)}
       ${specialHtml}
     </div>
   `;

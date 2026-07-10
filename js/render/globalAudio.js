@@ -22,6 +22,14 @@ export const THANIYAN_URL = id => `${AUDIO_BASE}/thaniyans/thaniyan_${id}.mp3`;
 export const THANIYAN_SEC_URL = section_id => `${AUDIO_BASE}/thaniyans/thaniyan_${section_id}.mp3`;
 export const PASURAM_URL  = no => `${AUDIO_BASE}/pasurams/pasuram_${no}.mp3`;
 
+// Special sections (kootrirukkai 21 / madal 22,23) name their thaniyan file
+// by thaniyan_id (22/23/24), NOT section_id. Everything else uses section_id.
+const SPECIAL_THANIYAN = { 21: 22, 22: 23, 23: 24 };
+export function thaniyanFileUrl(sectionId, thaniyanId) {
+  const sp = SPECIAL_THANIYAN[Number(sectionId)];
+  return THANIYAN_URL(sp || sectionId);
+}
+
 // id → { urls: [] }
 const _registry = new Map();
 
@@ -78,7 +86,7 @@ window._gaToggle = function (id) {
     if (idx >= data.urls.length) { setBtnState(btn, false); return; }
     p.src = data.urls[idx++];
     p.onended = next;
-    p.onerror = null;   // don't skip on error — let it stay stopped
+    p.onerror = next;   // skip a missing/failed file and continue the queue
     p.play().catch(() => {});
     // Warm the next track while the current one plays → minimal gap between pasurams
     if (idx < data.urls.length) {
@@ -146,7 +154,7 @@ export function sectionAudioUrls(sectionId, thaniyanData, pasuramData) {
     : (thaniyanData?.thaniyan || thaniyanData?.data || thaniyanData?.rows || []);
   const urls = [];
   const secThan = (rows || []).find(t => t.type === "section" && t.has_audio);
-  if (secThan) urls.push(THANIYAN_URL(secThan.section_id || sectionId));
+  if (secThan) urls.push(thaniyanFileUrl(secThan.section_id || sectionId, secThan.thaniyan_id));
   // Regular pasurams AND special segments (madal/kootrirukkai) share the same
   // shape: rows with global_no + has_audio, file pasuram_{global_no}.mp3.
   const pas = normalizeSegments(pasuramData);
@@ -162,9 +170,21 @@ function normalizeSegments(d) {
   return d.rows || d.data || d.pasurams || d.segments || d.lines || [];
 }
 export function sectionPlayAll(sectionId, thaniyanData, pasuramData) {
-  const urls = sectionAudioUrls(sectionId, thaniyanData, pasuramData);
-  if (!urls.length) return "";
-  return centerQueueBtn("ga-sec-" + (sectionId || "x"), urls);
+  // Only show Play All when the section has at least one recorded PASURAM.
+  // A section with only a thaniyan already shows the thaniyan's own button,
+  // so a "Play All" there would be redundant/misleading.
+  const pas = normalizeSegments(pasuramData);
+  const pasUrls = [];
+  for (const p of pas) { if (p && p.has_audio && p.global_no != null) pasUrls.push(PASURAM_URL(p.global_no)); }
+  if (!pasUrls.length) return "";
+  const rows = Array.isArray(thaniyanData)
+    ? thaniyanData
+    : (thaniyanData?.thaniyan || thaniyanData?.data || thaniyanData?.rows || []);
+  const secThan = (rows || []).find(t => t.type === "section" && t.has_audio);
+  const queue = [];
+  if (secThan) queue.push(thaniyanFileUrl(secThan.section_id || sectionId, secThan.thaniyan_id));
+  queue.push(...pasUrls);
+  return centerQueueBtn("ga-sec-" + (sectionId || "x"), queue);
 }
 
 // ── Full-Thousand Play (data-driven) ──

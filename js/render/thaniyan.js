@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { centerPlayBtn, THANIYAN_URL } from "./globalAudio.js";
+import { centerPlayBtn, THANIYAN_URL, thaniyanFileUrl } from "./globalAudio.js";
 
 export function renderThaniyan(data, prosodyMap) {
 
@@ -22,7 +22,7 @@ if (!data) return "";
     // to the section currently being rendered.
     const secId  = section.section_id || state.selectedSectionId;
     const btnHtml = (section.type === "section" && section.has_audio && secId)
-      ? centerPlayBtn("ga-th-" + secId + "-" + (section.thaniyan_id || "x"), THANIYAN_URL(secId))
+      ? centerPlayBtn("ga-th-" + secId + "-" + (section.thaniyan_id || "x"), thaniyanFileUrl(secId, section.thaniyan_id))
       : "";
     let btnPlaced = false;
 
