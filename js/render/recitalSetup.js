@@ -1180,41 +1180,68 @@ export function registerRecitalBindings() {
     const sid   = koilId === 1 ? 11 : 26;
     const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
     if (isSelected("koil", koilId)) { showToast(`"${title}" already added — remove it first.`); return; }
+
+    // Personal recital is sect-aware: show ONLY the registered user's sect.
+    // Koil has just two variants — Thenkalai or Vadakalai (Ahobila Madam uses
+    // the Vadakalai koil), so no sect rows are shown here.
+    const sectKey = ((localStorage.getItem("sect") || "T").toUpperCase() === "V") ? "V" : "T";
+
     let data;
     try {
       const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
       data = await res.json();
     } catch (e) { showToast("Could not load koil list. Please try again."); return; }
+
+    const list        = (data.groups && data.groups[sectKey]) || [];
     const fullSection = isSelected("section", sid);
-    const groupHtml = (glabel, arr) => {
-      if (!arr || !arr.length) return "";
-      return `<div style="font-weight:700;color:#7a4d00;margin:10px 0 4px">${glabel}</div>` +
-        arr.map(p => {
-          // Covered when: full section selected, this exact item selected,
-          // or the PARENT full pathu is selected (parent/children never coexist)
-          const parentSelected = selectedItems.some(i =>
-            i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
-            i.entity_id === p.parent_pathu_id);
-          const covered = fullSection || isSelected("pathu", p.pathu_id) || parentSelected;
-          return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
-            <input type="checkbox" class="r-koil-cb" value="${p.pathu_id}"
-                   data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
-                   data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
-                   data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
-            <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
-          </label>`;
-        }).join("");
-    };
+    const koilChosen  = isSelected("koil", koilId);
+
+    // Child list — hidden until "Select from the List" is tapped
+    const childHtml = list.map(p => {
+      const parentSelected = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+        i.entity_id === p.parent_pathu_id);
+      const covered = fullSection || koilChosen || isSelected("pathu", p.pathu_id) || parentSelected;
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
+        <input type="checkbox" class="r-koil-cb" value="${p.pathu_id}"
+               data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
+               data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
+               data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
+        <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
+      </label>`;
+    }).join("");
+
     document.getElementById("r-modal-title").textContent = title;
     const backEl = document.getElementById("r-modal-back");
     if (backEl) backEl.style.display = "none";
     document.getElementById("r-modal-content").innerHTML = `
-      <div style="font-size:12px;color:#b38b2e;margin-bottom:4px">Select the pathus to include 🙏</div>
-      ${groupHtml("தென்கலை", data.groups && data.groups.T)}
-      ${groupHtml("வடகலை", data.groups && data.groups.V)}
-      <button class="recital-btn-primary" style="width:100%;margin-top:12px"
-              onclick="window._recitalKoilConfirm()">Add Selected 🙏</button>`;
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="recital-btn-primary" style="width:100%"
+                onclick="window._recitalKoilAddFull(${koilId})">Add Full</button>
+        <button type="button"
+                style="width:100%;padding:10px;border:1px solid #d4a843;background:#fff;color:#7a4d00;border-radius:8px;cursor:pointer;font-size:14px"
+                onclick="window._recitalKoilToggleList()">Select from the List</button>
+      </div>
+      <div id="r-koil-list" style="display:none;margin-top:10px">
+        ${childHtml || `<div style="font-size:13px;color:#999;padding:6px 0">No items available.</div>`}
+        <button class="recital-btn-primary" style="width:100%;margin-top:12px"
+                onclick="window._recitalKoilConfirm()">Add Selected</button>
+      </div>`;
     document.getElementById("r-modal-overlay").classList.add("open");
+  };
+
+  // Reveal / hide the individual child list (rare path — most users Add Full)
+  window._recitalKoilToggleList = () => {
+    const el = document.getElementById("r-koil-list");
+    if (el) el.style.display = (el.style.display === "none") ? "block" : "none";
+  };
+
+  // Add Full: store ONE koil item (entity_type="koil"); recited per user's sect.
+  window._recitalKoilAddFull = (koilId) => {
+    const sid   = koilId === 1 ? 11 : 26;
+    const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+    addItem("koil", koilId, title, 0, sid, null);
+    window._recitalCloseModal();
   };
 
   window._recitalKoilConfirm = () => {
