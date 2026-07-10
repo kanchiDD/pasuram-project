@@ -9,7 +9,7 @@ import {
   } from "./api.js";
 
 import { renderPasuram } from "./render/pasuram_full.js";
-import { sectionPlayAll } from "./render/globalAudio.js";
+import { sectionPlayAll, sectionAudioUrls, thousandPlayAll } from "./render/globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
@@ -90,6 +90,9 @@ const isFullMode = !selectedThousandId;
     state.selectedThousandId = t.id;
     context.thousandId = t.id;
 
+    // Per-thousand audio queue (accumulated across its sections, audio-only)
+    let thousandQueue = [];
+
 // =========================
 // 🔥 THOUSAND HEADER
 // =========================
@@ -114,6 +117,9 @@ html += `
 
   </div>
 `;
+
+// Full-Thousand Play button goes here (filled in after sections are gathered)
+html += `<!--FTP:${t.id}-->`;
 
 // =========================
 // 🔥 FETCH anchor map FIRST
@@ -249,6 +255,8 @@ html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div
     </div>
   `;
 
+  thousandQueue.push(...sectionAudioUrls(sec.id, state.thaniyanData, null));
+
   continue;
 }
 
@@ -288,6 +296,9 @@ if (![2, 12, 13].includes(sec.id)) {
             : Object.keys(state.pasuramData).length > 0
         );
 
+      // accumulate this section's audio (thaniyan + pasurams) into the thousand queue
+      thousandQueue.push(...sectionAudioUrls(sec.id, state.thaniyanData, state.pasuramData));
+
      
 // 🔥 CRITICAL RESET PER SECTION
 window._lastThiru = null;
@@ -317,6 +328,10 @@ if (hasPasuram) {
 }
 
     } // sections loop
+
+// Fill in the Full-Thousand Play button now that its queue is complete.
+// (Empty queue → thousandPlayAll returns "", so the placeholder just clears.)
+html = html.replace(`<!--FTP:${t.id}-->`, thousandPlayAll(t.id, t.name, thousandQueue));
 
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
 

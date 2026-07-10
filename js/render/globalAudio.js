@@ -140,17 +140,45 @@ export function numLinePlay(numberHtml, id, url, hasAudio) {
 //   section thaniyan (if it has audio) → each pasuram that has audio.
 // Returns "" when the section has no audio at all, so the button appears
 // on its own the moment has_audio is set in the DB — no .js changes needed.
-export function sectionPlayAll(sectionId, thaniyanData, pasuramData) {
+export function sectionAudioUrls(sectionId, thaniyanData, pasuramData) {
   const rows = Array.isArray(thaniyanData)
     ? thaniyanData
     : (thaniyanData?.thaniyan || thaniyanData?.data || thaniyanData?.rows || []);
-  const queue = [];
+  const urls = [];
   const secThan = (rows || []).find(t => t.type === "section" && t.has_audio);
-  if (secThan) queue.push(THANIYAN_URL(secThan.section_id || sectionId));
+  if (secThan) urls.push(THANIYAN_URL(secThan.section_id || sectionId));
   const pas = Array.isArray(pasuramData) ? pasuramData : [];
-  for (const p of pas) { if (p.has_audio) queue.push(PASURAM_URL(p.global_no)); }
-  if (!queue.length) return "";
-  return centerQueueBtn("ga-sec-" + (sectionId || "x"), queue);
+  for (const p of pas) { if (p.has_audio) urls.push(PASURAM_URL(p.global_no)); }
+  return urls;
+}
+export function sectionPlayAll(sectionId, thaniyanData, pasuramData) {
+  const urls = sectionAudioUrls(sectionId, thaniyanData, pasuramData);
+  if (!urls.length) return "";
+  return centerQueueBtn("ga-sec-" + (sectionId || "x"), urls);
+}
+
+// ── Full-Thousand Play (data-driven) ──
+// Slightly bigger green ▶ that plays the whole thousand in order:
+// "Play full" (bold) with the thousand name below in a subtle font.
+// urls is the accumulated audio queue for that thousand; "" if none.
+export function thousandPlayAll(thousandId, thousandName, urls) {
+  if (!urls || !urls.length) return "";
+  const id = "ga-thousand-" + thousandId;
+  _registry.set(id, { urls: Array.isArray(urls) ? urls : [urls] });
+  const nameHtml = thousandName
+    ? `<span style="font-size:11px;color:#8a6a30;font-weight:400;margin-top:1px;line-height:1.1">${thousandName}</span>`
+    : "";
+  return `<div class="ga-thousand" style="display:flex;justify-content:center;margin:14px 0 22px">
+    <span class="ga-wrap" style="display:inline-flex;flex-direction:column;align-items:center;line-height:1.15">
+      <button id="${id}" class="ga-btn" type="button" onclick="_gaToggle('${id}')"
+        style="background:#2e7d32;color:#fff;border:none;border-radius:50%;
+               width:30px;height:30px;font-size:15px;cursor:pointer;
+               line-height:1;padding:0;display:flex;align-items:center;justify-content:center">▶</button>
+      <span class="ga-sub" data-idle="Play full"
+        style="font-size:12px;color:#2e7d32;margin-top:3px;line-height:1.1;font-weight:600">Play full</span>
+      ${nameHtml}
+    </span>
+  </div>`;
 }
 
 // ── Compatibility wrappers (existing renderer imports keep working) ──

@@ -19,6 +19,7 @@
 import { state }                       from "../state.js";
 import { fetchThaniyan, fetchPasuram } from "../api.js";
 import { renderPasuram }               from "./pasuram_full.js";
+import { sectionPlayAll }              from "./globalAudio.js";
 import { getThaniyanHTML }             from "../thaniyanController.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
@@ -296,6 +297,10 @@ export async function renderFullStarPasuram(starName) {
         state.thaniyanData = saved;
       }
     }
+
+    // Section Play All (audio-only, data-driven) — uses the section's
+    // thaniyan + the pasurams actually shown for this star.
+    html += sectionPlayAll(secId, state.thaniyanData, state.pasuramData);
 
 
 if ([22, 23].includes(Number(secId))) {

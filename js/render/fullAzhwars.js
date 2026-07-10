@@ -5,7 +5,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
-import { numLinePlay, PASURAM_URL } from "./globalAudio.js";
+import { numLinePlay, PASURAM_URL, sectionPlayAll } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
   injectDisplayCSS,
@@ -248,9 +248,11 @@ async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
   const heading = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
 
   let thaniyanHtml = "";
+  let thaniyanRows = [];
   if (!SKIP_THANIYAN_SECTIONS.includes(sectionId)) {
     const { rows: thaniyanData, prosodyMap: thaniyanProsodyMap } = await fetchThaniyanWithProsody(sectionId);
     const rows = getRows(thaniyanData, "section");
+    thaniyanRows = rows;
     if (rows.length > 0) {
       thaniyanHtml = `
         <div class="faz-thaniyan-box">
@@ -274,6 +276,7 @@ async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
     <div class="faz-content-box">
       ${azhwarHeader}
       <div class="faz-section-heading">${heading}</div>
+      ${sectionPlayAll(sectionId, thaniyanRows, pasurams)}
       ${sectionDisplayHtml}
       ${prosodyHtml}
       ${groupedHtml}

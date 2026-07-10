@@ -6,7 +6,7 @@
 
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
-import { numLinePlay, PASURAM_URL } from "./globalAudio.js";
+import { numLinePlay, PASURAM_URL, sectionPlayAll } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 import {
   injectDisplayCSS,
@@ -286,6 +286,7 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
     <div class="fdr-section-box">
       <div class="fdr-section-heading">${heading}${countBadge}</div>
       ${thaniyanHtml}
+      ${sectionPlayAll(pasurams[0]?.section_id, thaniyanRows, dualPasurams)}
       ${sectionDisplayHtml}
       ${prosodyHtml}
       ${groupsHtml}
