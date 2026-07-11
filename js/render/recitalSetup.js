@@ -426,6 +426,40 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
   });
 }
 
+// Final de-overlap pass (applied at save/build time). Koil is added as a
+// block and does NOT swallow at add-time, so a koil item can still coexist
+// with individually-picked items of the same section, or a late parent with
+// its children. This pass drops any item that a superior already covers, so
+// no two overlapping items ever reach render. Chronological order is handled
+// separately by the reorder system, so order here does not matter.
+function isSuperiorItem(sup, sub) {
+  if (sup === sub) return false;
+  // Full section covers everything in that section
+  if (sup.entity_type === "section"
+      && Number(sup.entity_id) === Number(sub.section_id)
+      && sub.entity_type !== "section") return true;
+  // Koil covers non-koil items of the same section
+  if (sup.entity_type === "koil"
+      && Number(sup.section_id) === Number(sub.section_id)
+      && sub.entity_type !== "koil") return true;
+  // Full pathu (pathu_id=null, not a child) covers its child pathus
+  if (sup.entity_type === "pathu" && (sup.pathu_id == null) && !sup.is_child
+      && sub.entity_type === "pathu" && sub.pathu_id != null
+      && Number(sub.pathu_id) === Number(sup.entity_id)
+      && Number(sub.section_id) === Number(sup.section_id)) return true;
+  return false;
+}
+function removeCoexisting(items) {
+  const kept = items.filter(sub => !items.some(sup => isSuperiorItem(sup, sub)));
+  const seen = new Set();
+  return kept.filter(i => {
+    const key = `${i.entity_type}_${i.entity_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // ─────────────────────────────────────────────
 // ADD / REMOVE
 // ─────────────────────────────────────────────
@@ -1148,7 +1182,7 @@ export function registerRecitalBindings() {
   // Build worker-ready items array from selectedItems (expands rettai_group)
   function _buildWorkerItems(items) {
     const result = [];
-    for (const item of items) {
+    for (const item of removeCoexisting(items)) {
       if (item.entity_type === "rettai_group") {
         result.push({
           entity_type:     item.rettai_source.entity_type,
@@ -1179,7 +1213,8 @@ export function registerRecitalBindings() {
   window._recitalAddKoil = async (koilId) => {
     const sid   = koilId === 1 ? 11 : 26;
     const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-    if (isSelected("koil", koilId)) { showToast(`"${title}" already added — remove it first.`); return; }
+    // (Koil is no longer a single block — Add Full expands into child
+    //  thirumozhis/thiruvaimozhis, so there is no koil item to guard against.)
 
     // Personal recital is sect-aware: show ONLY the registered user's sect.
     // Koil has just two variants — Thenkalai or Vadakalai (Ahobila Madam uses
@@ -1194,14 +1229,15 @@ export function registerRecitalBindings() {
 
     const list        = (data.groups && data.groups[sectKey]) || [];
     const fullSection = isSelected("section", sid);
-    const koilChosen  = isSelected("koil", koilId);
 
     // Child list — hidden until "Select from the List" is tapped
     const childHtml = list.map(p => {
       const parentSelected = selectedItems.some(i =>
         i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
         i.entity_id === p.parent_pathu_id);
-      const covered = fullSection || koilChosen || isSelected("pathu", p.pathu_id) || parentSelected;
+      const alreadyChild = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.is_child && Number(i.entity_id) === Number(p.pathu_id));
+      const covered = fullSection || alreadyChild || parentSelected;
       return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
         <input type="checkbox" class="r-koil-cb" value="${p.pathu_id}"
                data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
@@ -1236,11 +1272,41 @@ export function registerRecitalBindings() {
     if (el) el.style.display = (el.style.display === "none") ? "block" : "none";
   };
 
-  // Add Full: store ONE koil item (entity_type="koil"); recited per user's sect.
-  window._recitalKoilAddFull = (koilId) => {
-    const sid   = koilId === 1 ? 11 : 26;
-    const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-    addItem("koil", koilId, title, 0, sid, null);
+  // Add Full: expand the koil into its individual child thirumozhis (§11) /
+  // thiruvaimozhis (§26) and add each as a normal child item, in chronological
+  // order, skipping any already covered (already a child, its full parent pathu,
+  // or the full section). Koil is no longer a block — non-koil items can coexist.
+  window._recitalKoilAddFull = async (koilId) => {
+    const sid     = koilId === 1 ? 11 : 26;
+    const sectKey = ((localStorage.getItem("sect") || "T").toUpperCase() === "V") ? "V" : "T";
+
+    let data;
+    try {
+      const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
+      data = await res.json();
+    } catch (e) { showToast("Could not load koil list. Please try again."); return; }
+
+    const list = ((data.groups && data.groups[sectKey]) || [])
+      .slice()
+      .sort((a, b) => (Number(a.global_no_start) || 0) - (Number(b.global_no_start) || 0));
+
+    let added = 0;
+    for (const p of list) {
+      if (isSelected("section", sid)) break;   // whole section covers everything
+      const parentSelected = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+        Number(i.entity_id) === Number(p.parent_pathu_id));
+      const alreadyChild = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.is_child && Number(i.entity_id) === Number(p.pathu_id));
+      if (parentSelected || alreadyChild) continue;
+
+      addItem("pathu", Number(p.pathu_id), p.label, Number(p.global_no_start) || 0,
+              Number(p.section_id), Number(p.parent_pathu_id) || Number(p.pathu_id), true,
+              Number(p.global_no_end) || undefined);
+      added++;
+    }
+
+    if (!added) showToast("All of these are already in your selection.");
     window._recitalCloseModal();
   };
 
