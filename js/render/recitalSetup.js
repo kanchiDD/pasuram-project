@@ -353,13 +353,16 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
   const newItemIsThirumozhi = entity_type === "thirumozhi";
   const newItemIsChildPathu = entity_type === "pathu" && is_child;
 
-  // For thirumozhi or child pathu: remove pasurams whose global_no falls in the range
+  // For thirumozhi or child pathu: remove pasurams that belong to it.
+  // Prefer the reliable id key (pasuram.pathu_id === this thirumozhi's id);
+  // fall back to global_no range when available.
   if (newItemIsThirumozhi || newItemIsChildPathu) {
-    if (!global_no_start || !global_no_end) return [];
     return selectedItems.filter(i =>
-      i.entity_type === "pasuram" &&
-      i.entity_id >= global_no_start &&
-      i.entity_id <= global_no_end
+      i.entity_type === "pasuram" && (
+        (i.pathu_id != null && Number(i.pathu_id) === Number(entity_id)) ||
+        (global_no_start && global_no_end &&
+         i.entity_id >= global_no_start && i.entity_id <= global_no_end)
+      )
     );
   }
 
@@ -438,7 +441,7 @@ function isSuperiorItem(sup, sub) {
   if (sup.entity_type === "section"
       && Number(sup.entity_id) === Number(sub.section_id)
       && sub.entity_type !== "section") return true;
-  // Koil covers non-koil items of the same section
+  // Koil covers non-koil items of the same section (legacy koil items only)
   if (sup.entity_type === "koil"
       && Number(sup.section_id) === Number(sub.section_id)
       && sub.entity_type !== "koil") return true;
@@ -447,6 +450,18 @@ function isSuperiorItem(sup, sub) {
       && sub.entity_type === "pathu" && sub.pathu_id != null
       && Number(sub.pathu_id) === Number(sup.entity_id)
       && Number(sub.section_id) === Number(sup.section_id)) return true;
+
+  // Pasuram is the lowest unit — any ancestor covers it (id-based, reload-safe):
+  if (sub.entity_type === "pasuram") {
+    // Full pathu covers pasurams of the same section + pathu_no
+    if (sup.entity_type === "pathu" && (sup.pathu_id == null) && !sup.is_child
+        && sup.pathu_no != null && sub.pathu_no != null
+        && Number(sup.section_id) === Number(sub.section_id)
+        && Number(sup.pathu_no) === Number(sub.pathu_no)) return true;
+    // Child thirumozhi/thiruvaimozhi (entity_id = that thirumozhi) covers its pasurams
+    if ((sup.entity_type === "thirumozhi" || (sup.entity_type === "pathu" && sup.is_child))
+        && sub.pathu_id != null && Number(sub.pathu_id) === Number(sup.entity_id)) return true;
+  }
   return false;
 }
 function removeCoexisting(items) {
@@ -505,6 +520,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   selectedItems.push({
     entity_type, entity_id, label,
     global_no_start: global_no_start || 0,
+    global_no_end:   global_no_end   || 0,
     section_id:      section_id      || null,
     pathu_id:        storedPathuId,
     is_child:        !!(is_child),
@@ -642,7 +658,11 @@ function showReorderScreen(onDone) {
   const draw = () => {
     overlay.innerHTML = `
       <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
-        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</div>
+        <div style="padding:14px 16px 4px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</span>
+          <span style="cursor:pointer;font-size:18px;color:#7a4d00;line-height:1;padding:0 4px"
+                onclick="window._rReorderExit()" title="Close">✕</span>
+        </div>
         <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The recital will follow this order 🙏</div>
         <div style="overflow-y:auto;padding:6px 16px;flex:1">
           ${order.map((it, i) => `
@@ -670,6 +690,11 @@ function showReorderScreen(onDone) {
     draw();
   };
   window._rReorderReset = () => { order = applyPriorityOrder(selectedItems); draw(); };
+  // Exit without applying the order or saving (used when neither option is done)
+  window._rReorderExit = () => {
+    if (overlay.parentNode) document.body.removeChild(overlay);
+    document.body.style.overflow = "";
+  };
   window._rReorderDone  = () => {
     const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
     userOrdered   = (newKey !== canonicalKey);
@@ -1678,8 +1703,10 @@ export function registerRecitalBindings() {
     // Child pathu: only covers its own global_no range — checked below
     if (i.entity_type === "pathu" && !i.is_child && !i.pathu_id &&
         i.section_id && Number(i.section_id) === Number(section_id)) return true;
-    // Child pathu/thirumozhi: only blocks if pasuram falls within its range
+    // Child pathu/thirumozhi: covers this pasuram if the pasuram belongs to it
+    // (reliable id key: pasuram.pathu_id === the thirumozhi's id) or falls in range
     if ((i.entity_type === "pathu" && i.is_child) || i.entity_type === "thirumozhi") {
+      if (i.entity_id != null && pathu_id && Number(i.entity_id) === Number(pathu_id)) return true;
       const gns = i.global_no_start || 0;
       const gne = i.global_no_end   || 0;
       if (gns && gne && gno >= gns && gno <= gne) return true;
