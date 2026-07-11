@@ -417,7 +417,7 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
 // ─────────────────────────────────────────────
 // ADD / REMOVE
 // ─────────────────────────────────────────────
-function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no) {
+function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no, from_koil) {
   // Ahobila Madam Arulicheyals: inform before adding — their selection
   // switches the sattrumurai to the Madam order.
   if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)) {
@@ -459,7 +459,8 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
     section_id:      section_id      || null,
     pathu_id:        storedPathuId,
     is_child:        !!(is_child),
-    pathu_no:        pathu_no        || null
+    pathu_no:        pathu_no        || null,
+    from_koil:       from_koil ? 1 : 0
   });
   isDirty = true;
   renderSelected();
@@ -845,7 +846,8 @@ async function loadExistingGhoshtiPlan(plan_id) {
           : (item.global_no_start||dbItem.global_no_start||0),
         section_id:item.section_id||dbItem.section_id||null,
         pathu_id:restoredPathuId,
-        is_child:item.entity_type==="pathu" ? (restoredPathuId !== null) : false };
+        is_child:item.entity_type==="pathu" ? (restoredPathuId !== null) : false,
+        from_koil:(dbItem.from_koil || item.from_koil) ? 1 : 0 };
     });
     isDirty=false; renderSelected();
     const rettaiItems = selectedItems.filter(i => i.entity_type==="rettai_group");
@@ -1351,7 +1353,8 @@ function registerGhoshtiBindings() {
           entity_id:       item.entity_id,
           section_id:      item.section_id || null,
           pathu_id:        item.pathu_id   || null,
-          global_no_start: item.global_no_start || 0
+          global_no_start: item.global_no_start || 0,
+          from_koil:       item.from_koil ? 1 : 0
         });
       }
     }
@@ -1478,7 +1481,7 @@ function registerGhoshtiBindings() {
       if (parentSelected || alreadyChild) continue;
       addItem("pathu", Number(p.pathu_id), p.label, Number(p.global_no_start) || 0,
               Number(p.section_id), Number(p.parent_pathu_id) || Number(p.pathu_id), true,
-              Number(p.global_no_end) || undefined);
+              Number(p.global_no_end) || undefined, undefined, 1);
       added++;
     }
     if (!added) showToast("All of these are already in your selection.");
@@ -1495,7 +1498,7 @@ function registerGhoshtiBindings() {
       // unaffected — it fetches by entity_id (WHERE p.pathu_id = entity_id).
       addItem("pathu", pid, b.dataset.label, Number(b.dataset.gns) || 0,
               Number(b.dataset.sid), Number(b.dataset.parent) || pid, true,
-              Number(b.dataset.gne) || undefined);
+              Number(b.dataset.gne) || undefined, undefined, 1);
     }
     window._ghoshtiCloseModal();
   };

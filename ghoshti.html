@@ -863,6 +863,17 @@
     init();
   </script>
 <script>
+  // Collect koil-added child thirumozhi/thiruvaimozhi ids per section (for koil sattrumurai)
+  function collectKoilFromBlocks(blocks) {
+    const koil = { 11: [], 26: [] };
+    (blocks || []).forEach(b => {
+      if (b.from_koil && (Number(b.section_id) === 11 || Number(b.section_id) === 26)) {
+        koil[Number(b.section_id)].push(Number(b.entity_id));
+      }
+    });
+    return koil;
+  }
+
   // ── Build sections array (for sattrumurai) from render blocks ─────
   function buildSectionsFromBlocks(blocks) {
     const result = [];
@@ -916,10 +927,22 @@
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
+        koil:     collectKoilFromBlocks(data.blocks || []),
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
     }
+  }
+
+  // Collect koil-added child thirumozhi/thiruvaimozhi ids per section (for koil sattrumurai)
+  function collectKoilFromBlocks(blocks) {
+    const koil = { 11: [], 26: [] };
+    (blocks || []).forEach(b => {
+      if (b.from_koil && (Number(b.section_id) === 11 || Number(b.section_id) === 26)) {
+        koil[Number(b.section_id)].push(Number(b.entity_id));
+      }
+    });
+    return koil;
   }
 
   // ── Build sections array (for sattrumurai) from render blocks ─────
@@ -972,6 +995,7 @@
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
+        koil:     collectKoilFromBlocks(data.blocks || []),
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
