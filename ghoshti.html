@@ -260,11 +260,12 @@
     let creatingNew    = false;
     let editingGhoshti = null;
     let pendingMeta    = null;
+    let pendingSegment = null;   // sampradaya chosen for the new ghoshti (T/V/VM/BOTH)
 
     // ── Welcome popup ──
     function dismissWelcome(createNew) {
       document.getElementById("g-welcome-overlay").style.display = "none";
-      if (createNew) showCreateForm();
+      if (createNew) showSampradayaScreen();
       else renderMyGhoshtiList();
     }
 
@@ -342,7 +343,7 @@
             Please <a href="register.html">sign in</a> to manage your Ghoshti sessions.
           </div>
           <div style="margin-top:16px">
-            <button class="g-btn-primary" onclick="showCreateForm()">+ Create New Ghoshti</button>
+            <button class="g-btn-primary" onclick="showSampradayaScreen()">+ Create New Ghoshti</button>
           </div>`);
         return;
       }
@@ -395,11 +396,39 @@
       renderFrame(`
         ${listHTML}
         <div style="margin-top:16px">
-          <button class="g-btn-primary" onclick="showCreateForm()">+ Create New Ghoshti</button>
+          <button class="g-btn-primary" onclick="showSampradayaScreen()">+ Create New Ghoshti</button>
         </div>`);
     }
 
     // ── Create form ──
+    function showSampradayaScreen() {
+      activeTab = "my";
+      creatingNew = true;
+      renderFrame(`
+        <div class="g-selection-header">
+          <span class="g-back-link" onclick="renderMyGhoshtiList()">← Back</span>
+          <span class="g-selection-title">New Ghoshti — Sampradayam</span>
+        </div>
+        <div class="g-form-card">
+          <div style="font-size:13px;color:#b38b2e;margin-bottom:14px;text-align:center">
+            Select the Sampradayam for this Ghoshti 🙏
+          </div>
+          <button class="g-btn-primary" style="width:100%;margin-bottom:10px"
+                  onclick="pickSampradaya('T')">Thenkalai Sampradaya Ghoshti</button>
+          <button class="g-btn-primary" style="width:100%;margin-bottom:10px"
+                  onclick="pickSampradaya('V')">Vadakalai Sampradaya Ghoshti</button>
+          <button class="g-btn-primary" style="width:100%;margin-bottom:10px"
+                  onclick="pickSampradaya('VM')">Vadakalai Ahobila Madam Sampradaya Ghoshti</button>
+          <button class="g-btn-primary" style="width:100%"
+                  onclick="pickSampradaya('BOTH')">Ghoshti for both Sampradayam</button>
+        </div>`);
+    }
+
+    function pickSampradaya(seg) {
+      pendingSegment = seg;
+      showCreateForm();
+    }
+
     function showCreateForm(prefill) {
       activeTab = "my";
       creatingNew = true;
@@ -411,7 +440,7 @@
 
       renderFrame(`
         <div class="g-selection-header">
-          <span class="g-back-link" onclick="renderMyGhoshtiList()">← Back</span>
+          <span class="g-back-link" onclick="showSampradayaScreen()">← Back</span>
           <span class="g-selection-title">New Ghoshti — Details</span>
         </div>
         <div class="g-form-card">
@@ -445,7 +474,7 @@
       if (!heading) { showToast("Please enter a Ghoshti heading"); return; }
       if (!date)    { showToast("Please select a date"); return; }
       if (!time)    { showToast("Please select a time"); return; }
-      pendingMeta = { heading, date, time };
+      pendingMeta = { heading, date, time, segment: pendingSegment };
       openGhoshtiSetup(pendingMeta);
     }
 

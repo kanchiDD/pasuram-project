@@ -25,6 +25,67 @@ let onSaveCallback   = null;   // called with result after save
 let _isSaving        = false; // true when user has unsaved changes on current day
 let planLoadedForDay = null;  // which day's plan is currently shown
 
+// ── Sampradaya segment (from the ghoshti.html landing screen) ──
+// "T" Thenkalai | "V" Vadakalai | "VM" Vadakalai Ahobila Madam | "BOTH"
+let ghoshtiSegment   = "BOTH";
+
+// Per-section sect, mirroring section_master (B=both, T=Thenkalai, V=Vadakalai).
+// Only non-B sections listed; others default to "B". 52/53 = Madam-only.
+const SECTION_SECT = {
+  25:"T", 27:"T", 28:"T", 29:"T", 30:"T", 31:"T",
+  32:"V", 33:"V", 34:"V", 35:"V", 36:"V", 37:"V", 38:"V", 39:"V", 40:"V", 41:"V",
+  42:"V", 43:"V", 44:"V", 45:"V", 46:"V", 47:"V", 48:"V", 49:"V", 50:"V", 51:"V",
+  52:"V", 53:"V"
+};
+function sectOfSection(sec) {
+  if (sec && sec.sect) return String(sec.sect).toUpperCase();
+  return SECTION_SECT[Number(sec.section_id)] || "B";
+}
+// Which sections the chosen segment may show.
+function ghoshtiSectAllows(sec) {
+  const s  = sectOfSection(sec);
+  const id = Number(sec.section_id);
+  switch (ghoshtiSegment) {
+    case "T":  return s !== "V";                                   // B or T (1–31)
+    case "V":  return s !== "T" && !(id === 52 || id === 53);      // B or V, no 52/53
+    case "VM": return s !== "T";                                   // B or V incl 52/53
+    default:   return true;                                        // BOTH: all
+  }
+}
+// Segment → pothu flags
+function _applySegmentFlags(seg) {
+  includePothuT = (seg === "T"  || seg === "BOTH");
+  includePothuM = (seg === "VM" || seg === "BOTH");
+  includePothuV = (seg === "V"  || seg === "VM" || seg === "BOTH");
+}
+// Derive segment back from restored pothu flags (used when editing a plan)
+function _deriveGhoshtiSegment() {
+  if (includePothuT && includePothuV) return "BOTH";
+  if (!includePothuT && includePothuM && includePothuV) return "VM";
+  if (!includePothuT && !includePothuM && includePothuV) return "V";
+  return "T";
+}
+// Show/hide the pothu-thaniyan rows per segment (order stays T, M, V in DOM;
+// hiding T for VM leaves M then V).
+function _applySegmentToPothuUI() {
+  const seg   = ghoshtiSegment || "BOTH";
+  const showT = (seg === "T"  || seg === "BOTH");
+  const showM = (seg === "VM" || seg === "BOTH");
+  const showV = (seg === "V"  || seg === "VM" || seg === "BOTH");
+  const rowT = document.getElementById("g-pothu-row-t");
+  const rowM = document.getElementById("g-pothu-row-m");
+  const rowV = document.getElementById("g-pothu-row-v");
+  if (rowT) rowT.style.display = showT ? "" : "none";
+  if (rowM) rowM.style.display = showM ? "" : "none";
+  if (rowV) rowV.style.display = showV ? "" : "none";
+  const tCb = document.getElementById("g-pothu-t");
+  const mCb = document.getElementById("g-pothu-m");
+  const vCb = document.getElementById("g-pothu-v");
+  if (tCb) tCb.checked = includePothuT && showT;
+  if (mCb) mCb.checked = includePothuM && showM;
+  if (vCb) vCb.checked = includePothuV && showV;
+}
+
 // ─────────────────────────────────────────────
 // ENTRY POINT — called from ghoshti.html
 // ─────────────────────────────────────────────
@@ -36,14 +97,31 @@ export async function renderGhoshtiSetup(meta, appDiv, onSave) {
   isDirty        = false;
   modalStack     = [];
   userOrdered    = false;
-  includePothuT  = true;
-  includePothuV  = true;
-  includePothuM  = (localStorage.getItem("subsect") === "madam");
+
+  if (meta && meta.segment) {
+    // New ghoshti — sampradaya chosen on the landing screen
+    ghoshtiSegment = meta.segment;
+    _applySegmentFlags(meta.segment);
+  } else {
+    // Editing (or fallback) — start neutral; segment derived after the plan loads
+    ghoshtiSegment = "BOTH";
+    includePothuT  = true;
+    includePothuV  = true;
+    includePothuM  = (localStorage.getItem("subsect") === "madam");
+  }
+
   appDiv.innerHTML = buildSetupHTML();
-  loadCatalog();
   renderMetaBar();
   registerGhoshtiBindings();
-  if (meta && meta.plan_id) await loadExistingGhoshtiPlan(meta.plan_id);
+  _applySegmentToPothuUI();
+  await loadCatalog();               // fills catalogData + renders (filtered by segment)
+
+  if (meta && meta.plan_id) {
+    await loadExistingGhoshtiPlan(meta.plan_id);
+    ghoshtiSegment = _deriveGhoshtiSegment();   // from restored pothu flags
+    _applySegmentToPothuUI();
+    renderCatalogIntoDOM();                      // re-filter with the derived segment
+  }
 }
 
 // stub — replaced by registerGhoshtiBindings below
@@ -70,17 +148,17 @@ function buildSetupHTML() {
 
     <div class="r-selected-wrap" style="margin-bottom:10px">
       <div class="r-selected-label">பொது தனியன்</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+      <label id="g-pothu-row-t" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-t" checked
                onchange="window._ghoshtiTogglePothu('T', this.checked)">
         <span>பொது தனியன்கள்</span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+      <label id="g-pothu-row-m" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-m"
                onchange="window._ghoshtiTogglePothu('M', this.checked)">
         <span>பொது தனியன் — அஹோபிலமடம் (கேஶவார்ய)</span>
       </label>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
+      <label id="g-pothu-row-v" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-v" checked
                onchange="window._ghoshtiTogglePothu('V', this.checked)">
         <span>பொது தனியன்கள் (வடகலை)</span>
@@ -451,9 +529,11 @@ function renderCatalogIntoDOM() {
   </div>`;
   for (const thousand of catalogData) {
     if (!thousand.sections.length) continue;
+    const allowed = thousand.sections.filter(ghoshtiSectAllows);
+    if (!allowed.length) continue;
     html += `<div class="r-thousand-group">
       <div class="r-thousand-name">${thousand.thousand_name}</div>`;
-    for (const sec of thousand.sections) {
+    for (const sec of allowed) {
       html += `<div class="r-section-card"
         onclick="window._ghoshtiOpenSection(
           ${sec.section_id},'${escHtml(sec.section_name)}',
