@@ -324,6 +324,11 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   gsatState.fixedText.desika = isMadamUser();
   gsatState.fixedText.adivan = isMadamUser();
 
+  // Koil sattrumurai: koil children (from_koil) arrive as ghoshtiMeta.koil
+  // { "11":[thirumozhi ids], "26":[thiruvaimozhi ids] }. Work out present + full/partial.
+  gsatState.koil     = ghoshtiMeta?.koil || {};
+  gsatState.koilInfo = await computeKoilInfo(gsatState.koil);
+
   const plan = buildSattrumuraiPlan(gsatState.selectedSections);
   await fetchAllPasuramTexts(plan);
   gsatState.pasuramItems = plan;
@@ -344,6 +349,34 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   // No pre-fetch — both T (id=1) and V (id=5) loaded only when selected
 
   render(container);
+}
+
+// Determine, per koil, whether any koil item is present and whether the FULL
+// koil was selected (all members of the matching sect group) or only some.
+async function computeKoilInfo(koil) {
+  const check = async (sid, sub) => {
+    const ids = ((koil && (koil[sid] || koil[String(sid)])) || []).map(Number);
+    if (!ids.length) return { present: false, full: false };
+    let full = false;
+    try {
+      const res  = await fetch(`${WORKER_GET}/api/koil-pathus?sub=${sub}&sect=ALL`);
+      const data = await res.json();
+      const groups = data.groups || {};
+      // Selected ids belong to whichever sect group contains them; full = covers it all
+      for (const gk of ["T", "V"]) {
+        const g = (groups[gk] || []).map(p => Number(p.pathu_id));
+        if (g.length && ids.every(id => g.includes(id))) {
+          full = (new Set(ids).size === g.length);
+          break;
+        }
+      }
+    } catch (e) {}
+    return { present: true, full };
+  };
+  return {
+    thirumozhi:    await check(11, "THIRUMOZHI"),
+    thiruvaimozhi: await check(26, "THIRUVAIMOZHI")
+  };
 }
 
 function buildSattrumuraiPlan(sections) {
@@ -374,6 +407,25 @@ function buildSattrumuraiPlan(sections) {
     bySection[sid].push({ ...sel, is_full: isFull, is_rettai: isRettai });
   });
 
+  // ── Koil sattrumurai injection (exception) ──
+  // Koil children are is_child (not eligible), but koil warrants its designated
+  // sattrumurai: §11 → pathu 11 (11_11); §26 → pathu 10 (26_10, which also brings
+  // the section-10 / Madhurakavi coupling). Skip if a REAL full-pathu/section
+  // selection already produces that pathu (no duplicate).
+  const _ki = gsatState.koilInfo || {};
+  const injectKoilPathu = (sid, pno, kmeta) => {
+    if (!kmeta || !kmeta.present) return;
+    if (!bySection[sid]) bySection[sid] = [];
+    const realCovers = bySection[sid].some(s =>
+      !s.__koil && (s.entity_type === "section" || s.pathu_no === pno));
+    if (realCovers) return;
+    if (!bySection[sid].some(s => s.__koil && s.pathu_no === pno)) {
+      bySection[sid].push({ section_id: sid, pathu_no: pno, is_full: true, is_rettai: false, __koil: true });
+    }
+  };
+  injectKoilPathu(11, 11, _ki.thirumozhi);
+  injectKoilPathu(26, 10, _ki.thiruvaimozhi);
+
   const CANONICAL_ORDER = [2, 4, 5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 23, 26];
   // Madal sections map to madal_sattrumurai_master ids
   const MADAL_IDS = { 22: [1, 2], 23: [3, 4, 5, 6, 7] };
@@ -391,6 +443,17 @@ function buildSattrumuraiPlan(sections) {
         const key = `${sid}_${pno}`;
         const rule = SATTRUMURAI_PASURAMS[key];
         if (!rule) return;
+        // Koil caveat: this pathu's sattrumurai comes ONLY from a koil injection
+        // and the koil was partial → note that we've included it and it can be unticked.
+        const pnoSels  = sels.filter(s => s.pathu_no === pno);
+        const koilOnly = pnoSels.length > 0 && pnoSels.every(s => s.__koil);
+        const kmeta    = sid === 11 ? (gsatState.koilInfo || {}).thirumozhi
+                       : sid === 26 ? (gsatState.koilInfo || {}).thiruvaimozhi : null;
+        if (koilOnly && kmeta && kmeta.present && !kmeta.full) {
+          plan.push({ type: "note", key: `koil_caveat_${sid}`, text: sid === 11
+            ? "Adiyen, you have not added the full Koil Thirumozhi — we are still including its saatrumurai. Please deselect if you don't want it."
+            : "Adiyen, you have not added the full Koil Thiruvaimozhi — we are still including its saatrumurai. Please deselect if you don't want it." });
+        }
         const heading = `${SECTION_NAMES[sid]} \u2014 ${PATHU_NAMES[pno] || pno + "ம் பத்து"} சாற்றுமுறை பாசுரங்கள்`;
         pushPasuramGroup(plan, key, heading, rule);
         // After Thiruvaimozhi 10th pathu sattrumurai, insert Madhurakavi verse (hardcoded)
@@ -558,6 +621,10 @@ function renderPasuramPlan() {
       if (openSection) html += `</div>`;
       html += `<div class="gsat-section"><div class="gsat-section-head">${escHtml(item.text)}</div>`;
       openSection = true;
+      return;
+    }
+    if (item.type === "note") {
+      html += `<div style="background:#fff6e0;border:1px solid #e0c070;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12px;color:#7a5a20;line-height:1.5">${escHtml(item.text)}</div>`;
       return;
     }
     if (item.type === "pallandu_fixed") {
