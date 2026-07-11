@@ -601,6 +601,35 @@ async function loadCatalog() {
   } catch(e) {}
 }
 
+// Per-section sect, mirroring section_master (B=both, T=Thenkalai, V=Vadakalai).
+// Only the non-B sections are listed; everything else defaults to "B".
+// 52 & 53 are Vadakalai but Ahobila-Madam-only (handled in recitalSectAllows).
+const SECTION_SECT = {
+  25:"T", 27:"T", 28:"T", 29:"T", 30:"T", 31:"T",
+  32:"V", 33:"V", 34:"V", 35:"V", 36:"V", 37:"V", 38:"V", 39:"V", 40:"V", 41:"V",
+  42:"V", 43:"V", 44:"V", 45:"V", 46:"V", 47:"V", 48:"V", 49:"V", 50:"V", 51:"V",
+  52:"V", 53:"V"
+};
+function sectOfSection(sec) {
+  if (sec && sec.sect) return String(sec.sect).toUpperCase();
+  return SECTION_SECT[Number(sec.section_id)] || "B";
+}
+// Personal recital: show only the registered user's sect.
+//   Thenkalai → B or T
+//   Vadakalai → B or V, but 52/53 only when subsect = madam
+function recitalSectAllows(sec) {
+  const s     = sectOfSection(sec);
+  const sect  = (localStorage.getItem("sect") || "T").toUpperCase();
+  const madam = (localStorage.getItem("subsect") || "").toLowerCase() === "madam";
+  const id    = Number(sec.section_id);
+  if (sect === "V") {
+    if (s === "T") return false;                       // Thenkalai-only work
+    if ((id === 52 || id === 53) && !madam) return false; // Madam-only additions
+    return true;                                       // B or V
+  }
+  return s !== "V";                                    // Thenkalai: B or T
+}
+
 function renderCatalogIntoDOM() {
   const el = document.getElementById("r-catalog-list");
   if (!el) return;
@@ -619,9 +648,11 @@ function renderCatalogIntoDOM() {
   </div>`;
   for (const thousand of catalogData) {
     if (!thousand.sections.length) continue;
+    const allowed = thousand.sections.filter(recitalSectAllows);
+    if (!allowed.length) continue;
     html += `<div class="r-thousand-group">
       <div class="r-thousand-name">${thousand.thousand_name}</div>`;
-    for (const sec of thousand.sections) {
+    for (const sec of allowed) {
       html += `<div class="r-section-card"
         onclick="window._recitalOpenSection(
           ${sec.section_id},'${escHtml(sec.section_name)}',
