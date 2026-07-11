@@ -301,6 +301,41 @@ function findSuperiorConflict(entity_type, entity_id, section_id, pathu_id, is_c
 
 // Check if inferior items exist that should be silently replaced by a new superior.
 // Only called when adding a FULL pathu or FULL section (never for children).
+// Final de-overlap pass at save/build time so no superior/inferior pair reaches
+// render (koil is added as children; late ancestors must still swallow leaves).
+function isSuperiorItem(sup, sub) {
+  if (sup === sub) return false;
+  if (sup.entity_type === "section"
+      && Number(sup.entity_id) === Number(sub.section_id)
+      && sub.entity_type !== "section") return true;
+  if (sup.entity_type === "koil"
+      && Number(sup.section_id) === Number(sub.section_id)
+      && sub.entity_type !== "koil") return true;
+  if (sup.entity_type === "pathu" && (sup.pathu_id == null) && !sup.is_child
+      && sub.entity_type === "pathu" && sub.pathu_id != null
+      && Number(sub.pathu_id) === Number(sup.entity_id)
+      && Number(sub.section_id) === Number(sup.section_id)) return true;
+  if (sub.entity_type === "pasuram") {
+    if (sup.entity_type === "pathu" && (sup.pathu_id == null) && !sup.is_child
+        && sup.pathu_no != null && sub.pathu_no != null
+        && Number(sup.section_id) === Number(sub.section_id)
+        && Number(sup.pathu_no) === Number(sub.pathu_no)) return true;
+    if ((sup.entity_type === "thirumozhi" || (sup.entity_type === "pathu" && sup.is_child))
+        && sub.pathu_id != null && Number(sub.pathu_id) === Number(sup.entity_id)) return true;
+  }
+  return false;
+}
+function removeCoexisting(items) {
+  const kept = items.filter(sub => !items.some(sup => isSuperiorItem(sup, sub)));
+  const seen = new Set();
+  return kept.filter(i => {
+    const key = `${i.entity_type}_${i.entity_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_child, global_no_start, global_no_end, pathu_no) {
   // Only full pathus and full sections can have inferiors
   const newItemIsFullPathu = entity_type === "pathu" && pathu_id === null && !is_child;
@@ -308,13 +343,15 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
   const newItemIsThirumozhi = entity_type === "thirumozhi";
   const newItemIsChildPathu = entity_type === "pathu" && is_child;
 
-  // For thirumozhi or child pathu: remove pasurams whose global_no falls in the range
+  // For thirumozhi or child pathu: remove pasurams that belong to it — prefer the
+  // reliable id key (pasuram.pathu_id === this thirumozhi), fall back to range.
   if (newItemIsThirumozhi || newItemIsChildPathu) {
-    if (!global_no_start || !global_no_end) return [];
     return selectedItems.filter(i =>
-      i.entity_type === "pasuram" &&
-      i.entity_id >= global_no_start &&
-      i.entity_id <= global_no_end
+      i.entity_type === "pasuram" && (
+        (i.pathu_id != null && Number(i.pathu_id) === Number(entity_id)) ||
+        (global_no_start && global_no_end &&
+         i.entity_id >= global_no_start && i.entity_id <= global_no_end)
+      )
     );
   }
 
@@ -418,6 +455,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   selectedItems.push({
     entity_type, entity_id, label,
     global_no_start: global_no_start || 0,
+    global_no_end:   global_no_end   || 0,
     section_id:      section_id      || null,
     pathu_id:        storedPathuId,
     is_child:        !!(is_child),
@@ -844,7 +882,11 @@ function showReorderScreen(onDone) {
   const draw = () => {
     overlay.innerHTML = `
       <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
-        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</div>
+        <div style="padding:14px 16px 4px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</span>
+          <span style="cursor:pointer;font-size:18px;color:#7a4d00;line-height:1;padding:0 4px"
+                onclick="window._gReorderExit()" title="Close">✕</span>
+        </div>
         <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The recital will follow this order 🙏</div>
         <div style="overflow-y:auto;padding:6px 16px;flex:1">
           ${order.map((it, i) => `
@@ -872,6 +914,10 @@ function showReorderScreen(onDone) {
     draw();
   };
   window._gReorderReset = () => { order = applyPriorityOrder(selectedItems); draw(); };
+  window._gReorderExit = () => {
+    if (overlay.parentNode) document.body.removeChild(overlay);
+    document.body.style.overflow = "";
+  };
   window._gReorderDone  = () => {
     const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
     userOrdered   = (newKey !== canonicalKey);
@@ -1245,8 +1291,10 @@ function registerGhoshtiBindings() {
     // Child pathu: only covers its own global_no range — checked below
     if (i.entity_type === "pathu" && !i.is_child && !i.pathu_id &&
         i.section_id && Number(i.section_id) === Number(section_id)) return true;
-    // Child pathu/thirumozhi: only blocks if pasuram falls within its range
+    // Child pathu/thirumozhi: covers this pasuram if it belongs to it
+    // (reliable id key) or falls in range
     if ((i.entity_type === "pathu" && i.is_child) || i.entity_type === "thirumozhi") {
+      if (i.entity_id != null && pathu_id && Number(i.entity_id) === Number(pathu_id)) return true;
       const gns = i.global_no_start || 0;
       const gne = i.global_no_end   || 0;
       if (gns && gne && gno >= gns && gno <= gne) return true;
@@ -1287,7 +1335,7 @@ function registerGhoshtiBindings() {
   // ── Ghoshti back ──
   function _buildWorkerItems(items) {
     const result = [];
-    for (const item of items) {
+    for (const item of removeCoexisting(items)) {
       if (item.entity_type === "rettai_group") {
         result.push({
           entity_type:     item.rettai_source.entity_type,
@@ -1315,45 +1363,126 @@ function registerGhoshtiBindings() {
   // ordinary pathu items — render already supports them. Pathus covered
   // by a full-section selection are shown disabled (auto-disable ruling).
   // Legacy plans with an old entity_type="koil" item still load/render.
+  // Koil child rows (hidden until "Select from the List")
+  const _ghoshtiKoilChildHtml = (list, sid) => {
+    const fullSection = isSelected("section", sid);
+    return (list || []).map(p => {
+      const parentSelected = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+        Number(i.entity_id) === Number(p.parent_pathu_id));
+      const alreadyChild = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.is_child && Number(i.entity_id) === Number(p.pathu_id));
+      const covered = fullSection || alreadyChild || parentSelected;
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
+        <input type="checkbox" class="g-koil-cb" value="${p.pathu_id}"
+               data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
+               data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
+               data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
+        <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
+      </label>`;
+    }).join("");
+  };
+
+  // Add Full / Select from the List block for one sect
+  const _ghoshtiKoilSectBlock = (koilId, sid, sk, data) => {
+    const list = _ghoshtiKoilChildHtml((data.groups && data.groups[sk]) || [], sid);
+    return `
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="recital-btn-primary" style="width:100%"
+                onclick="window._ghoshtiKoilAddFull(${koilId},'${sk}')">Add Full</button>
+        <button type="button"
+                style="width:100%;padding:10px;border:1px solid #d4a843;background:#fff;color:#7a4d00;border-radius:8px;cursor:pointer;font-size:14px"
+                onclick="window._ghoshtiKoilToggleList('${sk}')">Select from the List</button>
+      </div>
+      <div id="g-koil-list-${sk}" style="display:none;margin-top:10px">
+        ${list || `<div style="font-size:13px;color:#999;padding:6px 0">No items available.</div>`}
+        <button class="recital-btn-primary" style="width:100%;margin-top:12px"
+                onclick="window._ghoshtiKoilConfirm()">Add Selected</button>
+      </div>`;
+  };
+
+  // Koil picker — sect follows the ghoshti segment:
+  //   T → Thenkalai only, V/VM → Vadakalai only (Madam uses the Vadakalai koil),
+  //   BOTH → both sects shown as collapsed rows.
   window._ghoshtiAddKoil = async (koilId) => {
     const sid   = koilId === 1 ? 11 : 26;
     const title = koilId === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
-    if (isSelected("koil", koilId)) { showToast(`"${title}" already added — remove it first.`); return; }
+
     let data;
     try {
       const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
       data = await res.json();
     } catch (e) { showToast("Could not load koil list. Please try again."); return; }
-    const fullSection = isSelected("section", sid);
-    const groupHtml = (glabel, arr) => {
-      if (!arr || !arr.length) return "";
-      return `<div style="font-weight:700;color:#7a4d00;margin:10px 0 4px">${glabel}</div>` +
-        arr.map(p => {
-          // Covered when: full section selected, this exact item selected,
-          // or the PARENT full pathu is selected (parent/children never coexist)
-          const parentSelected = selectedItems.some(i =>
-            i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
-            i.entity_id === p.parent_pathu_id);
-          const covered = fullSection || isSelected("pathu", p.pathu_id) || parentSelected;
-          return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;${covered ? "opacity:.45;cursor:not-allowed" : "cursor:pointer"}">
-            <input type="checkbox" class="g-koil-cb" value="${p.pathu_id}"
-                   data-label="${escHtml(p.label)}" data-gns="${p.global_no_start || 0}"
-                   data-gne="${p.global_no_end || 0}" data-parent="${p.parent_pathu_id || p.pathu_id}"
-                   data-sid="${p.section_id}" ${covered ? "disabled" : ""}>
-            <span>${escHtml(p.label)}${covered ? " — already covered" : ""}</span>
-          </label>`;
-        }).join("");
-    };
+
+    const sects = (ghoshtiSegment === "BOTH")
+      ? ["T", "V"]
+      : [ (ghoshtiSegment === "T") ? "T" : "V" ];
+    const SECT_LABEL = { T: "Thenkalai", V: "Vadakalai" };
+
+    let body;
+    if (sects.length === 1) {
+      body = _ghoshtiKoilSectBlock(koilId, sid, sects[0], data);
+    } else {
+      body = sects.map(sk => `
+        <div style="border:1px solid #e8d5a0;border-radius:8px;margin-bottom:8px">
+          <div style="padding:10px;font-weight:700;color:#7a4d00;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+               onclick="window._ghoshtiKoilToggleSect('${sk}')">
+            <span>${SECT_LABEL[sk]}</span><span id="g-koil-caret-${sk}">▸</span>
+          </div>
+          <div id="g-koil-sect-${sk}" style="display:none;padding:0 10px 10px">
+            ${_ghoshtiKoilSectBlock(koilId, sid, sk, data)}
+          </div>
+        </div>`).join("");
+    }
+
     document.getElementById("r-modal-title").textContent = title;
     const backEl = document.getElementById("r-modal-back");
     if (backEl) backEl.style.display = "none";
-    document.getElementById("r-modal-content").innerHTML = `
-      <div style="font-size:12px;color:#b38b2e;margin-bottom:4px">Select the pathus to include 🙏</div>
-      ${groupHtml("தென்கலை", data.groups && data.groups.T)}
-      ${groupHtml("வடகலை", data.groups && data.groups.V)}
-      <button class="recital-btn-primary" style="width:100%;margin-top:12px"
-              onclick="window._ghoshtiKoilConfirm()">Add Selected 🙏</button>`;
+    document.getElementById("r-modal-content").innerHTML = body;
     document.getElementById("r-modal-overlay").classList.add("open");
+  };
+
+  window._ghoshtiKoilToggleSect = (sk) => {
+    const el = document.getElementById("g-koil-sect-" + sk);
+    const caret = document.getElementById("g-koil-caret-" + sk);
+    if (!el) return;
+    const open = el.style.display !== "none";
+    el.style.display = open ? "none" : "block";
+    if (caret) caret.textContent = open ? "▸" : "▾";
+  };
+
+  window._ghoshtiKoilToggleList = (sk) => {
+    const el = document.getElementById("g-koil-list-" + sk);
+    if (el) el.style.display = (el.style.display === "none") ? "block" : "none";
+  };
+
+  // Add Full: expand that sect's koil into child thirumozhis/thiruvaimozhis,
+  // deduped, chronological. Koil is not a block; non-koil items can coexist.
+  window._ghoshtiKoilAddFull = async (koilId, sectKey) => {
+    const sid = koilId === 1 ? 11 : 26;
+    let data;
+    try {
+      const res = await fetch(`${KOIL_API}/koil-pathus?sub=${koilId === 1 ? "THIRUMOZHI" : "THIRUVAIMOZHI"}&sect=ALL`);
+      data = await res.json();
+    } catch (e) { showToast("Could not load koil list."); return; }
+    const list = ((data.groups && data.groups[sectKey]) || [])
+      .slice().sort((a, b) => (Number(a.global_no_start) || 0) - (Number(b.global_no_start) || 0));
+    let added = 0;
+    for (const p of list) {
+      if (isSelected("section", sid)) break;
+      const parentSelected = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.pathu_id === null && !i.is_child &&
+        Number(i.entity_id) === Number(p.parent_pathu_id));
+      const alreadyChild = selectedItems.some(i =>
+        i.entity_type === "pathu" && i.is_child && Number(i.entity_id) === Number(p.pathu_id));
+      if (parentSelected || alreadyChild) continue;
+      addItem("pathu", Number(p.pathu_id), p.label, Number(p.global_no_start) || 0,
+              Number(p.section_id), Number(p.parent_pathu_id) || Number(p.pathu_id), true,
+              Number(p.global_no_end) || undefined);
+      added++;
+    }
+    if (!added) showToast("All of these are already in your selection.");
+    window._ghoshtiCloseModal();
   };
 
   window._ghoshtiKoilConfirm = () => {
