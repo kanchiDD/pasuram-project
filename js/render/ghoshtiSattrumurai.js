@@ -225,8 +225,12 @@ const isMadamUser = () => (localStorage.getItem("subsect") || "") === "madam";
 // Arulicheyals (sections 52/53) are part of the ghoshti selection —
 // reciting them implies the Madam sattrumurai order (per the
 // confirmation shown at selection time).
+// Madam ordering activates when the GHOSHTI's segment is Vadakalai-Madam,
+// or when the Madam Arulicheyals (52/53) are in the selection. The user's own
+// registration sect is intentionally ignored for ghoshti — only the 4-option
+// segment decides.
 function madamOrderActive() {
-  if (isMadamUser()) return true;
+  if ((typeof gsatState !== "undefined" && gsatState.segment) === "VM") return true;
   const secs = (typeof gsatState !== "undefined" && gsatState.selectedSections) || [];
   return secs.some(id => Number(id) === 52 || Number(id) === 53);
 }
@@ -310,7 +314,16 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   gsatState.pasuramItems = [];
   gsatState.explicitToggles = {};
   gsatState.autoIncludedKeys = new Set();
-  gsatState.fixedText = getDefaultFixedTextState(); // pre-select based on user sect
+  gsatState.fixedText = getDefaultFixedTextState(); // shape + neutral defaults
+  // Ghoshti IGNORES the user's registration sect — override the sect-dependent
+  // defaults using ONLY the ghoshti segment. pothu + iyal saatru are common to
+  // all; surnikai (Thirumangai) belongs to Thenkalai.
+  {
+    const seg = gsatState.segment;
+    gsatState.fixedText.pothu    = true;
+    gsatState.fixedText.iyal     = true;
+    gsatState.fixedText.surnikai = (seg === "T" || seg === "BOTH");
+  }
   gsatState.fixedTextLines = {};
   gsatState.vazhiLines = {};
   gsatState.fixedOrder = [2, 1, 5]; // iyal, pothu_t, pothu_v
