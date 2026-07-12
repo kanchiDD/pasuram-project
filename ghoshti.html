@@ -863,6 +863,14 @@
     init();
   </script>
 <script>
+  // Derive the ghoshti's sampradaya segment from its saved pothu flags
+  function deriveSegmentFromFlags(t, m, v) {
+    if (t && v) return "BOTH";
+    if (!t && m && v) return "VM";
+    if (!t && !m && v) return "V";
+    return "T";
+  }
+
   // Collect koil-added child thirumozhi/thiruvaimozhi ids per section (for koil sattrumurai)
   function collectKoilFromBlocks(blocks) {
     const koil = { 11: [], 26: [] };
@@ -928,10 +936,19 @@
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
         koil:     collectKoilFromBlocks(data.blocks || []),
+        segment:  deriveSegmentFromFlags(data.include_pothu_t, data.include_pothu_m, data.include_pothu_v),
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
     }
+  }
+
+  // Derive the ghoshti's sampradaya segment from its saved pothu flags
+  function deriveSegmentFromFlags(t, m, v) {
+    if (t && v) return "BOTH";
+    if (!t && m && v) return "VM";
+    if (!t && !m && v) return "V";
+    return "T";
   }
 
   // Collect koil-added child thirumozhi/thiruvaimozhi ids per section (for koil sattrumurai)
@@ -996,6 +1013,7 @@
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
         koil:     collectKoilFromBlocks(data.blocks || []),
+        segment:  deriveSegmentFromFlags(data.include_pothu_t, data.include_pothu_m, data.include_pothu_v),
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;

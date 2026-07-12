@@ -305,6 +305,8 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   gsatState.ghoshtiId = ghoshtiId;
   gsatState.ghoshtiName = ghoshtiMeta?.name || "";
   gsatState.selectedSections = ghoshtiMeta?.sections || [];
+  // Sampradaya segment for this ghoshti (drives vazhi + mangalam + section filtering)
+  gsatState.segment = ghoshtiMeta?.segment || "BOTH";
   gsatState.pasuramItems = [];
   gsatState.explicitToggles = {};
   gsatState.autoIncludedKeys = new Set();
@@ -320,9 +322,14 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   // Ghoshti is multi-sect; user selects what they need
   gsatState.allVaazhis = VAZHI_GHOSHTI_ALL;
 
-  // Mangalams: desika (7) + adivan (6) default-checked for Madam creators
-  gsatState.fixedText.desika = isMadamUser();
-  gsatState.fixedText.adivan = isMadamUser();
+  // Mangalams default-checked per this ghoshti's segment:
+  //   T → Mukthaka | V → Desika | VM → Desika + Adivan | BOTH → leave as-is
+  {
+    const seg = gsatState.segment;
+    if (seg === "T")  { gsatState.fixedText.muktaka = true;  gsatState.fixedText.desika = false; gsatState.fixedText.adivan = false; }
+    if (seg === "V")  { gsatState.fixedText.desika  = true;  gsatState.fixedText.adivan = false; gsatState.fixedText.muktaka = false; }
+    if (seg === "VM") { gsatState.fixedText.desika  = true;  gsatState.fixedText.adivan = true;  gsatState.fixedText.muktaka = false; }
+  }
 
   // Koil sattrumurai: koil children (from_koil) arrive as ghoshtiMeta.koil
   // { "11":[thirumozhi ids], "26":[thiruvaimozhi ids] }. Work out present + full/partial.
@@ -603,9 +610,9 @@ function render(container) {
       ${renderFixedTextSection()}
       ${renderVazhiSection()}
       ${renderManualAddSection()}
-      ${renderMuktakaSection()}
-      ${renderNamedMangalam("desika", 7, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று")}
-      ${renderNamedMangalam("adivan", 6, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று")}
+      ${(gsatState.segment === "T"  || gsatState.segment === "BOTH") ? renderMuktakaSection() : ""}
+      ${(gsatState.segment === "V"  || gsatState.segment === "VM" || gsatState.segment === "BOTH") ? renderNamedMangalam("desika", 7, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று") : ""}
+      ${(gsatState.segment === "VM" || gsatState.segment === "BOTH") ? renderNamedMangalam("adivan", 6, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று") : ""}
       <button class="gsat-save-btn" onclick="gsatSave()" id="gsat-save-btn">Add my Sattrumurai \uD83D\uDE4F</button>
       <span class="gsat-back" onclick="gsatBack()">\u2190 Back to Ghoshti</span>
     </div>
@@ -773,11 +780,29 @@ function renderFixedTextSection() {
   return html + `</div>`;
 }
 
+function _vazhiIsDesikaNaalpaattu(v) {
+  const n = v.author_name || "";
+  return /நிகமாந்த|தேஶிக|தேசிக/.test(n) && /நாள்பாட்டு/.test(n);
+}
+function _vazhiIsAndal(v) {
+  return /ஆண்டாள்/.test(v.author_name || "");
+}
+// Vazhi visibility by this ghoshti's segment:
+//   T  → all EXCEPT Desika Naalpaattu
+//   V/VM → ONLY Andal + Andal Naalpaattu + Desika Naalpaattu
+//   BOTH → all
+function _vazhiAllowedBySegment(v) {
+  const seg = gsatState.segment || "BOTH";
+  if (seg === "BOTH") return true;
+  if (seg === "T")    return !_vazhiIsDesikaNaalpaattu(v);
+  return _vazhiIsAndal(v) || _vazhiIsDesikaNaalpaattu(v);   // V or VM
+}
+
 function renderVazhiSection() {
   if (!gsatState.allVaazhis.length) {
     return `<div class="gsat-section"><div class="gsat-section-head">\uD83C\uDF1F \u0bb5\u0bbe\u0bb4\u0bbf \u0ba4\u0bbf\u0bb0\u0bc1\u0ba8\u0bbe\u0bae\u0bae\u0bcd</div><div class="gsat-empty-note">\u0bb5\u0bbe\u0bb4\u0bbf \u0baa\u0b9f\u0bcd\u0b9f\u0bbf\u0baf\u0bb2\u0bcd \u0b8f\u0bb1\u0bcd\u0bb1 \u0bae\u0bc1\u0b9f\u0bbf\u0baf\u0bb5\u0bbf\u0bb2\u0bcd\u0bb2\u0bc8</div></div>`;
   }
-  const items = gsatState.allVaazhis.map(v => {
+  const items = gsatState.allVaazhis.filter(_vazhiAllowedBySegment).map(v => {
     // ── Fixed_id 4 special item ──────────────────────────────
     if (v.is_fixed && v.fixed_id === 4) {
       const isOn    = gsatState.fixedText.surnikai;
@@ -1391,7 +1416,7 @@ window.gsatAddManual = async function() {
 
     } catch(e) { /* if lookup fails, proceed */ }
 
-    const preview = lines.slice(0, 4).join(" / ");
+    const preview = lines.slice(0, 4).map(l => (typeof l === "object" ? l.text : l)).join(" / ");
     const ok = confirm(`Adiyen 🙏\n\nPasuram ${no}:\n\n${preview || "(no preview)"}\n\nAdd to Sattrumurai?`);
     if (!ok) { if (previewEl) previewEl.innerHTML = ""; return; }
 
