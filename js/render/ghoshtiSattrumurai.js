@@ -127,7 +127,7 @@ const EXPLICIT_SECTION_MAP = {
 const EXPLICIT_SECTIONS = [
   {
     key: "ramanusa", label: "இராமானுச நூற்றந்தாதி",
-    section_id: 24, beforePallandu: true,
+    section_id: 24, sect: "B", beforePallandu: true,
     pasurams: [
       { no: 24106, dual: true },
       { no: 24107, dual: true },
@@ -137,7 +137,7 @@ const EXPLICIT_SECTIONS = [
   },
   {
     key: "upadesa", label: "உபதேசரத்தினமாலை",
-    section_id: 25, beforePallandu: false,
+    section_id: 25, sect: "T", beforePallandu: false,
     pasurams: [
       { no: 25072, dual: true },
       { no: 25073, dual: true },
@@ -146,7 +146,7 @@ const EXPLICIT_SECTIONS = [
   },
   {
     key: "thiruvaimozhi_nootrandhadhi", label: "திருவாய்மொழி நூற்றந்தாதி",
-    section_id: 27, beforePallandu: false,
+    section_id: 27, sect: "T", beforePallandu: false,
     pasurams: [
       { no: 27099, dual: true },
       { no: 27100, dual: true },
@@ -159,7 +159,7 @@ const EXPLICIT_SECTIONS = [
   // All pasurams dual recital (** marker).
   {
     key: "adaikkalappathu", label: "அடைக்கலப்பத்து",
-    section_id: 38, beforePallandu: false,
+    section_id: 38, sect: "V", beforePallandu: false,
     pasurams: [
       { no: 38010, dual: true },
       { no: 38011, dual: true },
@@ -167,7 +167,7 @@ const EXPLICIT_SECTIONS = [
   },
   {
     key: "adhikara_sangraham", label: "அதிகாரசங்கிரகம்",
-    section_id: 33, beforePallandu: false,
+    section_id: 33, sect: "V", beforePallandu: false,
     pasurams: [
       { no: 33055, dual: true },
       { no: 33056, dual: true },
@@ -175,7 +175,7 @@ const EXPLICIT_SECTIONS = [
   },
   {
     key: "prabandha_saram", label: "ப்ரபந்தசாரம்",
-    section_id: 49, beforePallandu: false,
+    section_id: 49, sect: "V", beforePallandu: false,
     pasurams: [
       { no: 49017, dual: true },
       { no: 49018, dual: true },
@@ -183,7 +183,7 @@ const EXPLICIT_SECTIONS = [
   },
   {
     key: "pillaiyandhadhi", label: "பிள்ளையந்தாதி",
-    section_id: 51, beforePallandu: false,
+    section_id: 51, sect: "V", beforePallandu: false,
     pasurams: [
       { no: 51019, dual: true },
       { no: 51020, dual: true },
@@ -193,7 +193,7 @@ const EXPLICIT_SECTIONS = [
   {
     key: "adivan_adaikkalappathu",
     label: "ஸ்ரீ ஆதிவண்ஶடகோப யதீந்த்ர மஹாதேஶிகன் அடைக்கலப்பத்து",
-    section_id: 52, beforePallandu: false,
+    section_id: 52, sect: "VM", beforePallandu: false,
     pasurams: [
       { no: 52010, dual: true },
       { no: 52011, dual: true },
@@ -203,7 +203,7 @@ const EXPLICIT_SECTIONS = [
   {
     key: "lakshmi_adaikkalappathu",
     label: "ஶ்ரீ லக்ஷ்மீந்ரு’ஸிம்ஹன் அடைக்கலப்பத்து",
-    section_id: 53, beforePallandu: false,
+    section_id: 53, sect: "VM", beforePallandu: false,
     pasurams: [
       { no: 53010, dual: true },
       { no: 53011, dual: true },
@@ -235,7 +235,9 @@ function madamOrderActive() {
   return secs.some(id => Number(id) === 52 || Number(id) === 53);
 }
 function effBeforePallandu(sec) {
-  return sec.beforePallandu || (madamOrderActive() && V_MADAM_KEYS.has(sec.key));
+  // Madam order: after Ramanusa, ALL additional prabandhams (incl. 52/53) recite
+  // BEFORE Pallandu, in array order (…52 → 53 last), then Pallandu comes last.
+  return sec.beforePallandu || (madamOrderActive() && Number(sec.section_id) >= 32);
 }
 
 const PALLANDU = [
@@ -326,7 +328,10 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   }
   gsatState.fixedTextLines = {};
   gsatState.vazhiLines = {};
-  gsatState.fixedOrder = [2, 1, 5]; // iyal, pothu_t, pothu_v
+  // Fixed saatru order by segment (fixed_id 2=iyal, 1=Thenkalai pothu, 5=Vadakalai pothu)
+  gsatState.fixedOrder = gsatState.segment === "T"  ? [2, 1]
+                       : (gsatState.segment === "V" || gsatState.segment === "VM") ? [2, 5]
+                       : [2, 1, 5]; // BOTH
   gsatState.selectedVaazhis = new Set();
 
   container.innerHTML = '<div class="gsat-loading"><span class="gsat-lotus">LOTUS</span>Preparing Sattrumurai...</div>'.replace('LOTUS','\uD83E\uDE77');
@@ -732,8 +737,18 @@ function renderManualAddSection() {
   </div>`;
 }
 
+function _explicitAllowedBySegment(sec) {
+  const s = sec.sect || "B";
+  const seg = gsatState.segment || "BOTH";
+  if (seg === "BOTH") return true;
+  if (seg === "T")  return s === "B" || s === "T";
+  if (seg === "V")  return s === "B" || s === "V";           // not VM (52/53)
+  if (seg === "VM") return s === "B" || s === "V" || s === "VM";
+  return true;
+}
+
 function renderExplicitToggles() {
-  const items = EXPLICIT_SECTIONS.map(sec => {
+  const items = EXPLICIT_SECTIONS.filter(_explicitAllowedBySegment).map(sec => {
     const isAuto = gsatState.autoIncludedKeys?.has(sec.key);
     if (isAuto) {
       return `<div class="gsat-toggle-item" style="opacity:0.45;pointer-events:none">
@@ -768,7 +783,7 @@ function renderFixedLines(lines) {
 
 function renderFixedTextSection() {
   const FIXED_DEFS = FIXED_DEFS_GHOSHTI; // from sectUtils — includes both T and V pothu
-  let html = `<div class="gsat-section"><div class="gsat-section-head">\uD83D\uDCDC சாற்று</div>`;
+  let html = `<div class="gsat-section"><div class="gsat-section-head">\uD83D\uDCDC சாற்றுமுறை</div>`;
   gsatState.fixedOrder.forEach((fid, orderIdx) => {
     const def = FIXED_DEFS.find(d => d.id === fid);
     if (!def) return;

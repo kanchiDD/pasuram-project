@@ -418,9 +418,11 @@ function findInferiorItems(entity_type, entity_id, section_id, pathu_id, is_chil
 // ADD / REMOVE
 // ─────────────────────────────────────────────
 function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no, from_koil) {
-  // Ahobila Madam Arulicheyals: inform before adding — their selection
-  // switches the sattrumurai to the Madam order.
-  if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)) {
+  // Ahobila Madam Arulicheyals: on a COMBINED (both-sampradaya) ghoshti, inform
+  // that selecting them switches the sattrumurai to the Madam order. On a
+  // Vadakalai-Madam ghoshti the creator already knows, so no prompt.
+  if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)
+      && ghoshtiSegment === "BOTH") {
     const ok = confirm("Adiyen \ud83d\ude4f These Arulicheyals are recited by Sri Ahobilamadam followers, and selecting them will change the sattrumurai order. Do you wish to continue?");
     if (!ok) return;
   }
