@@ -712,22 +712,70 @@
         html += '<div class="gsat-section-r"><div class="gsat-section-head-r">' + escH(vb.author_name||"") + "</div>";
         const groups = {};
         (vb.lines||[]).forEach(l => { const g=l.vazhi_group||1; if(!groups[g]) groups[g]=[]; groups[g].push(l); });
-        let vh = '<div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
-        Object.keys(groups).sort((a,b)=>Number(a)-Number(b)).forEach((g,gi) => {
-          if (gi>0) vh += '<span class="gsat-sat-gap-r" style="height:8px"></span>';
-          groups[g].forEach(l => { vh += '<span class="gsat-pasuram-line-r">' + escH(l.line_text||l) + "</span>"; });
+        let vh = "";
+        // Each vazhi group in its own card — clean separation for
+        // authors with multiple vazhis (Nammazhwar, Emberumanar etc.)
+        Object.keys(groups).sort((a,b)=>Number(a)-Number(b)).forEach(g => {
+          vh += '<div style="background:#fffdf6;border:1px solid #e0c98a;border-radius:8px;padding:10px 14px;margin:0 12px 6px">';
+          groups[g].forEach(l => { vh += '<span class="gsat-pasuram-line-r" style="display:block;font-size:14px;line-height:1.9;color:#4a2c00">' + escH(l.line_text||l) + "</span>"; });
+          vh += "</div>";
         });
-        html += vh + "</div></div></div>";
+        html += vh + "</div>";
       });
-      if (data.muktaka_lines && data.muktaka_lines.length) {
-        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">Muktaka Mangalam</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
-        data.muktaka_lines.forEach(l => {
-          const text = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
-          if (!text) return;
-          html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
-          if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
+      // Shared mangalam renderer: groups lines into per-sloka cards.
+
+      // A sloka = lines accumulating until one ends ।।/|| (double bar),
+
+      // flushed into a light amber card — readable couplet containers.
+
+      function _renderMangalamLines(lines) {
+
+        let out = "", buf = [];
+
+        const flush = () => {
+
+          if (!buf.length) return;
+
+          out += '<div style="background:#fffdf6;border:1px solid #e0c98a;border-radius:8px;padding:10px 14px;margin:0 12px 8px">';
+
+          buf.forEach(t => { out += '<span class="gsat-pasuram-line-r" style="display:block;font-size:14px;line-height:1.9;color:#4a2c00">' + escH(t) + "</span>"; });
+
+          out += "</div>"; buf = [];
+
+        };
+
+        (lines||[]).forEach(l => {
+
+          const t = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
+
+          if (!t) return;
+
+          if (t.startsWith("(") && t.endsWith(")")) {
+
+            flush();
+
+            out += '<div style="text-align:center;font-weight:700;font-size:12px;color:#7a5a20;padding:4px 0">' + escH(t.slice(1,-1).trim()) + "</div>";
+
+            return;
+
+          }
+
+          buf.push(t);
+
+          if (/(\|\||॥)$/.test(t.trimEnd())) flush();
+
         });
-        html += '</div></div><div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">Muktaka Mangalam Concluded</div></div>';
+
+        flush();
+
+        return out;
+
+      }
+
+      if (data.muktaka_lines && data.muktaka_lines.length) {
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">முக்தக மங்களம்</div>';
+        html += _renderMangalamLines(data.muktaka_lines);
+        html += '<div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">முக்தக மங்களம் முற்றிற்று</div></div>';
       }
       // ── தேஶிக மங்களம் + ஆதிவண்ஶடகோப மங்களம் ──
       // Same markup/fonts as Muktaka; ruled order: muktaka → desika → adivan
@@ -737,14 +785,9 @@
       ];
       for (const [mLines, mHead, mClose] of _mangalams) {
         if (!mLines || !mLines.length) continue;
-        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mHead) + '</div><div class="gsat-pasuram-item-r"><div class="gsat-pasuram-text-r">';
-        mLines.forEach(l => {
-          const text = (l && l.line_text != null) ? String(l.line_text) : (typeof l === "string" ? l : "");
-          if (!text) return;
-          html += '<span class="gsat-pasuram-line-r">' + escH(text) + "</span>";
-          if (/(\|\||॥)$/.test(String(text).trimEnd())) html += '<span class="gsat-sat-gap-r"></span>';
-        });
-        html += '</div></div><div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">' + escH(mClose) + '</div></div>';
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mHead) + '</div>';
+        html += _renderMangalamLines(mLines);
+        html += '<div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">' + escH(mClose) + '</div></div>';
       }
       html += '<span class="gsat-sat-back-r" onclick="showRecital()" style="margin-top:24px">← Back to Recital</span>';
       html += "</div>";
