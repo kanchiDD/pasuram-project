@@ -580,12 +580,18 @@ export async function renderVazhi(label, anchor) {
   try {
     const entries = await fetch(`${API}/nithyanusandhanam?sub=vazhi`).then(r=>r.json());
     const html = entries.map(e => {
-      let lHtml = "", lastGrp = null;
-      for (const l of (e.lines||[])) {
-        if (lastGrp !== null && l.vazhi_group !== lastGrp) lHtml += `<div style="height:10px;"></div>`;
-        lHtml += `<div class="nnc-vazhi-line">${l.line_text||""}</div>`;
-        lastGrp = l.vazhi_group;
+      // Group lines by vazhi_group; each group sits in its own bordered card
+      const groups = {};
+      for (const l of (e.lines || [])) {
+        const g = l.vazhi_group || 1;
+        if (!groups[g]) groups[g] = [];
+        groups[g].push(l);
       }
+      const lHtml = Object.keys(groups).sort((a, b) => Number(a) - Number(b)).map(g =>
+        `<div class="nnc-vazhi-group-card">` +
+          groups[g].map(l => `<div class="nnc-vazhi-line">${l.line_text || ""}</div>`).join("") +
+        `</div>`
+      ).join("");
       return `<div class="nnc-vazhi-entry" id="vazhi-item-${e.vazhi_id}">
         <div class="nnc-vazhi-name">${e.name||""}</div>
         <div class="nnc-vazhi-lines">${lHtml}</div>

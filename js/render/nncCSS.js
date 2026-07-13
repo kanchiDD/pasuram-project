@@ -75,6 +75,7 @@ export function injectNNCCSS() {
     /* ── Vazhi thirunamam ── */
     .nnc-vazhi-entry { margin-bottom:16px; padding-bottom:12px; border-bottom:1px dashed #e8d090; }
     .nnc-vazhi-name { font-size:var(--nf,15px) !important; font-weight:900; color:#4a2c00; margin-bottom:4px; text-align:left; }
+    .nnc-vazhi-group-card { background:#fffdf6; border:1px solid #e0c98a; border-radius:8px; padding:10px 14px; margin-bottom:6px; }
     .nnc-vazhi-lines { font-size:var(--nf,15px) !important; line-height:1.8; text-align:left; }
     .nnc-vazhi-line { display:block; font-size:var(--nf,15px) !important; text-align:left; line-height:1.8; }
     /* ── Madal ── */
