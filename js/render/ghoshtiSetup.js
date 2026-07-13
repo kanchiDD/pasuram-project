@@ -1650,19 +1650,20 @@ function registerGhoshtiBindings() {
     if (saveMsg) { saveMsg.style.color="#b38b2e"; saveMsg.textContent="Saving..."; saveMsg.style.display="block"; }
 
     try {
-      // Step 1: Save plan (day_of_week=8 = dedicated ghoshti slot)
+      // Step 1: Save plan — NEW ghoshti creates its own plan (unique slot);
+      // EDITING updates that ghoshti's own plan in place by plan_id.
       const planRes = await fetch(`${WORKER}/recital/plan`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mobile,
-          day_of_week: 8,
           plan_name:   ghoshtiMeta.heading,
           items:       workerItems,
           include_pothu_t: includePothuT ? 1 : 0,
           include_pothu_m: includePothuM ? 1 : 0,
           include_pothu_v: includePothuV ? 1 : 0,
-          is_user_ordered: userOrdered ? 1 : 0
+          is_user_ordered: userOrdered ? 1 : 0,
+          ...(ghoshtiMeta.plan_id ? { plan_id: ghoshtiMeta.plan_id } : { ghoshti_new: true })
         })
       });
       const planData = await planRes.json();

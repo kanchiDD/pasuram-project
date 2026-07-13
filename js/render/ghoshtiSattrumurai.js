@@ -328,9 +328,11 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   }
   gsatState.fixedTextLines = {};
   gsatState.vazhiLines = {};
-  // Fixed saatru order by segment (fixed_id 2=iyal, 1=Thenkalai pothu, 5=Vadakalai pothu)
+  // Fixed saatru order by segment (fixed_id 2=iyal, 1=Thenkalai pothu, 5=Vadakalai pothu).
+  // Iyal saatru is recited only in Thenkalai (and Both); Vadakalai/Madam omit it.
   gsatState.fixedOrder = gsatState.segment === "T"  ? [2, 1]
-                       : (gsatState.segment === "V" || gsatState.segment === "VM") ? [2, 5]
+                       : gsatState.segment === "V"  ? [5]
+                       : gsatState.segment === "VM" ? [5]
                        : [2, 1, 5]; // BOTH
   gsatState.selectedVaazhis = new Set();
 
@@ -865,10 +867,11 @@ function renderVazhiSection() {
         if (!groups[g]) groups[g] = [];
         groups[g].push(l);
       });
-      linesHtml = `<div style="width:100%;padding:4px 0 0 27px;font-size:13px;color:#4a2c00;line-height:1.8">`;
-      Object.keys(groups).sort((a,b) => Number(a)-Number(b)).forEach((g, gi) => {
-        if (gi > 0) linesHtml += `<div style="height:8px"></div>`;
-        linesHtml += groups[g].map(l => `<span class="gsat-pasuram-line">${escHtml(l.line_text)}</span>`).join("");
+      linesHtml = `<div style="width:100%;padding:6px 0 0 27px;display:flex;flex-direction:column;gap:6px">`;
+      Object.keys(groups).sort((a,b) => Number(a)-Number(b)).forEach(g => {
+        linesHtml += `<div style="border:1px solid #e0c98a;border-radius:8px;padding:8px 12px;background:#fffdf6;font-size:14px;color:#4a2c00;line-height:1.9">`
+          + groups[g].map(l => `<div>${escHtml(l.line_text)}</div>`).join("")
+          + `</div>`;
       });
       linesHtml += `</div>`;
     }
@@ -901,13 +904,7 @@ function renderNamedMangalam(key, fid, heading, closing) {
   const lines    = gsatState.fixedTextLines[fid];
   const isLoaded = lines && lines.length > 0;
   const linesHtml = isOn && isLoaded
-    ? `<div style="padding:8px 14px">${lines.map(l => {
-        const text = _lineText(l);
-        if (!text) return "";
-        const isSubhead = text.startsWith("(") && text.endsWith(")");
-        if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;
-        return `<div style="font-size:13px;color:#4a2c00;line-height:1.7;padding:3px 8px;background:#fef8e8;border-radius:4px;margin-bottom:3px">${escHtml(text)}</div>${_mangalamGap(text) ? '<div style="height:6px"></div>' : ''}`;
-      }).join("")}
+    ? `<div style="padding:8px 14px">${_mangalamCards(lines)}
       <div style="text-align:center;font-size:12px;color:#7a5a20;margin-top:10px;font-style:italic">${escHtml(closing)}</div>
     </div>`
     : "";
@@ -922,19 +919,36 @@ function renderNamedMangalam(key, fid, heading, closing) {
   </div>`;
 }
 
+// Render fixed-text (mangalam) lines as bordered verse cards — each śloka
+// couplet (lines through a closing ||) sits in its own box, matching the
+// printed layout for easy reading. Parenthetical lines become sub-headings.
+function _mangalamCards(lines) {
+  const cards = [];
+  let cur = [];
+  const flush = () => { if (cur.length) { cards.push({ type: "verse", lines: cur.slice() }); cur = []; } };
+  for (const l of (lines || [])) {
+    const text = _lineText(l);
+    if (!text) continue;
+    if (text.startsWith("(") && text.endsWith(")")) { flush(); cards.push({ type: "subhead", text }); continue; }
+    cur.push(text);
+    if (_mangalamGap(text)) flush();
+  }
+  flush();
+  return cards.map(c => {
+    if (c.type === "subhead")
+      return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:10px 0 4px">${escHtml(c.text)}</div>`;
+    return `<div style="border:1px solid #e0c98a;border-radius:8px;padding:10px 14px;margin-bottom:8px;background:#fffdf6">
+      ${c.lines.map(t => `<div style="font-size:14px;color:#4a2c00;line-height:1.9">${escHtml(t)}</div>`).join("")}
+    </div>`;
+  }).join("");
+}
+
 function renderMuktakaSection() {
   const isOn    = gsatState.fixedText.muktaka;
   const lines   = gsatState.fixedTextLines[3];
   const isLoaded = lines && lines.length > 0;
   const linesHtml = isOn && isLoaded
-    ? `<div style="padding:8px 14px">${lines.map(l => {
-        const text = _lineText(l);
-        if (!text) return "";
-        const endsWithBar = _mangalamGap(text);
-        const isSubhead = text.startsWith("(") && text.endsWith(")");
-        if (isSubhead) return `<div style="text-align:center;font-weight:700;font-size:13px;color:#4a2c00;margin:8px 0 4px">${escHtml(text)}</div>`;
-        return `<div style="font-size:13px;color:#4a2c00;line-height:1.7;padding:3px 8px;background:#fef8e8;border-radius:4px;margin-bottom:3px">${escHtml(text)}</div>${endsWithBar ? '<div style="height:6px"></div>' : ''}`;
-      }).join("")}
+    ? `<div style="padding:8px 14px">${_mangalamCards(lines)}
       <div style="text-align:center;font-size:12px;color:#7a5a20;margin-top:10px;font-style:italic">\u0bae\u0bc1\u0b95\u0bcd\u0ba4\u0b95 \u0bae\u0b99\u0bcd\u0b95\u0bb3\u0bae\u0bcd \u0bae\u0bc1\u0bb1\u0bcd\u0bb1\u0bbf\u0bb1\u0bcd\u0bb1\u0bc1</div>
     </div>`
     : "";
