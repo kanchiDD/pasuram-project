@@ -510,10 +510,12 @@ const secDisp  = renderSectionDisplayItems(displayData);
 
 // ── Render thaniyan only ──────────────────────────────────────────────────────
 export async function renderThaniyanItem(refValue, refType) {
-  const sect = localStorage.getItem("sect") || "T";
+  const sect    = localStorage.getItem("sect") || "T";
+  const subsect = localStorage.getItem("subsect") || "";
+  const sub     = subsect ? `&subsect=${subsect}` : "";
   const url = refType === "thaniyan_global"
-    ? `${API}/thaniyan?type=global&sect=${sect}`
-    : `${API}/thaniyan?section_id=${refValue}&sect=${sect}`;
+    ? `${API}/thaniyan?type=global&sect=${sect}${sub}`
+    : `${API}/thaniyan?section_id=${refValue}&sect=${sect}${sub}`;
   const data = await fetch(url).then(r=>r.json());
   const rows = Array.isArray(data) ? data : (data.thaniyan || []);
   const prosodyMap = data.prosodyMap || {};
