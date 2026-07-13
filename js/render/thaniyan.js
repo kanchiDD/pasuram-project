@@ -17,12 +17,20 @@ if (!data) return "";
 
     let currentGroup = null;
 
-    // Section thaniyan with audio → small green ▶ just below its heading.
-    // section_id can be dropped by the worker for some rows, so fall back
-    // to the section currently being rendered.
+    // Section thaniyan → thaniyan_{section_id}.mp3.
+    // Global pothu thaniyan → id 1 = Thenkalai (thaniyan_t.mp3),
+    //                         id 33 = Vadakalai (thaniyan_v.mp3).
     const secId  = section.section_id || state.selectedSectionId;
-    const btnHtml = (section.type === "section" && section.has_audio && secId)
-      ? centerPlayBtn("ga-th-" + secId + "-" + (section.thaniyan_id || "x"), thaniyanFileUrl(secId, section.thaniyan_id))
+    let _audioUrl = "";
+    if (section.type === "section" && section.has_audio && secId) {
+      _audioUrl = thaniyanFileUrl(secId, section.thaniyan_id);
+    } else if (section.type === "global" || section.type === "thousand") {
+      const tid = Number(section.thaniyan_id);
+      if (tid === 1)       _audioUrl = THANIYAN_URL("t");
+      else if (tid === 33) _audioUrl = THANIYAN_URL("v");
+    }
+    const btnHtml = _audioUrl
+      ? centerPlayBtn("ga-th-" + (secId || "g") + "-" + (section.thaniyan_id || "x"), _audioUrl)
       : "";
     let btnPlaced = false;
 
