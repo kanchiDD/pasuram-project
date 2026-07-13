@@ -32,12 +32,12 @@ function injectStyles() {
       position: fixed;
       bottom: 28px;
       right: 24px;
-      width: 62px;
-      height: 62px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background: #4A3728;
-      border: 2.5px solid #C9A84C;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+      background: linear-gradient(135deg, #FF9128 0%, #F2601A 55%, #DA3F17 100%);
+      border: 3px solid #FFD86B;
+      box-shadow: 0 6px 20px rgba(216,67,26,0.5);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -45,27 +45,33 @@ function injectStyles() {
       z-index: 9000;
       transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
+      animation: voice-idle-glow 2.4s ease-in-out infinite;
     }
 
     #voice-mic-btn:hover {
-      transform: scale(1.07);
-      box-shadow: 0 6px 22px rgba(0,0,0,0.45);
+      transform: scale(1.08);
+      box-shadow: 0 8px 26px rgba(216,67,26,0.6);
     }
 
     #voice-mic-btn.listening {
-      background: #7B2D1E;
-      border-color: #E8C97A;
+      background: linear-gradient(135deg, #E8351E 0%, #B01E12 100%);
+      border-color: #FFE39A;
       animation: voice-pulse 1.2s ease-in-out infinite;
     }
 
     #voice-mic-btn svg {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
+    }
+
+    @keyframes voice-idle-glow {
+      0%, 100% { box-shadow: 0 6px 20px rgba(216,67,26,0.5), 0 0 0 0 rgba(255,150,60,0.55); }
+      50%       { box-shadow: 0 6px 20px rgba(216,67,26,0.5), 0 0 0 11px rgba(255,150,60,0); }
     }
 
     @keyframes voice-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200,80,50,0.4); }
-      50%       { box-shadow: 0 0 0 14px rgba(200,80,50,0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(230,53,30,0.5); }
+      50%       { box-shadow: 0 0 0 16px rgba(230,53,30,0); }
     }
 
     /* ── Overlay ── */
@@ -332,7 +338,7 @@ function injectMicButton() {
 }
 
 function micIcon(active = false) {
-  const color = active ? "#E8C97A" : "#C9A84C";
+  const color = active ? "#FFFFFF" : "#FFFFFF";
   return `
     <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="9" y="2" width="10" height="16" rx="5" fill="${color}"/>

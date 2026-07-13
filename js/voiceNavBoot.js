@@ -274,30 +274,36 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
   });
 }
 
-// Open Divyadesam index then auto-open specific desam via polling
+// Open Divyadesam index, then auto-open the specific desam once BOTH the
+// handler and its target DOM (#fdd-content) exist — ddOpenDesam registers
+// synchronously (early), but #fdd-content is painted a tick later, so firing
+// on the handler alone opened detail into a missing node and fell back to index.
 function voiceOpenDivyadesamById(desamId, desamName, mode) {
   state.divyadesamThousandId = null;
   state.level = "FULL_DIVYADESAM";
   render();
 
-  // Poll for ddOpenDesam — registered after async renderDivyadesamIndex() completes
   let attempts = 0;
   const poll = setInterval(() => {
     attempts++;
-    if (typeof window.ddOpenDesam === "function") {
+    const ready = typeof window.ddOpenDesam === "function"
+                  && document.getElementById("fdd-content");
+    if (ready) {
       clearInterval(poll);
-      window.ddOpenDesam(desamId);
-    } else if (attempts >= 40) { // 40 × 150ms = 6 seconds max
+      // let the index finish painting, then swap to the desam detail
+      setTimeout(() => window.ddOpenDesam(desamId), 40);
+    } else if (attempts >= 60) { // 60 × 100ms = 6s max
       clearInterval(poll);
-      console.warn("voiceNavBoot: ddOpenDesam not registered for desam", desamId);
+      console.warn("voiceNavBoot: ddOpenDesam/#fdd-content not ready for desam", desamId);
     }
-  }, 150);
+  }, 100);
 }
 
 // Global pasuram number — fetch section from voice API then navigate
 async function voiceOpenGlobalPasuram(globalNo) {
+  const wantNo = Number(globalNo);
   try {
-    const row = await fetch(`${API_VOICE}/by-global?no=${globalNo}`).then(r => r.json());
+    const row = await fetch(`${API_VOICE}/by-global?no=${wantNo}`).then(r => r.json());
     if (row?.section_id) {
       state.selectedSectionId   = row.section_id;
       state.selectedSectionName = row.section_name || `Section ${row.section_id}`;
@@ -306,7 +312,9 @@ async function voiceOpenGlobalPasuram(globalNo) {
       fetchThaniyan();
       fetchPasuram().then(() => {
         if (!state.pasuramData) return;
-        const match = state.pasuramData.filter(p => p.global_no === globalNo);
+        // Numeric-coerce both sides — global_no can arrive as a string, which
+        // broke the strict === match and fell back to the whole section.
+        const match = state.pasuramData.filter(p => Number(p.global_no) === wantNo);
         state.pasuramData = state.filteredPasuram =
           match.length ? match : state.pasuramData;
         state.level = "PASURAM";
@@ -332,20 +340,23 @@ function voiceOpenSpecialGroup(groupKey) {
   state.level = "FULL_DIVYADESAM";
   render();
 
-  // Poll for ddView which is registered in ddIndex.js
+  // Poll for the special handlers AND the target DOM before firing
   let attempts = 0;
   const poll = setInterval(() => {
     attempts++;
-    if (typeof window.ddView === "function" && typeof window.ddOpenSpecial === "function") {
+    const ready = typeof window.ddView === "function"
+                  && typeof window.ddOpenSpecial === "function"
+                  && document.getElementById("fdd-content");
+    if (ready) {
       clearInterval(poll);
       window.ddView("special");
       // Wait for special menu to render, then open the group
       setTimeout(() => window.ddOpenSpecial(groupKey), 400);
-    } else if (attempts >= 40) {
+    } else if (attempts >= 60) {
       clearInterval(poll);
       console.warn("voiceNavBoot: ddOpenSpecial not found for group", groupKey);
     }
-  }, 150);
+  }, 100);
 }
 
 // ── நீராட்டம் — custom set ──────────────────────────────────────────────────
