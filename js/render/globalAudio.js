@@ -401,30 +401,10 @@ export function sectionListenBtn(id, url) {
 export function sectionQueueBtn(id, urls) {
   return centerQueueBtn(id, urls);
 }
-// ── Option B: save on navigation + auto-resume on next page ─────────────────
-// Pure JS — no service worker, no caching. Uses `pageshow` (fires for BOTH
-// fresh loads AND back/forward bfcache restores) so the back button resumes
-// correctly instead of showing a stale frozen player at the beginning.
+// ── Per-page audio (Option 1) ───────────────────────────────────────────────
+// Audio plays on the page it was started on and stops on navigation. No
+// cross-page resume (that needs a native app to work cleanly with the back
+// button). Stop the player when leaving so nothing lingers in bfcache.
 if (typeof window !== "undefined") {
-  window.addEventListener("pagehide", saveState);
-  window.addEventListener("beforeunload", saveState);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveState(); });
-
-  const _gaResume = () => {
-    let s;
-    try { s = JSON.parse(sessionStorage.getItem("gaPlayback") || "null"); } catch (e) { s = null; }
-    if (!s || !s.urls || !s.urls.length) return;
-    // If this page's player is already correctly playing the saved queue, leave
-    // it alone (no blip) — otherwise (re)start from the saved track & position.
-    const existing = document.getElementById("ga-player");
-    if (existing && existing.src && !existing.paused && _gaState.urls.length) {
-      showAudioControls(s.label); updatePauseIcon();
-      return;
-    }
-    _playQueue(s.urls, s.label, s.idx || 0, s.time || 0, !s.paused);
-    if (s.paused) { const p = getPlayer(); p.pause(); updatePauseIcon(); }
-  };
-
-  // pageshow covers normal loads and bfcache back/forward restores
-  window.addEventListener("pageshow", _gaResume);
+  window.addEventListener("pagehide", () => { try { stopAll(); } catch (e) {} });
 }
