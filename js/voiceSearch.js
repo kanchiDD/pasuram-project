@@ -81,7 +81,59 @@ const SECTIONS = [
   { id:26, name:"திருவாய்மொழி",           hasPathu:true,
     aliases:["thiruvaimozhi","திருவாய்மொழி","vaimozhi","வாய்மொழி","satagopan","சடகோபன்"] },
   { id:27, name:"திருவாய்மொழி நூற்றந்தாதி", hasPathu:false,
-    aliases:["thiruvaimozhi nurrandhadhi","திருவாய்மொழி நூற்றந்தாதி","vaimozhi nurrandhadhi"] }
+    aliases:["thiruvaimozhi nurrandhadhi","திருவாய்மொழி நூற்றந்தாதி","vaimozhi nurrandhadhi"] },
+  { id:28, name:"ஞானசாரம்", hasPathu:false,
+    aliases:["gnanasaram","ஞானசாரம்","gyanasaram","njanasaram","gnana saram","arulala perumal emberumanar","அருளாளப்பெருமாள்"] },
+  { id:29, name:"ப்ரமேயஸாரம்", hasPathu:false,
+    aliases:["prameyasaram","ப்ரமேயஸாரம்","prameya saram","prameyasara","vilanjcholai pillai","விளாஞ்சோலைபிள்ளை"] },
+  { id:30, name:"ஸப்தகாதை", hasPathu:false,
+    aliases:["sapthakathai","ஸப்தகாதை","saptha kathai","sapthagathai","saptha gathai","manavala mamunigal","மணவாள மாமுனிகள்"] },
+  { id:31, name:"ஆர்த்தி ப்ரபந்தம்", hasPathu:false,
+    aliases:["aarthi prabandham","ஆர்த்தி ப்ரபந்தம்","aarthi","ஆர்த்தி","arthi prabandham","aarthi prabandam","manavala mamunigal","மணவாள மாமுனிகள்"] },
+  { id:32, name:"அமிருதரஞ்சனி", hasPathu:false,
+    aliases:["amirtharanjani","அமிருதரஞ்சனி","amrutharanjani","amirta ranjani","desika","தேஶிக"] },
+  { id:33, name:"அதிகாரசங்கிரகம்", hasPathu:false,
+    aliases:["adhikara sangraham","அதிகாரசங்கிரகம்","adhikarasangraham","athikara sangiraham","desika","தேஶிக"] },
+  { id:34, name:"அமிருதாசுவாதினி", hasPathu:false,
+    aliases:["amirthaswadhini","அமிருதாசுவாதினி","amrutha swadhini","amirtha aswadhini","desika","தேஶிக"] },
+  { id:35, name:"பரமபதசோபானம்", hasPathu:false,
+    aliases:["paramapada sopanam","பரமபதசோபானம்","parama pada sopanam","paramapadasopanam","desika","தேஶிக"] },
+  { id:36, name:"பரமதபங்கம்", hasPathu:false,
+    aliases:["paramatha bhangam","பரமதபங்கம்","paramata bangam","paramathabangam","desika","தேஶிக"] },
+  { id:37, name:"மெய்விரதமான்மியம்", hasPathu:false,
+    aliases:["meyvirata manmiyam","மெய்விரதமான்மியம்","mei virata manmiyam","meyviratha manmiyam","desika","தேஶிக"] },
+  { id:38, name:"அடைக்கலப்பத்து", hasPathu:false,
+    aliases:["adaikalappathu","அடைக்கலப்பத்து","adaikkalappathu","adaikala pathu","desika","தேஶிக"] },
+  { id:39, name:"அருத்தபஞ்சகம்", hasPathu:false,
+    aliases:["artha panchakam","அருத்தபஞ்சகம்","arutha panchakam","artha panjakam","desika","தேஶிக"] },
+  { id:40, name:"ஶ்ரீவைணவதினசரி", hasPathu:false,
+    aliases:["srivaishnava dinasari","ஶ்ரீவைணவதினசரி","sri vaishnava dinachari","vaishnava dinasari","desika","தேஶிக"] },
+  { id:41, name:"திருச்சின்னமாலை", hasPathu:false,
+    aliases:["thiruchinna maalai","திருச்சின்னமாலை","thiru chinna malai","thiruchinnamalai","desika","தேஶிக"] },
+  { id:42, name:"பன்னிருநாமம்", hasPathu:false,
+    aliases:["pannirunaamam","பன்னிருநாமம்","panniru naamam","pannnirunamam","desika","தேஶிக"] },
+  { id:43, name:"திருமந்திரச்சுருக்கு", hasPathu:false,
+    aliases:["thirumanthira surukku","திருமந்திரச்சுருக்கு","thiru manthira churukku","thirumanthirasurukku","desika","தேஶிக"] },
+  { id:44, name:"துவயச்சுருக்கு", hasPathu:false,
+    aliases:["dvaya surukku","துவயச்சுருக்கு","dhuvaya churukku","dvayasurukku","desika","தேஶிக"] },
+  { id:45, name:"சரமச்லோகச்சுருக்கு", hasPathu:false,
+    aliases:["charama sloka surukku","சரமச்லோகச்சுருக்கு","sarama slokam churukku","charamaslokasurukku","desika","தேஶிக"] },
+  { id:46, name:"கீதார்த்தசங்கிரகம்", hasPathu:false,
+    aliases:["githartha sangraham","கீதார்த்தசங்கிரகம்","geethartha sangiraham","gitartha sangraham","desika","தேஶிக"] },
+  { id:47, name:"மும்மணிக்கோவை", hasPathu:false,
+    aliases:["mummanikkovai","மும்மணிக்கோவை","mummani kovai","mummanikovai","desika","தேஶிக"] },
+  { id:48, name:"நவமணிமாலை", hasPathu:false,
+    aliases:["navamani maalai","நவமணிமாலை","navamani malai","navamanimalai","desika","தேஶிக"] },
+  { id:49, name:"ப்ரபந்தசாரம்", hasPathu:false,
+    aliases:["prabandha saram","ப்ரபந்தசாரம்","prabandhasaram","prabanda saram","desika","தேஶிக"] },
+  { id:50, name:"ஆகாரநியமம்", hasPathu:false,
+    aliases:["ahaara niyamam","ஆகாரநியமம்","aahara niyamam","ahaaraniyamam","desika","தேஶிக"] },
+  { id:51, name:"பிள்ளையந்தாதி", hasPathu:false,
+    aliases:["pillai andhadhi","பிள்ளையந்தாதி","pillaiyandhadhi","pillai anthathi","desika","தேஶிக"] },
+  { id:52, name:"ஸ்ரீ ஆதிவண்ஶடகோப யதீந்த்ர மஹாதேஶிகன் அடைக்கலப்பத்து", hasPathu:false,
+    aliases:["adivan sadagopa adaikalappathu","ஆதிவண்ஶடகோப அடைக்கலப்பத்து","adivan satagopa","ahobila madam adaikalappathu","அஹோபிலமடம் அடைக்கலப்பத்து","adivan"] },
+  { id:53, name:"ஶ்ரீ லக்ஷ்மீந்ரு’ஸிம்ஹன் அடைக்கலப்பத்து", hasPathu:false,
+    aliases:["lakshmi nrisimhan adaikalappathu","லக்ஷ்மீந்ருஸிம்ஹன் அடைக்கலப்பத்து","lakshmi narasimha adaikalappathu","lakshmi nrisimha","narasimhan adaikalappathu"] }
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -707,7 +759,7 @@ const TAG_ROUTE_MAP = {
   // பரிபாலனம் — திருவாய்மொழி 10th pathu 9th thiruvaimozhi (recited when soul departs)
   "பரிபாலனம்":            { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
   "paripaalanam":          { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
-  "ஸ்ரீகூர்ணபரிபாலனம்": { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
+  "ஸ்ரீசூர்ணபரிபாலனம்": { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
 };
 
 async function searchEntityTags(transcript) {
@@ -845,7 +897,7 @@ export async function resolveVoiceQueryExtended(transcript) {
   const t = normTamil(transcript);
 
   // Special case: பரிபாலனம் → show TWO options
-  const pariTags = ["பரிபாலனம", "paripaalanam", "ஸரகூரணபரிபாலனம", "srikoornaparipaalanam"];
+  const pariTags = ["பரிபாலனம", "paripaalanam", "ஸ்ரீசூர்ணபரிபாலனம", "srichoornaparipaalanam"];
   if (pariTags.some(p => t.includes(p) || p.includes(t))) {
     return [
       {
