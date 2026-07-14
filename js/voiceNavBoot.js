@@ -527,7 +527,7 @@ function voiceNotAvailable(name) {
 async function voicePlaySection(sectionId, sectionName) {
   try {
     const [disp, than] = await Promise.all([
-      fetch(`${API_DD}/pasuram-display?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
+      fetch(`${API_DD}/pasuram?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
       fetch(`${API_DD}/thaniyan?section_id=${sectionId}`).then(r => r.json()).catch(() => [])
     ]);
 
@@ -565,7 +565,7 @@ async function voicePlayPasuram(globalNo) {
   try {
     const g = await fetch(`${API_VOICE}/by-global?no=${Number(globalNo)}`).then(r => r.json());
     if (!g || !g.section_id) { voiceNotAvailable("Pasuram " + globalNo); return; }
-    const disp = await fetch(`${API_DD}/pasuram-display?section_id=${g.section_id}`).then(r => r.json());
+    const disp = await fetch(`${API_DD}/pasuram?section_id=${g.section_id}`).then(r => r.json());
     const found = (Array.isArray(disp) ? disp : []).find(p => Number(p.global_no) === Number(globalNo));
     if (found && found.has_audio) playUrls([PASURAM_URL(Number(globalNo))]);
     else voiceNotAvailable("Pasuram " + globalNo);
