@@ -402,10 +402,9 @@ export function sectionQueueBtn(id, urls) {
   return centerQueueBtn(id, urls);
 }
 // ── Option B: save on navigation + auto-resume on next page ─────────────────
-// Pure JS — no service worker, no caching. Browsers may block autoplay without
-// a prior gesture; in that case the queue restores paused and the floating
-// bar's ▶ resumes with one tap (Android PWA with media engagement usually
-// auto-plays). Media Session gives lock-screen controls where the OS allows.
+// Pure JS — no service worker, no caching. Uses `pageshow` (fires for BOTH
+// fresh loads AND back/forward bfcache restores) so the back button resumes
+// correctly instead of showing a stale frozen player at the beginning.
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", saveState);
   window.addEventListener("beforeunload", saveState);
@@ -415,9 +414,17 @@ if (typeof window !== "undefined") {
     let s;
     try { s = JSON.parse(sessionStorage.getItem("gaPlayback") || "null"); } catch (e) { s = null; }
     if (!s || !s.urls || !s.urls.length) return;
+    // If this page's player is already correctly playing the saved queue, leave
+    // it alone (no blip) — otherwise (re)start from the saved track & position.
+    const existing = document.getElementById("ga-player");
+    if (existing && existing.src && !existing.paused && _gaState.urls.length) {
+      showAudioControls(s.label); updatePauseIcon();
+      return;
+    }
     _playQueue(s.urls, s.label, s.idx || 0, s.time || 0, !s.paused);
     if (s.paused) { const p = getPlayer(); p.pause(); updatePauseIcon(); }
   };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", _gaResume);
-  else _gaResume();
+
+  // pageshow covers normal loads and bfcache back/forward restores
+  window.addEventListener("pageshow", _gaResume);
 }
