@@ -238,6 +238,31 @@ function normTamil(text) {
   return normalize(text).replace(/்/g, "").replace(/\s+/g, " ").trim();
 }
 
+// Space-stripped form — spacing & sandhi joins ("ஓங்கி உலகளந்த" vs
+// "ஓங்கிவுலகளந்த") shouldn't break a match, so we compare joined strings.
+function normJoin(text) {
+  return normTamil(text).replace(/\s+/g, "");
+}
+
+// Levenshtein edit distance (small strings) — powers fuzzy near-matching so
+// tiny differences (an inserted வ sandhi, உ vs வு, a dropped pulli) still match.
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => i);
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0];
+    dp[0] = j;
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i];
+      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
+
 function scoreMatch(transcript, aliases) {
   const t  = normalize(transcript);
   const tf = normTamil(transcript);
@@ -366,31 +391,46 @@ async function searchFirstLines(transcript) {
   const lines = await getFirstLines();
   if (!lines.length) return [];
 
-  const tf = normTamil(transcript);
-  if (tf.length < 3) return [];
+  const tf     = normTamil(transcript);
+  const tfJoin = normJoin(transcript);            // spacing/sandhi-insensitive
+  if (tfJoin.length < 4) return [];
 
   const results = [];
 
   for (const row of lines) {
-    const line = normTamil(row.line_1 || "");
-    if (!line) continue;
+    const raw      = row.line_1 || "";
+    const line     = normTamil(raw);
+    const lineJoin = normJoin(raw);
+    if (!lineJoin) continue;
 
     let score = 0;
-    if (tf === line)                              score = 100;
-    else if (line.startsWith(tf) && tf.length > 3) score = 90;
-    else if (tf.startsWith(line.slice(0, Math.min(line.length, 8))) && line.length > 5) score = 80;
-    else if (line.includes(tf) && tf.length > 4)  score = 75;
-    else if (tf.includes(line.slice(0, 6)) && line.length > 5) score = 65;
+
+    // Space-stripped exact / prefix / contains (spacing & joins don't matter)
+    if (tfJoin === lineJoin)                                       score = 100;
+    else if (lineJoin.startsWith(tfJoin) && tfJoin.length >= 4)     score = 93;
+    else if (tfJoin.startsWith(lineJoin.slice(0, Math.min(lineJoin.length, 8))) && lineJoin.length > 6) score = 83;
+    else if (lineJoin.includes(tfJoin) && tfJoin.length > 5)        score = 78;
     else {
-      // Word overlap
-      const tW = tf.split(" ").filter(w => w.length > 2);
-      const lW = line.split(" ").filter(w => w.length > 2);
-      const ov = tW.filter(w => lW.includes(w)).length;
-      if (ov >= 2) score = ov * 20;
-      else if (ov === 1 && tW.length === 1) score = 30;
+      // Fuzzy over the FULL opening words (normalized by the longer length).
+      // Truncating to the shorter side mis-aligned sandhi joins and inflated
+      // the distance, so compare the whole joined strings.
+      const dist = editDistance(tfJoin, lineJoin);
+      const sim  = 1 - dist / Math.max(tfJoin.length, lineJoin.length);
+      if (sim >= 0.76) {
+        score = Math.round(sim * 92);             // near match (sandhi/spelling drift)
+      } else {
+        // Word overlap with per-word fuzziness
+        const tW = tf.split(" ").filter(w => w.length > 2);
+        const lW = line.split(" ").filter(w => w.length > 2);
+        const ov = tW.filter(w => lW.some(x =>
+          x === w || x.includes(w) || w.includes(x) || editDistance(w, x) <= 1
+        )).length;
+        if (ov >= 2)                       score = 55 + ov * 8;
+        else if (ov === 1 && tW.length === 1) score = 46;
+      }
     }
 
-    if (score < 40) continue;
+    if (score < 45) continue;
 
     const sec = SECTIONS.find(s => s.id === row.section_id);
     const secName = sec?.name || `Section ${row.section_id}`;
@@ -404,10 +444,10 @@ async function searchFirstLines(transcript) {
     });
   }
 
-  // Return top 3 first-line matches
+  // Top nearest matches (so a "did you mean" list can show alternatives)
   return results
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, 5);
 }
 
 // ═══════════════════════════════════════════════════════
