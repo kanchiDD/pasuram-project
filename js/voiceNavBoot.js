@@ -300,11 +300,18 @@ function voiceOpenDivyadesamById(desamId, desamName, mode) {
                   && document.getElementById("fdd-content");
     if (ready) {
       clearInterval(poll);
-      setTimeout(() => {
-        window.ddOpenDesam(desamId);
-        // remove the loader once the desam detail has painted
-        setTimeout(() => document.getElementById("voice-dd-loader")?.remove(), 250);
-      }, 40);
+      // Open the desam detail; ddOpenDesam returns renderDesamDetail's promise,
+      // so we wait for the detail to actually paint before revealing it.
+      Promise.resolve(window.ddOpenDesam(desamId)).then(() => {
+        // Hide the 108-index chrome so ONLY the desam detail shows (same page,
+        // spinner → detail — no index bar at the top).
+        document.querySelectorAll(".dd-page-title, .dd-page-sub, .dd-divider, .dd-menu-grid")
+          .forEach(el => { el.style.display = "none"; });
+        window.scrollTo({ top: 0, behavior: "auto" });
+        setTimeout(() => document.getElementById("voice-dd-loader")?.remove(), 60);
+      }).catch(() => {
+        document.getElementById("voice-dd-loader")?.remove();
+      });
     } else if (attempts >= 60) { // 6s max
       clearInterval(poll);
       document.getElementById("voice-dd-loader")?.remove();
