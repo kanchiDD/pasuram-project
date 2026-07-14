@@ -274,11 +274,21 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
   });
 }
 
-// Open Divyadesam index, then auto-open the specific desam once BOTH the
-// handler and its target DOM (#fdd-content) exist — ddOpenDesam registers
-// synchronously (early), but #fdd-content is painted a tick later, so firing
-// on the handler alone opened detail into a missing node and fell back to index.
+// Open a specific Divyadesam directly: cover the screen with a loader so the
+// user never sees the 108-index (whose lotus spinner sits below the fold and
+// looks like "nothing happened"), then swap straight to the desam detail.
 function voiceOpenDivyadesamById(desamId, desamName, mode) {
+  const ov = document.createElement("div");
+  ov.id = "voice-dd-loader";
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;"
+    + "align-items:center;justify-content:center;background:#fff8ec;color:#7a4d00;"
+    + "font-family:inherit;gap:16px";
+  ov.innerHTML = `
+    <div style="font-size:15px;font-weight:700">${desamName ? "Opening " + desamName + " \u2026" : "Opening \u2026"}</div>
+    <div style="font-size:34px;animation:vdd-spin 1.4s linear infinite">\uD83E\uDEB7</div>
+    <style>@keyframes vdd-spin{to{transform:rotate(360deg)}}</style>`;
+  document.body.appendChild(ov);
+
   state.divyadesamThousandId = null;
   state.level = "FULL_DIVYADESAM";
   render();
@@ -290,10 +300,14 @@ function voiceOpenDivyadesamById(desamId, desamName, mode) {
                   && document.getElementById("fdd-content");
     if (ready) {
       clearInterval(poll);
-      // let the index finish painting, then swap to the desam detail
-      setTimeout(() => window.ddOpenDesam(desamId), 40);
-    } else if (attempts >= 60) { // 60 × 100ms = 6s max
+      setTimeout(() => {
+        window.ddOpenDesam(desamId);
+        // remove the loader once the desam detail has painted
+        setTimeout(() => document.getElementById("voice-dd-loader")?.remove(), 250);
+      }, 40);
+    } else if (attempts >= 60) { // 6s max
       clearInterval(poll);
+      document.getElementById("voice-dd-loader")?.remove();
       console.warn("voiceNavBoot: ddOpenDesam/#fdd-content not ready for desam", desamId);
     }
   }, 100);

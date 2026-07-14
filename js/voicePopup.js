@@ -27,17 +27,19 @@ function injectStyles() {
   style.id = "voice-popup-styles";
   style.textContent = `
 
-    /* ── Floating Mic Button ── */
+    /* ── Floating Mic Button (brushed steel) ── */
     #voice-mic-btn {
       position: fixed;
       bottom: 28px;
       right: 24px;
-      width: 64px;
-      height: 64px;
+      width: 62px;
+      height: 62px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #FF9128 0%, #F2601A 55%, #DA3F17 100%);
-      border: 3px solid #FFD86B;
-      box-shadow: 0 6px 20px rgba(216,67,26,0.5);
+      background: linear-gradient(145deg, #f4f6f8 0%, #cfd6dd 38%, #9aa4ad 72%, #6f7880 100%);
+      border: 2px solid #b9c2cb;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.30),
+                  inset 0 2px 3px rgba(255,255,255,0.9),
+                  inset 0 -3px 5px rgba(0,0,0,0.22);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -45,33 +47,36 @@ function injectStyles() {
       z-index: 9000;
       transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
-      animation: voice-idle-glow 2.4s ease-in-out infinite;
+      animation: voice-idle-glow 2.6s ease-in-out infinite;
     }
 
     #voice-mic-btn:hover {
       transform: scale(1.08);
-      box-shadow: 0 8px 26px rgba(216,67,26,0.6);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.38),
+                  inset 0 2px 3px rgba(255,255,255,0.95),
+                  inset 0 -3px 5px rgba(0,0,0,0.25);
     }
 
     #voice-mic-btn.listening {
-      background: linear-gradient(135deg, #E8351E 0%, #B01E12 100%);
-      border-color: #FFE39A;
+      background: linear-gradient(145deg, #ffd9d2 0%, #e8705c 45%, #c8402c 100%);
+      border-color: #f0a99c;
       animation: voice-pulse 1.2s ease-in-out infinite;
     }
 
     #voice-mic-btn svg {
       width: 30px;
       height: 30px;
+      filter: drop-shadow(0 1px 1px rgba(255,255,255,0.6));
     }
 
     @keyframes voice-idle-glow {
-      0%, 100% { box-shadow: 0 6px 20px rgba(216,67,26,0.5), 0 0 0 0 rgba(255,150,60,0.55); }
-      50%       { box-shadow: 0 6px 20px rgba(216,67,26,0.5), 0 0 0 11px rgba(255,150,60,0); }
+      0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.30), inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -3px 5px rgba(0,0,0,0.22), 0 0 0 0 rgba(120,150,180,0.45); }
+      50%       { box-shadow: 0 4px 14px rgba(0,0,0,0.30), inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -3px 5px rgba(0,0,0,0.22), 0 0 0 9px rgba(120,150,180,0); }
     }
 
     @keyframes voice-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(230,53,30,0.5); }
-      50%       { box-shadow: 0 0 0 16px rgba(230,53,30,0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200,64,44,0.5); }
+      50%       { box-shadow: 0 0 0 16px rgba(200,64,44,0); }
     }
 
     /* ── Overlay ── */
@@ -338,7 +343,7 @@ function injectMicButton() {
 }
 
 function micIcon(active = false) {
-  const color = active ? "#FFFFFF" : "#FFFFFF";
+  const color = active ? "#7a1d12" : "#2f3a44";
   return `
     <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="9" y="2" width="10" height="16" rx="5" fill="${color}"/>
