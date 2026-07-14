@@ -99,6 +99,46 @@ window._gaToggle = function (id) {
 };
 window._gaStopAll = stopAll;
 
+// ── Headless queue playback (voice "play" commands — no button needed) ──
+// Plays a list of audio URLs in order, skipping any that fail, reusing the
+// single shared <audio> player so it behaves exactly like the on-page buttons.
+export function playUrls(urls) {
+  const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
+  if (!list.length) return false;
+  stopAll();
+  const p = getPlayer();
+  let idx = 0;
+  let preloader = null;
+  const next = () => {
+    if (idx >= list.length) return;
+    p.src = list[idx++];
+    p.onended = next;
+    p.onerror = next;               // skip missing/failed file, continue
+    p.play().catch(() => {});
+    if (idx < list.length) {
+      preloader = new Audio();
+      preloader.preload = "auto";
+      preloader.src = list[idx];
+    }
+  };
+  next();
+  return true;
+}
+export function stopPlayback() { stopAll(); }
+
+// Global pothu thaniyan audio queue for a sect. Madam recites Kesavarya
+// (thaniyan_k.mp3) before the Vadakalai pothu (thaniyan_v.mp3).
+//   Thenkalai      → [t]
+//   Vadakalai      → [v]
+//   Vadakalai Madam→ [k, v]
+export function globalThaniyanUrls(sect, subsect) {
+  const s = (sect || "T").toUpperCase();
+  const isMadam = (subsect || "").toLowerCase() === "madam";
+  if (s === "V" && isMadam) return [THANIYAN_URL("k"), THANIYAN_URL("v")];
+  if (s === "V")            return [THANIYAN_URL("v")];
+  return [THANIYAN_URL("t")];
+}
+
 // ── ONE builder ────────────────────────────────────────────────
 // size: "sm" (inline pasuram) | "lg" (thaniyan / section)
 // label: idle subscript text ("Play", "Play All")

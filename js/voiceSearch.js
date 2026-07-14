@@ -782,7 +782,65 @@ async function searchEntityTags(transcript) {
 
 // Hook entity tag search into resolveVoiceQuery
 // Call this AFTER the existing resolveVoiceQuery to extend results
+// Detect a reverent "play" command: English "play" or "சாதித்தருளாய்"
+// (the canonical Vaishnava term — matched fuzzily since STT mangles it).
+// Returns { isPlay, cleaned } with the trigger word removed.
+function detectPlayIntent(transcript) {
+  const raw = (transcript || "").trim();
+  if (!raw) return { isPlay: false, cleaned: raw };
+  const target = normJoin("சாதித்தருளாய்");
+  let isPlay = false;
+  const kept = [];
+  for (const w of raw.split(/\s+/)) {
+    const wl = w.toLowerCase();
+    const wj = normJoin(w);
+    if (wl === "play" || wl === "பிளே") { isPlay = true; continue; }
+    // சாதி… (சாதி / சாதிக்க / சாதித்தருளாய்) or a close fuzzy match to it
+    if (wj.startsWith("சாதி") || (wj.length >= 4 && editDistance(wj, target) <= 3)) {
+      isPlay = true; continue;
+    }
+    kept.push(w);
+  }
+  return { isPlay, cleaned: kept.join(" ").trim() };
+}
+
 export async function resolveVoiceQueryExtended(transcript) {
+  // ── Play intent first ("play …" / "… சாதித்தருளாய்") ──
+  const play = detectPlayIntent(transcript);
+  if (play.isPlay && play.cleaned) {
+    const base = await resolveVoiceQuery(play.cleaned);
+    const out = [];
+    for (const r of base) {
+      if (/^_selectSection/.test(r.fn)) {
+        out.push({
+          label:    "▶ " + (r.args[1] || "Section"),
+          sublabel: "\u0b87\u0b9a\u0bc8 — Audio",
+          fn:       "_playSection",
+          args:     [r.args[0], r.args[1] || ""],
+          score:    r.score + 5
+        });
+      } else if (r.fn === "_openGlobalPasuram") {
+        out.push({
+          label:    "▶ Pasuram " + r.args[0],
+          sublabel: r.sublabel || "Audio",
+          fn:       "_playPasuram",
+          args:     [r.args[0]],
+          score:    r.score + 5
+        });
+      }
+    }
+    if (out.length) {
+      const seen = new Set();
+      return out.sort((a, b) => b.score - a.score).filter(r => {
+        const k = r.fn + JSON.stringify(r.args);
+        if (seen.has(k)) return false;
+        seen.add(k); return true;
+      }).slice(0, 4);
+    }
+    // nothing playable resolved → fall through to normal handling of cleaned text
+    transcript = play.cleaned;
+  }
+
   // Check TAG_ROUTE_MAP FIRST — these are hardcoded concepts that must win
   const t = normTamil(transcript);
 

@@ -14,8 +14,10 @@ import {
   fetchMadal, fetchKootrirukkai
 } from "./api.js";
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
+import { playUrls, PASURAM_URL, thaniyanFileUrl, THANIYAN_SEC_URL, globalThaniyanUrls } from "./render/globalAudio.js";
 
 const API_VOICE = "https://cdnaalayiram-api.kanchitrust.workers.dev/voice";
+const API_DD    = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
 // ── Boot ──────────────────────────────────────────────
 const raw = sessionStorage.getItem("voiceNav");
@@ -37,6 +39,18 @@ if (raw) {
 function executeVoiceNav(nav) {
   pushState();
   const { fn, args } = nav;
+
+  // ── Voice PLAY ("play …" / "… சாதித்தருளாய்") ──
+  if (fn === "_playSection") {
+    const [sectionId, sectionName] = args;
+    voicePlaySection(sectionId, sectionName);
+    return;
+  }
+  if (fn === "_playPasuram") {
+    const [globalNo] = args;
+    voicePlayPasuram(globalNo);
+    return;
+  }
 
   // Internal section navigators
   if (fn === "_selectSection") {
@@ -494,4 +508,68 @@ async function voiceOpenNeeratam() {
 function voiceOpenParipaalanamTVM() {
   // திருவாய்மொழி 10th pathu 9th thiruvaimozhi
   voiceSelectWithThirumozhi(26, "திருவாய்மொழி", 10, "சூழ்விசும்பு");
+}
+// ── Voice PLAY handlers ─────────────────────────────────────────────────────
+// Reverent "play" (English "play" / "சாதித்தருளாய்"). Uses the DB has_audio
+// flag (via existing endpoints) to decide; the shared headless player handles
+// playback and skips any file that fails.
+
+function voiceNotAvailable(name) {
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
+    + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
+    + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
+  ov.innerHTML = `\uD83D\uDE4F Adiyen, the contents${name ? " for <b>" + name + "</b>" : ""} are currently not available. Please check later.`;
+  document.body.appendChild(ov);
+  setTimeout(() => ov.remove(), 4200);
+}
+
+async function voicePlaySection(sectionId, sectionName) {
+  try {
+    const [disp, than] = await Promise.all([
+      fetch(`${API_DD}/pasuram-display?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
+      fetch(`${API_DD}/thaniyan?section_id=${sectionId}`).then(r => r.json()).catch(() => [])
+    ]);
+
+    // Then every pasuram that has audio, in order
+    const pasUrls = (Array.isArray(disp) ? disp : [])
+      .filter(p => p.has_audio)
+      .map(p => PASURAM_URL(p.global_no));
+
+    if (!pasUrls.length) { voiceNotAvailable(sectionName); return; }
+
+    const queue = [];
+
+    // 1) Global pothu thaniyan for the user's sect (T→t, V→v, Madam→k then v).
+    //    A missing file is skipped by the player, so this is safe.
+    const sect    = localStorage.getItem("sect") || "T";
+    const subsect = localStorage.getItem("subsect") || "";
+    queue.push(...globalThaniyanUrls(sect, subsect));
+
+    // 2) Section thaniyan (if it has audio)
+    const thanRows = Array.isArray(than) ? than : (than.thaniyan || []);
+    const secThan = thanRows.find(t =>
+      (t.type === "section" || Number(t.section_id) === Number(sectionId)) && t.has_audio);
+    if (secThan) queue.push(thaniyanFileUrl(secThan.section_id || sectionId, secThan.thaniyan_id));
+
+    // 3) The pasurams
+    queue.push(...pasUrls);
+
+    playUrls(queue);
+  } catch (e) {
+    voiceNotAvailable(sectionName);
+  }
+}
+
+async function voicePlayPasuram(globalNo) {
+  try {
+    const g = await fetch(`${API_VOICE}/by-global?no=${Number(globalNo)}`).then(r => r.json());
+    if (!g || !g.section_id) { voiceNotAvailable("Pasuram " + globalNo); return; }
+    const disp = await fetch(`${API_DD}/pasuram-display?section_id=${g.section_id}`).then(r => r.json());
+    const found = (Array.isArray(disp) ? disp : []).find(p => Number(p.global_no) === Number(globalNo));
+    if (found && found.has_audio) playUrls([PASURAM_URL(Number(globalNo))]);
+    else voiceNotAvailable("Pasuram " + globalNo);
+  } catch (e) {
+    voiceNotAvailable("Pasuram " + globalNo);
+  }
 }

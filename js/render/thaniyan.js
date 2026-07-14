@@ -26,7 +26,8 @@ if (!data) return "";
       _audioUrl = thaniyanFileUrl(secId, section.thaniyan_id);
     } else if (section.type === "global" || section.type === "thousand") {
       const tid = Number(section.thaniyan_id);
-      if (tid === 1)       _audioUrl = THANIYAN_URL("t");
+      if (tid === 0)       _audioUrl = THANIYAN_URL("k");   // Kesavarya (Madam)
+      else if (tid === 1)  _audioUrl = THANIYAN_URL("t");
       else if (tid === 33) _audioUrl = THANIYAN_URL("v");
     }
     const btnHtml = _audioUrl

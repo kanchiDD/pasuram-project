@@ -9,7 +9,7 @@ import {
   } from "./api.js";
 
 import { renderPasuram } from "./render/pasuram_full.js";
-import { sectionPlayAll, sectionAudioUrls, thousandPlayAll, specialSectionUrls, specialSectionPlayAll } from "./render/globalAudio.js";
+import { sectionPlayAll, sectionAudioUrls, thousandPlayAll, specialSectionUrls, specialSectionPlayAll, globalThaniyanUrls } from "./render/globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
@@ -334,8 +334,15 @@ if (hasPasuram) {
     } // sections loop
 
 // Fill in the Full-Thousand Play button now that its queue is complete.
+// Prepend the sect pothu thaniyan once (T→t, V→v, Madam→k then v) so a
+// thousand's playback opens with the global thaniyan before the pasurams.
 // (Empty queue → thousandPlayAll returns "", so the placeholder just clears.)
-html = html.replace(`<!--FTP:${t.id}-->`, thousandPlayAll(t.id, t.name, thousandQueue));
+const _ftSect    = localStorage.getItem("sect") || "T";
+const _ftSubsect = localStorage.getItem("subsect") || "";
+const _thousandFullQueue = thousandQueue.length
+  ? [...globalThaniyanUrls(_ftSect, _ftSubsect), ...thousandQueue]
+  : thousandQueue;
+html = html.replace(`<!--FTP:${t.id}-->`, thousandPlayAll(t.id, t.name, _thousandFullQueue));
 
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
 

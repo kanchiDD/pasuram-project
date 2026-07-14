@@ -7,6 +7,7 @@
 import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { fetchThaniyanWithProsody } from "./displayHelper.js";
+import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL } from "./globalAudio.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -221,8 +222,20 @@ export async function renderFullThaniyans(selectedThousandId = null) {
     <div class="ft-page">
       <div class="ft-page-title">${pageTitle}</div>
       <div class="ft-page-subtitle">தனியன்கள் — முழு தொகுப்பு</div>
+      <div style="text-align:center;margin:6px 0 10px">
+        <button id="ft-play-all" onclick="window._ftPlayAll && window._ftPlayAll()"
+          style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+                 border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
+                 box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ அனைத்து தனியன்களும்</button>
+      </div>
       <div class="ft-divider"></div>
   `;
+
+  // Audio queue for the play-all button: sect pothu thaniyan first, then each
+  // section thaniyan that has audio, in render order.
+  const _sect    = localStorage.getItem("sect") || "T";
+  const _subsect = localStorage.getItem("subsect") || "";
+  const playAllSecIds = [];
 
   let globalRendered = false;
 
@@ -306,6 +319,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       const { rows: thaniyanData, prosodyMap: sectionProsodyMap } = sectionThaniyanMap.get(secId) || {};
       const sectionRows = getRows(thaniyanData, "section");
       if (sectionRows.length === 0) continue;
+      if (sectionRows.some(r => r.has_audio)) playAllSecIds.push(secId);
 
       const heading = sectionHeaderMap[baseName] || baseName;
 
@@ -318,6 +332,14 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       `;
     }
   }
+
+  // Register the play-all handler: sect pothu thaniyan, then section thaniyans
+  // that have audio, in order. Missing files are skipped by the player.
+  const playAllUrls = [
+    ...globalThaniyanUrls(_sect, _subsect),
+    ...playAllSecIds.map(id => THANIYAN_SEC_URL(id))
+  ];
+  window._ftPlayAll = () => playUrls(playAllUrls);
 
   html += `
       <div class="ft-end-ornament">❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖</div>
