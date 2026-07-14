@@ -66,6 +66,51 @@ function stopAll() {
   const p = getPlayer();
   p.pause(); p.src = ""; p.onended = null; p.onerror = null;
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
+  hideAudioControls();
+}
+
+// ── Floating playback control bar (Pause / Stop) ───────────────────
+// A shared bar so any queue playback (voice "play", play-all thaniyans,
+// thousand, etc.) can be paused, resumed, or stopped.
+function ensureControlBar() {
+  let bar = document.getElementById("ga-controls");
+  if (bar) return bar;
+  bar = document.createElement("div");
+  bar.id = "ga-controls";
+  bar.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:99998;"
+    + "display:none;align-items:center;gap:10px;background:#4A3728;color:#fff;border:1px solid #C9A84C;"
+    + "border-radius:30px;padding:8px 12px 8px 16px;box-shadow:0 6px 20px rgba(0,0,0,0.35);font-family:inherit";
+  bar.innerHTML = `
+    <span id="ga-ctl-label" style="font-size:13px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\u0b87\u0b9a\u0bc8 / Playing…</span>
+    <button id="ga-ctl-pause" title="Pause" style="width:38px;height:38px;border-radius:50%;border:none;background:#C9A84C;color:#3a2a18;font-size:16px;cursor:pointer">\u2225</button>
+    <button id="ga-ctl-stop" title="Stop" style="width:38px;height:38px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">\u25A0</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector("#ga-ctl-pause").onclick = () => {
+    const p = getPlayer();
+    if (p.paused) { p.play().catch(() => {}); }
+    else { p.pause(); }
+    updatePauseIcon();
+  };
+  bar.querySelector("#ga-ctl-stop").onclick = () => stopAll();
+  return bar;
+}
+function updatePauseIcon() {
+  const btn = document.getElementById("ga-ctl-pause");
+  if (!btn) return;
+  const p = getPlayer();
+  btn.textContent = p.paused ? "\u25B6" : "\u2225";
+  btn.title = p.paused ? "Resume" : "Pause";
+}
+function showAudioControls(label) {
+  const bar = ensureControlBar();
+  const lbl = bar.querySelector("#ga-ctl-label");
+  if (lbl && label) lbl.textContent = label;
+  bar.style.display = "flex";
+  updatePauseIcon();
+}
+function hideAudioControls() {
+  const bar = document.getElementById("ga-controls");
+  if (bar) bar.style.display = "none";
 }
 
 // ── The single toggle used by every button ─────────────────────
@@ -81,9 +126,12 @@ window._gaToggle = function (id) {
   const p = getPlayer();
   let idx = 0;
   setBtnState(btn, true);
+  showAudioControls(btn.getAttribute("data-ga-label") || "இசை / Playing…");
+  p.onpause = updatePauseIcon;
+  p.onplay  = updatePauseIcon;
   let preloader = null;
   const next = () => {
-    if (idx >= data.urls.length) { setBtnState(btn, false); return; }
+    if (idx >= data.urls.length) { setBtnState(btn, false); hideAudioControls(); return; }
     p.src = data.urls[idx++];
     p.onended = next;
     p.onerror = next;   // skip a missing/failed file and continue the queue
@@ -102,15 +150,18 @@ window._gaStopAll = stopAll;
 // ── Headless queue playback (voice "play" commands — no button needed) ──
 // Plays a list of audio URLs in order, skipping any that fail, reusing the
 // single shared <audio> player so it behaves exactly like the on-page buttons.
-export function playUrls(urls) {
+export function playUrls(urls, label) {
   const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
   if (!list.length) return false;
   stopAll();
   const p = getPlayer();
+  showAudioControls(label || "இசை / Playing…");
+  p.onpause = updatePauseIcon;
+  p.onplay  = updatePauseIcon;
   let idx = 0;
   let preloader = null;
   const next = () => {
-    if (idx >= list.length) return;
+    if (idx >= list.length) { hideAudioControls(); return; }
     p.src = list[idx++];
     p.onended = next;
     p.onerror = next;               // skip missing/failed file, continue
