@@ -759,7 +759,7 @@ const TAG_ROUTE_MAP = {
   // பரிபாலனம் — திருவாய்மொழி 10th pathu 9th thiruvaimozhi (recited when soul departs)
   "பரிபாலனம்":            { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
   "paripaalanam":          { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
-  "ஸ்ரீசூர்ணபரிபாலனம்": { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
+  "ஸ்ரீகூர்ணபரிபாலனம்": { fn: "_openParipaalanam",  args: [], label: "பரிபாலனம்",           sublabel: "திருவாய்மொழி 10ம் பத்து 9ம் திருவாய்மொழி / திருவிருத்தம்" },
 };
 
 async function searchEntityTags(transcript) {
@@ -856,6 +856,107 @@ function detectPlayIntent(transcript) {
   return { isPlay, cleaned: kept.join(" ").trim() };
 }
 
+// ═══════════════════════════════════════════════════════
+// NUMERIC pathu / thirumozhi selection
+//   "பெரிய திருமொழி முதல் பத்து இரண்டாம் திருமொழி" →
+//   section 11, pathu_no 1, sub_unit_no 2
+// ═══════════════════════════════════════════════════════
+
+// Tamil ordinals (keys are normTamil'd — pulli removed)
+const TAMIL_ORDINALS = {
+  "முதல":1,"முதற":1,"ஒனறாம":1,"ஒனறாவது":1,"ஒனற":1,
+  "இரணடாம":2,"இரணடாவது":2,"ரெணடாம":2,"ரெணடு":2,
+  "மூனறாம":3,"மூனறாவது":3,"மூனறு":3,
+  "நானகாம":4,"நாலாம":4,"நானகு":4,
+  "ஐநதாம":5,"அஞசாம":5,"ஐநது":5,
+  "ஆறாம":6,"ஆறாவது":6,
+  "ஏழாம":7,"ஏழாவது":7,
+  "எடடாம":8,"எடடாவது":8,
+  "ஒனபதாம":9,"ஒனபதாவது":9,
+  "பததாம":10,"பதது":10,
+  "பதினொனறாம":11,"பதினொராம":11
+};
+
+function ordinalToNum(word) {
+  if (!word) return null;
+  const w = word.replace(/்/g, "");
+  if (/^\d+$/.test(w)) return Number(w);
+  return TAMIL_ORDINALS[w] || null;
+}
+
+// Find the ordinal number that appears immediately before a unit word
+// (பத்து / திருமொழி) in the token list. Returns the LAST such occurrence.
+function ordinalBefore(tokens, unitStems) {
+  let found = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i].replace(/்/g, "");
+    if (unitStems.some(u => t === u || t.startsWith(u))) {
+      // ordinal is the previous token
+      const n = i > 0 ? ordinalToNum(tokens[i - 1]) : null;
+      if (n) found = n;
+    }
+  }
+  return found;
+}
+
+// Extract the ordinal number from a pathu/subunit NAME
+// ("முதற்பத்து" → 1, "இரண்டாம் திருமொழி" → 2)
+function pathuNameToNum(name) {
+  const n = normTamil(name || "");
+  if (!n) return null;
+  const first = n.split(" ")[0];
+  const byWord = ordinalToNum(first);
+  if (byWord) return byWord;
+  for (const k in TAMIL_ORDINALS) {         // fused forms like முதறபதது
+    if (n.startsWith(k)) return TAMIL_ORDINALS[k];
+  }
+  return null;
+}
+
+// Match a section by alias contained in the text (longest alias wins)
+function matchSectionInText(t) {
+  let best = null, bestLen = 0;
+  for (const s of SECTIONS) {
+    for (const a of [s.name, ...(s.aliases || [])]) {
+      const na = normTamil(a);
+      if (na.length > 2 && t.includes(na) && na.length > bestLen) {
+        best = s; bestLen = na.length;
+      }
+    }
+  }
+  return best;
+}
+
+async function resolveNumericSubunit(transcript) {
+  const t = normTamil(transcript);
+  const tokens = t.split(" ").filter(Boolean);
+  // Need both a pathu number and a thirumozhi number to be a numeric request
+  const pathuNo = ordinalBefore(tokens, ["பதது", "பத"]);
+  const subNo   = ordinalBefore(tokens, ["திருமொழி", "திருமொழ", "திருவாய", "திருவாயமொழி", "மொழி"]);
+  if (!pathuNo || !subNo) return [];
+
+  const sec = matchSectionInText(t);
+  if (!sec) return [];
+
+  // Reuse the anchor-map (already fetched/cached) — it has pathu_name,
+  // subunit_name, thirumozhi_heading and section_id per thirumozhi.
+  const anchors = await getAnchorMap();
+  const row = anchors.find(r =>
+    Number(r.section_id) === Number(sec.id) &&
+    pathuNameToNum(r.pathu_name)   === Number(pathuNo) &&
+    pathuNameToNum(r.subunit_name) === Number(subNo));
+  if (!row) return [];
+
+  const heading = row.thirumozhi_heading || "";
+  return [{
+    label:    `${sec.name} — ${row.pathu_name || ""} ${row.subunit_name || ""}`.trim(),
+    sublabel: heading,
+    fn:       "_selectSectionWithThirumozhi",
+    args:     [sec.id, sec.name, pathuNo, heading],
+    score:    98
+  }];
+}
+
 export async function resolveVoiceQueryExtended(transcript) {
   // ── Play intent first ("play …" / "… சாதித்தருளாய்") ──
   const play = detectPlayIntent(transcript);
@@ -896,8 +997,14 @@ export async function resolveVoiceQueryExtended(transcript) {
   // Check TAG_ROUTE_MAP FIRST — these are hardcoded concepts that must win
   const t = normTamil(transcript);
 
+  // Numeric "pathu N, thirumozhi M" selection (high confidence when present)
+  try {
+    const numeric = await resolveNumericSubunit(transcript);
+    if (numeric.length) return numeric;
+  } catch (e) {}
+
   // Special case: பரிபாலனம் → show TWO options
-  const pariTags = ["பரிபாலனம", "paripaalanam", "ஸ்ரீசூர்ணபரிபாலனம", "srichoornaparipaalanam"];
+  const pariTags = ["பரிபாலனம", "paripaalanam", "ஸரகூரணபரிபாலனம", "srikoornaparipaalanam"];
   if (pariTags.some(p => t.includes(p) || p.includes(t))) {
     return [
       {
