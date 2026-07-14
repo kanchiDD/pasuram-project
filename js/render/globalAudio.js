@@ -33,6 +33,41 @@ export function thaniyanFileUrl(sectionId, thaniyanId) {
 // id → { urls: [] }
 const _registry = new Map();
 
+// ── Cross-page playback state (Option B: resume on navigation) ──────
+// The single <audio> dies on each full page load, so we persist the queue +
+// position to sessionStorage and auto-resume on the next page. No service
+// worker / caching involved — pure JS.
+let _gaState  = { urls: [], idx: 0, label: "" };
+let _gaNext   = null;
+let _saveTimer = null;
+
+function saveState() {
+  try {
+    const p = document.getElementById("ga-player");
+    if (!_gaState.urls.length || !p || !p.src) { sessionStorage.removeItem("gaPlayback"); return; }
+    sessionStorage.setItem("gaPlayback", JSON.stringify({
+      urls: _gaState.urls, idx: Math.max(0, _gaState.idx - 1), label: _gaState.label,
+      time: p.currentTime || 0, paused: p.paused
+    }));
+  } catch (e) {}
+}
+function clearState() { try { sessionStorage.removeItem("gaPlayback"); } catch (e) {} }
+
+function setMediaSession(label) {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  label || "நாலாயிர திவ்யப்பிரபந்தம்",
+      artist: "arulicheyal.org",
+      album:  "Naalayira Divya Prabandham"
+    });
+    navigator.mediaSession.setActionHandler("play",  () => { const p = getPlayer(); p.play().catch(() => {}); updatePauseIcon(); });
+    navigator.mediaSession.setActionHandler("pause", () => { getPlayer().pause(); updatePauseIcon(); });
+    navigator.mediaSession.setActionHandler("stop",  () => stopAll());
+    try { navigator.mediaSession.setActionHandler("nexttrack", () => { if (_gaNext) _gaNext(); }); } catch (e) {}
+  } catch (e) {}
+}
+
 function getPlayer() {
   let p = document.getElementById("ga-player");
   if (!p) {
@@ -67,6 +102,8 @@ function stopAll() {
   p.pause(); p.src = ""; p.onended = null; p.onerror = null;
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
   hideAudioControls();
+  _gaState = { urls: [], idx: 0, label: "" };
+  clearState();
 }
 
 // ── Floating playback control bar (Pause / Stop) ───────────────────
@@ -127,15 +164,20 @@ window._gaToggle = function (id) {
   let idx = 0;
   setBtnState(btn, true);
   showAudioControls(btn.getAttribute("data-ga-label") || "இசை / Playing…");
-  p.onpause = updatePauseIcon;
-  p.onplay  = updatePauseIcon;
+  setMediaSession(btn.getAttribute("data-ga-label") || "");
+  _gaState = { urls: data.urls, idx: 0, label: btn.getAttribute("data-ga-label") || "" };
+  p.onpause = () => { updatePauseIcon(); saveState(); };
+  p.onplay  = () => { updatePauseIcon(); saveState(); };
+  p.ontimeupdate = () => { if (!_saveTimer) _saveTimer = setTimeout(() => { _saveTimer = null; saveState(); }, 2000); };
   let preloader = null;
   const next = () => {
-    if (idx >= data.urls.length) { setBtnState(btn, false); hideAudioControls(); return; }
+    if (idx >= data.urls.length) { setBtnState(btn, false); hideAudioControls(); clearState(); return; }
+    _gaState.idx = idx;
     p.src = data.urls[idx++];
     p.onended = next;
     p.onerror = next;   // skip a missing/failed file and continue the queue
     p.play().catch(() => {});
+    saveState();
     // Warm the next track while the current one plays → minimal gap between pasurams
     if (idx < data.urls.length) {
       preloader = new Audio();
@@ -143,6 +185,7 @@ window._gaToggle = function (id) {
       preloader.src = data.urls[idx];
     }
   };
+  _gaNext = () => { p.onended = null; next(); };
   next();
 };
 window._gaStopAll = stopAll;
@@ -150,30 +193,49 @@ window._gaStopAll = stopAll;
 // ── Headless queue playback (voice "play" commands — no button needed) ──
 // Plays a list of audio URLs in order, skipping any that fail, reusing the
 // single shared <audio> player so it behaves exactly like the on-page buttons.
-export function playUrls(urls, label) {
+// Core queue player — persists state so it can resume across page loads.
+function _playQueue(urls, label, startIdx, startTime, autoplay) {
   const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
   if (!list.length) return false;
+  startIdx  = startIdx  || 0;
+  startTime = startTime || 0;
   stopAll();
+  _gaState = { urls: list, idx: startIdx, label: label || "" };
   const p = getPlayer();
   showAudioControls(label || "இசை / Playing…");
-  p.onpause = updatePauseIcon;
-  p.onplay  = updatePauseIcon;
-  let idx = 0;
+  setMediaSession(label);
+  p.onpause = () => { updatePauseIcon(); saveState(); };
+  p.onplay  = () => { updatePauseIcon(); saveState(); };
+  p.ontimeupdate = () => {
+    if (!_saveTimer) _saveTimer = setTimeout(() => { _saveTimer = null; saveState(); }, 2000);
+  };
   let preloader = null;
   const next = () => {
-    if (idx >= list.length) { hideAudioControls(); return; }
-    p.src = list[idx++];
+    if (_gaState.idx >= list.length) { hideAudioControls(); clearState(); return; }
+    const cur = _gaState.idx;
+    p.src = list[_gaState.idx++];
     p.onended = next;
     p.onerror = next;               // skip missing/failed file, continue
-    p.play().catch(() => {});
-    if (idx < list.length) {
+    if (startTime && cur === startIdx) {
+      p.onloadedmetadata = () => { try { p.currentTime = startTime; } catch (e) {} p.play().catch(() => {}); };
+    } else {
+      p.play().catch(() => {});
+    }
+    saveState();
+    if (_gaState.idx < list.length) {
       preloader = new Audio();
       preloader.preload = "auto";
-      preloader.src = list[idx];
+      preloader.src = list[_gaState.idx];
     }
   };
+  _gaNext = () => { p.onended = null; next(); };
   next();
+  if (autoplay === false) { p.pause(); updatePauseIcon(); }
   return true;
+}
+
+export function playUrls(urls, label) {
+  return _playQueue(urls, label, 0, 0, true);
 }
 export function stopPlayback() { stopAll(); }
 
@@ -338,4 +400,24 @@ export function sectionListenBtn(id, url) {
 }
 export function sectionQueueBtn(id, urls) {
   return centerQueueBtn(id, urls);
+}
+// ── Option B: save on navigation + auto-resume on next page ─────────────────
+// Pure JS — no service worker, no caching. Browsers may block autoplay without
+// a prior gesture; in that case the queue restores paused and the floating
+// bar's ▶ resumes with one tap (Android PWA with media engagement usually
+// auto-plays). Media Session gives lock-screen controls where the OS allows.
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", saveState);
+  window.addEventListener("beforeunload", saveState);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveState(); });
+
+  const _gaResume = () => {
+    let s;
+    try { s = JSON.parse(sessionStorage.getItem("gaPlayback") || "null"); } catch (e) { s = null; }
+    if (!s || !s.urls || !s.urls.length) return;
+    _playQueue(s.urls, s.label, s.idx || 0, s.time || 0, !s.paused);
+    if (s.paused) { const p = getPlayer(); p.pause(); updatePauseIcon(); }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", _gaResume);
+  else _gaResume();
 }
