@@ -213,17 +213,29 @@ function canonicalizeRecitalWord(transcript) {
   if (!raw) return raw;
   const CANON  = "சாதித்தருளாய்";
   const target = _normJoinLite(CANON);
+  // Tail fragments STT emits when it splits சாதித்தருளாய் in two
+  // (e.g. "சாதித்" + "தருளாய்"). We ONLY drop such a tail when the word
+  // right before it was itself a சாதி-fragment — that adjacency is the
+  // signature of the recital command. A standalone அருளாய் ("bless"),
+  // which is common devotional content, is never stripped on its own.
+  const TAILS = new Set(["தருளாய", "அருளாய", "தொழிலாய"]);
+  const isRecitalHead = wj =>
+    wj.startsWith("சாதி") || (wj.length >= 4 && _editDist(wj, target) <= 3);
+
+  const words = raw.split(/\s+/);
   let hadPlay = false;
   const kept = [];
-  for (const w of raw.split(/\s+/)) {
+  let prevWasRecital = false;
+  for (const w of words) {
     const wl = w.toLowerCase();
     const wj = _normJoinLite(w);
-    if (wl === "play" || wl === "பிளே") { hadPlay = true; continue; }
-    // "சாதி…" prefix (சாதி / சாதிக்க / சாதித்தருளாய்) or a close fuzzy match
-    if (wj.startsWith("சாதி") || (wj.length >= 4 && _editDist(wj, target) <= 3)) {
-      hadPlay = true; continue;
-    }
+    if (wl === "play" || wl === "பிளே") { hadPlay = true; prevWasRecital = true; continue; }
+    if (isRecitalHead(wj)) { hadPlay = true; prevWasRecital = true; continue; }
+    // Trailing recital fragment — drop ONLY if it directly follows a
+    // recital head (so content அருளாய் elsewhere is preserved).
+    if (prevWasRecital && TAILS.has(wj)) { hadPlay = true; continue; }
     kept.push(w);
+    prevWasRecital = false;
   }
   if (!hadPlay) return raw;                     // plain search — leave as-is
   const content = kept.join(" ").trim();
