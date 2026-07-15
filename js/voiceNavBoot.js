@@ -14,14 +14,7 @@ import {
   fetchMadal, fetchKootrirukkai
 } from "./api.js";
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
-import { playUrls, PASURAM_URL, thaniyanFileUrl, THANIYAN_SEC_URL, globalThaniyanUrls, specialSectionUrls } from "./render/globalAudio.js";
-import { playSectionAudio, playPasuramAudio, voiceNotAvailable } from "./render/voicePlay.js";
-
-// Local aliases — the rest of this file calls voicePlaySection /
-// voicePlayPasuram; both now delegate to the shared voicePlay.js module
-// (single source of truth for the sect-aware queue + special-section logic).
-const voicePlaySection = playSectionAudio;
-const voicePlayPasuram = playPasuramAudio;
+import { playUrls, PASURAM_URL, thaniyanFileUrl, THANIYAN_SEC_URL, globalThaniyanUrls } from "./render/globalAudio.js";
 
 const API_VOICE = "https://cdnaalayiram-api.kanchitrust.workers.dev/voice";
 const API_DD    = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -183,15 +176,14 @@ function voiceSelectSection(sectionId, sectionName) {
 
   fetchThaniyan();
   fetchPasuram().then(() => {
-    if (hasValidPathu(state.pasuramData)) {
-      // No specific pathu in intent — show pathu selector
-      state.isPathuSelectionActive = true;
-      import("./render/pathuSelector.js").then(m => m.openPathuSelector());
-    } else {
-      state.filteredPasuram = state.pasuramData;
-      state.level = "PASURAM";
-      render();
-    }
+    // Text/voice search that resolved to the SECTION itself means the
+    // user wants the whole section — go straight to full content, no
+    // pathu-selector modal. (The pathu chooser is only for when a
+    // specific pathu was requested, handled by voiceSelectWithPathu.)
+    state.isPathuSelectionActive = false;
+    state.filteredPasuram = state.pasuramData;
+    state.level = "PASURAM";
+    render();
   });
 }
 
@@ -216,7 +208,13 @@ function voiceSelectStandalone(sectionId, sectionName, pathuNum) {
         return;
       }
     }
-    openStandaloneSelector(sectionId, sectionName, state.pasuramData);
+    // No specific thirumozhi matched → a plain section search means the
+    // user wants the whole section. Render full content directly instead
+    // of the standalone-selector modal (matches 2/11/26 behaviour).
+    state.isStandaloneSelection = false;
+    state.filteredPasuram = state.pasuramData;
+    state.level = "PASURAM";
+    render();
   });
 }
 
@@ -515,4 +513,68 @@ async function voiceOpenNeeratam() {
 function voiceOpenParipaalanamTVM() {
   // திருவாய்மொழி 10th pathu 9th thiruvaimozhi
   voiceSelectWithThirumozhi(26, "திருவாய்மொழி", 10, "சூழ்விசும்பு");
+}
+// ── Voice PLAY handlers ─────────────────────────────────────────────────────
+// Reverent "play" (English "play" / "சாதித்தருளாய்"). Uses the DB has_audio
+// flag (via existing endpoints) to decide; the shared headless player handles
+// playback and skips any file that fails.
+
+function voiceNotAvailable(name) {
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
+    + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
+    + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
+  ov.innerHTML = `\uD83D\uDE4F Adiyen, the contents${name ? " for <b>" + name + "</b>" : ""} are currently not available. Please check later.`;
+  document.body.appendChild(ov);
+  setTimeout(() => ov.remove(), 4200);
+}
+
+async function voicePlaySection(sectionId, sectionName) {
+  try {
+    const [disp, than] = await Promise.all([
+      fetch(`${API_DD}/pasuram?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
+      fetch(`${API_DD}/thaniyan?section_id=${sectionId}`).then(r => r.json()).catch(() => [])
+    ]);
+
+    // Then every pasuram that has audio, in order
+    const pasUrls = (Array.isArray(disp) ? disp : [])
+      .filter(p => p.has_audio)
+      .map(p => PASURAM_URL(p.global_no));
+
+    if (!pasUrls.length) { voiceNotAvailable(sectionName); return; }
+
+    const queue = [];
+
+    // 1) Global pothu thaniyan for the user's sect (T→t, V→v, Madam→k then v).
+    //    A missing file is skipped by the player, so this is safe.
+    const sect    = localStorage.getItem("sect") || "T";
+    const subsect = localStorage.getItem("subsect") || "";
+    queue.push(...globalThaniyanUrls(sect, subsect));
+
+    // 2) Section thaniyan (if it has audio)
+    const thanRows = Array.isArray(than) ? than : (than.thaniyan || []);
+    const secThan = thanRows.find(t =>
+      (t.type === "section" || Number(t.section_id) === Number(sectionId)) && t.has_audio);
+    if (secThan) queue.push(thaniyanFileUrl(secThan.section_id || sectionId, secThan.thaniyan_id));
+
+    // 3) The pasurams
+    queue.push(...pasUrls);
+
+    playUrls(queue);
+  } catch (e) {
+    voiceNotAvailable(sectionName);
+  }
+}
+
+async function voicePlayPasuram(globalNo) {
+  try {
+    const g = await fetch(`${API_VOICE}/by-global?no=${Number(globalNo)}`).then(r => r.json());
+    if (!g || !g.section_id) { voiceNotAvailable("Pasuram " + globalNo); return; }
+    const disp = await fetch(`${API_DD}/pasuram?section_id=${g.section_id}`).then(r => r.json());
+    const found = (Array.isArray(disp) ? disp : []).find(p => Number(p.global_no) === Number(globalNo));
+    if (found && found.has_audio) playUrls([PASURAM_URL(Number(globalNo))]);
+    else voiceNotAvailable("Pasuram " + globalNo);
+  } catch (e) {
+    voiceNotAvailable("Pasuram " + globalNo);
+  }
 }
