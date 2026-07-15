@@ -14,7 +14,7 @@ import {
   fetchMadal, fetchKootrirukkai
 } from "./api.js";
 import { openStandaloneSelector } from "./render/standaloneSelector.js";
-import { playUrls, PASURAM_URL, thaniyanFileUrl, THANIYAN_SEC_URL, globalThaniyanUrls } from "./render/globalAudio.js";
+import { playUrls, PASURAM_URL, thaniyanFileUrl, THANIYAN_SEC_URL, globalThaniyanUrls, specialSectionUrls } from "./render/globalAudio.js";
 
 const API_VOICE = "https://cdnaalayiram-api.kanchitrust.workers.dev/voice";
 const API_DD    = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -526,6 +526,23 @@ function voiceNotAvailable(name) {
 
 async function voicePlaySection(sectionId, sectionName) {
   try {
+    // ── Special sections (21/22/23): their audio is a dedicated
+    //    thaniyan+work pair (SPECIAL_AUDIO in globalAudio.js), NOT
+    //    per-pasuram rows — so the normal /api/pasuram path returns
+    //    nothing and wrongly reported "not available". Route directly.
+    //    They are still SECTIONS, so the sect-aware pothu thaniyan is
+    //    prepended, exactly like every other section.
+    //    specialSectionUrls() returns [] for any non-special section,
+    //    so normal sections fall through and behave unchanged.
+    const sp = specialSectionUrls(sectionId);
+    if (sp.length) {
+      const sect    = localStorage.getItem("sect") || "T";
+      const subsect = localStorage.getItem("subsect") || "";
+      const queue = [...globalThaniyanUrls(sect, subsect), ...sp];
+      playUrls(queue);
+      return;
+    }
+
     const [disp, than] = await Promise.all([
       fetch(`${API_DD}/pasuram?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
       fetch(`${API_DD}/thaniyan?section_id=${sectionId}`).then(r => r.json()).catch(() => [])
