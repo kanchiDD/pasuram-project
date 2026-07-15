@@ -198,8 +198,17 @@ function voiceSelectStandalone(sectionId, sectionName, pathuNum) {
   fetchPasuram().then(() => {
     if (pathuNum && state.pasuramData) {
       const ordinal  = PATHU_ORDINALS.find(o => o.num === pathuNum);
+      // The ordinal word ("மூன்றாம்", "ஐந்தாம்"…) lives in thirumozhi_NAME
+      // ("மூன்றாம் திருமொழி"), NOT in thirumozhi_heading (which is the
+      // title line, e.g. "மெய்யில் வாழ்க்கையை"). Matching the heading
+      // never found the ordinal, so every specific-thirumozhi request
+      // fell through to the full section. Match the name (heading kept
+      // only as a defensive fallback).
       const filtered = state.pasuramData.filter(p =>
-        ordinal?.keys.some(k => norm(p.thirumozhi_heading || "").includes(norm(k)))
+        ordinal?.keys.some(k =>
+          norm(p.thirumozhi_name || "").includes(norm(k)) ||
+          norm(p.thirumozhi_heading || "").includes(norm(k))
+        )
       );
       if (filtered.length) {
         state.pasuramData = state.filteredPasuram = filtered;
