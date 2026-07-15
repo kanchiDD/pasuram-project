@@ -964,7 +964,40 @@ export async function resolveVoiceQueryExtended(transcript) {
     const base = await resolveVoiceQuery(play.cleaned);
     const out = [];
     for (const r of base) {
-      if (/^_selectSection/.test(r.fn)) {
+      // Map each already-typed text option to its AUDIO twin, preserving
+      // the args so pasuram / thirumozhi / pathu / section distinctions
+      // (and the first-child-of-pathu gate) survive into audio playback.
+      // Inclusion rules (thaniyan etc.) are applied later by the play
+      // handlers — the resolver only carries the type + args.
+      if (r.fn === "_selectSectionWithThirumozhi") {
+        // [sectionId, sectionName, pathuNum, heading] → play that thirumozhi
+        out.push({
+          label:    "▶ " + (r.label || "Thirumozhi"),
+          sublabel: r.sublabel || "\u0b87\u0b9a\u0bc8 — Audio",
+          fn:       "_playThirumozhi",
+          args:     r.args,
+          score:    r.score + 5
+        });
+      } else if (r.fn === "_selectSectionWithPathu") {
+        // [sectionId, sectionName, pathuNum] → play full pathu (with thaniyan)
+        out.push({
+          label:    "▶ " + (r.label || "Pathu"),
+          sublabel: r.sublabel || "\u0b87\u0b9a\u0bc8 — Audio",
+          fn:       "_playPathu",
+          args:     r.args,
+          score:    r.score + 5
+        });
+      } else if (r.fn === "_selectSectionStandalone") {
+        // [sectionId, sectionName, pathuNum] → sections 4/5 model
+        out.push({
+          label:    "▶ " + (r.label || "Thirumozhi"),
+          sublabel: r.sublabel || "\u0b87\u0b9a\u0bc8 — Audio",
+          fn:       "_playStandalone",
+          args:     r.args,
+          score:    r.score + 5
+        });
+      } else if (r.fn === "_selectSection") {
+        // [sectionId, sectionName] → whole section (pothu + section thaniyan)
         out.push({
           label:    "▶ " + (r.args[1] || "Section"),
           sublabel: "\u0b87\u0b9a\u0bc8 — Audio",
@@ -988,7 +1021,7 @@ export async function resolveVoiceQueryExtended(transcript) {
         const k = r.fn + JSON.stringify(r.args);
         if (seen.has(k)) return false;
         seen.add(k); return true;
-      }).slice(0, 4);
+      }).slice(0, 6);
     }
     // nothing playable resolved → fall through to normal handling of cleaned text
     transcript = play.cleaned;

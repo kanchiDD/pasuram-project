@@ -103,3 +103,117 @@ export async function playPasuramAudio(globalNo) {
     voiceNotAvailable("Pasuram " + globalNo);
   }
 }
+// ═══════════════════════════════════════════════════════
+// STAGE A — granular audio handlers
+//   Ordinal words ("மூன்றாம்"…) live in pathu_name / thirumozhi_name.
+// ═══════════════════════════════════════════════════════
+
+const PATHU_ORDINALS = [
+  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்"] },
+  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்"] },
+  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்"] },
+  { num:4,  keys:["fourth","4th","naangaam","நான்காம்"] },
+  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்"] },
+  { num:6,  keys:["sixth","6th","aaram","ஆறாம்"] },
+  { num:7,  keys:["seventh","7th","ezhaam","ஏழாம்"] },
+  { num:8,  keys:["eighth","8th","ettaam","எட்டாம்"] },
+  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham"] },
+  { num:10, keys:["tenth","10th","pattham","பத்தாம்"] },
+  { num:11, keys:["eleventh","11th","pathinondram","பதினொன்றாம்"] }
+];
+function _norm(s) {
+  return (s || "").toLowerCase().trim()
+    .replace(/[^a-z0-9\u0B80-\u0BFF\s]/g, " ")
+    .replace(/்/g, "")
+    .replace(/\s+/g, " ");
+}
+function _ordinalKeys(num) {
+  const o = PATHU_ORDINALS.find(x => x.num === Number(num));
+  return o ? o.keys : [];
+}
+
+// Sections 4/5 use the standalone-thirumozhi model — their thirumozhis
+// are the primary recital units and carry the SECTION thaniyan. All other
+// pathu-model sections (2/11/26): a bare thirumozhi carries NO thaniyan.
+const STANDALONE_SECTIONS = [4, 5];
+
+async function _fetchSection(sectionId) {
+  const [disp, than] = await Promise.all([
+    fetch(`${API_DD}/pasuram?section_id=${sectionId}`).then(r => r.json()).catch(() => []),
+    fetch(`${API_DD}/thaniyan?section_id=${sectionId}`).then(r => r.json()).catch(() => [])
+  ]);
+  const pasuram  = Array.isArray(disp) ? disp : [];
+  const thanRows = Array.isArray(than) ? than : (than.thaniyan || than.data || than.rows || []);
+  return { pasuram, thanRows };
+}
+
+function _sectionThaniyanUrl(sectionId, thanRows) {
+  const secThan = (thanRows || []).find(t =>
+    (t.type === "section" || Number(t.section_id) === Number(sectionId)) && t.has_audio);
+  return secThan ? thaniyanFileUrl(secThan.section_id || sectionId, secThan.thaniyan_id) : null;
+}
+
+// ── Play a THIRUMOZHI ──
+// Pathu model (2/11/26): thirumozhi's pasurams only, NO thaniyan.
+// Standalone model (4/5): SECTION thaniyan + thirumozhi's pasurams.
+export async function playThirumozhiAudio(sectionId, sectionName, pathuNum, heading) {
+  try {
+    const { pasuram, thanRows } = await _fetchSection(sectionId);
+    const keys = _ordinalKeys(pathuNum);
+    const h    = _norm(heading || "");
+
+    const filtered = pasuram.filter(p => {
+      const nm = _norm(p.thirumozhi_name || "");
+      const hd = _norm(p.thirumozhi_heading || "");
+      const byOrd  = keys.some(k => nm.includes(_norm(k)));
+      const byHead = h && (hd === h || hd.includes(h) || h.includes(hd));
+      return byOrd || byHead;
+    });
+
+    const pasUrls = filtered.filter(p => p.has_audio).map(p => PASURAM_URL(p.global_no));
+    if (!pasUrls.length) { voiceNotAvailable(sectionName); return; }
+
+    const queue = [];
+    if (STANDALONE_SECTIONS.includes(Number(sectionId))) {
+      const st = _sectionThaniyanUrl(sectionId, thanRows);
+      if (st) queue.push(st);
+    }
+    queue.push(...pasUrls);
+    playUrls(queue);
+  } catch (e) {
+    voiceNotAvailable(sectionName);
+  }
+}
+
+// ── Play a STANDALONE selection (sections 4/5) ──
+// Specific thirumozhi named → that thirumozhi + SECTION thaniyan.
+// No specific thirumozhi → whole section (pothu + section thaniyan).
+export async function playStandaloneAudio(sectionId, sectionName, pathuNum) {
+  if (pathuNum) return playThirumozhiAudio(sectionId, sectionName, pathuNum, "");
+  return playSectionAudio(sectionId, sectionName);
+}
+
+// ── Play a FULL PATHU (sections 2/11/26) ──
+// pothu thaniyan (sect-aware) + SECTION thaniyan + that pathu's pasurams.
+export async function playPathuAudio(sectionId, sectionName, pathuNum) {
+  try {
+    const { pasuram, thanRows } = await _fetchSection(sectionId);
+    const keys = _ordinalKeys(pathuNum);
+
+    const filtered = pasuram.filter(p =>
+      keys.some(k => _norm(p.pathu_name || "").includes(_norm(k)))
+    );
+    const pasUrls = filtered.filter(p => p.has_audio).map(p => PASURAM_URL(p.global_no));
+    if (!pasUrls.length) { voiceNotAvailable(sectionName); return; }
+
+    const queue = [];
+    const { sect, subsect } = userSect();
+    queue.push(...globalThaniyanUrls(sect, subsect));   // 1) pothu
+    const st = _sectionThaniyanUrl(sectionId, thanRows);
+    if (st) queue.push(st);                             // 2) section thaniyan
+    queue.push(...pasUrls);                             // 3) pathu pasurams
+    playUrls(queue);
+  } catch (e) {
+    voiceNotAvailable(sectionName);
+  }
+}

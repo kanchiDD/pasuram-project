@@ -17,7 +17,7 @@
  */
 
 import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js";
-import { playSectionAudio, playPasuramAudio } from "./render/voicePlay.js";
+import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js";
 
 // Use extended if available, fall back to base
 async function resolveVoiceQuery(transcript) {
@@ -413,6 +413,24 @@ window.confirmSearch = function () {
     const [globalNo] = result.args || [];
     closePopup();
     playPasuramAudio(globalNo);
+    return;
+  }
+  if (result.fn === "_playThirumozhi") {
+    const [sectionId, sectionName, pathuNum, heading] = result.args || [];
+    closePopup();
+    playThirumozhiAudio(sectionId, sectionName, pathuNum, heading);
+    return;
+  }
+  if (result.fn === "_playStandalone") {
+    const [sectionId, sectionName, pathuNum] = result.args || [];
+    closePopup();
+    playStandaloneAudio(sectionId, sectionName, pathuNum);
+    return;
+  }
+  if (result.fn === "_playPathu") {
+    const [sectionId, sectionName, pathuNum] = result.args || [];
+    closePopup();
+    playPathuAudio(sectionId, sectionName, pathuNum);
     return;
   }
 
