@@ -17,6 +17,7 @@
  */
 
 import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js";
+import { playSectionAudio, playPasuramAudio } from "./render/voicePlay.js";
 
 // Use extended if available, fall back to base
 async function resolveVoiceQuery(transcript) {
@@ -385,14 +386,31 @@ window.confirmSearch = function () {
   const result = _results[_selectedIdx];
   if (!result) return;
 
-  // Store destination in sessionStorage
+  // ── PLAY intents stay on the voice screen ──
+  // Audio playback (from "… சாதித்தருளாய்" / "play …") plays right here
+  // via the shared voicePlay.js module — no jump to tree.html into an
+  // otherwise-empty page. Text-navigation intents still hand off to the
+  // tree (below). The floating audio bar + seek control appear in place.
+  if (result.fn === "_playSection") {
+    const [sectionId, sectionName] = result.args || [];
+    closePopup();
+    playSectionAudio(sectionId, sectionName);
+    return;
+  }
+  if (result.fn === "_playPasuram") {
+    const [globalNo] = result.args || [];
+    closePopup();
+    playPasuramAudio(globalNo);
+    return;
+  }
+
+  // ── Text navigation → hand off to tree.html (unchanged) ──
   sessionStorage.setItem("voiceNav", JSON.stringify({
     fn    : result.fn,
     args  : result.args,
     label : result.label
   }));
 
-  // Navigate to tree
   window.location.href = "tree.html";
 };
 
