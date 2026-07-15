@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+<title>Contact — Arulicheyal.org</title>
+
+<!-- FONT AWESOME -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- MAIN CSS -->
+<link rel="stylesheet" href="/css/main.css?v=861">
+
+<style>
+  /* Contact-page-only styles. Uses the site's gold/brown palette. */
+  .contact-wrap {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 0 15px;
+  }
+
+  .contact-card {
+    background: #fdf6e3;              /* book color, same as .index-border */
+    border: 6px double #5a3e1b;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 25px;
+    margin-bottom: 22px;
+  }
+
+  .contact-card h2 {
+    margin: 0 0 6px 0;
+    color: #4A3728;
+    font-size: 22px;
+  }
+  .contact-card .sub {
+    margin: 0 0 20px 0;
+    color: #6b5a44;
+    font-size: 14px;
+  }
+
+  .field { margin-bottom: 15px; }
+  .field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #4A3728;
+    font-weight: 600;
+  }
+  .field label .req { color: #b23b3b; }
+
+  .field input,
+  .field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #c9b98a;
+    border-radius: 6px;
+    background: #fffdf6;
+    font-size: 15px;
+    font-family: inherit;
+    color: #2c2216;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: #C9A84C;
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.25);
+  }
+  .field textarea { min-height: 130px; resize: vertical; }
+
+  /* Honeypot — hidden from real users, bots tend to fill it. */
+  .hp-field {
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 1px; height: 1px;
+    overflow: hidden;
+  }
+
+  .send-btn {
+    margin-top: 6px;
+    padding: 11px 22px;
+    background: #8b6b1f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .send-btn:hover { background: #a07d24; }
+  .send-btn:disabled { background: #b6a06a; opacity: 0.6; cursor: not-allowed; }
+
+  .form-msg {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+  }
+  .form-msg.show { display: block; }
+  .form-msg.ok  { background: #e7f5e7; color: #1f5e1f; border: 1px solid #b7ddb7; }
+  .form-msg.err { background: #fbe9e9; color: #8a2b2b; border: 1px solid #eec2c2; }
+
+  /* Direct contact details */
+  .details-card h3 {
+    margin: 0 0 14px 0;
+    color: #4A3728;
+    font-size: 19px;
+  }
+  .detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed #d9c9a0;
+    font-size: 15px;
+    color: #3a2f20;
+  }
+  .detail-row:last-of-type { border-bottom: none; }
+  .detail-row .ic {
+    color: #8b6b1f;
+    font-size: 17px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .detail-row a { color: #8b6b1f; text-decoration: none; }
+  .detail-row a:hover { text-decoration: underline; }
+  .detail-row .nm { font-weight: 600; color: #4A3728; }
+
+  .contact-social {
+    margin-top: 18px;
+    text-align: center;
+  }
+  .contact-social a {
+    margin: 0 10px;
+    font-size: 22px;
+    color: #8b6b1f;
+    transition: 0.2s;
+  }
+  .contact-social a:hover { color: #b8860b; transform: scale(1.15); }
+
+  @media (max-width: 480px) {
+    .contact-card { padding: 18px 15px; }
+    .contact-card h2 { font-size: 20px; }
+  }
+</style>
+</head>
+
+<body class="tamil-text">
+
+<!-- HEADER (injected by loadLayout) -->
+<div id="header"></div>
+
+<!-- CONTENT -->
+<div class="contact-wrap">
+
+  <!-- FORM CARD -->
+  <div class="contact-card">
+    <h2>Contact Us</h2>
+    <p class="sub">Send us a message and we'll get back to you.</p>
+
+    <div class="field">
+      <label for="cf-name">Name <span class="req">*</span></label>
+      <input type="text" id="cf-name" maxlength="200" autocomplete="name">
+    </div>
+
+    <div class="field">
+      <label for="cf-contact">Contact number</label>
+      <input type="text" id="cf-contact" maxlength="60" autocomplete="tel">
+    </div>
+
+    <div class="field">
+      <label for="cf-email">Email</label>
+      <input type="email" id="cf-email" maxlength="200" autocomplete="email">
+    </div>
+
+    <div class="field">
+      <label for="cf-message">Message <span class="req">*</span></label>
+      <textarea id="cf-message" maxlength="4000"></textarea>
+    </div>
+
+    <!-- HONEYPOT: real users leave this blank; must be named "website" -->
+    <div class="hp-field" aria-hidden="true">
+      <label for="cf-website">Website</label>
+      <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+
+    <button type="button" class="send-btn" id="cf-send">Send Message</button>
+
+    <div class="form-msg" id="cf-msg"></div>
+  </div>
+
+  <!-- DIRECT DETAILS CARD -->
+  <div class="contact-card details-card">
+    <h3>Reach us directly</h3>
+
+    <div class="detail-row">
+      <span class="ic"><i class="fas fa-user"></i></span>
+      <span>
+        <span class="nm">Sri Srivatsan Renga</span><br>
+        <a href="tel:+918056021869">00 91 8056021869</a>
+      </span>
+    </div>
+
+    <div class="detail-row">
+      <span class="ic"><i class="fas fa-user"></i></span>
+      <span>
+        <span class="nm">Sri Thirumalai A Rangarajan</span><br>
+        <a href="tel:+919791355059">+91 97913 55059</a>
+      </span>
+    </div>
+
+    <div class="detail-row">
+      <span class="ic"><i class="fas fa-envelope"></i></span>
+      <span>
+        <span class="nm">Email</span><br>
+        <a href="mailto:kanchitrust@zohomail.in">kanchitrust@zohomail.in</a>
+      </span>
+    </div>
+
+    <div class="contact-social">
+      <a href="#" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+      <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
+      <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER (injected by loadLayout) -->
+<div id="footer"></div>
+
+<!-- LOAD HEADER/FOOTER -->
+<script src="/js/layout.js?v=521"></script>
+
+<script>
+const CONTACT_WORKER_URL = "https://contact.kanchitrust.workers.dev/";
+
+document.addEventListener("DOMContentLoaded", function () {
+  loadLayout();   // header + footer + hamburger
+
+  const btn  = document.getElementById("cf-send");
+  const msg  = document.getElementById("cf-msg");
+
+  function showMsg(text, kind) {
+    msg.textContent = text;
+    msg.className = "form-msg show " + kind;
+  }
+  function clearMsg() {
+    msg.className = "form-msg";
+    msg.textContent = "";
+  }
+
+  btn.addEventListener("click", async function () {
+    clearMsg();
+
+    const name    = document.getElementById("cf-name").value.trim();
+    const contact = document.getElementById("cf-contact").value.trim();
+    const email   = document.getElementById("cf-email").value.trim();
+    const message = document.getElementById("cf-message").value.trim();
+    const website = document.getElementById("cf-website").value.trim(); // honeypot
+
+    // Basic front-end checks (worker validates again server-side)
+    if (!name || !message) {
+      showMsg("Please fill in your name and message.", "err");
+      return;
+    }
+    if (!email && !contact) {
+      showMsg("Please give an email or a contact number.", "err");
+      return;
+    }
+
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Sending…";
+
+    try {
+      const res = await fetch(CONTACT_WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, contact, email, message, website })
+      });
+
+      let data = {};
+      try { data = await res.json(); } catch (e) { /* ignore parse */ }
+
+      if (res.ok && data.ok) {
+        showMsg("Thank you! Your message has been sent.", "ok");
+        document.getElementById("cf-name").value = "";
+        document.getElementById("cf-contact").value = "";
+        document.getElementById("cf-email").value = "";
+        document.getElementById("cf-message").value = "";
+      } else {
+        showMsg(data.error || "Could not send. Please try again or email us directly.", "err");
+      }
+    } catch (e) {
+      showMsg("Network error. Please check your connection and try again.", "err");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+});
+</script>
+
+</body>
+</html>
