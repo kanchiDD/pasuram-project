@@ -117,10 +117,24 @@ function ensureControlBar() {
   bar.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:99998;"
     + "display:none;align-items:center;gap:10px;background:#4A3728;color:#fff;border:1px solid #C9A84C;"
     + "border-radius:30px;padding:8px 12px 8px 16px;box-shadow:0 6px 20px rgba(0,0,0,0.35);font-family:inherit";
+  // Two rows: (1) label + pause/stop, (2) seek slider + time readout.
+  // The seek bar is how a listener scrubs past an included thaniyan.
+  bar.style.flexDirection = "column";
+  bar.style.alignItems = "stretch";
+  bar.style.padding = "10px 16px";
+  bar.style.gap = "6px";
   bar.innerHTML = `
-    <span id="ga-ctl-label" style="font-size:13px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\u0b87\u0b9a\u0bc8 / Playing…</span>
-    <button id="ga-ctl-pause" title="Pause" style="width:38px;height:38px;border-radius:50%;border:none;background:#C9A84C;color:#3a2a18;font-size:16px;cursor:pointer">\u2225</button>
-    <button id="ga-ctl-stop" title="Stop" style="width:38px;height:38px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">\u25A0</button>`;
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="ga-ctl-label" style="flex:1;font-size:13px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\u0b87\u0b9a\u0bc8 / Playing…</span>
+      <button id="ga-ctl-pause" title="Pause" style="width:38px;height:38px;border-radius:50%;border:none;background:#C9A84C;color:#3a2a18;font-size:16px;cursor:pointer">\u2225</button>
+      <button id="ga-ctl-stop" title="Stop" style="width:38px;height:38px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">\u25A0</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="ga-ctl-cur" style="font-size:11px;color:#e8d9b5;min-width:34px;text-align:right">0:00</span>
+      <input id="ga-ctl-seek" type="range" min="0" max="1000" value="0" step="1"
+        style="flex:1;accent-color:#C9A84C;cursor:pointer;height:4px" />
+      <span id="ga-ctl-dur" style="font-size:11px;color:#e8d9b5;min-width:34px">0:00</span>
+    </div>`;
   document.body.appendChild(bar);
   bar.querySelector("#ga-ctl-pause").onclick = () => {
     const p = getPlayer();
@@ -129,6 +143,36 @@ function ensureControlBar() {
     updatePauseIcon();
   };
   bar.querySelector("#ga-ctl-stop").onclick = () => stopAll();
+
+  // ── Seek wiring ──────────────────────────────────────────────
+  const seek = bar.querySelector("#ga-ctl-seek");
+  const curE = bar.querySelector("#ga-ctl-cur");
+  const durE = bar.querySelector("#ga-ctl-dur");
+  let _seeking = false;
+  const fmt = s => {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60), ss = Math.floor(s % 60);
+    return m + ":" + (ss < 10 ? "0" : "") + ss;
+  };
+  const p = getPlayer();
+  // While dragging, don't fight the slider with timeupdate.
+  seek.addEventListener("input", () => { _seeking = true; if (p.duration) curE.textContent = fmt((seek.value / 1000) * p.duration); });
+  seek.addEventListener("change", () => {
+    if (p.duration) { try { p.currentTime = (seek.value / 1000) * p.duration; } catch (e) {} }
+    _seeking = false;
+  });
+  // addEventListener (not onX) so we DON'T clobber the existing
+  // ontimeupdate/onloadedmetadata handlers used for state-saving.
+  p.addEventListener("timeupdate", () => {
+    if (_seeking || !p.duration) return;
+    seek.value = Math.round((p.currentTime / p.duration) * 1000) || 0;
+    curE.textContent = fmt(p.currentTime);
+    durE.textContent = fmt(p.duration);
+  });
+  p.addEventListener("loadedmetadata", () => {
+    durE.textContent = fmt(p.duration);
+    if (!_seeking) { seek.value = 0; curE.textContent = "0:00"; }
+  });
   return bar;
 }
 function updatePauseIcon() {

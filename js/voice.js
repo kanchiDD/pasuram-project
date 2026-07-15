@@ -183,10 +183,59 @@ function showListening() {
   `);
 }
 
+// ── Canonicalize the reverent recital command for DISPLAY only ──
+// The user always means "சாதித்தருளாய்" (the canonical Vaishnava recital
+// term), but speech-to-text mangles it ("சாதித் தொழிலாய்", "சாதித்தாய்",
+// "play", …). For the "You said" box we keep the actual content words the
+// user searched and replace only the recital command with சாதித்தருளாய்.
+// If no recital word is present (a plain text search), the transcript is
+// returned unchanged. This is purely cosmetic — it does not affect matching.
+function _normJoinLite(s) {
+  return (s || "").toLowerCase().replace(/[^a-z0-9\u0B80-\u0BFF]/g, "").replace(/்/g, "");
+}
+function _editDist(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => i);
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0]; dp[0] = j;
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i];
+      dp[i] = Math.min(dp[i] + 1, dp[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
+function canonicalizeRecitalWord(transcript) {
+  const raw = (transcript || "").trim();
+  if (!raw) return raw;
+  const CANON  = "சாதித்தருளாய்";
+  const target = _normJoinLite(CANON);
+  let hadPlay = false;
+  const kept = [];
+  for (const w of raw.split(/\s+/)) {
+    const wl = w.toLowerCase();
+    const wj = _normJoinLite(w);
+    if (wl === "play" || wl === "பிளே") { hadPlay = true; continue; }
+    // "சாதி…" prefix (சாதி / சாதிக்க / சாதித்தருளாய்) or a close fuzzy match
+    if (wj.startsWith("சாதி") || (wj.length >= 4 && _editDist(wj, target) <= 3)) {
+      hadPlay = true; continue;
+    }
+    kept.push(w);
+  }
+  if (!hadPlay) return raw;                     // plain search — leave as-is
+  const content = kept.join(" ").trim();
+  return content ? `${content} ${CANON}` : CANON;
+}
+
 function showResults(transcript, results) {
 
   _results     = results;
   _selectedIdx = 0;
+
+  // Show the canonical recital word in the "You said" box (display only).
+  const displayTranscript = canonicalizeRecitalWord(transcript);
 
   let optionsHtml = "";
   results.forEach((r, i) => {
@@ -214,7 +263,7 @@ function showResults(transcript, results) {
     </div>
 
     <div class="vp-heard-label">You said</div>
-    <div class="vp-heard-text">"${esc(transcript)}"</div>
+    <div class="vp-heard-text">"${esc(displayTranscript)}"</div>
 
     <div class="vp-dym-label">Do you mean…</div>
     <div class="vp-options">${optionsHtml}</div>
