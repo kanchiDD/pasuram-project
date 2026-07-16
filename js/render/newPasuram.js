@@ -95,7 +95,16 @@ if (state.kootrirukkaiData) {
 
   /* ================= THANIYAN — separate box per type ================= */
 
-  if (!state.isFullRender && state.thaniyanData) {
+  // Thaniyan-inclusion rule (matches the voice audio path):
+  //   • Whole section / whole pathu → show thaniyan.
+  //   • Single thirumozhi in a PATHU-MODEL section (2/11/26) → NO thaniyan.
+  //   • Single thirumozhi in a STANDALONE section (4/5) → keep thaniyan.
+  const _STANDALONE_SECTIONS = [4, 5];
+  const _suppressThaniyan =
+    !!state.selectedThirumozhiId &&
+    !_STANDALONE_SECTIONS.includes(Number(state.selectedSectionId));
+
+  if (!state.isFullRender && state.thaniyanData && !_suppressThaniyan) {
     const allRows = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
     if (Array.isArray(allRows) && allRows.length > 0) {
       const globalRows  = allRows.filter(r => r.type === "global" || r.type === "thousand");

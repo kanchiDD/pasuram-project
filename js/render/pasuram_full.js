@@ -87,7 +87,18 @@ const sectionClosing = sectionClosingOverride || state.sectionClosing;
 
   /* ================= THANIYAN ================= */
 
-  if (!state.isFullRender && state.thaniyanData) {
+  // Thaniyan-inclusion rule (matches the voice audio path):
+  //   • Whole section / whole pathu → show thaniyan.
+  //   • Single thirumozhi in a PATHU-MODEL section (2/11/26) → NO thaniyan
+  //     (a bare thirumozhi is not a recital unit that carries the invocation).
+  //   • Single thirumozhi in a STANDALONE section (4/5) → keep thaniyan
+  //     (there the thirumozhi IS the primary recital unit).
+  const _STANDALONE_SECTIONS = [4, 5];
+  const _isSingleThirumozhi = !!state.selectedThirumozhiId;
+  const _isStandaloneModel  = _STANDALONE_SECTIONS.includes(Number(state.selectedSectionId));
+  const _suppressThaniyan   = _isSingleThirumozhi && !_isStandaloneModel;
+
+  if (!state.isFullRender && state.thaniyanData && !_suppressThaniyan) {
     const thaniyanHtml = renderThaniyan(
       state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData,
       state.prosodyMap
