@@ -609,6 +609,15 @@ async function searchAnchorMap(transcript) {
 export async function resolveVoiceQuery(transcript) {
   if (!transcript || !transcript.trim()) return [];
 
+  // ── 0. Ordinal "pathu N (thirumozhi M)" — authoritative when present ──
+  // Runs first so a clearly-named unit wins outright, and an out-of-range /
+  // under-specified unit returns [] (never silently opens the whole section).
+  try {
+    const numeric = await resolveNumericSubunit(transcript);
+    if (numeric.kind === "ok" && numeric.options.length) return numeric.options;
+    if (numeric.kind === "notfound") return [];
+  } catch (e) { /* non-fatal — fall through to normal search */ }
+
   const t = normalize(transcript);
   const results = [];
 
@@ -905,12 +914,59 @@ const TAMIL_ORDINALS = {
   "பதினொனறாம":11,"பதினொராம":11
 };
 
+// English ordinal / number words (for mixed "periyazhwar thirumozhi 7th pathu")
+const EN_ORDINALS = {
+  first:1, second:2, third:3, fourth:4, fifth:5, sixth:6, seventh:7,
+  eighth:8, ninth:9, tenth:10, eleventh:11,
+  one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8,
+  nine:9, ten:10, eleven:11
+};
+
 function ordinalToNum(word) {
   if (!word) return null;
-  const w = word.replace(/்/g, "");
-  if (/^\d+$/.test(w)) return Number(w);
-  return TAMIL_ORDINALS[w] || null;
+  const w = String(word).replace(/்/g, "").trim();
+  if (!w) return null;
+  if (/^\d+$/.test(w)) return Number(w);         // "7"
+  const dm = w.match(/^(\d{1,2})/);              // "7th", "7வது", "7ஆம"
+  if (dm) return Number(dm[1]);
+  return TAMIL_ORDINALS[w] || EN_ORDINALS[w] || null;
 }
+
+// Pull the ordinal attached to a UNIT word (பத்து / திருமொழி), handling
+// BOTH the fused form the data uses ("முதற்பத்து", "ஏழாம்பத்து") and the
+// spaced form ("முதல் பத்து"), plus digit/English ("7th pathu"). Returns the
+// LAST such occurrence so the trailing unit in a phrase wins.
+function extractOrdinalForUnit(tokens, unitStems) {
+  let found = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i].replace(/்/g, "");
+    // fused: token ENDS with a unit stem and carries an ordinal prefix
+    for (const u of unitStems) {
+      if (tok.length > u.length && tok.endsWith(u)) {
+        const n = ordinalToNum(tok.slice(0, tok.length - u.length));
+        if (n) found = n;
+      }
+    }
+    // standalone unit token → ordinal is the previous token
+    if (unitStems.some(u => tok === u)) {
+      const n = i > 0 ? ordinalToNum(tokens[i - 1].replace(/்/g, "")) : null;
+      if (n) found = n;
+    }
+  }
+  return found;
+}
+
+// Did the transcript actually NAME a given unit word at all? (used to decide
+// whether an out-of-range request should error vs. fall through to search)
+function mentionsUnit(tokens, unitStems) {
+  return tokens.some(w => {
+    const x = w.replace(/்/g, "");
+    return unitStems.some(u => x === u || (x.length > u.length && x.endsWith(u)));
+  });
+}
+
+const PATHU_UNIT_STEMS = ["பதது", "pathu"];
+const SUB_UNIT_STEMS   = ["திருவாயமொழி", "திருமொழி", "thiruvaaymozhi", "thiruvaymozhi", "thirumozhi"];
 
 // Find the ordinal number that appears immediately before a unit word
 // (பத்து / திருமொழி) in the token list. Returns the LAST such occurrence.
@@ -955,36 +1011,117 @@ function matchSectionInText(t) {
   return best;
 }
 
+// Runtime index of the pathu-model sections (2/11/26), built straight from
+// the anchor map so per-pathu thirumozhi counts (9/10/10/10/4 …) are the
+// live data — never hardcoded. Shape:
+//   Map<section_id, Map<pathuNo, { name, subs: Map<subNo, row> }>>
+let _subIdx = null, _subIdxLoading = null;
+async function getSubunitIndex() {
+  if (_subIdx) return _subIdx;
+  if (_subIdxLoading) return _subIdxLoading;
+  _subIdxLoading = (async () => {
+    const idx = new Map();
+    try {
+      const anchors = await getAnchorMap();
+      for (const r of (Array.isArray(anchors) ? anchors : [])) {
+        if (r.type !== "pathu") continue;
+        const sid = Number(r.section_id);
+        const pNo = pathuNameToNum(r.pathu_name);
+        const sNo = pathuNameToNum(r.subunit_name);
+        if (!pNo || !sNo) continue;
+        if (!idx.has(sid)) idx.set(sid, new Map());
+        const sMap = idx.get(sid);
+        if (!sMap.has(pNo)) sMap.set(pNo, { name: r.pathu_name, subs: new Map() });
+        sMap.get(pNo).subs.set(sNo, r);
+      }
+    } catch (e) { /* non-fatal — empty index just means "none" */ }
+    _subIdx = idx;
+    return idx;
+  })();
+  return _subIdxLoading;
+}
+
+// Resolve an ORDINAL "pathu N (thirumozhi M)" request against the live data.
+// Returns { kind, options, message }:
+//   kind "ok"       → options is the button list (exact unit is the primary)
+//   kind "notfound" → the user named a real section + unit but it's out of
+//                     range / under-specified → caller STOPS (no whole-section
+//                     fallback), message explains why
+//   kind "none"     → not an ordinal request → caller continues normal search
 async function resolveNumericSubunit(transcript) {
   const t = normTamil(transcript);
   const tokens = t.split(" ").filter(Boolean);
-  // Need both a pathu number and a thirumozhi number to be a numeric request
-  const pathuNo = ordinalBefore(tokens, ["பதது", "பத"]);
-  const subNo   = ordinalBefore(tokens, ["திருமொழி", "திருமொழ", "திருவாய", "திருவாயமொழி", "மொழி"]);
-  if (!pathuNo || !subNo) return [];
+
+  const pathuNo = extractOrdinalForUnit(tokens, PATHU_UNIT_STEMS);
+  const subNo   = extractOrdinalForUnit(tokens, SUB_UNIT_STEMS);
+  const saidSub = mentionsUnit(tokens, SUB_UNIT_STEMS);
+
+  if (!pathuNo && !subNo) return { kind: "none", options: [] };
 
   const sec = matchSectionInText(t);
-  if (!sec) return [];
+  if (!sec || !sec.hasPathu) return { kind: "none", options: [] };
 
-  // Reuse the anchor-map (already fetched/cached) — it has pathu_name,
-  // subunit_name, thirumozhi_heading and section_id per thirumozhi.
-  const anchors = await getAnchorMap();
-  const row = anchors.find(r =>
-    Number(r.section_id) === Number(sec.id) &&
-    pathuNameToNum(r.pathu_name)   === Number(pathuNo) &&
-    pathuNameToNum(r.subunit_name) === Number(subNo));
-  if (!row) return [];
+  const idx  = await getSubunitIndex();
+  const sMap = idx.get(Number(sec.id));
+  if (!sMap || !sMap.size) return { kind: "none", options: [] };
 
-  // Fall back to subunit_name so the handler has an ordinal key to match
-  // when the anchor row has no thirumozhi_heading (common for 2/11/26).
+  const maxPathu = Math.max(...sMap.keys());
+
+  // ── thirumozhi named but no pathu → under-specified (won't guess) ──
+  if (!pathuNo && subNo && saidSub) {
+    return { kind: "notfound", options: [],
+      message: `${sec.name}: எந்த பத்து என்று சொல்லவும் (உள்ளது 1–${maxPathu})` };
+  }
+  if (!pathuNo) return { kind: "none", options: [] };
+
+  // ── pathu out of range → error, do NOT open the whole section ──
+  if (!sMap.has(pathuNo)) {
+    return { kind: "notfound", options: [],
+      message: `${sec.name} — ${pathuNo}${getOrdSuffix(pathuNo)} பத்து இல்லை (உள்ளது 1–${maxPathu})` };
+  }
+
+  const pathu  = sMap.get(pathuNo);
+  const maxSub = Math.max(...pathu.subs.keys());
+  const wholePathu = {
+    label:    `${sec.name} — ${pathu.name}`,
+    sublabel: `முழு பத்து (${maxSub} திருமொழி)`,
+    fn:       "_selectSectionWithPathu",
+    args:     [sec.id, sec.name, pathuNo],
+    score:    100
+  };
+
+  // ── "pathu N" only → whole pathu ──
+  if (!subNo) return { kind: "ok", options: [wholePathu] };
+
+  // ── thirumozhi out of range within a valid pathu → error ──
+  if (!pathu.subs.has(subNo)) {
+    return { kind: "notfound", options: [],
+      message: `${sec.name} ${pathu.name}: ${subNo}${getOrdSuffix(subNo)} திருமொழி இல்லை (உள்ளது 1–${maxSub})` };
+  }
+
+  // ── exact pathu + thirumozhi → 3 options (thirumozhi / whole pathu / pasuram) ──
+  const row     = pathu.subs.get(subNo);
   const heading = row.thirumozhi_heading || row.subunit_name || "";
-  return [{
-    label:    `${sec.name} — ${row.pathu_name || ""} ${row.subunit_name || ""}`.trim(),
-    sublabel: heading,
-    fn:       "_selectSectionWithThirumozhi",
-    args:     [sec.id, sec.name, pathuNo, heading],
-    score:    98
-  }];
+  const options = [
+    {
+      label:    heading || row.subunit_name || sec.name,
+      sublabel: `${sec.name} — ${pathu.name} · ${row.subunit_name || ""}`.trim(),
+      fn:       "_selectSectionWithThirumozhi",
+      args:     [sec.id, sec.name, pathuNo, heading],
+      score:    105
+    },
+    { ...wholePathu, score: 96 }
+  ];
+  if (row.pasuram_no) {
+    options.push({
+      label:    heading || row.subunit_name || `Pasuram ${row.pasuram_no}`,
+      sublabel: `${sec.name} — இந்த பாசுரம் மட்டும்`,
+      fn:       "_openGlobalPasuram",
+      args:     [Number(row.pasuram_no)],
+      score:    92
+    });
+  }
+  return { kind: "ok", options };
 }
 
 export async function resolveVoiceQueryExtended(transcript) {
@@ -1060,10 +1197,13 @@ export async function resolveVoiceQueryExtended(transcript) {
   // Check TAG_ROUTE_MAP FIRST — these are hardcoded concepts that must win
   const t = normTamil(transcript);
 
-  // Numeric "pathu N, thirumozhi M" selection (high confidence when present)
+  // Numeric "pathu N, thirumozhi M" selection (high confidence when present).
+  // notfound → return [] here so the entity-tag merge below can't re-introduce
+  // a loose whole-section match for a unit the user named but that doesn't exist.
   try {
     const numeric = await resolveNumericSubunit(transcript);
-    if (numeric.length) return numeric;
+    if (numeric.kind === "ok" && numeric.options.length) return numeric.options;
+    if (numeric.kind === "notfound") return [];
   } catch (e) {}
 
   // Special case: பரிபாலனம் → show TWO options
