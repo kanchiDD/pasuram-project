@@ -286,12 +286,16 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
       if (byPathu.length) filtered = byPathu;
     }
 
-    // Narrow to thirumozhi heading
+    // Narrow to thirumozhi — sections 2/11/26 carry the subunit in
+    // pathu_subunit_name (thirumozhi_heading can be blank or differ), so
+    // match the incoming heading against BOTH fields.
     if (heading) {
       const h = norm(heading);
       const byHead = filtered.filter(p => {
         const th = norm(p.thirumozhi_heading || "");
-        return th.includes(h) || h.includes(th);
+        const su = norm(p.pathu_subunit_name || "");
+        return (th && (th.includes(h) || h.includes(th))) ||
+               (su && (su.includes(h) || h.includes(su)));
       });
       if (byHead.length) filtered = byHead;
     }

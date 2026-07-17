@@ -510,7 +510,8 @@ async function searchAnchorMap(transcript) {
   const anchors = await getAnchorMap();
   if (!anchors.length) return [];
 
-  const tf = normTamil(transcript);
+  const tf     = normTamil(transcript);
+  const tfJoin = normJoin(transcript);   // spacing/sandhi-insensitive
   const results = [];
 
   for (const row of anchors) {
@@ -519,14 +520,27 @@ async function searchAnchorMap(transcript) {
     const target  = heading || canon;
     if (!target) continue;
 
+    const targetJoin = normJoin(row.thirumozhi_heading || row.canonical_text || "");
+
     let score = 0;
-    if (tf === target)                               score = 100;
+    if (tf === target)                                 score = 100;
     else if (tf.includes(target) && target.length > 2) score = 85;
     else if (target.includes(tf) && tf.length > 2)     score = 70;
-    else {
+    // Spacing/sandhi-insensitive + fuzzy STT drift ("வேலி கோல்" ↔ "வேலிக்கோல்")
+    else if (targetJoin && tfJoin === targetJoin)      score = 92;
+    else if (targetJoin && Math.min(tfJoin.length, targetJoin.length) > 3 &&
+             (targetJoin.includes(tfJoin) || tfJoin.includes(targetJoin))) score = 78;
+    else if (targetJoin && tfJoin.length >= 4) {
+      const dist = editDistance(tfJoin, targetJoin);
+      const sim  = 1 - dist / Math.max(tfJoin.length, targetJoin.length);
+      if (sim >= 0.76) score = Math.round(sim * 90);
+    }
+    if (!score) {                       // last resort: fuzzy word overlap
       const tW = tf.split(" ").filter(w => w.length > 1);
       const aW = target.split(" ").filter(w => w.length > 1);
-      const ov = tW.filter(w => aW.includes(w)).length;
+      const ov = tW.filter(w => aW.some(x =>
+        x === w || x.includes(w) || w.includes(x) || editDistance(w, x) <= 1
+      )).length;
       if (ov > 0) score = ov * 25;
     }
     if (score < 50) continue;
@@ -557,6 +571,13 @@ async function searchAnchorMap(transcript) {
         args:     [row.section_id, sec.name, pathuNum, heading],
         score
       });
+      if (row.pasuram_no) results.push({
+        label:    heading || row.canonical_text,
+        sublabel: `${sec.name} — இந்த பாசுரம் மட்டும்`,
+        fn:       "_openGlobalPasuram",
+        args:     [row.pasuram_no],
+        score:    score - 2
+      });
       continue;
     }
 
@@ -568,6 +589,13 @@ async function searchAnchorMap(transcript) {
         ? [row.section_id, sec.name, pathuNum, heading]
         : [row.section_id, sec.name],
       score
+    });
+    if (pathuNum && row.pasuram_no) results.push({
+      label:    heading || row.canonical_text,
+      sublabel: `${sec.name} — இந்த பாசுரம் மட்டும்`,
+      fn:       "_openGlobalPasuram",
+      args:     [row.pasuram_no],
+      score:    score - 2
     });
   }
 
@@ -947,7 +975,9 @@ async function resolveNumericSubunit(transcript) {
     pathuNameToNum(r.subunit_name) === Number(subNo));
   if (!row) return [];
 
-  const heading = row.thirumozhi_heading || "";
+  // Fall back to subunit_name so the handler has an ordinal key to match
+  // when the anchor row has no thirumozhi_heading (common for 2/11/26).
+  const heading = row.thirumozhi_heading || row.subunit_name || "";
   return [{
     label:    `${sec.name} — ${row.pathu_name || ""} ${row.subunit_name || ""}`.trim(),
     sublabel: heading,
