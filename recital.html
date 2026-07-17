@@ -368,6 +368,41 @@
     const WORKER    = "https://recitalworker.kanchitrust.workers.dev";
     const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
+    // ── Anadhyayana Kalam (viewer-side enforcement) ──
+    // The plan is standing; a plan built earlier may hold items not recited in
+    // this period. At recite-time we drop the non-qualified blocks and point the
+    // reciter to the Naalayiram Tree. Same rule as recitalSetup, sect from
+    // localStorage. Test override: ?anadhi_test=YYYY-MM-DD or localStorage.anadhi_test
+    const ANA_THOUSAND_99 = new Set([25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]);
+    const ANA_SECTION_SECT = {25:"T",27:"T",28:"T",29:"T",30:"T",31:"T",32:"V",33:"V",34:"V",35:"V",36:"V",37:"V",38:"V",39:"V",40:"V",41:"V",42:"V",43:"V",44:"V",45:"V",46:"V",47:"V",48:"V",49:"V",50:"V",51:"V",52:"V",53:"V"};
+    function _anaTestDate() {
+      try { const p = new URLSearchParams(location.search).get("anadhi_test"); if (p) return p; } catch(e){}
+      try { return localStorage.getItem("anadhi_test") || null; } catch(e){ return null; }
+    }
+    function _anaIso(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+    async function fetchAnadhyayana() {
+      const date = _anaTestDate() || _anaIso(new Date());
+      try {
+        const r = await fetch(`${WORKER}/recital/panchangam?date=${date}`);
+        if (!r.ok) return { active:false, margazhi:false };   // date not in table → normal
+        const p = await r.json();
+        return { active: p?.is_anadhyayana === 1, margazhi: p?.is_margazhi === 1 };
+      } catch(e){ return { active:false, margazhi:false }; }
+    }
+    function anaBlockQualifies(section_id, ana) {
+      if (!ana || !ana.active) return true;
+      const id = Number(section_id);
+      const userSect = (localStorage.getItem("sect") || "T").toUpperCase();
+      const madam    = (localStorage.getItem("subsect") || "").toLowerCase() === "madam";
+      const s = ANA_SECTION_SECT[id] || "B";
+      const sectOk = userSect === "V"
+        ? (s !== "T" && !((id === 52 || id === 53) && !madam))   // V/VM: B or V, 52/53 only if madam
+        : (s !== "V");                                           // T: B or T
+      if (!sectOk) return false;
+      if (ana.margazhi && (id === 3 || id === 8)) return true;   // Margazhi: Thiruppavai / Thiruppalliyezhuchi
+      return ANA_THOUSAND_99.has(id);                            // Ithara Prabandham
+    }
+
     const SECTION_HEADER_MAP = {
       "திருப்பல்லாண்டு":           "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
       "பெரியாழ்வார் திருமொழி":     "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
@@ -1279,6 +1314,29 @@
         const renderData = await renderRes.json();
         if (renderData.error) throw new Error(renderData.error);
 
+        // ── Anadhyayana Kalam: personal daily recital only (a shared ghoshti was
+        //    already validated at creation) — drop non-qualified blocks pre-display ──
+        let anaNote = "";
+        if (!isGhoshtiView && Array.isArray(renderData.blocks)) {
+          const ana = await fetchAnadhyayana();
+          if (ana.active) {
+            const before = renderData.blocks.length;
+            renderData.blocks = renderData.blocks.filter(b => anaBlockQualifies(b.section_id, ana));
+            if (renderData.blocks.length === 0) {
+              stage.innerHTML = `
+                <div class="r-page-title">${pageTitle}</div>
+                <div class="r-day-label">${pageSubtitle}</div>
+                <div class="r-no-plan">🙏 Adiyen — during <b>Anadhyayana Kalam</b> none of today's plan items are recited.
+                  Only Ithara Prabandham${ana.margazhi ? " (and Thiruppavai & Thiruppalliyezhuchi)" : ""} are recited now.<br><br>
+                  To recite them, please use the <a href="tree.html">Naalayiram Tree</a>.</div>`;
+              return;
+            }
+            if (renderData.blocks.length < before) {
+              anaNote = `<div style="background:#fff6e0;border:1px solid #e0c070;border-radius:10px;padding:10px 14px;margin:0 auto 16px;max-width:680px;font-size:13px;color:#7a4d00;line-height:1.5;text-align:center">🙏 <b>Anadhyayana Kalam</b> — only Prabandhams recited in this period are shown. For anything else, please use the <a href="tree.html" style="color:#7a4d00;font-weight:700">Naalayiram Tree</a>.</div>`;
+            }
+          }
+        }
+
         const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
         // Fetch sattrumurai if ghoshti_id present — bypass cache
@@ -1298,6 +1356,7 @@
         const _fullHTML = `
           <div class="r-page-title">${pageTitle}</div>
           <div class="r-day-label">${pageSubtitle}</div>
+          ${anaNote}
           ${indexHTML}
           ${contentHTML}
           ${satBtn}`;
