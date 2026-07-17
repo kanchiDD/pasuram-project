@@ -8,6 +8,68 @@ const THIRUMOZHI_SECTIONS = new Set([4, 5]);
 const SPECIAL_DIRECT      = new Set([21]); // no popup, no modal, add directly
 const NO_RETTAI           = new Set([21]); // no rettai option
 
+// ═══════════════════════════════════════════════════════════════
+//  ANADHYAYANA KALAM  (panchangam-driven, sect-aware)
+//  During Anadhyayana only Ithara Prabandham (thousand_id = 99) of the
+//  reciter's sect is recited — T→25,27–31 · V→32–51 · VM→32–53 — plus,
+//  in Margazhi only, Thiruppavai (3) & Thiruppalliyezhuchi (8). Everything
+//  else (incl. Ramanuja Nootrandadi 24, which is thousand 3) is not.
+//  is_anadhyayana / is_margazhi come precomputed from the panchangam table.
+// ═══════════════════════════════════════════════════════════════
+const THOUSAND_99 = new Set([25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]);
+let _anaState = null;   // { active, margazhi } for the effective "today"
+
+// Demo/testing hook — force a date without waiting for the calendar:
+//   ?anadhi_test=2026-12-01  (URL)  or  localStorage.anadhi_test = "2026-12-01"
+function _anaTestDate() {
+  try {
+    const p = new URLSearchParams(location.search).get("anadhi_test");
+    if (p) return p;
+  } catch (e) {}
+  try { return localStorage.getItem("anadhi_test") || null; } catch (e) { return null; }
+}
+function _isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+async function _fetchPanchangam(dateStr) {
+  try {
+    const r = await fetch(`${WORKER}/recital/panchangam?date=${dateStr}`);
+    if (!r.ok) return { is_anadhyayana: 0, is_margazhi: 0 };  // date not in table → normal
+    return await r.json();
+  } catch (e) { return { is_anadhyayana: 0, is_margazhi: 0 }; }
+}
+async function loadAnadhyayana() {
+  const today = _anaTestDate() || _isoDate(new Date());
+  const p = await _fetchPanchangam(today);
+  _anaState = { active: p?.is_anadhyayana === 1, margazhi: p?.is_margazhi === 1 };
+  return _anaState;
+}
+// Does a section qualify to be recited *today*? (true when not in Anadhyayana)
+function anaSectionQualifies(sec) {
+  if (!_anaState || !_anaState.active) return true;
+  const id = Number(sec.section_id);
+  if (_anaState.margazhi && (id === 3 || id === 8)) return true;  // Margazhi: Thiruppavai / Thiruppalliyezhuchi
+  return THOUSAND_99.has(id);                                      // Ithara Prabandham (sect already filtered)
+}
+// Day-before nudge: today NOT anadhyayana but tomorrow IS → one-time alert.
+async function maybeAnadhyayanaDayBeforeAlert() {
+  try {
+    const base    = _anaTestDate() ? new Date(_anaTestDate() + "T00:00:00") : new Date();
+    const todayP  = await _fetchPanchangam(_isoDate(base));
+    if (todayP?.is_anadhyayana === 1) return;              // already inside
+    const tmr = new Date(base); tmr.setDate(tmr.getDate() + 1);
+    const tmrStr  = _isoDate(tmr);
+    const tmrP    = await _fetchPanchangam(tmrStr);
+    if (tmrP?.is_anadhyayana !== 1) return;                // tomorrow not the start
+    const key = "ana_alert_" + tmrStr;
+    if (localStorage.getItem(key)) return;                 // shown once already
+    localStorage.setItem(key, "1");
+    alert("🙏 Adiyen, starting tomorrow is Anadhyayana kalam, so only pasurams qualified "
+      + "for this period will be shown in recital.\n\nIf you wish to recite non-qualified items "
+      + "(not recommended), please use the Naalayiram Tree.");
+  } catch (e) {}
+}
+
 // ── Module state ──
 let selectedDay      = 0;     // default Sunday (0-6 = Sun-Sat, 7 = All Days)
 let selectedItems    = [];    // { entity_type, entity_id, label, global_no_start }
@@ -38,6 +100,7 @@ export async function renderRecitalModule() {
     </div>`;
   }
   loadCatalog();
+  maybeAnadhyayanaDayBeforeAlert();   // one-time "starts tomorrow" nudge
   return buildIntroHTML();
 }
 
@@ -596,6 +659,7 @@ function showFullRettaiPopup(entity_type, entity_id, label, global_no_start, sec
 async function loadCatalog() {
   try {
     const sect  = localStorage.getItem("sect") || "T";
+    await loadAnadhyayana();                 // know if today is Anadhyayana before we render
     const res   = await fetch(`${WORKER}/recital/catalog?sect=${sect}`);
     catalogData = await res.json();
     renderCatalogIntoDOM();
@@ -636,6 +700,15 @@ function renderCatalogIntoDOM() {
   if (!el) return;
   let html = "";
 
+  // Anadhyayana Kalam → focused catalog: only the qualified Prabandhams, with
+  // a one-line note so the short list reads as intentional, not broken.
+  if (_anaState && _anaState.active) {
+    html += `<div style="background:#fff6e0;border:1px solid #e0c070;border-radius:10px;
+      padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7a4d00;line-height:1.5">
+      🙏 <b>Anadhyayana Kalam</b> — only these Prabandhams are recited in this period.
+      To recite anything else, please use the Naalayiram Tree.</div>`;
+  }
+
   const KOIL_HTML = `<div class="r-thousand-group">
     <div class="r-thousand-name">கோயில் திருமொழிகள்</div>
     <div class="r-section-card" onclick="window._recitalAddKoil(1)">
@@ -649,7 +722,7 @@ function renderCatalogIntoDOM() {
   </div>`;
   for (const thousand of catalogData) {
     if (!thousand.sections.length) continue;
-    const allowed = thousand.sections.filter(recitalSectAllows);
+    const allowed = thousand.sections.filter(sec => recitalSectAllows(sec) && anaSectionQualifies(sec));
     if (!allowed.length) continue;
     html += `<div class="r-thousand-group">
       <div class="r-thousand-name">${thousand.thousand_name}</div>`;
@@ -663,8 +736,8 @@ function renderCatalogIntoDOM() {
       </div>`;
     }
     html += `</div>`;
-    // Insert koil group after நான்காமாயிரம் (thousand_id=4)
-    if (thousand.thousand_id === 4) html += KOIL_HTML;
+    // Koil thirumozhis are part of the 4000 (B) — not recited during Anadhyayana.
+    if (!(_anaState && _anaState.active) && thousand.thousand_id === 4) html += KOIL_HTML;
   }
   el.innerHTML = html;
 }
@@ -1779,6 +1852,26 @@ export function registerRecitalBindings() {
   window._recitalSavePlan = async (silent = false) => {
     const mobile  = localStorage.getItem("mobile");
     const saveMsg = document.getElementById("r-save-msg");
+
+    // ── Anadhyayana Kalam: block non-qualified selections (explicit save only) ──
+    // The recital plan is treated as standing, so a plan built earlier may hold
+    // items not recited in this period. We tell the user and drop them from what's
+    // saved now; the escape is the Naalayiram Tree, per the observance.
+    if (!silent) {
+      if (!_anaState) await loadAnadhyayana();
+      if (_anaState && _anaState.active) {
+        const nonQualified = selectedItems.filter(it => !anaSectionQualifies({ section_id: it.section_id }));
+        if (nonQualified.length) {
+          const names = nonQualified.map(i => i.label).filter(Boolean).join(", ");
+          alert("🙏 Adiyen — during Anadhyayana Kalam only the qualified Prabandhams are recited. "
+            + "The following are not part of this period and will not be included:\n\n" + names + "\n\n"
+            + "If you still wish to recite them, please use the Naalayiram Tree.");
+          const drop = new Set(nonQualified.map(i => `${i.entity_type}_${i.entity_id}`));
+          selectedItems = selectedItems.filter(it => !drop.has(`${it.entity_type}_${it.entity_id}`));
+          renderSelected();
+        }
+      }
+    }
 
     const orderedItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
 
