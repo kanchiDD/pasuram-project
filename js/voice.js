@@ -16,7 +16,7 @@
  * }
  */
 
-import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=3";
+import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=4";
 import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js";
 
 // Use extended if available, fall back to base
@@ -244,6 +244,13 @@ function canonicalizeRecitalWord(transcript) {
 
 function showResults(transcript, results) {
 
+  // A single "notice" result (e.g. out-of-range ordinal) → message card, not
+  // a selectable option. Carries a polite Adiyen message from the resolver.
+  if (results.length === 1 && results[0] && results[0].info) {
+    showNotice(transcript, results[0].message || results[0].label);
+    return;
+  }
+
   _results     = results;
   _selectedIdx = 0;
 
@@ -312,6 +319,29 @@ function showOffTopic(transcript) {
       pasurams, azhwars, divyadesams,<br/>
       thaniyans, and related sacred works.
     </div>
+
+    <div class="vp-actions">
+      <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>
+      <button class="vp-btn-close" onclick="closePopup()">Close</button>
+    </div>
+  `);
+}
+
+function showNotice(transcript, message) {
+  const displayTranscript = canonicalizeRecitalWord(transcript);
+  setPopup(`
+    <div class="vp-header">
+      <div class="vp-namaste">🙏</div>
+      <div>
+        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
+        <div class="vp-subgreeting">We heard you</div>
+      </div>
+    </div>
+
+    <div class="vp-heard-label">You said</div>
+    <div class="vp-heard-text offtopic">"${esc(displayTranscript)}"</div>
+
+    <div class="vp-offtopic-msg">${esc(message)}</div>
 
     <div class="vp-actions">
       <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>
@@ -397,6 +427,9 @@ window.confirmSearch = function () {
 
   const result = _results[_selectedIdx];
   if (!result) return;
+
+  // Notice card (out-of-range ordinal etc.) — nothing to open, just close.
+  if (result.info || result.fn === "_voiceInfo") { closePopup(); return; }
 
   // ── PLAY intents stay on the voice screen ──
   // Audio playback (from "… சாதித்தருளாய்" / "play …") plays right here

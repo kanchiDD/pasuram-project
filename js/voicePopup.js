@@ -14,7 +14,7 @@
  *  - Web Speech API  (browser built-in, free)
  */
 
-import { resolveVoiceQuery, executeVoiceResult } from "./voiceSearch.js?v=3";
+import { resolveVoiceQuery, executeVoiceResult } from "./voiceSearch.js?v=4";
 
 // ═══════════════════════════════════════════════════════
 // STYLES — injected once, scoped to voice UI elements
