@@ -1307,6 +1307,19 @@ window.gsatAddManual = async function() {
     return;
   }
 
+  // Upadesarathinamalai (25001–25071) is a Thenkalai work — add allowed only for
+  // T or BOTH ghoshti, every season. Vadagalai / VM cannot add it.
+  if (no >= 25001 && no <= 25071) {
+    const seg = gsatState.segment;
+    if (seg !== "T" && seg !== "BOTH") {
+      alert("Adiyen, உபதேசரத்தினமாலை is a Thenkalai Prabandham and cannot be added to a Vadakalai ghoshti. 🙏");
+      if (inputEl) inputEl.value = "";
+      const pv = document.getElementById("gsat-manual-added");
+      if (pv) pv.innerHTML = "";
+      return;
+    }
+  }
+
   // ── Anadhyayana Kalam: restrict manual add (temple ghoshti is exempt) ──
   // Non-margazhi → only உபதேசரத்தினமாலை (25001–25071). Margazhi → also
   // Thiruppavai (474–503). No other 99 works are typed (they auto-include).
@@ -1512,15 +1525,18 @@ window.gsatAddManual = async function() {
 
     // Insert before Pallandu heading
     const pallanduIdx = gsatState.pasuramItems.findIndex(it => it.key === "pallandu_heading");
-    // Section 25: all dual except 25074 which is always single
-    const forcedDual = (manualSecId === 25) ? (no !== 25074) : true;
+    // Section 25: all dual except 25074 (single). Manually-added Thiruppavai is single.
+    const forcedDual = (manualSecId === 3) ? false
+                     : (manualSecId === 25) ? (no !== 25074)
+                     : true;
     const newItem = {
       type: "pasuram", key: `manual_${no}_${Date.now()}`,
       global_no: no, dual: forcedDual, checked: true, lines, group: "manual",
     };
 
-    // Margazhi Thiruppavai (section 3) goes right after thiruppavai sattrumurai group
-    const isThiruppavai = newItem.group_section === 3;
+    // Manually-added Thiruppavai (section 3) always sits immediately after the
+    // auto Thiruppavai sattrumurai group (which ends at 503) — never by number.
+    const isThiruppavai = (manualSecId === 3);
     if (isThiruppavai) {
       const thiruppavaiEnd = gsatState.pasuramItems.reduce((last, it, idx) =>
         it.group === "thiruppavai" ? idx : last, -1);
