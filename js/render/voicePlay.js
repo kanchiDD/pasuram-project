@@ -43,10 +43,19 @@ const RECITAL_WORKER = "https://recitalworker.kanchitrust.workers.dev";
 const ANA_THOUSAND_99 = new Set([25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]);
 const ANA_SECTION_SECT = {25:"T",27:"T",28:"T",29:"T",30:"T",31:"T",32:"V",33:"V",34:"V",35:"V",36:"V",37:"V",38:"V",39:"V",40:"V",41:"V",42:"V",43:"V",44:"V",45:"V",46:"V",47:"V",48:"V",49:"V",50:"V",51:"V",52:"V",53:"V"};
 let _voiceAna = null;
+// Demo/testing hook — force a date without waiting for the calendar:
+//   ?anadhi_test=2026-12-01 (URL) or localStorage.anadhi_test = "2026-12-01"
+function _voiceAnaTestDate() {
+  try { const p = new URLSearchParams(location.search).get("anadhi_test"); if (p) return p; } catch (e) {}
+  try { return localStorage.getItem("anadhi_test") || null; } catch (e) { return null; }
+}
 async function fetchVoiceAna() {
   if (_voiceAna) return _voiceAna;
-  const d = new Date();
-  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  let date = _voiceAnaTestDate();
+  if (!date) {
+    const d = new Date();
+    date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
   try {
     const r = await fetch(`${RECITAL_WORKER}/recital/panchangam?date=${date}`);
     _voiceAna = r.ok
