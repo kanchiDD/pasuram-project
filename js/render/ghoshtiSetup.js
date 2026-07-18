@@ -1623,14 +1623,20 @@ function registerGhoshtiBindings() {
           overlay.innerHTML = `<div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;padding:24px;max-width:400px;text-align:center;font-family:inherit;">
             <div style="font-size:22px;margin-bottom:12px;">🙏</div>
             <div style="font-size:14px;line-height:1.8;color:#2a1a00;margin-bottom:16px;">${msg}</div>
-            <button onclick="this.closest('div[style]').remove();document.body.style.overflow='';" 
-              style="background:#7a4d00;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;">
+            <button style="background:#7a4d00;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;">
               Understood 🙏
             </button>
           </div>`;
           document.body.appendChild(overlay);
           document.body.style.overflow = 'hidden';
-          overlay.querySelector('button').addEventListener('click', resolve);
+          // Remove the WHOLE overlay (not just the inner card) so no orphaned
+          // full-screen layer is left intercepting later clicks (Back / reorder).
+          const done = () => {
+            if (overlay.parentNode) overlay.remove();
+            document.body.style.overflow = '';
+            resolve();
+          };
+          overlay.querySelector('button').addEventListener('click', done);
         });
       }
       if (!selectedItems.length) { showToast("No items remaining after validation."); _isSaving = false; return; }
