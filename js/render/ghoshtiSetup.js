@@ -52,6 +52,17 @@ function ghoshtiSectAllows(sec) {
     default:   return true;                                        // BOTH: all
   }
 }
+// Sect-specific "deselected during Anadhyayana" message (T / V / VM / BOTH).
+function anaDeselectMessage(seg, isMargazhi) {
+  let permitted;
+  if (seg === "V")       permitted = "selected Prabandhas like Desika Prabandham";
+  else if (seg === "VM") permitted = "selected Prabandhas like Desika Prabandham and Madam-related Adaikkalapathus";
+  else if (seg === "T")  permitted = "selected Prabandhas (Upadesarathinamalai, Thiruvaimozhi Nootrandadhi and Ithara Prabandham)";
+  else                   permitted = "selected Ithara Prabandhas";
+  const marg = isMargazhi ? "Thiruppavai, Thiruppaliyezhuchi (morning only) and " : "";
+  return `Adiyen, during Anadhyayana Kalam only ${marg}${permitted} are permitted. Other selections have been deselected. 🙏`;
+}
+
 // Segment → pothu flags
 function _applySegmentFlags(seg) {
   includePothuT = (seg === "T"  || seg === "BOTH");
@@ -1539,8 +1550,12 @@ function registerGhoshtiBindings() {
     const isAnadhyayana = panchangam?.is_anadhyayana === 1;
     const isMargazhi    = panchangam?.is_margazhi    === 1;
 
-    const ALLOWED_DURING_ANA = new Set([24, 25, 27, 28, 29, 30, 31]);
-    const MORNING_ONLY       = new Set([3, 8]); // Thiruppavai, Thiruppaliyezhuchi
+    // Ithara Prabandham = thousand_id 99 (sections 25, 27–53). The sect segment
+    // already restricted what could be selected, so during Anadhyayana we keep
+    // only the thousand-99 works — which yields T→25,27–31 · V→32–51 · VM→32–53.
+    // 24 (Ramanuja Nootrandadi) is thousand 3, not here → correctly excluded.
+    const THOUSAND_99  = new Set([25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]);
+    const MORNING_ONLY = new Set([3, 8]); // Thiruppavai, Thiruppaliyezhuchi
 
     const removed  = [];
     const messages = [];
@@ -1567,14 +1582,11 @@ function registerGhoshtiBindings() {
         return false;
       }
 
-      // Rule 2: Anadhyayana Kalam
+      // Rule 2: Anadhyayana Kalam — keep only Ithara Prabandham (thousand 99) of
+      // the ghoshti's sect; in Margazhi, Thiruppavai / Thiruppaliyezhuchi (3/8) too.
       if (isAnadhyayana) {
-        // During Margazhi: sections 3 & 8 allowed (morning only still applies via Rule 1)
-        if (isMargazhi && (sid === 3 || sid === 8)) return true;
-        // Ithara prabandham (thousand_id=99 items have no section_id or section 99+)
-        if (!sid || sid >= 99) return true;
-        // Only allowed sections during anadhyayana
-        if (!ALLOWED_DURING_ANA.has(sid)) {
+        if (isMargazhi && (sid === 3 || sid === 8)) return true;  // morning-only still enforced by Rule 1
+        if (!THOUSAND_99.has(sid)) {
           removed.push(item.label);
           return false;
         }
@@ -1588,11 +1600,8 @@ function registerGhoshtiBindings() {
         l.includes("திருப்பாவை") || l.includes("திருப்பள்ளி"))) {
         messages.push("Adiyen, Thiruppavai and Thiruppaliyezhuchi have been removed as they are not recited during evening Ghoshtis. 🙏");
       }
-      if (isAnadhyayana && !isMargazhi) {
-        messages.push("Adiyen, during Anadhyayana Kalam only selected Prabandhas (Upadesarathinamalai, Thiruvaimozhi Nootrandadhi and Ithara Prabandham) are permitted. Other selections have been deselected. 🙏");
-      }
-      if (isAnadhyayana && isMargazhi) {
-        messages.push("Adiyen, during Anadhyayana Kalam, only Thiruppavai, Thiruppaliyezhuchi (morning only) and selected Prabandhas are permitted. Other selections have been deselected. 🙏");
+      if (isAnadhyayana) {
+        messages.push(anaDeselectMessage(ghoshtiSegment, isMargazhi));
       }
     }
 
