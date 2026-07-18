@@ -28,6 +28,7 @@ let planLoadedForDay = null;  // which day's plan is currently shown
 // ── Sampradaya segment (from the ghoshti.html landing screen) ──
 // "T" Thenkalai | "V" Vadakalai | "VM" Vadakalai Ahobila Madam | "BOTH"
 let ghoshtiSegment   = "BOTH";
+let ghoshtiIsTemple  = false;   // Temple ghoshti → Anadhyayana + evening rules never apply
 
 // Per-section sect, mirroring section_master (B=both, T=Thenkalai, V=Vadakalai).
 // Only non-B sections listed; others default to "B". 52/53 = Madam-only.
@@ -112,10 +113,12 @@ export async function renderGhoshtiSetup(meta, appDiv, onSave) {
   if (meta && meta.segment) {
     // New ghoshti — sampradaya chosen on the landing screen
     ghoshtiSegment = meta.segment;
+    ghoshtiIsTemple = !!meta.is_temple;
     _applySegmentFlags(meta.segment);
   } else {
     // Editing (or fallback) — start neutral; segment derived after the plan loads
     ghoshtiSegment = "BOTH";
+    ghoshtiIsTemple = false;
     includePothuT  = true;
     includePothuV  = true;
     includePothuM  = (localStorage.getItem("subsect") === "madam");
@@ -827,6 +830,7 @@ async function loadExistingGhoshtiPlan(plan_id) {
         if (mCb) mCb.checked = includePothuM;
       }
       userOrdered = Number(data.plan.is_user_ordered) === 1;
+      ghoshtiIsTemple = Number(data.plan.is_temple) === 1;
     }
     if (!data.items || !data.items.length) { selectedItems=[]; isDirty=false; renderSelected(); return; }
     const labelRes  = await fetch(`${WORKER}/recital/resolve-labels`, {
@@ -1547,7 +1551,7 @@ function registerGhoshtiBindings() {
       panchangam = await res.json();
     } catch(e) {}
 
-    const isAnadhyayana = panchangam?.is_anadhyayana === 1;
+    const isAnadhyayana = !ghoshtiIsTemple && (panchangam?.is_anadhyayana === 1);
     const isMargazhi    = panchangam?.is_margazhi    === 1;
 
     // Ithara Prabandham = thousand_id 99 (sections 25, 27–53). The sect segment
@@ -1560,9 +1564,9 @@ function registerGhoshtiBindings() {
     const removed  = [];
     const messages = [];
 
-    // ── Evening consent for Thiruppavai / Thiruppaliyezhuchi ──
+    // ── Evening consent for Thiruppavai / Thiruppaliyezhuchi (not for temple) ──
     let eveningConsent = false;
-    if (isEvening) {
+    if (isEvening && !ghoshtiIsTemple) {
       const hasEveningRestricted = selectedItems.some(item => MORNING_ONLY.has(Number(item.section_id)));
       if (hasEveningRestricted) {
         eveningConsent = confirm(
@@ -1575,9 +1579,9 @@ function registerGhoshtiBindings() {
     selectedItems = selectedItems.filter(item => {
       const sid = Number(item.section_id);
 
-      // Rule 1: Evening — sections 3 and 8 (Thiruppavai, Thiruppaliyezhuchi)
-      // User is asked — handled by confirm before this filter runs (see eveningConsent)
-      if (isEvening && MORNING_ONLY.has(sid) && !eveningConsent) {
+      // Rule 1: Evening — sections 3 and 8 (Thiruppavai, Thiruppaliyezhuchi).
+      // Temple ghoshti is exempt (no evening bar).
+      if (isEvening && !ghoshtiIsTemple && MORNING_ONLY.has(sid) && !eveningConsent) {
         removed.push(item.label);
         return false;
       }
@@ -1596,7 +1600,7 @@ function registerGhoshtiBindings() {
     });
 
     if (removed.length > 0) {
-      if (isEvening && !eveningConsent && removed.some(l =>
+      if (isEvening && !ghoshtiIsTemple && !eveningConsent && removed.some(l =>
         l.includes("திருப்பாவை") || l.includes("திருப்பள்ளி"))) {
         messages.push("Adiyen, Thiruppavai and Thiruppaliyezhuchi have been removed as they are not recited during evening Ghoshtis. 🙏");
       }
@@ -1678,6 +1682,7 @@ function registerGhoshtiBindings() {
           include_pothu_m: includePothuM ? 1 : 0,
           include_pothu_v: includePothuV ? 1 : 0,
           is_user_ordered: userOrdered ? 1 : 0,
+          is_temple:       ghoshtiIsTemple ? 1 : 0,
           ...(ghoshtiMeta.plan_id ? { plan_id: ghoshtiMeta.plan_id } : { ghoshti_new: true })
         })
       });

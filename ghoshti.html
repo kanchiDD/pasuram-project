@@ -261,6 +261,7 @@
     let editingGhoshti = null;
     let pendingMeta    = null;
     let pendingSegment = null;   // sampradaya chosen for the new ghoshti (T/V/VM/BOTH)
+    let pendingIsTemple = false; // Temple ghoshti — full 4000, no Anadhyayana bar
 
     // ── Welcome popup ──
     function dismissWelcome(createNew) {
@@ -419,13 +420,16 @@
                   onclick="pickSampradaya('V')">Vadakalai Sampradaya Ghoshti</button>
           <button class="g-btn-primary" style="width:100%;margin-bottom:10px"
                   onclick="pickSampradaya('VM')">Vadakalai Ahobila Madam Sampradaya Ghoshti</button>
-          <button class="g-btn-primary" style="width:100%"
+          <button class="g-btn-primary" style="width:100%;margin-bottom:10px"
                   onclick="pickSampradaya('BOTH')">Ghoshti for both Sampradayam</button>
+          <button class="g-btn-primary" style="width:100%;background:#5a4535"
+                  onclick="pickSampradaya('BOTH', true)">Temple Ghoshti</button>
         </div>`);
     }
 
-    function pickSampradaya(seg) {
-      pendingSegment = seg;
+    function pickSampradaya(seg, isTemple) {
+      pendingSegment  = seg;
+      pendingIsTemple = !!isTemple;
       showCreateForm();
     }
 
@@ -474,7 +478,7 @@
       if (!heading) { showToast("Please enter a Ghoshti heading"); return; }
       if (!date)    { showToast("Please select a date"); return; }
       if (!time)    { showToast("Please select a time"); return; }
-      pendingMeta = { heading, date, time, segment: pendingSegment };
+      pendingMeta = { heading, date, time, segment: pendingSegment, is_temple: pendingIsTemple ? 1 : 0 };
       openGhoshtiSetup(pendingMeta);
     }
 
@@ -482,7 +486,7 @@
       const app = document.getElementById("ghoshti-app");
       app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading selection...</div>`;
       try {
-        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js");
+        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js?v=2");
         renderGhoshtiSetup(meta, app, function(result) {
           if (!result) {
             renderMyGhoshtiList();
