@@ -33,6 +33,65 @@ export function thaniyanFileUrl(sectionId, thaniyanId) {
 // id → { urls: [] }
 const _registry = new Map();
 
+// ═══════════════════════════════════════════════════════════════
+//  ANADHYAYANA KALAM — audio play gate (PASURAM audio only).
+//  Thaniyan URLs (/thaniyans/…) always play, all year. Pasuram URLs
+//  (/pasurams/pasuram_<no>.mp3) are gated during Anadhyayana:
+//   • non-margazhi → Ithara Prabandham only (sect-scoped)
+//   • margazhi     → also Thiruppavai (474–503) & Thiruppalliyezhuchi (917–926)
+//   • post-Anadhyayana → everything
+//  Covers EVERY play path (tree pasuram / section-pathu "play all" /
+//  voice / navboot) since all audio flows through _gaToggle or _playQueue.
+//  Test hook: ?anadhi_test=YYYY-MM-DD or localStorage.anadhi_test
+// ═══════════════════════════════════════════════════════════════
+const _RECITAL_WORKER = "https://recitalworker.kanchitrust.workers.dev";
+let _gAudioAna = null;   // { active, margazhi } — loaded once on module init
+(function _loadGAudioAna() {
+  let date = null;
+  try { date = new URLSearchParams(location.search).get("anadhi_test"); } catch (e) {}
+  if (!date) { try { date = localStorage.getItem("anadhi_test"); } catch (e) {} }
+  if (!date) {
+    const d = new Date();
+    date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+  fetch(`${_RECITAL_WORKER}/recital/panchangam?date=${date}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(p => { _gAudioAna = p ? { active: p.is_anadhyayana === 1, margazhi: p.is_margazhi === 1 } : { active:false, margazhi:false }; })
+    .catch(() => { _gAudioAna = { active:false, margazhi:false }; });
+})();
+
+function _pasuramQualified(no, ana, uSect, madam) {
+  if (!ana || !ana.active) return true;
+  if (ana.margazhi && ((no >= 474 && no <= 503) || (no >= 917 && no <= 926))) return true; // Thiruppavai / Thiruppalliyezhuchi
+  if (no < 25001) return false;                               // 4000 → not Ithara
+  const pSect = no < 32000 ? "T" : no < 52000 ? "V" : "VM";   // Ithara global-no ranges → sect
+  return uSect === "V" ? (pSect === "V" || (pSect === "VM" && madam)) : (pSect === "T");
+}
+// true → the queue contains a non-qualified pasuram and must be blocked.
+function _anaBlocksQueue(urls) {
+  const ana = _gAudioAna;
+  if (!ana || !ana.active) return false;
+  const uSect = (localStorage.getItem("sect") || "T").toUpperCase();
+  const madam = (localStorage.getItem("subsect") || "").toLowerCase() === "madam";
+  for (const u of (Array.isArray(urls) ? urls : [urls])) {
+    const m = String(u).match(/\/pasurams\/pasuram_(\d+)\.mp3/);   // pasuram URLs only; thaniyans pass
+    if (m && !_pasuramQualified(Number(m[1]), ana, uSect, madam)) return true;
+  }
+  return false;
+}
+function _anaAudioNotice() {
+  const ana = _gAudioAna || {};
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
+    + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
+    + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
+  ov.innerHTML = ana.margazhi
+    ? "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play Ithara Prabandham, and in Margazhi, Thiruppavai and Thiruppalliyezhuchi."
+    : "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play only Ithara Prabandham.";
+  document.body.appendChild(ov);
+  setTimeout(() => ov.remove(), 4600);
+}
+
 // ── Cross-page playback state (Option B: resume on navigation) ──────
 // The single <audio> dies on each full page load, so we persist the queue +
 // position to sessionStorage and auto-resume on the next page. No service
@@ -203,6 +262,9 @@ window._gaToggle = function (id) {
   // Tapping the playing button stops it
   if (btn.classList.contains("ga-playing")) { stopAll(); return; }
 
+  // Anadhyayana Kalam — block non-qualified pasuram audio (thaniyans pass)
+  if (_anaBlocksQueue(data.urls)) { _anaAudioNotice(); return; }
+
   stopAll();
   const p = getPlayer();
   let idx = 0;
@@ -241,6 +303,9 @@ window._gaStopAll = stopAll;
 function _playQueue(urls, label, startIdx, startTime, autoplay) {
   const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
   if (!list.length) return false;
+  // Anadhyayana Kalam — block non-qualified pasuram audio (notice only on
+  // user-initiated play; a cross-page restore is blocked silently).
+  if (_anaBlocksQueue(list)) { if (autoplay !== false) _anaAudioNotice(); return false; }
   startIdx  = startIdx  || 0;
   startTime = startTime || 0;
   stopAll();
