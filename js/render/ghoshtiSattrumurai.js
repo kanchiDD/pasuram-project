@@ -304,6 +304,8 @@ let gsatState = {
   vazhiLines: {},
   allVaazhis: [],
   fixedOrder: [2, 1],
+  ana: { active: false, margazhi: false },  // Anadhyayana state for this ghoshti's date
+  isTemple: false,                          // Temple ghoshti → Anadhyayana never applies
 };
 
 export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta) {
@@ -355,6 +357,20 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   // { "11":[thirumozhi ids], "26":[thiruvaimozhi ids] }. Work out present + full/partial.
   gsatState.koil     = ghoshtiMeta?.koil || {};
   gsatState.koilInfo = await computeKoilInfo(gsatState.koil);
+
+  // ── Anadhyayana state for THIS ghoshti's date (temple ghoshti is exempt) ──
+  gsatState.isTemple = !!ghoshtiMeta?.is_temple;
+  gsatState.ana = { active: false, margazhi: false };
+  if (ghoshtiMeta?.date && !gsatState.isTemple) {
+    const d = String(ghoshtiMeta.date).slice(0, 10);   // YYYY-MM-DD (from date or ISO start_time)
+    try {
+      const r = await fetch(`${WORKER_POST}/recital/panchangam?date=${d}`);
+      if (r.ok) {
+        const p = await r.json();
+        gsatState.ana = { active: p?.is_anadhyayana === 1, margazhi: p?.is_margazhi === 1 };
+      }
+    } catch (e) { /* date not in table → treated as normal */ }
+  }
 
   const plan = buildSattrumuraiPlan(gsatState.selectedSections);
   await fetchAllPasuramTexts(plan);
@@ -408,8 +424,12 @@ async function computeKoilInfo(koil) {
 
 function buildSattrumuraiPlan(sections) {
   const plan = [];
+  const ana = gsatState.ana || { active: false, margazhi: false };
 
-  pushPasuramGroup(plan, "thiruppavai", "திருப்பாவை சாற்றுமுறை பாசுரங்கள்", SATTRUMURAI_PASURAMS.thiruppavai);
+  // Thiruppavai — always, except in non-Margazhi Anadhyayana.
+  if (!ana.active || ana.margazhi) {
+    pushPasuramGroup(plan, "thiruppavai", "திருப்பாவை சாற்றுமுறை பாசுரங்கள்", SATTRUMURAI_PASURAMS.thiruppavai);
+  }
 
   const bySection = {};
   sections.forEach(sel => {
@@ -459,6 +479,7 @@ function buildSattrumuraiPlan(sections) {
   let section26Has10thPathu = false;
 
   CANONICAL_ORDER.forEach(sid => {
+    if (ana.active) return;   // Anadhyayana: none of the 4000-section sattrumurai is recited
     const sels = bySection[sid];
     if (!sels || !sels.length) return;
 
@@ -542,6 +563,9 @@ function buildSattrumuraiPlan(sections) {
   gsatState.autoIncludedKeys = new Set();
   const selectedSectionIds = new Set(sections.map(s => s.section_id));
   EXPLICIT_SECTIONS.forEach(sec => {
+    // Anadhyayana: Ramanuja Nootrandadi (24, thousand 3) is not recited; the
+    // Vadagalai/Madam items (38/33/49/51/52/53) are thousand-99 → kept.
+    if (ana.active && Number(sec.section_id) === 24) return;
     if (selectedSectionIds.has(sec.section_id) && effBeforePallandu(sec)) {
       gsatState.autoIncludedKeys.add(sec.key);
       const heading = `${sec.label} சாற்றுமுறை பாசுரங்கள்`;
@@ -551,10 +575,13 @@ function buildSattrumuraiPlan(sections) {
     }
   });
 
-  plan.push({ type: "heading", key: "pallandu_heading", text: "பல்லாண்டு" });
-  PALLANDU.forEach((p, idx) => {
-    plan.push({ type: "pallandu_fixed", key: `pallandu_${idx}_${p.no}`, global_no: p.no, dual: p.dual, lines: null, group: "pallandu" });
-  });
+  // Pallandu — not recited during Anadhyayana (any phase).
+  if (!ana.active) {
+    plan.push({ type: "heading", key: "pallandu_heading", text: "பல்லாண்டு" });
+    PALLANDU.forEach((p, idx) => {
+      plan.push({ type: "pallandu_fixed", key: `pallandu_${idx}_${p.no}`, global_no: p.no, dual: p.dual, lines: null, group: "pallandu" });
+    });
+  }
 
   // Auto-include sections 25 and 27 (after pallandu) if selected in ghoshti
   EXPLICIT_SECTIONS.forEach(sec => {
@@ -1279,6 +1306,27 @@ window.gsatAddManual = async function() {
     alert("Adiyen, please enter a valid pasuram number (1-3776) or உபதேசரத்தினமாலை pasuram (25001-25071)");
     return;
   }
+
+  // ── Anadhyayana Kalam: restrict manual add (temple ghoshti is exempt) ──
+  // Non-margazhi → only உபதேசரத்தினமாலை (25001–25071). Margazhi → also
+  // Thiruppavai (474–503). No other 99 works are typed (they auto-include).
+  {
+    const ana = gsatState.ana || { active: false, margazhi: false };
+    if (ana.active && !gsatState.isTemple) {
+      const isUpadesa     = (no >= 25001 && no <= 25071);
+      const isThiruppavai = (no >= 474 && no <= 503);
+      const allowed = isUpadesa || (ana.margazhi && isThiruppavai);
+      if (!allowed) {
+        alert(ana.margazhi
+          ? "Adiyen, during Anadhyayana Kalam (Margazhi) you may add only Thiruppavai pasurams (474–503) or உபதேசரத்தினமாலை (25001–25071). 🙏"
+          : "Adiyen, during Anadhyayana Kalam only உபதேசரத்தினமாலை pasurams (25001–25071) may be added. 🙏");
+        if (inputEl) inputEl.value = "";
+        const pv = document.getElementById("gsat-manual-added");
+        if (pv) pv.innerHTML = "";
+        return;
+      }
+    }
+  }
   const previewEl = document.getElementById("gsat-manual-added");
   if (previewEl) previewEl.innerHTML = `<span style="color:#b38b2e">Loading pasuram ${no}...</span>`;
 
@@ -1381,7 +1429,7 @@ window.gsatAddManual = async function() {
       const lookupData = await lookupRes.json();
       const secId = lookupData?.section_id;
       manualSecId = secId;
-      const isMargazhi = false; // TODO: wire panchangam check if needed
+      const isMargazhi = (gsatState.ana?.margazhi) === true; // from panchangam for this ghoshti's date
 
       // ── Section 24 and 27: special handling ──────────────────
       if (secId === 24 || secId === 27) {

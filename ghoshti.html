@@ -931,12 +931,14 @@
       const data = await res.json();
       if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
 
-      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=6");
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=7");
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
         koil:     collectKoilFromBlocks(data.blocks || []),
         segment:  deriveSegmentFromFlags(data.include_pothu_t, data.include_pothu_m, data.include_pothu_v),
+        date:     data.start_time || null,
+        is_temple: data.is_temple ? 1 : 0,
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
@@ -1008,12 +1010,14 @@
       const res  = await fetch(`${WORKER}/recital/ghoshti?id=${ghoshtiId}`);
       const data = await res.json();
       if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
-      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=6");
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=7");
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
         koil:     collectKoilFromBlocks(data.blocks || []),
         segment:  deriveSegmentFromFlags(data.include_pothu_t, data.include_pothu_m, data.include_pothu_v),
+        date:     data.start_time || null,
+        is_temple: data.is_temple ? 1 : 0,
       });
     } catch(e) {
       app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
