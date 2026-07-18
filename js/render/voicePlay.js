@@ -32,6 +32,53 @@ function userSect() {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  ANADHYAYANA KALAM — voice PLAY gating (pasuram/section audio only).
+//  Thaniyan playback is NOT in this file, so it stays free year-round.
+//  Non-margazhi → only Ithara Prabandham (thousand-99) of the user's sect.
+//  Margazhi     → also Thiruppavai (3) & Thiruppalliyezhuchi (8).
+//  Post-Anadhyayana → everything. Date = today.
+// ═══════════════════════════════════════════════════════════════
+const RECITAL_WORKER = "https://recitalworker.kanchitrust.workers.dev";
+const ANA_THOUSAND_99 = new Set([25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]);
+const ANA_SECTION_SECT = {25:"T",27:"T",28:"T",29:"T",30:"T",31:"T",32:"V",33:"V",34:"V",35:"V",36:"V",37:"V",38:"V",39:"V",40:"V",41:"V",42:"V",43:"V",44:"V",45:"V",46:"V",47:"V",48:"V",49:"V",50:"V",51:"V",52:"V",53:"V"};
+let _voiceAna = null;
+async function fetchVoiceAna() {
+  if (_voiceAna) return _voiceAna;
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  try {
+    const r = await fetch(`${RECITAL_WORKER}/recital/panchangam?date=${date}`);
+    _voiceAna = r.ok
+      ? (p => ({ active: p?.is_anadhyayana === 1, margazhi: p?.is_margazhi === 1 }))(await r.json())
+      : { active: false, margazhi: false };
+  } catch (e) { _voiceAna = { active: false, margazhi: false }; }
+  return _voiceAna;
+}
+function voiceSectionAllowed(sectionId, ana) {
+  if (!ana || !ana.active) return true;
+  const id = Number(sectionId);
+  if (ana.margazhi && (id === 3 || id === 8)) return true;   // Margazhi: Thiruppavai / Thiruppalliyezhuchi
+  if (!ANA_THOUSAND_99.has(id)) return false;
+  const uSect = (localStorage.getItem("sect") || "T").toUpperCase();
+  const madam = (localStorage.getItem("subsect") || "").toLowerCase() === "madam";
+  const s = ANA_SECTION_SECT[id] || "B";
+  return uSect === "V"
+    ? (s !== "T" && !((id === 52 || id === 53) && !madam))    // V / VM
+    : (s !== "V");                                            // T
+}
+function voiceAnaNotice(margazhi) {
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
+    + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
+    + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
+  ov.innerHTML = margazhi
+    ? "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play Ithara Prabandham, and in Margazhi, Thiruppavai and Thiruppalliyezhuchi."
+    : "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play only Ithara Prabandham.";
+  document.body.appendChild(ov);
+  setTimeout(() => ov.remove(), 4600);
+}
+
 // ── "Not available" toast (shared) ──
 export function voiceNotAvailable(name) {
   const ov = document.createElement("div");
@@ -46,6 +93,8 @@ export function voiceNotAvailable(name) {
 // ── Play a whole SECTION (with sect-aware pothu thaniyan) ──
 export async function playSectionAudio(sectionId, sectionName) {
   try {
+    const ana = await fetchVoiceAna();
+    if (!voiceSectionAllowed(sectionId, ana)) { voiceAnaNotice(ana.margazhi); return; }
     // Special sections (21/22/23): dedicated thaniyan+work pair, NOT
     // per-pasuram rows. specialSectionUrls() returns [] for any normal
     // section, so those fall through to the standard path below.
@@ -95,6 +144,8 @@ export async function playPasuramAudio(globalNo) {
   try {
     const g = await fetch(`${API_VOICE}/by-global?no=${Number(globalNo)}`).then(r => r.json());
     if (!g || !g.section_id) { voiceNotAvailable("Pasuram " + globalNo); return; }
+    const ana = await fetchVoiceAna();
+    if (!voiceSectionAllowed(g.section_id, ana)) { voiceAnaNotice(ana.margazhi); return; }
     const disp = await fetch(`${API_DD}/pasuram?section_id=${g.section_id}`).then(r => r.json());
     const found = (Array.isArray(disp) ? disp : []).find(p => Number(p.global_no) === Number(globalNo));
     if (found && found.has_audio) playUrls([PASURAM_URL(Number(globalNo))]);
@@ -158,6 +209,8 @@ function _sectionThaniyanUrl(sectionId, thanRows) {
 // Standalone model (4/5): SECTION thaniyan + thirumozhi's pasurams.
 export async function playThirumozhiAudio(sectionId, sectionName, pathuNum, heading) {
   try {
+    const ana = await fetchVoiceAna();
+    if (!voiceSectionAllowed(sectionId, ana)) { voiceAnaNotice(ana.margazhi); return; }
     const { pasuram, thanRows } = await _fetchSection(sectionId);
     const keys = _ordinalKeys(pathuNum);
     const h    = _norm(heading || "");
@@ -197,6 +250,8 @@ export async function playStandaloneAudio(sectionId, sectionName, pathuNum) {
 // pothu thaniyan (sect-aware) + SECTION thaniyan + that pathu's pasurams.
 export async function playPathuAudio(sectionId, sectionName, pathuNum) {
   try {
+    const ana = await fetchVoiceAna();
+    if (!voiceSectionAllowed(sectionId, ana)) { voiceAnaNotice(ana.margazhi); return; }
     const { pasuram, thanRows } = await _fetchSection(sectionId);
     const keys = _ordinalKeys(pathuNum);
 
