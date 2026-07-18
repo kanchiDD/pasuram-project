@@ -205,6 +205,26 @@
 
     function render(data) {
       const stage  = document.getElementById("sp-stage");
+
+      // ── Anadhyayana Kalam: spinner fully stopped, count frozen ──
+      if (data.anadhyayana) {
+        const day = (data.spin_day ?? 0) + 1;
+        stage.innerHTML = `
+          <div class="sp-day-badge">
+            <div class="sp-day-n">${day}</div>
+            <div class="sp-day-lbl">Day</div>
+            <div class="sp-day-max">of ${data.max_day || 247}</div>
+          </div>
+          <div class="sp-status paused">⏸ Paused — Anadhyayana Kalam</div>
+          <div class="thaniyan-container" style="text-align:center">
+            <div style="font-size:26px;margin-bottom:10px">🙏</div>
+            <div class="thaniyan-line" style="text-align:center">${data.message || "Adiyen, Divyadesam Spinner will work post Anadhyayanam. 🙏"}</div>
+          </div>`;
+        document.getElementById("sp-float-nav").style.display = "flex";
+        document.getElementById("sp-action-bar")?.remove();
+        return;
+      }
+
       const paused = data.paused;
       const day    = (data.spin_day ?? 0) + 1;
       const maxDay = data.max_day || 247;
