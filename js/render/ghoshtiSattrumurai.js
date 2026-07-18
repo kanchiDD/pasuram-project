@@ -1300,19 +1300,27 @@ const MANUAL_ADD_BLOCKED_SECTIONS = new Set([1, 3, 8, 10, 19, 21, 28, 29, 30, 31
 window.gsatAddManual = async function() {
   const inputEl = document.getElementById("gsat-manual-no");
   const no = parseInt(inputEl?.value, 10);
-  // Allow main range 1-3776 plus section 25 range 25001-25071 only
-  const isValidNo = (no >= 1 && no <= 3776) || (no >= 25001 && no <= 25071);
+  // Allow main range 1-3776, Upadesa 25001-25071, Prabandha Saram 49001-49016
+  const isValidNo = (no >= 1 && no <= 3776)
+                 || (no >= 25001 && no <= 25071)
+                 || (no >= 49001 && no <= 49016);
   if (!no || !isValidNo) {
-    alert("Adiyen, please enter a valid pasuram number (1-3776) or உபதேசரத்தினமாலை pasuram (25001-25071)");
+    alert("Adiyen, please enter a valid pasuram number (1-3776) or உபதேசரத்தினமாலை (25001-25071) / ப்ரபந்தசாரம் (49001-49016) pasuram");
     return;
   }
 
-  // Upadesarathinamalai (25001–25071) is a Thenkalai work — add allowed only for
-  // T or BOTH ghoshti, every season. Vadagalai / VM cannot add it.
-  if (no >= 25001 && no <= 25071) {
+  // Sect-gated Ithara add facilities (year-round):
+  //   Upadesarathinamalai (25001–25071) → Thenkalai works: T / BOTH (temple = BOTH)
+  //   Prabandha Saram      (49001–49016) → Vadagalai works: V / VM / BOTH (temple = BOTH)
+  {
     const seg = gsatState.segment;
-    if (seg !== "T" && seg !== "BOTH") {
-      alert("Adiyen, உபதேசரத்தினமாலை is a Thenkalai Prabandham and cannot be added to a Vadakalai ghoshti. 🙏");
+    const isUpadesa      = (no >= 25001 && no <= 25071);
+    const isPrabandhaSar = (no >= 49001 && no <= 49016);
+    const denied =
+      (isUpadesa      && !(seg === "T" || seg === "BOTH")) ||
+      (isPrabandhaSar && !(seg === "V" || seg === "VM" || seg === "BOTH"));
+    if (denied) {
+      alert("Adiyen, this pasuram doesn't form a part of this Ghoshti. 🙏");
       if (inputEl) inputEl.value = "";
       const pv = document.getElementById("gsat-manual-added");
       if (pv) pv.innerHTML = "";
