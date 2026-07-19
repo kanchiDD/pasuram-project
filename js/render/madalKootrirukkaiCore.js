@@ -30,11 +30,14 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet, greyFromCouplet
   const units = data?.units || [];
   const rules = data?.rules || [];
   if (!units.length) return "";
-  // Optional: grey the closing sattrumurai stretch (couplets >= greyFromCouplet).
-  // Backward-compatible — callers that omit it get identical output.
+  // Optional: grey the closing sattrumurai stretch. Starts at LINE 2 of the
+  // threshold couplet (line 1 stays normal), then everything after. Backward-
+  // compatible — callers that omit greyFromCouplet get identical output.
   let _greyNoteDone = false;
-  const _greyCls = (coupletNo) => {
-    if (greyFromCouplet == null || coupletNo < greyFromCouplet) return "";
+  const _greyCls = (coupletNo, lineNo) => {
+    if (greyFromCouplet == null) return "";
+    const inGrey = (coupletNo > greyFromCouplet) || (coupletNo === greyFromCouplet && lineNo >= 2);
+    if (!inGrey) return "";
     if (!_greyNoteDone) { _greyNoteDone = true; return ` ${prefix}-sattru-grey ${prefix}-sattru-grey-first`; }
     return ` ${prefix}-sattru-grey`;
   };
@@ -82,17 +85,17 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet, greyFromCouplet
 
       if (isDual) {
         if (currentSegment && currentSegment.isDual) {
-          currentSegment.lines.push({ text, showCoupletNo, coupletNo: c });
+          currentSegment.lines.push({ text, showCoupletNo, coupletNo: c, lineNo });
         } else {
           if (currentSegment) allSegments.push(currentSegment);
-          currentSegment = { isDual: true, lines: [{ text, showCoupletNo, coupletNo: c }] };
+          currentSegment = { isDual: true, lines: [{ text, showCoupletNo, coupletNo: c, lineNo }] };
         }
       } else {
         if (currentSegment && !currentSegment.isDual) {
-          currentSegment.lines.push({ text, showCoupletNo, coupletNo: c });
+          currentSegment.lines.push({ text, showCoupletNo, coupletNo: c, lineNo });
         } else {
           if (currentSegment) allSegments.push(currentSegment);
-          currentSegment = { isDual: false, lines: [{ text, showCoupletNo, coupletNo: c }] };
+          currentSegment = { isDual: false, lines: [{ text, showCoupletNo, coupletNo: c, lineNo }] };
         }
       }
     }
@@ -103,7 +106,7 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet, greyFromCouplet
   for (const seg of allSegments) {
     const linesHtml = seg.lines.map((l, idx) => {
       const prefixMark = (seg.isDual && idx === 0) ? `<span class="${prefix}-dual-mark">★★</span> ` : "";
-      const gc = _greyCls(l.coupletNo);
+      const gc = _greyCls(l.coupletNo, l.lineNo);
       if (l.showCoupletNo) {
         return `<div class="${prefix}-madal-line ${prefix}-line-with-no${gc}">
           <span>${prefixMark}${l.text}</span>
@@ -130,7 +133,7 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet, greyFromCouplet
         }
         currentCouplet = l.coupletNo;
         const prefixMark = "";
-        const gc = _greyCls(l.coupletNo);
+        const gc = _greyCls(l.coupletNo, l.lineNo);
         const lineHtml = l.showCoupletNo
           ? `<div class="${prefix}-madal-line ${prefix}-line-with-no${gc}"><span>${l.text}</span><span class="${prefix}-couplet-no">${l.coupletNo}</span></div>`
           : `<div class="${prefix}-madal-line${gc}">${l.text}</div>`;
