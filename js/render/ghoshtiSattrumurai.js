@@ -1551,6 +1551,14 @@ window.gsatAddManual = async function() {
     // Manually-added Thiruppavai (section 3) always sits immediately after the
     // auto Thiruppavai sattrumurai group (which ends at 503) — never by number.
     const isThiruppavai = (manualSecId === 3);
+
+    // After-Pallandu Ithara sections (Upadesa 25, Prabandha Saram 49, …): a manual
+    // pasuram belongs at the TOP of that section's block — after its heading,
+    // above its auto sattrumurai pasurams — which sits after Pallandu.
+    const _explicitKey  = EXPLICIT_SECTION_MAP[manualSecId];
+    const _explicitDef  = EXPLICIT_SECTIONS.find(s => s.section_id === manualSecId);
+    const isAfterPallanduExplicit = !!_explicitDef && _explicitDef.beforePallandu === false;
+
     if (isThiruppavai) {
       const thiruppavaiEnd = gsatState.pasuramItems.reduce((last, it, idx) =>
         it.group === "thiruppavai" ? idx : last, -1);
@@ -1563,6 +1571,29 @@ window.gsatAddManual = async function() {
         );
       } else {
         gsatState.pasuramItems.splice(margazhiHeadingIdx + 1, 0, newItem);
+      }
+    } else if (isAfterPallanduExplicit) {
+      const headingKey = `explicit_${_explicitKey}_heading`;
+      const hIdx = gsatState.pasuramItems.findIndex(it => it.key === headingKey);
+      if (hIdx >= 0) {
+        // Section block present → insert right after its heading (above auto pasurams)
+        gsatState.pasuramItems.splice(hIdx + 1, 0, newItem);
+      } else {
+        // Section block not present → place after the Pallandu group, with a heading
+        let insertAt = gsatState.pasuramItems.length;
+        const pIdx = gsatState.pasuramItems.findIndex(it => it.key === "pallandu_heading");
+        if (pIdx >= 0) {
+          insertAt = pIdx + 1;
+          while (insertAt < gsatState.pasuramItems.length &&
+                 gsatState.pasuramItems[insertAt]?.group === "pallandu") insertAt++;
+        }
+        const existingHeadingIdx = gsatState.pasuramItems.findIndex(it => it.key === manualHeadingKey);
+        if (existingHeadingIdx === -1) {
+          gsatState.pasuramItems.splice(insertAt, 0,
+            { type: "heading", key: manualHeadingKey, text: manualHeading }, newItem);
+        } else {
+          gsatState.pasuramItems.splice(existingHeadingIdx + 1, 0, newItem);
+        }
       }
     } else {
       // Insert in chronological order by global_no among pasuram items
