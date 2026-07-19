@@ -852,13 +852,12 @@
       const set = new Set();
       if (!satData || !Array.isArray(satData.pasurams)) return set;
       for (const p of satData.pasurams) {
-        if (p.type !== "pasuram") continue;
-        if (p.group === "manual") continue;
+        if (p.group === "manual") continue;      // manual adds never greyed
         const g = Number(p.global_no);
-        if (!g) continue;
-        if (g >= 937 && g <= 947) continue;                  // section 10 — never
+        if (!g) continue;                        // headings / madal_lines / text / kanninun have no global_no
+        if (g >= 937 && g <= 947) continue;      // section 10 — never
         if (g >= 25001 && g <= 25074) { set.add(g); continue; } // section 25 — last-3 incl single
-        if (p.dual === true) set.add(g);                     // auto dual pasurams
+        if (p.dual === true) set.add(g);         // auto dual pasurams
       }
       return set;
     }

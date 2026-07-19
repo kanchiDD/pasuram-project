@@ -1188,7 +1188,7 @@ window.gsatSave = async function() {
       return;
     }
     if (item.type === "pasuram" && item.checked) {
-      finalPasurams.push({ global_no: item.global_no, dual: item.dual, group: item.group, lines: (item.lines||[]).map(l => typeof l === "object" ? l : { text: l, group: 1 }) });
+      finalPasurams.push({ type: "pasuram", global_no: item.global_no, dual: item.dual, group: item.group, lines: (item.lines||[]).map(l => typeof l === "object" ? l : { text: l, group: 1 }) });
     }
     if (item.type === "madal_fetch" && item.lines?.length) {
       // Only include if block is checked (default true)
@@ -1203,7 +1203,7 @@ window.gsatSave = async function() {
     }
     if (item.type === "pallandu_fixed") {
       // Pallandu always included
-      finalPasurams.push({ global_no: item.global_no, dual: item.dual, group: "pallandu", lines: (item.lines||[]).map(l => typeof l === "object" ? l : { text: l, group: 1 }) });
+      finalPasurams.push({ type: "pasuram", global_no: item.global_no, dual: item.dual, group: "pallandu", lines: (item.lines||[]).map(l => typeof l === "object" ? l : { text: l, group: 1 }) });
     }
     if (item.type === "text_block") {
       finalPasurams.push({ type: "text_block", lines: item.lines, group: item.group });
