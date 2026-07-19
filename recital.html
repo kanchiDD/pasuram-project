@@ -162,6 +162,13 @@
     .r-greyed { opacity: 0.30; }
     .r-greyed .r-pasuram-line, .r-greyed .r-pasuram-last-line, .r-greyed .r-pasuram-line-text, .r-greyed .r-global-no { color: #9a9a9a; }
     .r-sattru-note { text-align:center; font-size:12px; font-style:italic; color:#a98b4a; letter-spacing:0.5px; margin:12px 0 2px; opacity:0.85; }
+    /* Madal sattrumurai grey-out (ghoshti recital): dim the dual/closing block */
+    .r-madal-greyable .r-madal-dual-block { position: relative; }
+    .r-madal-greyable .r-madal-dual-block::before {
+      content: "சாற்று பாசுரங்கள்"; display:block; text-align:center;
+      font-size:12px; font-style:italic; color:#a98b4a; opacity:0.85; margin:4px 0 6px;
+    }
+    .r-madal-greyable .r-madal-dual-block .r-madal-line { opacity: 0.30; color:#9a9a9a; }
     .r-global-no {
       font-size: 10px; font-weight: 700; color: #b38b2e;
       display: block; margin-bottom: 2px;
@@ -667,7 +674,7 @@
       });
 
       const couplets = Object.keys(grouped).map(Number).sort((a,b) => a-b);
-      let html = `<div class="r-madal-outer">
+      let html = `<div class="r-madal-outer${_madalGhoshti ? " r-madal-greyable" : ""}">
         <div class="r-madal-title">${heading}</div>
         <div class="r-madal-gno">${sectionGno}</div>`;
       const mDisp = getDisplayItems(block.disp || {}, "section", sectionId, false);
@@ -847,6 +854,7 @@
     //    single). Section 10 (Kanninun) never greyed. Manual adds never greyed
     //    (a natural overlap is still greyed via its auto entry). ──
     let _greySet = new Set();
+    let _madalGhoshti = false;   // ghoshti recital → grey the madal sattrumurai (dual) block
     let _greyRun = { active: false };
     function buildSattrumuraiGreySet(satData) {
       const set = new Set();
@@ -1382,6 +1390,7 @@
           } catch(e) {}
         }
         _greySet = buildSattrumuraiGreySet(_satData);
+        _madalGhoshti = !!urlGhoshtiId && !!_satData;   // madal grey-out only in ghoshti recital
 
         const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
