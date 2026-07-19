@@ -436,6 +436,15 @@ function buildSattrumuraiPlan(sections) {
     const sid = sel.section_id;
     if (NO_SATTRUMURAI.has(sid)) return;
 
+    // Madal (22/23) is a whole-section work — its sattrumurai belongs whenever
+    // the ghoshti includes the section at all, whatever the entity_type. (Madal
+    // blocks are often stored without an entity_type, so don't gate it on isFull.)
+    if (sid === 22 || sid === 23) {
+      if (!bySection[sid]) bySection[sid] = [];
+      if (!bySection[sid].length) bySection[sid].push({ ...sel, is_full: true, is_rettai: false });
+      return;
+    }
+
     // Derive is_full and is_rettai from item fields — do not rely on caller setting them
     // Full section: entity_type=section or koil
     // Full pathu: entity_type=pathu AND pathu_id===null AND !is_child
