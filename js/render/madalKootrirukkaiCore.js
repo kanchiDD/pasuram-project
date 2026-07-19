@@ -26,10 +26,18 @@
 // prefix: CSS class prefix, e.g. "nnc", "fathn", "rec", "ghosh"
 // maxCouplet: couplet number beyond which the couplet-no is not shown
 //             (Siriya = 77, Periya = 148) — pass explicitly per caller
-export function buildMadalCoupletsHTML(data, prefix, maxCouplet) {
+export function buildMadalCoupletsHTML(data, prefix, maxCouplet, greyFromCouplet) {
   const units = data?.units || [];
   const rules = data?.rules || [];
   if (!units.length) return "";
+  // Optional: grey the closing sattrumurai stretch (couplets >= greyFromCouplet).
+  // Backward-compatible — callers that omit it get identical output.
+  let _greyNoteDone = false;
+  const _greyCls = (coupletNo) => {
+    if (greyFromCouplet == null || coupletNo < greyFromCouplet) return "";
+    if (!_greyNoteDone) { _greyNoteDone = true; return ` ${prefix}-sattru-grey ${prefix}-sattru-grey-first`; }
+    return ` ${prefix}-sattru-grey`;
+  };
 
   function isLineInBlock(c, lineNo) {
     return rules.some(r => {
@@ -95,13 +103,14 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet) {
   for (const seg of allSegments) {
     const linesHtml = seg.lines.map((l, idx) => {
       const prefixMark = (seg.isDual && idx === 0) ? `<span class="${prefix}-dual-mark">★★</span> ` : "";
+      const gc = _greyCls(l.coupletNo);
       if (l.showCoupletNo) {
-        return `<div class="${prefix}-madal-line ${prefix}-line-with-no">
+        return `<div class="${prefix}-madal-line ${prefix}-line-with-no${gc}">
           <span>${prefixMark}${l.text}</span>
           <span class="${prefix}-couplet-no">${l.coupletNo}</span>
         </div>`;
       }
-      return `<div class="${prefix}-madal-line">${prefixMark}${l.text}</div>`;
+      return `<div class="${prefix}-madal-line${gc}">${prefixMark}${l.text}</div>`;
     }).join("");
 
     if (seg.isDual) {
@@ -121,9 +130,10 @@ export function buildMadalCoupletsHTML(data, prefix, maxCouplet) {
         }
         currentCouplet = l.coupletNo;
         const prefixMark = "";
+        const gc = _greyCls(l.coupletNo);
         const lineHtml = l.showCoupletNo
-          ? `<div class="${prefix}-madal-line ${prefix}-line-with-no"><span>${l.text}</span><span class="${prefix}-couplet-no">${l.coupletNo}</span></div>`
-          : `<div class="${prefix}-madal-line">${l.text}</div>`;
+          ? `<div class="${prefix}-madal-line ${prefix}-line-with-no${gc}"><span>${l.text}</span><span class="${prefix}-couplet-no">${l.coupletNo}</span></div>`
+          : `<div class="${prefix}-madal-line${gc}">${l.text}</div>`;
         currentCoupletLines.push(lineHtml);
       }
       if (currentCoupletLines.length) {
