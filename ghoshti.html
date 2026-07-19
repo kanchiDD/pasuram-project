@@ -804,7 +804,7 @@
           app.innerHTML = `<div class="g-empty" style="padding:60px 20px">
             <div style="font-size:36px;margin-bottom:12px">🙏</div>
             <div style="font-size:16px;font-weight:700;color:#4a2c00;margin-bottom:8px">Ghoshti Concluded</div>
-            <div style="font-size:13px;color:#7a5a20">This Ghoshti session has concluded. Adiyen Vanakkam.</div>
+            <div style="font-size:13px;color:#7a5a20">This Ghoshti session has concluded. Adiyen Ramanusa Daasan.</div>
           </div>`;
           return;
         }
@@ -816,12 +816,13 @@
         const link = `https://arulicheyal.org/ghoshti.html?id=${data.ghoshti_id}`;
         app.innerHTML = `
           <div style="text-align:center;padding:24px 16px 0">
-            <div style="font-size:13px;font-weight:700;color:#b38b2e;letter-spacing:.06em;margin-bottom:8px">🙏 ADIYEN VANAKKAM</div>
+            <div style="font-size:13px;font-weight:700;color:#b38b2e;letter-spacing:.06em;margin-bottom:8px">🙏 ADIYEN RAMANUSA DAASAN</div>
             <div style="font-size:22px;font-weight:900;color:#4a2c00;margin-bottom:8px">${escHtml(data.ghoshti_name || "Ghoshti")}</div>
             <div style="font-size:14px;color:#7a5a20;margin-bottom:4px">📅 ${formatDate(data.start_time)}</div>
             <div style="font-size:14px;color:#7a5a20;margin-bottom:4px">🕐 ${formatTime(data.start_time)}</div>
             ${data.host_name ? `<div style="font-size:13px;color:#b38b2e;margin-bottom:16px">Host: ${escHtml(data.host_name)}</div>` : ""}
             <div style="width:60px;height:2px;background:#C9A84C;margin:16px auto"></div>
+            <div style="font-size:13px;color:#7a5a20;margin-bottom:4px">Please click Begin Recital below to see your Ghoshti and Sattrumurai</div>
           </div>
           ${data.plan_id ? `
           <div style="padding:0 16px 40px;text-align:center">
@@ -831,9 +832,6 @@
                       box-shadow:0 4px 12px rgba(74,44,0,0.2)">
               🙏 Begin Recital
             </a>
-            <div style="margin-top:12px;font-size:12px;color:#b38b2e">
-              Tap above to follow along with the full pasuram content
-            </div>
           </div>` : ""}`;
       } catch(e) {
         app.innerHTML = `<div class="g-empty">Error: ${e.message}</div>`;
@@ -1014,7 +1012,7 @@
       const res  = await fetch(`${WORKER}/recital/ghoshti?id=${ghoshtiId}`);
       const data = await res.json();
       if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
-      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=8");
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=7");
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),
