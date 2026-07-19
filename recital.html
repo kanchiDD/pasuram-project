@@ -159,7 +159,9 @@
       padding: 8px 0 4px;
     }
     .r-pasuram-block:first-child { border-top: none; }
-
+    .r-greyed { opacity: 0.30; }
+    .r-greyed .r-pasuram-line, .r-greyed .r-pasuram-last-line, .r-greyed .r-pasuram-line-text, .r-greyed .r-global-no { color: #9a9a9a; }
+    .r-sattru-note { text-align:center; font-size:12px; font-style:italic; color:#a98b4a; letter-spacing:0.5px; margin:12px 0 2px; opacity:0.85; }
     .r-global-no {
       font-size: 10px; font-weight: 700; color: #b38b2e;
       display: block; margin-bottom: 2px;
@@ -548,7 +550,17 @@
       const pDisp = getDisplayItems(disp, "pasuram", p.global_no, false);
       if (pDisp.length) html += renderDisp(pDisp);
 
-      html += `<div class="r-pasuram-block">`;
+      // Sattrumurai grey-out (ghoshti recital): dim reserved dual pasurams,
+      // with a subtle one-time note above a consecutive greyed pair.
+      const _greyed = _greySet.has(Number(p.global_no)) && Number(p.section_id) !== 10;
+      if (_greyed) {
+        if (!_greyRun.active) html += `<div class="r-sattru-note">சாற்று பாசுரங்கள்</div>`;
+        _greyRun.active = true;
+      } else {
+        _greyRun.active = false;
+      }
+
+      html += `<div class="r-pasuram-block${_greyed ? " r-greyed" : ""}">`;
       html += `<span class="r-global-no">${p.global_no}</span>`;
 
       const allGroups = p.groups;
@@ -829,7 +841,30 @@
       return html;
     }
 
+    // ── Sattrumurai grey-out: dim the recital pasurams that are reserved for
+    //    this ghoshti's sattrumurai. Only AUTO-included DUAL pasurams (group ≠
+    //    "manual", dual) — plus section-25's auto sattrumurai (last-3, incl its
+    //    single). Section 10 (Kanninun) never greyed. Manual adds never greyed
+    //    (a natural overlap is still greyed via its auto entry). ──
+    let _greySet = new Set();
+    let _greyRun = { active: false };
+    function buildSattrumuraiGreySet(satData) {
+      const set = new Set();
+      if (!satData || !Array.isArray(satData.pasurams)) return set;
+      for (const p of satData.pasurams) {
+        if (p.type !== "pasuram") continue;
+        if (p.group === "manual") continue;
+        const g = Number(p.global_no);
+        if (!g) continue;
+        if (g >= 937 && g <= 947) continue;                  // section 10 — never
+        if (g >= 25001 && g <= 25074) { set.add(g); continue; } // section 25 — last-3 incl single
+        if (p.dual === true) set.add(g);                     // auto dual pasurams
+      }
+      return set;
+    }
+
     function buildAll(rawBlocks) {
+      _greyRun.active = false;
       if (!rawBlocks?.length) return { indexHTML: "", contentHTML: `<div class="r-no-plan">No content.</div>` };
 
       // Merge consecutive child-thirumozhi blocks from same parent pathu into one block.
@@ -1337,9 +1372,8 @@
           }
         }
 
-        const { indexHTML, contentHTML } = buildAll(renderData.blocks);
-
-        // Fetch sattrumurai if ghoshti_id present — bypass cache
+        // Fetch sattrumurai if ghoshti_id present — bypass cache. Done BEFORE
+        // buildAll so the sattrumurai grey-set is ready when the body renders.
         let _satData = null;
         if (urlGhoshtiId) {
           try {
@@ -1348,6 +1382,9 @@
             if (gsData && gsData.sattrumurai_data) _satData = gsData.sattrumurai_data;
           } catch(e) {}
         }
+        _greySet = buildSattrumuraiGreySet(_satData);
+
+        const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
         const satBtn = _satData
           ? `<div style="text-align:center;margin:32px 0 16px"><button onclick="window._showSattrumurai()" style="background:#7a4d00;color:#fef0c0;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">View Sattrumurai</button></div>`
