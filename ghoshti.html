@@ -1014,7 +1014,7 @@
       const res  = await fetch(`${WORKER}/recital/ghoshti?id=${ghoshtiId}`);
       const data = await res.json();
       if (data.error) { app.innerHTML = `<div class="g-empty">${data.error}</div>`; return; }
-      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=7");
+      const { renderGhoshtiSattrumurai } = await import("./js/render/ghoshtiSattrumurai.js?v=8");
       await renderGhoshtiSattrumurai(app, ghoshtiId, {
         name:     data.ghoshti_name || "",
         sections: buildSectionsFromBlocks(data.blocks || []),

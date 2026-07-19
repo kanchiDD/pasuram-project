@@ -400,18 +400,18 @@ async function computeKoilInfo(koil) {
   const check = async (sid, sub) => {
     const ids = ((koil && (koil[sid] || koil[String(sid)])) || []).map(Number);
     if (!ids.length) return { present: false, full: false };
+    const idSet = new Set(ids);
     let full = false;
     try {
       const res  = await fetch(`${WORKER_GET}/api/koil-pathus?sub=${sub}&sect=ALL`);
       const data = await res.json();
       const groups = data.groups || {};
-      // Selected ids belong to whichever sect group contains them; full = covers it all
+      // "Full" = the selection covers EVERY pathu of some sect group (T or V).
+      // Check all groups (don't break on the first superset) — a complete V-koil
+      // selection is a subset of T, so stopping at T would wrongly read partial.
       for (const gk of ["T", "V"]) {
         const g = (groups[gk] || []).map(p => Number(p.pathu_id));
-        if (g.length && ids.every(id => g.includes(id))) {
-          full = (new Set(ids).size === g.length);
-          break;
-        }
+        if (g.length && g.every(id => idSet.has(id))) { full = true; break; }
       }
     } catch (e) {}
     return { present: true, full };
@@ -709,12 +709,9 @@ function renderPasuramPlan() {
       return;
     }
     if (item.type === "kanninun") {
-      html += `<div class="gsat-pasuram-item">
-        <input type="checkbox" id="gsat-item-${i}" ${item.checked ? "checked" : ""} onchange="gsatToggleItem(${i}, this.checked)">
-        <div class="gsat-pasuram-text"><strong>${escHtml(item.label)}</strong>
-          <span style="font-size:11px;color:#9a7a50;display:block">(Full text recited once — no ** marking needed)</span>
-        </div>
-      </div>`;
+      // The section-10 heading (section10_heading) already shows the title, so
+      // this line is redundant in the builder. Keep the item in the plan (it
+      // drives the kanninun_full sattrumurai marker) but render nothing here.
       return;
     }
     if (item.type === "madal_fetch") {
