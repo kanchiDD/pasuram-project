@@ -153,6 +153,38 @@ function _idlePlayer() {
   return _mkAudio(_gaActiveId === "ga-player" ? "ga-player-2" : "ga-player");
 }
 
+// ── Autoplay unlock ────────────────────────────────────────────
+// Double-buffering plays the 2nd element programmatically on swap, which the
+// browser blocks unless that element was activated by a user gesture. On the
+// first user gesture we "unlock" both buffers with a tiny silent clip (no real
+// content touched → no race with playback), so later programmatic play() works.
+let _gaUnlocked = false;
+const _SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+function _gaUnlockBuffers() {
+  if (_gaUnlocked) return;
+  _gaUnlocked = true;
+  ["ga-player", "ga-player-2"].forEach(id => {
+    const el = _mkAudio(id);
+    if (el.getAttribute("src")) return;      // already has (real) content — don't disturb it
+    try {
+      el.muted = true;
+      el.src = _SILENT_WAV;
+      const revert = () => {
+        try { el.pause(); } catch (e) {}
+        el.muted = false;
+        if (el.getAttribute("src") === _SILENT_WAV) el.removeAttribute("src");  // only if still the silent clip
+      };
+      const pr = el.play();
+      if (pr && pr.then) pr.then(revert).catch(revert);
+      else revert();
+    } catch (e) { el.muted = false; }
+  });
+}
+if (typeof document !== "undefined") {
+  ["pointerdown", "touchend", "mousedown", "keydown"].forEach(ev =>
+    document.addEventListener(ev, _gaUnlockBuffers, { capture: true, passive: true }));
+}
+
 // ── Button visual state ────────────────────────────────────────
 function setBtnState(btn, playing) {
   if (!btn) return;
@@ -174,7 +206,7 @@ function stopAll() {
   // Stop and clear BOTH buffers (double-buffering)
   ["ga-player", "ga-player-2"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.pause(); el.src = ""; el.onended = null; el.onerror = null; }
+    if (el) { el.pause(); el.src = ""; el.onended = null; el.onerror = null; try { el.volume = 1; } catch (e) {} }
   });
   _gaActiveId = "ga-player";
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
@@ -348,20 +380,7 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   try { first.load(); } catch (e) {}
   bindHandlers(first);
   if (typeof _gaRebindUI === "function") _gaRebindUI();
-  if (startIdx + 1 < list.length) {
-    const idle = _idlePlayer();
-    preloadInto(idle, list[startIdx + 1]);
-    // Unlock the idle buffer within THIS user gesture (muted play→pause) so its
-    // later programmatic play() on swap isn't blocked by the browser autoplay
-    // policy — otherwise playback stops after the first item.
-    try {
-      idle.muted = true;
-      const pr = idle.play();
-      const settle = () => { try { idle.pause(); idle.currentTime = 0; } catch (e) {} idle.muted = false; };
-      if (pr && pr.then) pr.then(settle).catch(() => { idle.muted = false; });
-      else settle();
-    } catch (e) { idle.muted = false; }
-  }
+  if (startIdx + 1 < list.length) preloadInto(_idlePlayer(), list[startIdx + 1]);
 
   _gaState.idx = startIdx + 1;             // idx = the NEXT file to advance to
 
@@ -382,7 +401,20 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
     p.onended = advance;
     p.onerror = advance;                   // skip a bad file, keep going
     if (typeof _gaRebindUI === "function") _gaRebindUI();
+
+    // Short fade-in (~60ms) to soften the onset of the next pasuram so the join
+    // isn't abrupt. Harmless no-op on iOS (which locks .volume at 1).
+    try { p.volume = 0; } catch (e) {}
     p.play().catch(() => {});              // now playing index _gaState.idx
+    const _t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+    const _fadeIn = () => {
+      const now = (typeof performance !== "undefined" ? performance.now() : Date.now());
+      const k = Math.min(1, (now - _t0) / 60);
+      try { p.volume = k; } catch (e) {}
+      if (k < 1 && getPlayer() === p) requestAnimationFrame(_fadeIn);
+      else { try { p.volume = 1; } catch (e) {} }
+    };
+    requestAnimationFrame(_fadeIn);
 
     _gaState.idx++;                        // idx now = next-to-play (currently playing = idx-1)
     saveState();
