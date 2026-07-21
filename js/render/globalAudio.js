@@ -348,7 +348,20 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   try { first.load(); } catch (e) {}
   bindHandlers(first);
   if (typeof _gaRebindUI === "function") _gaRebindUI();
-  if (startIdx + 1 < list.length) preloadInto(_idlePlayer(), list[startIdx + 1]);
+  if (startIdx + 1 < list.length) {
+    const idle = _idlePlayer();
+    preloadInto(idle, list[startIdx + 1]);
+    // Unlock the idle buffer within THIS user gesture (muted play→pause) so its
+    // later programmatic play() on swap isn't blocked by the browser autoplay
+    // policy — otherwise playback stops after the first item.
+    try {
+      idle.muted = true;
+      const pr = idle.play();
+      const settle = () => { try { idle.pause(); idle.currentTime = 0; } catch (e) {} idle.muted = false; };
+      if (pr && pr.then) pr.then(settle).catch(() => { idle.muted = false; });
+      else settle();
+    } catch (e) { idle.muted = false; }
+  }
 
   _gaState.idx = startIdx + 1;             // idx = the NEXT file to advance to
 
@@ -364,6 +377,7 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
     // Swap: the idle buffer (already holding list[_gaState.idx]) becomes active.
     _gaActiveId = (_gaActiveId === "ga-player") ? "ga-player-2" : "ga-player";
     const p = getPlayer();
+    p.muted = false;                       // in case the unlock step left it muted
     bindHandlers(p);
     p.onended = advance;
     p.onerror = advance;                   // skip a bad file, keep going
