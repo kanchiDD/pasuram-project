@@ -99,6 +99,11 @@ function _anaAudioNotice() {
 let _gaState  = { urls: [], idx: 0, label: "" };
 let _gaNext   = null;
 let _saveTimer = null;
+// Double-buffering for gapless (butt-joined) sequential playback: two <audio>
+// elements ping-pong so the next pasuram is fully loaded and starts the instant
+// the current one ends — no src-swap reload gap.
+let _gaActiveId = "ga-player";       // id of the element currently playing
+let _gaRebindUI = null;              // set by ensureControlBar → rebinds seek UI on swap
 
 function saveState() {
   try {
@@ -127,16 +132,25 @@ function setMediaSession(label) {
   } catch (e) {}
 }
 
-function getPlayer() {
-  let p = document.getElementById("ga-player");
+function _mkAudio(id) {
+  let p = document.getElementById(id);
   if (!p) {
     p = document.createElement("audio");
-    p.id = "ga-player";
+    p.id = id;
     p.preload = "auto";
     p.style.display = "none";
     document.body.appendChild(p);
   }
   return p;
+}
+// Active buffer (what controls act on). getPlayer() stays the single entry point
+// used everywhere; it just follows whichever buffer is currently active.
+function getPlayer() {
+  return _mkAudio(_gaActiveId);
+}
+// The other (idle) buffer, used to preload the next file.
+function _idlePlayer() {
+  return _mkAudio(_gaActiveId === "ga-player" ? "ga-player-2" : "ga-player");
 }
 
 // ── Button visual state ────────────────────────────────────────
@@ -157,8 +171,12 @@ function setBtnState(btn, playing) {
 }
 
 function stopAll() {
-  const p = getPlayer();
-  p.pause(); p.src = ""; p.onended = null; p.onerror = null;
+  // Stop and clear BOTH buffers (double-buffering)
+  ["ga-player", "ga-player-2"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.pause(); el.src = ""; el.onended = null; el.onerror = null; }
+  });
+  _gaActiveId = "ga-player";
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
   hideAudioControls();
   _gaState = { urls: [], idx: 0, label: "" };
@@ -213,25 +231,42 @@ function ensureControlBar() {
     const m = Math.floor(s / 60), ss = Math.floor(s % 60);
     return m + ":" + (ss < 10 ? "0" : "") + ss;
   };
-  const p = getPlayer();
-  // While dragging, don't fight the slider with timeupdate.
-  seek.addEventListener("input", () => { _seeking = true; if (p.duration) curE.textContent = fmt((seek.value / 1000) * p.duration); });
+  // Seek acts on the ACTIVE buffer at the moment of interaction.
+  seek.addEventListener("input", () => {
+    _seeking = true; const p = getPlayer();
+    if (p.duration) curE.textContent = fmt((seek.value / 1000) * p.duration);
+  });
   seek.addEventListener("change", () => {
+    const p = getPlayer();
     if (p.duration) { try { p.currentTime = (seek.value / 1000) * p.duration; } catch (e) {} }
     _seeking = false;
   });
-  // addEventListener (not onX) so we DON'T clobber the existing
-  // ontimeupdate/onloadedmetadata handlers used for state-saving.
-  p.addEventListener("timeupdate", () => {
+  // The time/duration listeners must follow the active buffer across swaps.
+  const _uiTimeUpdate = () => {
+    const p = getPlayer();
     if (_seeking || !p.duration) return;
     seek.value = Math.round((p.currentTime / p.duration) * 1000) || 0;
     curE.textContent = fmt(p.currentTime);
     durE.textContent = fmt(p.duration);
-  });
-  p.addEventListener("loadedmetadata", () => {
+  };
+  const _uiLoadedMeta = () => {
+    const p = getPlayer();
     durE.textContent = fmt(p.duration);
     if (!_seeking) { seek.value = 0; curE.textContent = "0:00"; }
-  });
+  };
+  let _uiBoundEl = null;
+  _gaRebindUI = () => {
+    const p = getPlayer();
+    if (_uiBoundEl === p) return;
+    if (_uiBoundEl) {
+      _uiBoundEl.removeEventListener("timeupdate", _uiTimeUpdate);
+      _uiBoundEl.removeEventListener("loadedmetadata", _uiLoadedMeta);
+    }
+    p.addEventListener("timeupdate", _uiTimeUpdate);
+    p.addEventListener("loadedmetadata", _uiLoadedMeta);
+    _uiBoundEl = p;
+  };
+  _gaRebindUI();
   return bar;
 }
 function updatePauseIcon() {
@@ -265,34 +300,11 @@ window._gaToggle = function (id) {
   // Anadhyayana Kalam — block non-qualified pasuram audio (thaniyans pass)
   if (_anaBlocksQueue(data.urls)) { _anaAudioNotice(); return; }
 
-  stopAll();
-  const p = getPlayer();
-  let idx = 0;
-  setBtnState(btn, true);
-  showAudioControls(btn.getAttribute("data-ga-label") || "இசை / Playing…");
-  setMediaSession(btn.getAttribute("data-ga-label") || "");
-  _gaState = { urls: data.urls, idx: 0, label: btn.getAttribute("data-ga-label") || "" };
-  p.onpause = () => { updatePauseIcon(); saveState(); };
-  p.onplay  = () => { updatePauseIcon(); saveState(); };
-  p.ontimeupdate = () => { if (!_saveTimer) _saveTimer = setTimeout(() => { _saveTimer = null; saveState(); }, 2000); };
-  let preloader = null;
-  const next = () => {
-    if (idx >= data.urls.length) { setBtnState(btn, false); hideAudioControls(); clearState(); return; }
-    _gaState.idx = idx;
-    p.src = data.urls[idx++];
-    p.onended = next;
-    p.onerror = next;   // skip a missing/failed file and continue the queue
-    p.play().catch(() => {});
-    saveState();
-    // Warm the next track while the current one plays → minimal gap between pasurams
-    if (idx < data.urls.length) {
-      preloader = new Audio();
-      preloader.preload = "auto";
-      preloader.src = data.urls[idx];
-    }
-  };
-  _gaNext = () => { p.onended = null; next(); };
-  next();
+  // Delegate to the double-buffered queue player for gapless (butt-joined)
+  // playback; reset this button's state when the queue finishes naturally.
+  const label = btn.getAttribute("data-ga-label") || "இசை / Playing…";
+  const ok = _playQueue(data.urls, label, 0, 0, true, () => setBtnState(btn, false));
+  if (ok) setBtnState(btn, true);
 };
 window._gaStopAll = stopAll;
 
@@ -300,7 +312,7 @@ window._gaStopAll = stopAll;
 // Plays a list of audio URLs in order, skipping any that fail, reusing the
 // single shared <audio> player so it behaves exactly like the on-page buttons.
 // Core queue player — persists state so it can resume across page loads.
-function _playQueue(urls, label, startIdx, startTime, autoplay) {
+function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   const list = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
   if (!list.length) return false;
   // Anadhyayana Kalam — block non-qualified pasuram audio (notice only on
@@ -309,37 +321,74 @@ function _playQueue(urls, label, startIdx, startTime, autoplay) {
   startIdx  = startIdx  || 0;
   startTime = startTime || 0;
   stopAll();
+  _gaActiveId = "ga-player";
   _gaState = { urls: list, idx: startIdx, label: label || "" };
-  const p = getPlayer();
   showAudioControls(label || "இசை / Playing…");
   setMediaSession(label);
-  p.onpause = () => { updatePauseIcon(); saveState(); };
-  p.onplay  = () => { updatePauseIcon(); saveState(); };
-  p.ontimeupdate = () => {
-    if (!_saveTimer) _saveTimer = setTimeout(() => { _saveTimer = null; saveState(); }, 2000);
+
+  // Bind the per-queue handlers (pause/play icon, state-save) to a buffer.
+  const bindHandlers = (p) => {
+    p.onpause = () => { updatePauseIcon(); saveState(); };
+    p.onplay  = () => { updatePauseIcon(); saveState(); };
+    p.ontimeupdate = () => {
+      if (!_saveTimer) _saveTimer = setTimeout(() => { _saveTimer = null; saveState(); }, 2000);
+    };
   };
-  let preloader = null;
-  const next = () => {
-    if (_gaState.idx >= list.length) { hideAudioControls(); clearState(); return; }
-    const cur = _gaState.idx;
-    p.src = list[_gaState.idx++];
-    p.onended = next;
-    p.onerror = next;               // skip missing/failed file, continue
-    if (startTime && cur === startIdx) {
-      p.onloadedmetadata = () => { try { p.currentTime = startTime; } catch (e) {} p.play().catch(() => {}); };
-    } else {
-      p.play().catch(() => {});
-    }
+
+  // Preload a url into the given (idle) buffer so it's ready to play instantly.
+  const preloadInto = (el, url) => {
+    if (!el || !url) return;
+    el.onended = null; el.onerror = null;
+    if (el.src !== url) { el.src = url; try { el.load(); } catch (e) {} }
+  };
+
+  // Prime the first buffer + preload the second (next) buffer.
+  const first = getPlayer();               // ga-player
+  first.src = list[startIdx];
+  try { first.load(); } catch (e) {}
+  bindHandlers(first);
+  if (typeof _gaRebindUI === "function") _gaRebindUI();
+  if (startIdx + 1 < list.length) preloadInto(_idlePlayer(), list[startIdx + 1]);
+
+  _gaState.idx = startIdx + 1;             // idx = the NEXT file to advance to
+
+  // Advance to the already-preloaded idle buffer (butt-join: play instantly).
+  // Invariant: _gaState.idx = index of the file to play NEXT (currently playing = idx-1).
+  const advance = () => {
+    if (_gaState.idx >= list.length) { hideAudioControls(); clearState(); if (typeof onDone === "function") onDone(); return; }
+    const oldActive = getPlayer();
+    oldActive.onended = null; oldActive.onerror = null;
+    oldActive.onpause = null; oldActive.onplay = null; oldActive.ontimeupdate = null;
+    oldActive.pause();
+
+    // Swap: the idle buffer (already holding list[_gaState.idx]) becomes active.
+    _gaActiveId = (_gaActiveId === "ga-player") ? "ga-player-2" : "ga-player";
+    const p = getPlayer();
+    bindHandlers(p);
+    p.onended = advance;
+    p.onerror = advance;                   // skip a bad file, keep going
+    if (typeof _gaRebindUI === "function") _gaRebindUI();
+    p.play().catch(() => {});              // now playing index _gaState.idx
+
+    _gaState.idx++;                        // idx now = next-to-play (currently playing = idx-1)
     saveState();
-    if (_gaState.idx < list.length) {
-      preloader = new Audio();
-      preloader.preload = "auto";
-      preloader.src = list[_gaState.idx];
-    }
+
+    // Preload the following file into the now-idle buffer.
+    if (_gaState.idx < list.length) preloadInto(oldActive, list[_gaState.idx]);
   };
-  _gaNext = () => { p.onended = null; next(); };
-  next();
-  if (autoplay === false) { p.pause(); updatePauseIcon(); }
+
+  // Start the first file (honouring resume position).
+  first.onended = advance;
+  first.onerror = advance;
+  if (startTime && startIdx === (_gaState.idx - 1)) {
+    first.onloadedmetadata = () => { try { first.currentTime = startTime; } catch (e) {} first.play().catch(() => {}); };
+  } else {
+    first.play().catch(() => {});
+  }
+  saveState();
+
+  _gaNext = () => { const p = getPlayer(); p.onended = null; advance(); };
+  if (autoplay === false) { first.pause(); updatePauseIcon(); }
   return true;
 }
 
