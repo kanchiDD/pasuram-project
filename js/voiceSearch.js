@@ -378,6 +378,63 @@ function getOrdSuffix(n) {
 // ═══════════════════════════════════════════════════════
 // DATA LOADERS — pre-warmed, cached, non-fatal on failure
 // ═══════════════════════════════════════════════════════
+//
+// Mobile-resilient fetch: times out fast, retries on flaky SIM, and (crucially)
+// does NOT poison the cache on failure — a failed load leaves the cache null so
+// the next attempt retries, instead of locking in empty results for the whole
+// session. Successful payloads are persisted to localStorage so a mobile user
+// loads instantly next time and doesn't depend on the network every session.
+
+const VOICE_LS_PREFIX = "voiceData:";
+const VOICE_LS_VER = "v1";          // bump to invalidate all persisted voice data
+
+async function fetchJsonResilient(url, { timeout = 7000, retries = 2 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      if (attempt < retries) {
+        await new Promise(res => setTimeout(res, 500 * (attempt + 1))); // backoff
+      }
+    }
+  }
+  throw lastErr || new Error("fetch failed: " + url);
+}
+
+function lsGet(key) {
+  try {
+    const raw = localStorage.getItem(VOICE_LS_PREFIX + VOICE_LS_VER + ":" + key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(VOICE_LS_PREFIX + VOICE_LS_VER + ":" + key, JSON.stringify(val)); }
+  catch (e) { /* quota / private mode — ignore, memory cache still works */ }
+}
+
+// Load a JSON endpoint with: memory cache → localStorage → network (resilient).
+// Returns null ONLY when there is truly nothing (network failed AND no cache),
+// and does not persist that null, so the next call retries.
+async function loadVoiceData(key, url) {
+  const persisted = lsGet(key);
+  if (persisted) {
+    // Serve instantly from disk, and refresh in the background for next time.
+    fetchJsonResilient(url).then(d => { if (d) lsSet(key, d); }).catch(() => {});
+    return persisted;
+  }
+  const data = await fetchJsonResilient(url);   // throws on total failure
+  if (data) lsSet(key, data);
+  return data;
+}
+// ═══════════════════════════════════════════════════════
 
 let _ddMap = null, _ddLoading = null;
 
@@ -386,7 +443,7 @@ async function getDDMap() {
   if (_ddLoading) return _ddLoading;
   _ddLoading = (async () => {
     try {
-      const data = await fetch(`${API_VOICE}/desam-aliases`).then(r => r.json());
+      const data = await loadVoiceData("desam-aliases", `${API_VOICE}/desam-aliases`);
       const map = new Map();
       for (const d of (Array.isArray(data) ? data : [])) {
         map.set(d.id, {
@@ -401,8 +458,11 @@ async function getDDMap() {
         });
       }
       _ddMap = map;
-    } catch(e) { _ddMap = new Map(); }
-    return _ddMap;
+      return _ddMap;
+    } catch (e) {
+      _ddLoading = null;     // don't poison the cache — allow a retry next call
+      return new Map();      // this call degrades gracefully; next call retries
+    }
   })();
   return _ddLoading;
 }
@@ -414,10 +474,13 @@ async function getAnchorMap() {
   if (_anchorLoading) return _anchorLoading;
   _anchorLoading = (async () => {
     try {
-      const data = await fetch(`${API_VOICE}/anchor-map`).then(r => r.json());
+      const data = await loadVoiceData("anchor-map", `${API_VOICE}/anchor-map`);
       _anchorCache = Array.isArray(data) ? data : [];
-    } catch(e) { _anchorCache = []; }
-    return _anchorCache;
+      return _anchorCache;
+    } catch (e) {
+      _anchorLoading = null;   // allow retry next call
+      return [];
+    }
   })();
   return _anchorLoading;
 }
@@ -431,10 +494,13 @@ async function getFirstLines() {
   if (_firstLineLoading) return _firstLineLoading;
   _firstLineLoading = (async () => {
     try {
-      const data = await fetch(`${API_VOICE}/first-lines`).then(r => r.json());
+      const data = await loadVoiceData("first-lines", `${API_VOICE}/first-lines`);
       _firstLineCache = Array.isArray(data) ? data : [];
-    } catch(e) { _firstLineCache = []; }
-    return _firstLineCache;
+      return _firstLineCache;
+    } catch (e) {
+      _firstLineLoading = null;   // allow retry next call
+      return [];
+    }
   })();
   return _firstLineLoading;
 }
@@ -771,10 +837,13 @@ function getEntityTags() {
   if (_entityTagLoading) return _entityTagLoading;
   _entityTagLoading = (async () => {
     try {
-      const data = await fetch(`${API_VOICE}/entity-tags`).then(r => r.json());
+      const data = await loadVoiceData("entity-tags", `${API_VOICE}/entity-tags`);
       _entityTagCache = data || [];
-    } catch(e) { _entityTagCache = []; }
-    return _entityTagCache;
+      return _entityTagCache;
+    } catch (e) {
+      _entityTagLoading = null;   // allow retry next call
+      return [];
+    }
   })();
   return _entityTagLoading;
 }

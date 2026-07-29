@@ -314,6 +314,34 @@ function injectStyles() {
       40%           { transform: scale(1.2); opacity: 1; }
     }
 
+    /* ── Rotating lotus (listening / fetching indicator) ── */
+    .vp-lotus {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 0 8px;
+    }
+    .vp-lotus svg {
+      width: 62px;
+      height: 62px;
+      animation: vp-lotus-spin 3.2s linear infinite;
+      transform-origin: 50% 50%;
+    }
+    .vp-lotus svg .petal { fill: #D9A441; opacity: 0.9; }
+    .vp-lotus svg .petal-in { fill: #B8342B; opacity: 0.85; }
+    .vp-lotus svg .core { fill: #7A1F1A; }
+    @keyframes vp-lotus-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .vp-lotus svg { animation: vp-lotus-pulse 1.8s ease-in-out infinite; }
+    }
+    @keyframes vp-lotus-pulse {
+      0%,100% { opacity: 0.75; transform: scale(0.94); }
+      50%     { opacity: 1;    transform: scale(1.04); }
+    }
+
     .vp-listening-text {
       text-align: center;
       font-size: 13px;
@@ -363,83 +391,207 @@ function micIcon(active = false) {
 // ═══════════════════════════════════════════════════════
 
 let recognition = null;
+let _voiceNetRetries = 0;          // auto-retry counter for transient network drops
+const _VOICE_MAX_NET_RETRIES = 2;  // silent auto-retries before showing the network popup
+
+// ═══════════════════════════════════════════════════════
+//  Option C voice flow:
+//  On tap, run the FREE built-in recognition AND record audio in parallel.
+//   • Built-in returns a usable result fast  → use it, drop the recording (free).
+//   • Built-in slow (>2.5s) or network-fails → send the already-captured audio
+//     to our STT worker silently and use that. No error message — the rotating
+//     lotus keeps showing until results are ready.
+//  Both paths feed the same resolveVoiceQuery, so matching/closest-list is unchanged.
+// ═══════════════════════════════════════════════════════
+
+const STT_ENDPOINT = "https://stt.kanchitrust.workers.dev/transcribe";
+const VOICE_FALLBACK_MS = 2500;        // built-in gets this long before STT takes over
+
+let _voiceSession = 0;                 // guards against overlapping taps / late callbacks
+let _mediaRecorder = null, _recChunks = [], _recStream = null;
 
 function startVoiceSearch() {
+  const session = ++_voiceSession;     // any callback from an older session is ignored
+  const micBtn = document.getElementById("voice-mic-btn");
 
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+  showListeningPopup();
+  micBtn?.classList.add("listening");
+  if (micBtn) micBtn.innerHTML = micIcon(true);
 
+  let settled = false;                 // results already shown for this session?
+  const finish = (fn) => {             // run once; ignore stale sessions
+    if (settled || session !== _voiceSession) return;
+    settled = true;
+    micBtn?.classList.remove("listening");
+    if (micBtn) micBtn.innerHTML = micIcon(false);
+    stopRecording();
+    fn();
+  };
+
+  // Resolve a transcript (or list of alternatives) → show results / off-topic.
+  const resolveAndShow = async (alternatives) => {
+    const alts = (Array.isArray(alternatives) ? alternatives : [alternatives]).filter(Boolean);
+    let results = [], usedTranscript = alts[0] || "";
+    for (const alt of alts) {
+      results = await resolveVoiceQuery(alt);
+      if (results.length > 0) { usedTranscript = alt; break; }
+    }
+    finish(() => {
+      if (results.length === 0) showOffTopicPopup(usedTranscript || "(no match)");
+      else showResultsPopupWithStore(usedTranscript, results);
+    });
+  };
+
+  // ── Start recording immediately (so audio is ready if STT is needed) ──
+  startRecording();
+
+  // ── Fallback: after the timeout, transcribe the captured audio via STT ──
+  const fallbackTimer = setTimeout(() => { runSttFallback(session, resolveAndShow, finish); }, VOICE_FALLBACK_MS);
+
+  // ── Primary: the free built-in recognition ──
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    showNoSupportPopup();
+    // No built-in (e.g. iOS Safari) → go straight to STT; keep the lotus up.
+    clearTimeout(fallbackTimer);
+    runSttFallback(session, resolveAndShow, finish);
     return;
   }
 
-  // Stop any running recognition
-  if (recognition) {
-    try { recognition.stop(); } catch(e) {}
-  }
-
+  if (recognition) { try { recognition.abort(); } catch (e) {} }
   recognition = new SpeechRecognition();
-  recognition.lang = "ta-IN";          // Tamil primary
+  recognition.lang = "ta-IN";
   recognition.interimResults = false;
-  recognition.maxAlternatives = 3;     // get top 3 alternatives
+  recognition.maxAlternatives = 3;
   recognition.continuous = false;
 
-  const micBtn = document.getElementById("voice-mic-btn");
-
-  // Show listening popup
-  showListeningPopup();
-  micBtn?.classList.add("listening");
-  micBtn.innerHTML = micIcon(true);
-
-  recognition.onresult = async function(event) {
-
-    micBtn?.classList.remove("listening");
-    micBtn.innerHTML = micIcon(false);
-
-    // Collect all alternatives, try each
+  recognition.onresult = function(event) {
+    if (session !== _voiceSession || settled) return;
+    clearTimeout(fallbackTimer);
     const alternatives = [];
-    for (let i = 0; i < event.results[0].length; i++) {
-      alternatives.push(event.results[0][i].transcript);
-    }
-
-    // Try each alternative until we get results
-    let results = [];
-    let usedTranscript = alternatives[0];
-
-    for (const alt of alternatives) {
-      results = await resolveVoiceQuery(alt);
-      if (results.length > 0) {
-        usedTranscript = alt;
-        break;
-      }
-    }
-
-    if (results.length === 0) {
-      showOffTopicPopup(usedTranscript);
-    } else {
-      showResultsPopupWithStore(usedTranscript, results);
-    }
+    for (let i = 0; i < event.results[0].length; i++) alternatives.push(event.results[0][i].transcript);
+    resolveAndShow(alternatives);      // free path won — recording dropped in finish()
   };
 
   recognition.onerror = function(event) {
-    micBtn?.classList.remove("listening");
-    micBtn.innerHTML = micIcon(false);
-    closeOverlay();
-
-    if (event.error === "no-speech") {
-      showOffTopicPopup("(no speech detected)");
-    } else if (event.error === "not-allowed") {
-      showPermissionPopup();
+    if (session !== _voiceSession || settled) return;
+    const err = event.error;
+    // Network failure on weak SIM → fall straight to STT, silently, no message.
+    if (err === "network" || err === "service-not-allowed") {
+      clearTimeout(fallbackTimer);
+      runSttFallback(session, resolveAndShow, finish);
+      return;
     }
+    if (err === "not-allowed") { clearTimeout(fallbackTimer); finish(() => showPermissionPopup()); return; }
+    if (err === "aborted") { return; }   // superseded by a newer tap — ignore
+    // no-speech / audio-capture / unknown → let the STT fallback try the audio
+    // we captured; if that also yields nothing, the off-topic message shows.
   };
 
-  recognition.onend = function() {
-    micBtn?.classList.remove("listening");
-    micBtn.innerHTML = micIcon(false);
-  };
+  recognition.onend = function() { /* handled by onresult/onerror/timer */ };
 
-  recognition.start();
+  try { recognition.start(); }
+  catch (e) { clearTimeout(fallbackTimer); runSttFallback(session, resolveAndShow, finish); }
+}
+
+// ── STT fallback: send the captured audio to the worker, resolve the result ──
+async function runSttFallback(session, resolveAndShow, finish) {
+  if (session !== _voiceSession) return;
+  try { if (recognition) recognition.abort(); } catch (e) {}
+
+  const blob = await stopRecording();    // finalise the recording, get the clip
+  if (session !== _voiceSession) return;
+
+  // Empty/near-silent clip (accidental tap) → don't spend an STT call.
+  if (!blob || blob.size < 1200) { finish(() => showOffTopicPopup("(no speech detected)")); return; }
+
+  let b64;
+  try { b64 = await blobToBase64(blob); }
+  catch (e) { finish(() => showOffTopicPopup("(no match)")); return; }
+
+  try {
+    const data = await sttFetch(STT_ENDPOINT, {
+      audio: b64,
+      encoding: blob.type.includes("mp4") ? "MP4" : "WEBM_OPUS",
+      sampleRateHertz: 48000,
+      lang: "ta-IN"
+    });
+    if (session !== _voiceSession) return;
+    const alts = (data.alternatives && data.alternatives.length)
+      ? data.alternatives
+      : (data.transcript ? [data.transcript] : []);
+    if (!alts.length) { finish(() => showOffTopicPopup("(no match)")); return; }
+    resolveAndShow(alts);
+  } catch (e) {
+    // Even the STT couldn't be reached — no scary error; offer a gentle retry.
+    finish(() => showNetworkPopup());
+  }
+}
+
+// POST to the STT worker with a timeout + one retry (mobile-resilient).
+async function sttFetch(url, payload, { timeout = 9000, retries = 1 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) { clearTimeout(t); lastErr = e; }
+  }
+  throw lastErr || new Error("stt failed");
+}
+
+// ── Recording helpers (MediaRecorder + auto-stop on silence) ──
+function startRecording() {
+  _recChunks = [];
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    if (!recognition && _voiceSession === 0) { stream.getTracks().forEach(t => t.stop()); return; }
+    _recStream = stream;
+    let mime = "audio/webm;codecs=opus";
+    if (!MediaRecorder.isTypeSupported(mime)) {
+      mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+           : MediaRecorder.isTypeSupported("audio/mp4")  ? "audio/mp4" : "";
+    }
+    try {
+      _mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    } catch (e) { _mediaRecorder = new MediaRecorder(stream); }
+    _mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) _recChunks.push(e.data); };
+    _mediaRecorder.start();
+  }).catch(() => { /* mic denied — built-in path may still work; STT will no-op */ });
+}
+
+function stopRecording() {
+  return new Promise(resolve => {
+    const stream = _recStream;
+    const cleanup = () => { if (stream) stream.getTracks().forEach(t => t.stop()); _recStream = null; };
+    if (_mediaRecorder && _mediaRecorder.state !== "inactive") {
+      _mediaRecorder.onstop = () => {
+        const type = _recChunks[0]?.type || "audio/webm";
+        const blob = _recChunks.length ? new Blob(_recChunks, { type }) : null;
+        _mediaRecorder = null; cleanup(); resolve(blob);
+      };
+      try { _mediaRecorder.stop(); } catch (e) { _mediaRecorder = null; cleanup(); resolve(null); }
+    } else {
+      const blob = _recChunks.length ? new Blob(_recChunks, { type: _recChunks[0]?.type || "audio/webm" }) : null;
+      cleanup(); resolve(blob);
+    }
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -451,15 +603,27 @@ function showListeningPopup() {
     <div class="vp-header">
       <div class="vp-namaste">🙏</div>
       <div>
-        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
-        <div class="vp-subgreeting">Listening… speak in Tamil or English</div>
+        <div class="vp-greeting">Adiyen</div>
+        <div class="vp-subgreeting">You are being heard…</div>
       </div>
     </div>
-    <div class="vp-listening-dots">
-      <span></span><span></span><span></span>
+    <div class="vp-lotus">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g>
+          <path class="petal" d="M50 8 C58 26 58 40 50 52 C42 40 42 26 50 8Z"/>
+          <path class="petal" d="M92 50 C74 58 60 58 48 50 C60 42 74 42 92 50Z"/>
+          <path class="petal" d="M50 92 C42 74 42 60 50 48 C58 60 58 74 50 92Z"/>
+          <path class="petal" d="M8 50 C26 58 40 58 52 50 C40 42 26 42 8 50Z"/>
+          <path class="petal-in" d="M79 21 C68 34 58 40 49 42 C51 33 57 23 79 21Z"/>
+          <path class="petal-in" d="M79 79 C66 68 60 58 58 49 C67 51 77 57 79 79Z"/>
+          <path class="petal-in" d="M21 79 C32 66 42 60 51 58 C49 67 43 77 21 79Z"/>
+          <path class="petal-in" d="M21 21 C34 32 40 42 42 51 C33 49 23 43 21 21Z"/>
+          <circle class="core" cx="50" cy="50" r="8"/>
+        </g>
+      </svg>
     </div>
     <div class="vp-listening-text">
-      We are Hearing you pl proceed…
+      One moment, adiyen is finding it for you…
     </div>
     <div class="vp-actions">
       <button class="vp-btn-close" onclick="window._voicePopupClose()">
@@ -489,7 +653,7 @@ function showResultsPopup(transcript, results) {
     <div class="vp-header">
       <div class="vp-namaste">🙏</div>
       <div>
-        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
+        <div class="vp-greeting">Adiyen</div>
         <div class="vp-subgreeting">We heard you</div>
       </div>
     </div>
@@ -522,7 +686,7 @@ function showOffTopicPopup(transcript) {
     <div class="vp-header">
       <div class="vp-namaste">🙏</div>
       <div>
-        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
+        <div class="vp-greeting">Adiyen</div>
         <div class="vp-subgreeting">We heard you</div>
       </div>
     </div>
@@ -534,7 +698,7 @@ function showOffTopicPopup(transcript) {
 
     <div class="vp-offtopic-msg">
       Adiyen, kindly search for topics related to<br/>
-      <strong>நாலாயிர திவ்யப்பிரபந்தம்</strong> —
+      <strong>Naalayira Divya Prabandham</strong> —
       pasurams, azhwars, divyadesams,<br/>
       thaniyans, and related sacred works.
     </div>
@@ -555,7 +719,7 @@ function showPermissionPopup() {
     <div class="vp-header">
       <div class="vp-namaste">🙏</div>
       <div>
-        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
+        <div class="vp-greeting">Adiyen</div>
       </div>
     </div>
     <div class="vp-offtopic-msg">
@@ -568,12 +732,38 @@ function showPermissionPopup() {
   `);
 }
 
+// Shown when recognition fails for a network reason (common on mobile SIM,
+// since Android sends the audio to Google's servers) or an unknown error.
+function showNetworkPopup(kind) {
+  const msg = kind === "mic"
+    ? "Adiyen, I couldn't reach your microphone. Please check it isn't in use by another app, and try again."
+    : "Adiyen, the voice service couldn't be reached — the network seems weak just now. Please try again in a moment. 🙏";
+  showOverlay(`
+    <div class="vp-header">
+      <div class="vp-namaste">🙏</div>
+      <div>
+        <div class="vp-greeting">Adiyen</div>
+        <div class="vp-subgreeting">Voice search</div>
+      </div>
+    </div>
+    <div class="vp-offtopic-msg">${msg}</div>
+    <div class="vp-actions">
+      <button class="vp-btn-retry" onclick="window._voiceRetry()">
+        🎙 Try again
+      </button>
+      <button class="vp-btn-close" onclick="window._voicePopupClose()">
+        Close
+      </button>
+    </div>
+  `);
+}
+
 function showNoSupportPopup() {
   showOverlay(`
     <div class="vp-header">
       <div class="vp-namaste">🙏</div>
       <div>
-        <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
+        <div class="vp-greeting">Adiyen</div>
       </div>
     </div>
     <div class="vp-offtopic-msg">
