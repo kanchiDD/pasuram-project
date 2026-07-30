@@ -16,7 +16,7 @@
  * }
  */
 
-import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=4";
+import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=6";
 import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js?v=2";
 
 // Use extended if available, fall back to base
