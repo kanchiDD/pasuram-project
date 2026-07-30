@@ -137,11 +137,12 @@ async function runSttFallback(session, resolveAndShow, finish) {
 
   const blob = await stopRecording();
   if (session !== _voiceSession) return;
-  if (!blob || blob.size < 1200) { finish(() => showOffTopic("(no speech detected)")); return; }
+  if (!blob) { finish(() => showOffTopic("DBG1: no recording (mic not captured)")); return; }
+  if (blob.size < 1200) { finish(() => showOffTopic("DBG2: empty clip " + blob.size + "b " + blob.type)); return; }
 
   let b64;
   try { b64 = await blobToBase64(blob); }
-  catch (e) { finish(() => showOffTopic("(no match)")); return; }
+  catch (e) { finish(() => showOffTopic("DBG3: encode failed")); return; }
 
   try {
     const data = await sttFetch(STT_ENDPOINT, {
@@ -154,10 +155,10 @@ async function runSttFallback(session, resolveAndShow, finish) {
     const alts = (data.alternatives && data.alternatives.length)
       ? data.alternatives
       : (data.transcript ? [data.transcript] : []);
-    if (!alts.length) { finish(() => showOffTopic("(no match)")); return; }
+    if (!alts.length) { finish(() => showOffTopic("DBG4: STT returned empty. " + JSON.stringify(data).slice(0,120))); return; }
     resolveAndShow(alts);
   } catch (e) {
-    finish(() => showOffTopic("(could not reach voice service — please try again)"));
+    finish(() => showOffTopic("DBG5: worker call failed — " + (e && e.message ? e.message : String(e)).slice(0,120)));
   }
 }
 
