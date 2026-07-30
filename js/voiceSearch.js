@@ -263,17 +263,17 @@ const SPECIAL_DESTINATIONS = [
 // ═══════════════════════════════════════════════════════
 
 const PATHU_ORDINALS = [
-  { num:1,  keys:["first","1st","முதல்","முதற்","ondraam","ondram","ஒன்றாம்"] },
-  { num:2,  keys:["second","2nd","irandaam","இரண்டாம்"] },
-  { num:3,  keys:["third","3rd","moondraam","மூன்றாம்"] },
-  { num:4,  keys:["fourth","4th","naangaam","நான்காம்"] },
-  { num:5,  keys:["fifth","5th","aintham","ஐந்தாம்"] },
-  { num:6,  keys:["sixth","6th","aaram","ஆறாம்"] },
-  { num:7,  keys:["seventh","7th","ezhaam","ஏழாம்"] },
-  { num:8,  keys:["eighth","8th","ettaam","எட்டாம்"] },
-  { num:9,  keys:["ninth","9th","onbatham","ஒன்பதாம்","onbadham"] },
-  { num:10, keys:["tenth","10th","pattham","பத்தாம்"] },
-  { num:11, keys:["eleventh","11th","pathinondram","பதினொன்றாம்"] }
+  { num:1,  keys:["first","1st","1","முதல்","முதற்","ondraam","ondram","ஒன்றாம்"] },
+  { num:2,  keys:["second","2nd","2","irandaam","இரண்டாம்"] },
+  { num:3,  keys:["third","3rd","3","moondraam","மூன்றாம்"] },
+  { num:4,  keys:["fourth","4th","4","naangaam","நான்காம்"] },
+  { num:5,  keys:["fifth","5th","5","aintham","ஐந்தாம்"] },
+  { num:6,  keys:["sixth","6th","6","aaram","ஆறாம்"] },
+  { num:7,  keys:["seventh","7th","7","ezhaam","ஏழாம்"] },
+  { num:8,  keys:["eighth","8th","8","ettaam","எட்டாம்"] },
+  { num:9,  keys:["ninth","9th","9","onbatham","ஒன்பதாம்","onbadham"] },
+  { num:10, keys:["tenth","10th","10","pattham","பத்தாம்","பத்து","pathu"] },
+  { num:11, keys:["eleventh","11th","11","pathinondram","பதினொன்றாம்"] }
 ];
 
 // ═══════════════════════════════════════════════════════
