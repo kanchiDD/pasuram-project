@@ -16,7 +16,7 @@
  * }
  */
 
-import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=5";
+import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=4";
 import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js?v=2";
 
 // Use extended if available, fall back to base
@@ -39,100 +39,190 @@ let recognition   = null;
 let _results      = [];
 let _selectedIdx  = 0;
 
+// ── STT fallback (mobile SIM) — records in parallel, falls back silently ──
+const STT_ENDPOINT      = "https://stt.kanchitrust.workers.dev/transcribe";
+const VOICE_FALLBACK_MS = 2500;
+let _voiceSession = 0;
+let _mediaRecorder = null, _recChunks = [], _recStream = null;
+
 // ═══════════════════════════════════════════════════════
 // VOICE CAPTURE
 // ═══════════════════════════════════════════════════════
 
 window.startVoiceSearch = function () {
 
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (!SpeechRecognition) {
-    showNoSupport();
-    return;
-  }
-
-  // Stop any existing session
-  if (recognition) {
-    try { recognition.stop(); } catch (e) {}
-    recognition = null;
-  }
-
-  recognition = new SpeechRecognition();
-  // ta-IN works on Android Chrome; some devices need en-IN fallback
-  // We set ta-IN but accept mixed Tamil/English input
-  recognition.lang            = "ta-IN";
-  recognition.interimResults  = false;
-  recognition.maxAlternatives = 5;  // more alternatives improves match rate
-  recognition.continuous      = false;
-
+  const session = ++_voiceSession;
   showListening();
   setMicState(true);
 
-  // ── Result received ──────────────────────────────
-  recognition.onresult = async function (event) {
-
+  let settled = false;
+  const finish = (fn) => {
+    if (settled || session !== _voiceSession) return;
+    settled = true;
     setMicState(false);
+    stopRecording();
+    fn();
+  };
 
-    // Collect all speech alternatives
+  // Resolve a transcript (or alternatives) → show results / off-topic.
+  const resolveAndShow = async (alternatives) => {
+    const alts = (Array.isArray(alternatives) ? alternatives : [alternatives]).filter(Boolean);
+    let results = [], usedTranscript = alts[0] || "";
+    for (const alt of alts) {
+      try { results = await resolveVoiceQuery(alt); }
+      catch (e) { results = []; }
+      if (results.length > 0) { usedTranscript = alt; break; }
+    }
+    finish(() => {
+      if (results.length === 0) showOffTopic(usedTranscript || "(no match)");
+      else showResults(usedTranscript, results);
+    });
+  };
+
+  // Start recording immediately so audio is ready if STT is needed.
+  startRecording();
+
+  // Fallback timer: if the built-in hasn't answered in time, use STT.
+  const fallbackTimer = setTimeout(() => { runSttFallback(session, resolveAndShow, finish); }, VOICE_FALLBACK_MS);
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    // No built-in (iOS Safari) → straight to STT, keep the lotus up.
+    clearTimeout(fallbackTimer);
+    runSttFallback(session, resolveAndShow, finish);
+    return;
+  }
+
+  if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
+  recognition = new SpeechRecognition();
+  recognition.lang            = "ta-IN";
+  recognition.interimResults  = false;
+  recognition.maxAlternatives = 5;
+  recognition.continuous      = false;
+
+  recognition.onresult = function (event) {
+    if (session !== _voiceSession || settled) return;
+    clearTimeout(fallbackTimer);
     const alternatives = [];
-    for (let i = 0; i < event.results[0].length; i++) {
-      alternatives.push(event.results[0][i].transcript);
-    }
-
-    // Try each alternative until we get a match
-    let results       = [];
-    let usedTranscript = alternatives[0];
-
-    for (const alt of alternatives) {
-      try {
-        results = await resolveVoiceQuery(alt);
-      } catch(e) {
-        console.error("[Voice] resolve error:", e);
-        results = [];
-      }
-      if (results.length > 0) {
-        usedTranscript = alt;
-        break;
-      }
-    }
-
-    if (results.length === 0) {
-      showOffTopic(usedTranscript);
-    } else {
-      showResults(usedTranscript, results);
-    }
+    for (let i = 0; i < event.results[0].length; i++) alternatives.push(event.results[0][i].transcript);
+    resolveAndShow(alternatives);
   };
 
-  // ── Error handling ───────────────────────────────
   recognition.onerror = function (event) {
-    setMicState(false);
-    console.warn("[Voice] error:", event.error);
-    if (event.error === "no-speech") {
-      showOffTopic("(no speech detected)");
-    } else if (event.error === "not-allowed") {
-      showPermissionError();
-    } else if (event.error === "language-not-supported") {
-      // Tamil not supported — retry with en-IN
-      recognition.lang = "en-IN";
-      try { recognition.start(); return; } catch(e) {}
-      showOffTopic("(language not supported)");
-    } else if (event.error === "network") {
-      showOffTopic("(network error — check connection)");
-    } else if (event.error === "audio-capture") {
-      showPermissionError();
-    } else {
-      showOffTopic("(mic error: " + event.error + ")");
+    if (session !== _voiceSession || settled) return;
+    const err = event.error;
+    // Weak SIM → immediate "network" error. Fall to STT silently, no message.
+    if (err === "network" || err === "service-not-allowed") {
+      clearTimeout(fallbackTimer);
+      runSttFallback(session, resolveAndShow, finish);
+      return;
     }
+    if (err === "not-allowed" || err === "audio-capture") {
+      clearTimeout(fallbackTimer); finish(() => showPermissionError()); return;
+    }
+    if (err === "aborted") { return; }
+    // no-speech / unknown → let the STT fallback try the captured audio.
   };
 
-  recognition.onend = function () {
-    setMicState(false);
-  };
+  recognition.onend = function () { /* handled by result/error/timer */ };
 
-  recognition.start();
+  try { recognition.start(); }
+  catch (e) { clearTimeout(fallbackTimer); runSttFallback(session, resolveAndShow, finish); }
 };
+
+// ── STT fallback: send captured audio to the worker, resolve the result ──
+async function runSttFallback(session, resolveAndShow, finish) {
+  if (session !== _voiceSession) return;
+  try { if (recognition) recognition.abort(); } catch (e) {}
+
+  const blob = await stopRecording();
+  if (session !== _voiceSession) return;
+  if (!blob || blob.size < 1200) { finish(() => showOffTopic("(no speech detected)")); return; }
+
+  let b64;
+  try { b64 = await blobToBase64(blob); }
+  catch (e) { finish(() => showOffTopic("(no match)")); return; }
+
+  try {
+    const data = await sttFetch(STT_ENDPOINT, {
+      audio: b64,
+      encoding: blob.type.includes("mp4") ? "MP4" : "WEBM_OPUS",
+      sampleRateHertz: 48000,
+      lang: "ta-IN"
+    });
+    if (session !== _voiceSession) return;
+    const alts = (data.alternatives && data.alternatives.length)
+      ? data.alternatives
+      : (data.transcript ? [data.transcript] : []);
+    if (!alts.length) { finish(() => showOffTopic("(no match)")); return; }
+    resolveAndShow(alts);
+  } catch (e) {
+    finish(() => showOffTopic("(could not reach voice service — please try again)"));
+  }
+}
+
+async function sttFetch(url, payload, { timeout = 9000, retries = 1 } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) { clearTimeout(t); lastErr = e; }
+  }
+  throw lastErr || new Error("stt failed");
+}
+
+function startRecording() {
+  _recChunks = [];
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _recStream = stream;
+    let mime = "audio/webm;codecs=opus";
+    if (!MediaRecorder.isTypeSupported(mime)) {
+      mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+           : MediaRecorder.isTypeSupported("audio/mp4")  ? "audio/mp4" : "";
+    }
+    try { _mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (e) { _mediaRecorder = new MediaRecorder(stream); }
+    _mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) _recChunks.push(e.data); };
+    _mediaRecorder.start();
+  }).catch(() => { /* mic denied — built-in may still work; STT will no-op */ });
+}
+
+function stopRecording() {
+  return new Promise(resolve => {
+    const stream = _recStream;
+    const cleanup = () => { if (stream) stream.getTracks().forEach(t => t.stop()); _recStream = null; };
+    if (_mediaRecorder && _mediaRecorder.state !== "inactive") {
+      _mediaRecorder.onstop = () => {
+        const type = _recChunks[0]?.type || "audio/webm";
+        const blob = _recChunks.length ? new Blob(_recChunks, { type }) : null;
+        _mediaRecorder = null; cleanup(); resolve(blob);
+      };
+      try { _mediaRecorder.stop(); } catch (e) { _mediaRecorder = null; cleanup(); resolve(null); }
+    } else {
+      const blob = _recChunks.length ? new Blob(_recChunks, { type: _recChunks[0]?.type || "audio/webm" }) : null;
+      cleanup(); resolve(blob);
+    }
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
 
 // Demo chips — simulate a voice result without mic
 window.runDemo = async function (transcript) {
