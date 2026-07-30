@@ -44,6 +44,7 @@ const STT_ENDPOINT      = "https://stt.kanchitrust.workers.dev/transcribe";
 const VOICE_FALLBACK_MS = 2500;
 let _voiceSession = 0;
 let _mediaRecorder = null, _recChunks = [], _recStream = null;
+let _recAudioCtx = null, _recSpokeYet = false, _recSilentSince = 0;
 
 // ═══════════════════════════════════════════════════════
 // VOICE CAPTURE
@@ -79,55 +80,12 @@ window.startVoiceSearch = function () {
     });
   };
 
-  // Start recording immediately so audio is ready if STT is needed.
+  // ── Single path, every device: record → wait until you actually finish
+  //    speaking (real 1.2s pause) → send to STT. This gives consistent,
+  //    generous timing on laptop and mobile alike — no built-in recognition
+  //    cutting you off early. iPhone works too (no built-in dependency).
   startRecording();
-
-  // Fallback timer: if the built-in hasn't answered in time, use STT.
-  const fallbackTimer = setTimeout(() => { runSttFallback(session, resolveAndShow, finish); }, VOICE_FALLBACK_MS);
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    // No built-in (iOS Safari) → straight to STT, keep the lotus up.
-    clearTimeout(fallbackTimer);
-    runSttFallback(session, resolveAndShow, finish);
-    return;
-  }
-
-  if (recognition) { try { recognition.abort(); } catch (e) {} recognition = null; }
-  recognition = new SpeechRecognition();
-  recognition.lang            = "ta-IN";
-  recognition.interimResults  = false;
-  recognition.maxAlternatives = 5;
-  recognition.continuous      = false;
-
-  recognition.onresult = function (event) {
-    if (session !== _voiceSession || settled) return;
-    clearTimeout(fallbackTimer);
-    const alternatives = [];
-    for (let i = 0; i < event.results[0].length; i++) alternatives.push(event.results[0][i].transcript);
-    resolveAndShow(alternatives);
-  };
-
-  recognition.onerror = function (event) {
-    if (session !== _voiceSession || settled) return;
-    const err = event.error;
-    // Weak SIM → immediate "network" error. Fall to STT silently, no message.
-    if (err === "network" || err === "service-not-allowed") {
-      clearTimeout(fallbackTimer);
-      runSttFallback(session, resolveAndShow, finish);
-      return;
-    }
-    if (err === "not-allowed" || err === "audio-capture") {
-      clearTimeout(fallbackTimer); finish(() => showPermissionError()); return;
-    }
-    if (err === "aborted") { return; }
-    // no-speech / unknown → let the STT fallback try the captured audio.
-  };
-
-  recognition.onend = function () { /* handled by result/error/timer */ };
-
-  try { recognition.start(); }
-  catch (e) { clearTimeout(fallbackTimer); runSttFallback(session, resolveAndShow, finish); }
+  runSttFallback(session, resolveAndShow, finish);
 };
 
 // ── STT fallback: send captured audio to the worker, resolve the result ──
@@ -135,14 +93,19 @@ async function runSttFallback(session, resolveAndShow, finish) {
   if (session !== _voiceSession) return;
   try { if (recognition) recognition.abort(); } catch (e) {}
 
+  // Wait until the speaker has actually finished (real pause), so multi-word
+  // queries with small between-word gaps are captured in full, not cut short.
+  await waitForSpeechEnd();
+  if (session !== _voiceSession) return;
+
   const blob = await stopRecording();
   if (session !== _voiceSession) return;
-  if (!blob) { finish(() => showOffTopic("DBG1: no recording (mic not captured)")); return; }
-  if (blob.size < 1200) { finish(() => showOffTopic("DBG2: empty clip " + blob.size + "b " + blob.type)); return; }
+  if (!blob) { finish(() => showOffTopic("(no speech detected)")); return; }
+  if (blob.size < 1200) { finish(() => showOffTopic("(no speech detected)")); return; }
 
   let b64;
   try { b64 = await blobToBase64(blob); }
-  catch (e) { finish(() => showOffTopic("DBG3: encode failed")); return; }
+  catch (e) { finish(() => showOffTopic("(no match)")); return; }
 
   try {
     const data = await sttFetch(STT_ENDPOINT, {
@@ -155,10 +118,10 @@ async function runSttFallback(session, resolveAndShow, finish) {
     const alts = (data.alternatives && data.alternatives.length)
       ? data.alternatives
       : (data.transcript ? [data.transcript] : []);
-    if (!alts.length) { finish(() => showOffTopic("DBG4: STT returned empty. " + JSON.stringify(data).slice(0,120))); return; }
+    if (!alts.length) { finish(() => showOffTopic("(no match)")); return; }
     resolveAndShow(alts);
   } catch (e) {
-    finish(() => showOffTopic("DBG5: worker call failed — " + (e && e.message ? e.message : String(e)).slice(0,120)));
+    finish(() => showOffTopic("(could not reach voice service — please try again)"));
   }
 }
 
@@ -184,6 +147,8 @@ async function sttFetch(url, payload, { timeout = 9000, retries = 1 } = {}) {
 
 function startRecording() {
   _recChunks = [];
+  _recSpokeYet = false;
+  _recSilentSince = 0;
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     _recStream = stream;
     let mime = "audio/webm;codecs=opus";
@@ -195,13 +160,66 @@ function startRecording() {
     catch (e) { _mediaRecorder = new MediaRecorder(stream); }
     _mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) _recChunks.push(e.data); };
     _mediaRecorder.start();
+    _setupSilenceMeter(stream);   // start measuring so we can detect a real pause
   }).catch(() => { /* mic denied — built-in may still work; STT will no-op */ });
+}
+
+// Continuously measure mic loudness so runSttFallback can wait for a genuine
+// end-of-phrase pause (not a between-word gap) before sending to STT.
+function _setupSilenceMeter(stream) {
+  try {
+    _recAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = _recAudioCtx.createMediaStreamSource(stream);
+    const analyser = _recAudioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    src.connect(analyser);
+    const buf = new Uint8Array(analyser.fftSize);
+    const tick = () => {
+      if (!_recStream) return;                 // recording ended
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+      const rms = Math.sqrt(sum / buf.length);
+      const now = performance.now();
+      if (rms > 0.030) {                        // speaking
+        _recSpokeYet = true;
+        _recSilentSince = 0;
+      } else if (_recSpokeYet) {                // quiet after having spoken
+        if (!_recSilentSince) _recSilentSince = now;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  } catch (e) { /* meter optional; hard cap still applies downstream */ }
+}
+
+// How long a silence counts as end-of-phrase (ms). Between-word gaps are
+// shorter than this, so multi-word queries with small gaps aren't cut off.
+const REC_END_SILENCE_MS = 1200;
+const REC_HARD_CAP_MS    = 10000;   // never record longer than this
+
+// Wait until the speaker has clearly finished (a real pause) or the hard cap.
+function waitForSpeechEnd() {
+  return new Promise(resolve => {
+    const t0 = performance.now();
+    const check = () => {
+      const now = performance.now();
+      if (now - t0 > REC_HARD_CAP_MS) return resolve();            // safety cap
+      if (_recSpokeYet && _recSilentSince && (now - _recSilentSince) > REC_END_SILENCE_MS) return resolve();
+      setTimeout(check, 100);
+    };
+    check();
+  });
 }
 
 function stopRecording() {
   return new Promise(resolve => {
     const stream = _recStream;
-    const cleanup = () => { if (stream) stream.getTracks().forEach(t => t.stop()); _recStream = null; };
+    const cleanup = () => {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      _recStream = null;
+      if (_recAudioCtx) { try { _recAudioCtx.close(); } catch (e) {} _recAudioCtx = null; }
+    };
     if (_mediaRecorder && _mediaRecorder.state !== "inactive") {
       _mediaRecorder.onstop = () => {
         const type = _recChunks[0]?.type || "audio/webm";
