@@ -102,14 +102,21 @@ async function loadRecord(globalNo) {
             .forEach(x => x.addEventListener("input", markDirty));
 
         currentGlobal = globalNo;
-        dirty = false;
 
-        setStatus("✓ Record Loaded");
+// ***** ADD THIS *****
+txtGlobal.value = currentGlobal;
+// ********************
 
-        const first = document.querySelector(".line-text");
+dirty = false;
 
-        if (first)
-            first.focus();
+setStatus("✓ Record Loaded");
+
+const first = document.querySelector(".line-text");
+
+if (first)
+    first.focus();
+
+
 
     }
     catch (err) {
@@ -210,26 +217,30 @@ function previousRecord() {
     }
 
     if (dirty) {
-
         if (!confirm("Unsaved changes.\nContinue?"))
             return;
-
     }
 
-    loadRecord(currentGlobal - 1);
+    const prev = currentGlobal - 1;
+
+    txtGlobal.value = prev;
+
+    loadRecord(prev);
 
 }
 
 function nextRecord() {
 
     if (dirty) {
-
         if (!confirm("Unsaved changes.\nContinue?"))
             return;
-
     }
 
-    loadRecord(currentGlobal + 1);
+    const next = currentGlobal + 1;
+
+    txtGlobal.value = next;
+
+    loadRecord(next);
 
 }
 
