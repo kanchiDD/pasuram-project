@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ta">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Pasuram Line Editor</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Tamil:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Noto Serif Tamil',serif;
+background:#f2f2f2;
+padding:20px;
+}
+
+.container{
+max-width:950px;
+margin:auto;
+background:#fff;
+padding:25px;
+border-radius:12px;
+box-shadow:0 5px 20px rgba(0,0,0,.15);
+}
+
+h1{
+text-align:center;
+margin-bottom:25px;
+font-size:32px;
+color:#8b0000;
+}
+
+.toprow{
+display:flex;
+gap:10px;
+align-items:center;
+flex-wrap:wrap;
+margin-bottom:25px;
+}
+
+label{
+font-weight:bold;
+font-size:20px;
+}
+
+input[type=number]{
+width:160px;
+padding:10px;
+font-size:20px;
+border:1px solid #bbb;
+border-radius:6px;
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#0059b3;
+color:#fff;
+transition:.2s;
+}
+
+button:hover{
+background:#003d80;
+}
+
+.buttons{
+display:flex;
+gap:12px;
+justify-content:space-between;
+flex-wrap:wrap;
+margin-top:20px;
+}
+
+.buttons button{
+flex:1;
+min-width:140px;
+}
+
+#lineContainer{
+margin-top:20px;
+}
+
+.line-card{
+border:1px solid #d8d8d8;
+border-radius:10px;
+padding:15px;
+margin-bottom:20px;
+background:#fafafa;
+}
+
+.line-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.line-title{
+font-size:20px;
+font-weight:bold;
+color:#8b0000;
+}
+
+.group-box{
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.group-box input{
+width:80px;
+padding:6px;
+font-size:18px;
+text-align:center;
+}
+
+textarea{
+width:100%;
+height:120px;
+resize:vertical;
+padding:12px;
+font-size:25px;
+font-family:'Noto Serif Tamil',serif;
+border:1px solid #aaa;
+border-radius:8px;
+}
+
+#status{
+margin-top:22px;
+padding:12px;
+border-radius:6px;
+background:#eef7ee;
+font-size:18px;
+font-weight:bold;
+text-align:center;
+color:#006400;
+}
+
+.footer{
+margin-top:20px;
+text-align:center;
+font-size:15px;
+color:#666;
+line-height:1.8;
+}
+
+@media(max-width:700px){
+
+body{
+padding:10px;
+}
+
+.container{
+padding:15px;
+}
+
+.toprow{
+flex-direction:column;
+align-items:flex-start;
+}
+
+input[type=number]{
+width:100%;
+}
+
+button{
+width:100%;
+}
+
+.buttons{
+flex-direction:column;
+}
+
+.line-header{
+flex-direction:column;
+align-items:flex-start;
+}
+
+textarea{
+font-size:22px;
+height:150px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Pasuram Line Editor</h1>
+
+<div class="toprow">
+
+<label for="global_no">Global No</label>
+
+<input
+id="global_no"
+type="number"
+placeholder="756"
+autocomplete="off">
+
+<button id="loadBtn">Load</button>
+
+</div>
+
+<div id="lineContainer"></div>
+
+<div class="buttons">
+
+<button id="prevBtn">⬅ Previous</button>
+
+<button id="saveBtn">💾 Save</button>
+
+<button id="nextBtn">Next ➜</button>
+
+</div>
+
+<div id="status">
+Ready
+</div>
+
+<div class="footer">
+
+Enter → Load<br>
+Ctrl + S → Save<br>
+Ctrl + Enter → Save
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/thamizha/tamilvisai@master/dist/tamilvisai.min.js"></script>
+
+<script src="pasuram-line-editor.js"></script>
+
+</body>
+
+</html>
