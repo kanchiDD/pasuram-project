@@ -11,6 +11,7 @@ const btnNext = document.getElementById("nextBtn");
 
 const lineContainer = document.getElementById("lineContainer");
 const statusBar = document.getElementById("status");
+const btnAddLine = document.getElementById("addLineBtn");
 
 function setStatus(msg, color = "green") {
     statusBar.innerHTML = msg;
@@ -20,6 +21,319 @@ function setStatus(msg, color = "green") {
 function markDirty() {
     dirty = true;
 }
+
+// ---------------------------------------------------------------
+// Helpers: card creation / behaviour attachment / renumbering
+// ---------------------------------------------------------------
+
+function getCards() {
+    return Array.from(lineContainer.querySelectorAll(".line-card"));
+}
+
+function createLineCard(line) {
+
+    const card = document.createElement("div");
+    card.className = "line-card";
+    card.dataset.line = line.line_no;
+
+    card.innerHTML = `
+        <div class="line-header">
+
+            <div class="line-title">
+                Line ${line.line_no}
+            </div>
+
+            <div class="group-box">
+
+                <label>Recital Group</label>
+
+                <input
+                    type="number"
+                    class="recital-group"
+                    value="${line.recital_group}"
+                    data-line="${line.line_no}">
+
+            </div>
+
+        </div>
+
+        <textarea
+            class="line-text"
+            data-line="${line.line_no}"
+            spellcheck="false">${line.line_text ?? ""}</textarea>
+
+        <div class="line-buttons">
+            <button type="button" class="btn-add-below">➕ Add Below</button>
+            <button type="button" class="btn-split">✂ Split</button>
+            <button type="button" class="btn-merge-next">⇅ Merge Next</button>
+            <button type="button" class="btn-delete">🗑 Delete</button>
+        </div>
+    `;
+
+    return card;
+
+}
+
+function attachCardBehaviors(card) {
+
+    card
+        .querySelectorAll(".line-text,.recital-group")
+        .forEach(x => x.addEventListener("input", markDirty));
+
+}
+
+function attachTamilVisaiToCard(card) {
+
+    if (!window.TamilVisai)
+        return;
+
+    const t = card.querySelector(".line-text");
+
+    if (t)
+        TamilVisai.attach(t, { layout: "phonetic" });
+
+}
+
+function renumberLines() {
+
+    getCards().forEach((card, idx) => {
+
+        const num = idx + 1;
+
+        card.dataset.line = num;
+
+        const title = card.querySelector(".line-title");
+        const textarea = card.querySelector(".line-text");
+        const group = card.querySelector(".recital-group");
+
+        if (title)
+            title.textContent = `Line ${num}`;
+
+        if (textarea)
+            textarea.dataset.line = num;
+
+        if (group)
+            group.dataset.line = num;
+
+    });
+
+}
+
+// ---------------------------------------------------------------
+// Line operations: Add / Split / Merge / Delete
+// ---------------------------------------------------------------
+
+function addLineBelow(card) {
+
+    const groupInput = card.querySelector(".recital-group");
+    const groupValue = groupInput ? groupInput.value : 1;
+
+    const newCard = createLineCard({
+        line_no: 0,
+        recital_group: groupValue,
+        line_text: ""
+    });
+
+    attachCardBehaviors(newCard);
+    attachTamilVisaiToCard(newCard);
+
+    card.after(newCard);
+
+    renumberLines();
+    markDirty();
+
+    const newTextarea = newCard.querySelector(".line-text");
+
+    if (newTextarea)
+        newTextarea.focus();
+
+}
+
+function splitLine(card) {
+
+    const textarea = card.querySelector(".line-text");
+
+    if (!textarea)
+        return;
+
+    const pos = textarea.selectionStart ?? textarea.value.length;
+
+    const before = textarea.value.slice(0, pos);
+    const after = textarea.value.slice(pos);
+
+    const groupInput = card.querySelector(".recital-group");
+    const groupValue = groupInput ? groupInput.value : 1;
+
+    textarea.value = before;
+
+    const newCard = createLineCard({
+        line_no: 0,
+        recital_group: groupValue,
+        line_text: after
+    });
+
+    attachCardBehaviors(newCard);
+    attachTamilVisaiToCard(newCard);
+
+    card.after(newCard);
+
+    renumberLines();
+    markDirty();
+
+    const newTextarea = newCard.querySelector(".line-text");
+
+    if (newTextarea) {
+
+        newTextarea.focus();
+
+        newTextarea.setSelectionRange(0, 0);
+
+    }
+
+}
+
+function mergeNext(card) {
+
+    const next = card.nextElementSibling;
+
+    if (!next || !next.classList.contains("line-card")) {
+        alert("Cannot merge last line.");
+        return;
+    }
+
+    const textarea = card.querySelector(".line-text");
+    const nextTextarea = next.querySelector(".line-text");
+
+    if (!textarea || !nextTextarea)
+        return;
+
+    textarea.value = textarea.value + nextTextarea.value;
+
+    next.remove();
+
+    renumberLines();
+    markDirty();
+
+    textarea.focus();
+
+}
+
+function deleteLine(card) {
+
+    const textarea = card.querySelector(".line-text");
+
+    if (textarea && textarea.value.trim() !== "") {
+        alert("Only empty lines can be deleted.");
+        return;
+    }
+
+    if (getCards().length <= 1) {
+        alert("Cannot delete final remaining line.");
+        return;
+    }
+
+    const next = card.nextElementSibling;
+    const prev = card.previousElementSibling;
+
+    card.remove();
+
+    renumberLines();
+    markDirty();
+
+    const focusCard =
+        (next && next.classList.contains("line-card")) ? next :
+        (prev && prev.classList.contains("line-card")) ? prev :
+        null;
+
+    if (focusCard) {
+
+        const focusTextarea = focusCard.querySelector(".line-text");
+
+        if (focusTextarea)
+            focusTextarea.focus();
+
+    }
+
+}
+
+function addLineAtEnd() {
+
+    const cards = getCards();
+
+    let groupValue = 1;
+
+    if (cards.length) {
+
+        const lastGroupInput = cards[cards.length - 1].querySelector(".recital-group");
+
+        if (lastGroupInput)
+            groupValue = lastGroupInput.value;
+
+    }
+
+    const newCard = createLineCard({
+        line_no: 0,
+        recital_group: groupValue,
+        line_text: ""
+    });
+
+    attachCardBehaviors(newCard);
+    attachTamilVisaiToCard(newCard);
+
+    lineContainer.appendChild(newCard);
+
+    renumberLines();
+    markDirty();
+
+    const newTextarea = newCard.querySelector(".line-text");
+
+    if (newTextarea)
+        newTextarea.focus();
+
+}
+
+if (btnAddLine) {
+
+    btnAddLine.addEventListener("click", () => {
+
+        if (currentGlobal === 0) {
+            alert("Load a record first.");
+            return;
+        }
+
+        addLineAtEnd();
+
+    });
+
+}
+
+// Single delegated listener handles all per-card action buttons,
+// so newly added/split cards work without re-binding anything.
+lineContainer.addEventListener("click", function (e) {
+
+    const card = e.target.closest(".line-card");
+
+    if (!card)
+        return;
+
+    if (e.target.classList.contains("btn-add-below")) {
+        addLineBelow(card);
+    }
+    else if (e.target.classList.contains("btn-split")) {
+        splitLine(card);
+    }
+    else if (e.target.classList.contains("btn-merge-next")) {
+        mergeNext(card);
+    }
+    else if (e.target.classList.contains("btn-delete")) {
+        deleteLine(card);
+    }
+
+});
+
+// ---------------------------------------------------------------
+// Load / Save / Navigation (unchanged behaviour)
+// ---------------------------------------------------------------
 
 async function loadRecord(globalNo) {
 
@@ -49,74 +363,31 @@ async function loadRecord(globalNo) {
 
         data.lines.forEach(line => {
 
-            const card = document.createElement("div");
-            card.className = "line-card";
-
-            card.innerHTML = `
-                <div class="line-header">
-
-                    <div class="line-title">
-                        Line ${line.line_no}
-                    </div>
-
-                    <div class="group-box">
-
-                        <label>Recital Group</label>
-
-                        <input
-                            type="number"
-                            class="recital-group"
-                            value="${line.recital_group}"
-                            data-line="${line.line_no}">
-
-                    </div>
-
-                </div>
-
-                <textarea
-                    class="line-text"
-                    data-line="${line.line_no}"
-                    spellcheck="false">${line.line_text ?? ""}</textarea>
-            `;
+            const card = createLineCard(line);
 
             lineContainer.appendChild(card);
 
         });
 
-        if (window.TamilVisai) {
+        getCards().forEach(card => {
 
-            document
-                .querySelectorAll(".line-text")
-                .forEach(t => {
+            attachCardBehaviors(card);
+            attachTamilVisaiToCard(card);
 
-                    TamilVisai.attach(t, {
-                        layout: "phonetic"
-                    });
-
-                });
-
-        }
-
-        document
-            .querySelectorAll(".line-text,.recital-group")
-            .forEach(x => x.addEventListener("input", markDirty));
+        });
 
         currentGlobal = globalNo;
 
-// ***** ADD THIS *****
-txtGlobal.value = currentGlobal;
-// ********************
+        txtGlobal.value = currentGlobal;
 
-dirty = false;
+        dirty = false;
 
-setStatus("✓ Record Loaded");
+        setStatus("✓ Record Loaded");
 
-const first = document.querySelector(".line-text");
+        const first = document.querySelector(".line-text");
 
-if (first)
-    first.focus();
-
-
+        if (first)
+            first.focus();
 
     }
     catch (err) {
@@ -144,27 +415,22 @@ async function saveRecord() {
 
         const lines = [];
 
-        document
-            .querySelectorAll(".line-text")
-            .forEach(txt => {
+        getCards().forEach((card, idx) => {
 
-                const lineNo = parseInt(txt.dataset.line);
+            const txt = card.querySelector(".line-text");
+            const group = card.querySelector(".recital-group");
 
-                const group = document.querySelector(
-                    `.recital-group[data-line="${lineNo}"]`
-                );
+            lines.push({
 
-                lines.push({
+                line_no: idx + 1,
 
-                    line_no: lineNo,
+                line_text: txt ? txt.value.trim() : "",
 
-                    line_text: txt.value.trim(),
-
-                    recital_group: parseInt(group.value) || 1
-
-                });
+                recital_group: (group && parseInt(group.value)) || 1
 
             });
+
+        });
 
         const response = await fetch(API, {
 
