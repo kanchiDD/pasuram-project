@@ -25,7 +25,7 @@ padding:20px;
 }
 
 .container{
-max-width:950px;
+max-width:1000px;
 margin:auto;
 background:#fff;
 padding:25px;
@@ -76,19 +76,6 @@ button:hover{
 background:#003d80;
 }
 
-.buttons{
-display:flex;
-gap:12px;
-justify-content:space-between;
-flex-wrap:wrap;
-margin-top:20px;
-}
-
-.buttons button{
-flex:1;
-min-width:140px;
-}
-
 #lineContainer{
 margin-top:20px;
 }
@@ -105,9 +92,9 @@ background:#fafafa;
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-bottom:10px;
 flex-wrap:wrap;
 gap:10px;
+margin-bottom:12px;
 }
 
 .line-title{
@@ -138,6 +125,51 @@ font-size:25px;
 font-family:'Noto Serif Tamil',serif;
 border:1px solid #aaa;
 border-radius:8px;
+margin-bottom:12px;
+}
+
+.line-buttons{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+
+.line-buttons button{
+background:#666;
+flex:1;
+min-width:150px;
+}
+
+.line-buttons button:hover{
+background:#444;
+}
+
+#lineActions{
+margin:20px 0;
+display:flex;
+justify-content:flex-end;
+}
+
+#lineActions button{
+background:#008000;
+}
+
+#lineActions button:hover{
+background:#006400;
+}
+
+.buttons{
+display:flex;
+gap:12px;
+justify-content:space-between;
+flex-wrap:wrap;
+margin-top:20px;
+}
+
+.buttons button{
+flex:1;
+min-width:140px;
 }
 
 #status{
@@ -191,6 +223,10 @@ flex-direction:column;
 align-items:flex-start;
 }
 
+.line-buttons{
+flex-direction:column;
+}
+
 textarea{
 font-size:22px;
 height:150px;
@@ -222,6 +258,10 @@ autocomplete="off">
 
 </div>
 
+<div id="lineActions">
+<button id="addLineBtn">➕ Add Line</button>
+</div>
+
 <div id="lineContainer"></div>
 
 <div class="buttons">
@@ -242,7 +282,12 @@ Ready
 
 Enter → Load<br>
 Ctrl + S → Save<br>
-Ctrl + Enter → Save
+Ctrl + Enter → Save<br><br>
+
+Each line will contain:<br>
+• Split Line (cursor position)<br>
+• Merge with Next Line<br>
+• Delete Empty Line
 
 </div>
 
