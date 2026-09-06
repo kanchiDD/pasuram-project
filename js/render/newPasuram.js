@@ -303,7 +303,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
 
       /* ===== PASURAM ===== */
 
-      html += '<div class="tree-item pasuram-item">';
+      html += '<div class="tree-item pasuram-item" data-global-no="' + p.global_no + '">';
       // Number pinned left, small green ▶ (Play/Stop subscript) centered on the SAME line.
       html += numLinePlay('<b>' + p.global_no + '</b>', 'ga-p-' + p.global_no, PASURAM_URL(p.global_no), p.has_audio);
 

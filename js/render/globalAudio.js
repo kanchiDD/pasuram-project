@@ -240,7 +240,7 @@ export function gaCurrentGlobalNo() {
       if (!raw || _gaState.urls.length) return;
       const s = JSON.parse(raw);
       if (!s || !Array.isArray(s.urls) || !s.urls.length) return;
-      showAudioControls((s.label || "Recital") + " — ▶ continue");
+      showAudioControls((s.label || "இசை") + " — ▶ தொடர");
       const bar = (typeof ensureControlBar === "function") ? ensureControlBar() : null;
       if (!bar) return;
       const resume = (ev) => {
@@ -259,7 +259,7 @@ export function gaCurrentGlobalNo() {
   try {
     const st = document.createElement("style");
     st.id = "ga-highlight-style";
-    st.textContent = ".ga-highlight{background:#ffe3a1 !important;transition:background .25s;}";
+    st.textContent = ".ga-highlight{background:#d9f2d9 !important;transition:background .25s;}";
     document.head.appendChild(st);
   } catch (e) {}
   window.addEventListener("ga-now-playing", (e) => {

@@ -104,6 +104,7 @@ export async function renderFullNithyanusandhanam() {
     const page = app.querySelector(".nnc-page");
     if (page) {
       page.innerHTML = `
+        <style>.nnc-thaniyan-box .ga-btn,.nnc-thaniyan-box button{display:none !important;}</style>
         <div class="nnc-page-header">
           நித்யானுஸந்தானம்
           <div class="nnc-page-header-sub">நாலாயிர திவ்யப்பிரபந்தம்</div>

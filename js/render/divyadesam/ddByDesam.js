@@ -8,6 +8,7 @@
 // - Verified counts (DESAM_TOTAL) only for full 4000
 // =============================================================
 
+import { playUrls, PASURAM_URL, THANIYAN_SEC_URL } from "../globalAudio.js";
 import {
   API_DD, API_BASE, DESAM_TOTAL, GRAND_TOTAL,
   SECTION_TO_THOUSAND, SECTION_TO_AZHWAR, AZHWARS,
@@ -273,7 +274,7 @@ async function renderSectionContent(secId, apiPasurams, displayData, desamId) {
   if (SPECIAL.includes(secId)) {
     const pasuramHtml = pasurams.map((p, i) => `
       ${i > 0 ? '<div class="dd-pasuram-sep"></div>' : ""}
-      <div class="dd-pasuram-block">
+      <div class="dd-pasuram-block" data-global-no="${p.global_no}">
         ${pdMap.get(String(p.global_no)) || ""}
         <div class="dd-global-no">${p.global_no}</div>
         <div class="dd-lines">${renderLinesSimple(p.lines)}</div>
@@ -322,10 +323,21 @@ export async function renderDesamDetail(desamId, thousandId) {
   const verifiedCount = DESAM_TOTAL[desamId] || 0;
   const countLabel = thousandId ? "" : ` (${verifiedCount})`;
 
+  window._ddPlayDesam = () => {
+    const q = [];
+    document.querySelectorAll("#fdd-content [data-global-no]").forEach(el =>
+      q.push(PASURAM_URL(el.getAttribute("data-global-no"))));
+    if (q.length) playUrls(q, desam.canonical_name || "Divyadesam");
+  };
   let html = `
     <div class="dd-back" onclick="ddView('desam')">◀ Back to List</div>
     <div class="dd-desam-card">
       <div class="dd-desam-title">${desam.canonical_name}${countLabel}</div>
+      <div style="text-align:center;margin:8px 0 2px;">
+        <button onclick="window._ddPlayDesam && window._ddPlayDesam()"
+          style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;border-radius:20px;
+                 padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;">▶ Play All</button>
+      </div>
       ${deity  ? `<div class="dd-desam-deity">${deity}</div>` : ""}
       ${region ? `<div class="dd-desam-meta">${region}</div>` : ""}`;
 
