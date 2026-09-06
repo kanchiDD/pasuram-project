@@ -4,6 +4,7 @@ import { fetchThaniyan, fetchPasuram } from "./api.js";
 import { render } from "./render/layout.js";
 // ADD this import (alongside existing api.js imports)
 import { renderPasuramSplit } from "./render/pasuram_full.js";
+import { playUrls, sectionAudioUrls, globalThaniyanUrls } from "./render/globalAudio.js";
 
 let koilRendered = false; // 🔒 prevents loop
 
@@ -74,18 +75,54 @@ const closing =
 // Show site floating nav (from css.js)
 document.body.classList.add("show-nav");
 
+// ── Play All (koil is Play-All only — no per-pasuram buttons) ──
+// Queue = pothu thaniyan (sect/madam aware) + this section's thaniyan
+// and the koil-filtered pasurams, in render order. Files not yet
+// uploaded are skipped by the player's onerror, so newly added audio
+// works with no code change.
+const _sect    = localStorage.getItem("sect") || "T";
+const _subsect = localStorage.getItem("subsect") || "";
+const _koilBody = sectionAudioUrls(sectionId, state.thaniyanData, state.pasuramData);
+const _koilQueue = _koilBody.length
+  ? [...globalThaniyanUrls(_sect, _subsect), ..._koilBody]
+  : [];
+window._koilPlayAll = () => { if (_koilQueue.length) playUrls(_koilQueue, state.koilTitle); };
+
+const _koilPlayBtn = _koilQueue.length ? `
+  <div style="text-align:center;margin:4px 0 14px;">
+    <button onclick="window._koilPlayAll && window._koilPlayAll()"
+      style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+             border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
+             cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>
+  </div>` : "";
+
 document.getElementById("app").innerHTML = `
-  <div class="section-heading">${state.koilTitle}</div>
+  <style>
+    /* Koil view is Play-All only — hide the per-pasuram / per-thaniyan
+       play controls that pasuram_full.js renders. Scoped to #koil-view
+       so every other view keeps its individual buttons. */
+    #koil-view .ga-btn,
+    #koil-view .ga-center,
+    #koil-view [class^="ga-"],
+    #koil-view [class*=" ga-"] { display:none !important; }
+    #koil-view #koil-play-wrap [class^="ga-"] { display:block !important; }
+  </style>
 
-  <div class="thaniyan-block">
-    ${thaniyanHtml}
+  <div id="koil-view">
+    <div class="section-heading">${state.koilTitle}</div>
+
+    <div id="koil-play-wrap">${_koilPlayBtn}</div>
+
+    <div class="thaniyan-block">
+      ${thaniyanHtml}
+    </div>
+
+    <div class="pasuram-block">
+      ${bodyHtml}
+    </div>
+
+    <div class="section-close">${closing}</div>
   </div>
-
-  <div class="pasuram-block">
-    ${bodyHtml}
-  </div>
-
-  <div class="section-close">${closing}</div>
 `;
 
 // applyKoilUI() is now retired for koil path — no DOM surgery needed
