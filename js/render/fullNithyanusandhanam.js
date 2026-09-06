@@ -2,6 +2,7 @@
 import { injectNNCCSS } from "./nncCSS.js";
 import { buildIndex, registerIndexHandlers } from "./nncIndex.js";
 import { renderItem } from "./nncRender.js";
+import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL } from "./globalAudio.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -106,10 +107,34 @@ export async function renderFullNithyanusandhanam() {
         <div class="nnc-page-header">
           நித்யானுஸந்தானம்
           <div class="nnc-page-header-sub">நாலாயிர திவ்யப்பிரபந்தம்</div>
+          <div style="text-align:center;margin:10px 0 2px;">
+            <button onclick="window._nncPlayAll && window._nncPlayAll()"
+              style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+                     border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
+                     box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ Play All</button>
+          </div>
         </div>
         ${indexHtml}
         ${contentHtml}
         ${floatNav()}`;
+
+      // ── Play-All queue: scan the rendered page IN DOCUMENT ORDER ────────
+      // Covers every item type (sections, pathus, koil, madal…) and keeps
+      // exact recital order. Items whose audio isn't uploaded yet are queued
+      // anyway and skipped by the player's onerror — so newly added audio
+      // starts playing with no code change. Fixed texts / vazhi / sattrumurai
+      // carry no markers, so they're naturally skipped for now.
+      const _sect    = localStorage.getItem("sect") || "T";
+      const _subsect = localStorage.getItem("subsect") || "";
+      window._nncPlayAll = () => {
+        const q = [];
+        page.querySelectorAll("[data-thaniyan-global],[data-thaniyan-sec],[data-global-no]").forEach(el => {
+          if (el.hasAttribute("data-thaniyan-global")) q.push(...globalThaniyanUrls(_sect, _subsect));
+          else if (el.hasAttribute("data-thaniyan-sec")) q.push(THANIYAN_SEC_URL(el.getAttribute("data-thaniyan-sec")));
+          else q.push(PASURAM_URL(el.getAttribute("data-global-no")));
+        });
+        if (q.length) playUrls(q, "நித்யானுஸந்தானம்");
+      };
     }
   };
 

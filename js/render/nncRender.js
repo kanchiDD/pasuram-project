@@ -111,7 +111,7 @@ export function renderPasuramBlock(pasurams, pasuramDisplayMap) {
     const displayItem = pasuramDisplayMap?.get?.(String(p.global_no)) || "";
     const isDual = p.double_recital === 1;
     html += `
-      <div class="nnc-pasuram-block">
+      <div class="nnc-pasuram-block" data-global-no="${p.global_no}">
         ${displayItem}
         <div class="nnc-global-no">${p.global_no}</div>
         <div class="nnc-lines">${renderLinesWithGroups(p.lines, isDual)}</div>
@@ -122,10 +122,13 @@ export function renderPasuramBlock(pasurams, pasuramDisplayMap) {
 }
 
 // ── Thaniyan box ──────────────────────────────────────────────────────────────
-export function renderThaniyanBox(rows, prosodyMap) {
+export function renderThaniyanBox(rows, prosodyMap, audioRef) {
   if (!rows || !rows.length) return "";
+  const audioAttr = audioRef === "__global__"
+    ? 'data-thaniyan-global="1"'
+    : (audioRef ? `data-thaniyan-sec="${audioRef}"` : "");
   return `
-    <div class="nnc-thaniyan-box">
+    <div class="nnc-thaniyan-box" ${audioAttr}>
       <div class="nnc-thaniyan-label">தனியன்</div>
       ${renderThaniyan(rows, prosodyMap)}
     </div>`;
@@ -231,7 +234,7 @@ export async function renderSection(refValue, label, anchor) {
   const thRows = (thaniyanData.rows || []).filter(r => !r.type || r.type === "section");
   thRows._prosodyMap = thaniyanData.prosodyMap || {};
 
-  const thHtml   = renderThaniyanBox(thRows, thRows._prosodyMap);
+  const thHtml   = renderThaniyanBox(thRows, thRows._prosodyMap, secId);
   const secDisp  = renderSectionDisplayItems(displayData);
   const hasPathu = pasurams.some(p => p.pathu_id != null);
 
@@ -493,7 +496,7 @@ const secDisp  = renderSectionDisplayItems(displayData);
     const html = buildMadalCoupletsHTML(data, "nnc", maxCouplet);
 
     return `
-      <div class="nnc-section-box" ${anchor}>
+      <div class="nnc-section-box" ${anchor} data-global-no="${globalNo}">
         <div class="nnc-section-heading">${getHeading(label)}</div>
         <div class="nnc-section-inner">
           ${secDisp}${prosody}
@@ -520,7 +523,7 @@ export async function renderThaniyanItem(refValue, refType) {
   const rows = Array.isArray(data) ? data : (data.thaniyan || []);
   const prosodyMap = data.prosodyMap || {};
   const filtered = refType === "thaniyan_global" ? rows : rows.filter(r => !r.type || r.type === "section");
-  return renderThaniyanBox(filtered, prosodyMap);
+  return renderThaniyanBox(filtered, prosodyMap, refType === "thaniyan_global" ? "__global__" : refValue);
 }
 
 // ── Render fixed text ─────────────────────────────────────────────────────────
