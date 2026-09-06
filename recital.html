@@ -347,6 +347,15 @@
       from "./js/render/madalKootrirukkaiCore.js?v=2";
     window._buildMadalCoupletsHTML     = buildMadalCoupletsHTML;
     window._buildKootrirukkaiLinesHTML = buildKootrirukkaiLinesHTML;
+
+    // Shared audio engine — 3-buffer gapless player, control bar,
+    // auto-highlight and tap-to-resume, same as the rest of the site.
+    import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL }
+      from "./js/render/globalAudio.js";
+    window._gaPlayUrls           = playUrls;
+    window._gaGlobalThaniyanUrls = globalThaniyanUrls;
+    window._gaThaniyanSecUrl     = THANIYAN_SEC_URL;
+    window._gaPasuramUrl         = PASURAM_URL;
   </script>
 </head>
 <body>
@@ -566,7 +575,7 @@
         _greyRun.active = false;
       }
 
-      html += `<div class="r-pasuram-block${_greyed ? " r-greyed" : ""}">`;
+      html += `<div class="r-pasuram-block${_greyed ? " r-greyed" : ""}" data-global-no="${p.global_no}">`;
       html += `<span class="r-global-no">${p.global_no}</span>`;
 
       const allGroups = p.groups;
@@ -1084,7 +1093,7 @@
         blockIdx++;
 
         if (block.block_type === "global_thaniyan") {
-          contentHTML += `<div class="r-global-thaniyan" id="${anchorId}">
+          contentHTML += `<div class="r-global-thaniyan" id="${anchorId}" data-thaniyan-global="1">
             <div class="r-thaniyan-badge">Global Thaniyan</div>
             ${thaniyanLines(block.lines, globalProsodyMaster)}
           </div>`;
@@ -1093,7 +1102,7 @@
           const sid = block.section_id;
           if (!shownThaniyans.has(sid)) {
             shownThaniyans.add(sid);
-            contentHTML += `<div class="r-section-thaniyan" id="${anchorId}">
+            contentHTML += `<div class="r-section-thaniyan" id="${anchorId}" data-thaniyan-sec="${sid}">
               <div class="r-thaniyan-badge">Thaniyan</div>
               ${thaniyanLines(block.lines, globalProsodyMaster)}
             </div>`;
@@ -1233,7 +1242,7 @@
 
         } else if (block.block_type === "kootrirukkai") {
           const kBlockData = JSON.stringify({ closing: block.section_closing || "", disp: block.display_items || {}, pm: block.prosody_master || {} });
-          contentHTML += `<div id="${anchorId}" class="r-special-section">
+          contentHTML += `<div id="${anchorId}" class="r-special-section" data-global-no="2672">
             <div class="r-special-loading"
               data-kootri="${block.section_id}"
               data-block='${kBlockData.replace(/'/g,"&#39;")}'>
@@ -1243,7 +1252,7 @@
 
         } else if (block.block_type === "madal") {
           const mBlockData = JSON.stringify({ closing: block.section_closing || "", disp: block.display_items || {}, pm: block.prosody_master || {} });
-          contentHTML += `<div id="${anchorId}" class="r-special-section">
+          contentHTML += `<div id="${anchorId}" class="r-special-section" data-global-no="${Number(block.section_id) === 22 ? 2673 : 2674}">
             <div class="r-special-loading"
               data-madal="${block.section_id}"
               data-rettai="${block.is_rettai || 0}"
@@ -1406,10 +1415,42 @@
           ${contentHTML}
           ${satBtn}`;
 
-        stage.innerHTML = _fullHTML;
+        // ── Play All ────────────────────────────────────────────────
+        // Scans the rendered page IN DOCUMENT ORDER at click time, so
+        // async-loaded madal/kootrirukkai blocks are included too.
+        // Sattrumurai carries no marker (separate-pitch audio pending),
+        // and files not yet uploaded are skipped by the player's onerror —
+        // new audio starts working with no code change.
+        window._recitalPlayAll = function() {
+          const _sect    = localStorage.getItem("sect") || "T";
+          const _subsect = localStorage.getItem("subsect") || "";
+          const q = [];
+          stage.querySelectorAll("[data-thaniyan-global],[data-thaniyan-sec],[data-global-no]")
+            .forEach(el => {
+              if (el.hasAttribute("data-thaniyan-global")) q.push(...window._gaGlobalThaniyanUrls(_sect, _subsect));
+              else if (el.hasAttribute("data-thaniyan-sec")) q.push(window._gaThaniyanSecUrl(el.getAttribute("data-thaniyan-sec")));
+              else q.push(window._gaPasuramUrl(el.getAttribute("data-global-no")));
+            });
+          if (q.length) window._gaPlayUrls(q, "Today's Recital");
+        };
+
+        const _recPlayBtn = `
+          <div style="text-align:center;margin:6px 0 12px;">
+            <button onclick="window._recitalPlayAll && window._recitalPlayAll()"
+              style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+                     border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
+                     cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>
+          </div>`;
+
+        const _fullHTMLWithPlay = _fullHTML.replace(
+          `<div class="r-day-label">${pageSubtitle}</div>`,
+          `<div class="r-day-label">${pageSubtitle}</div>${_recPlayBtn}`
+        );
+
+        stage.innerHTML = _fullHTMLWithPlay;
 
         window._showSattrumurai = function() { if (_satData) stage.innerHTML = renderSattrumurai(_satData); };
-        window.showRecital = function() { stage.innerHTML = _fullHTML; };
+        window.showRecital = function() { stage.innerHTML = _fullHTMLWithPlay; };
 
         // Show floating nav
         document.getElementById("r-float-nav").style.display = "flex";
