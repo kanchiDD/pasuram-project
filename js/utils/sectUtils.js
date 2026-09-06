@@ -247,3 +247,41 @@ export function getDefaultFixedTextState() {
     surnikai: false,
   };
 }
+
+// ── Section ↔ sect applicability ──────────────────────────────
+// 'B'  = shared, shown for both sects.
+// 'T'  = Thenkalai only.
+// 'V'  = Vadagalai (includes Madam users, who carry sect='V').
+// 'VM' = Madam (Vadakalai-Madam) ONLY — regular Vadagalai users do
+//        NOT see these. DB tags 52/53 as plain 'V', so this extra
+//        distinction lives here, keyed off subsect='madam'.
+// Verified against section_master (SELECT section_id, sect ...).
+export const SECTION_SECT = {
+  ...Object.fromEntries(Array.from({ length: 24 }, (_, i) => [i + 1, "B"])), // 1–24 core
+  25: "T",                                   // உபதேசரத்தினமாலை
+  26: "B",                                   // திருவாய்மொழி
+  27: "T", 28: "T", 29: "T", 30: "T", 31: "T",
+  ...Object.fromEntries(Array.from({ length: 20 }, (_, i) => [i + 32, "V"])), // 32–51 Desika Prabandham
+  52: "VM", 53: "VM",                        // Madam segment only
+};
+
+export function getUserSubsect() {
+  return localStorage.getItem('subsect') || '';
+}
+
+export function sectionAllowedForSect(sectionId, sect) {
+  const tag = SECTION_SECT[Number(sectionId)];
+  if (!tag || tag === "B") return true;      // unmapped/shared → always show
+  const s = sect || getUserSect();
+  if (tag === "VM") return s === "V" && getUserSubsect() === "madam";
+  return tag === s;
+}
+
+// Thousand-level applicability (99 = Desika Prabandham, Vadagalai only)
+export const THOUSAND_SECT = { 1: "B", 2: "B", 3: "B", 4: "B", 99: "V" };
+
+export function thousandAllowedForSect(thousandId, sect) {
+  const tag = THOUSAND_SECT[Number(thousandId)];
+  if (!tag || tag === "B") return true;
+  return tag === (sect || getUserSect());
+}

@@ -9,11 +9,12 @@ import {
   } from "./api.js";
 
 import { renderPasuram } from "./render/pasuram_full.js";
-import { sectionPlayAll, sectionAudioUrls, thousandPlayAll, specialSectionUrls, specialSectionPlayAll, globalThaniyanUrls } from "./render/globalAudio.js";
+import { sectionPlayAll, sectionAudioUrls, thousandPlayAll, specialSectionUrls, specialSectionPlayAll, globalThaniyanUrls, playUrls } from "./render/globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
 import { renderThaniyan } from "./render/thaniyan.js";
+import { sectionAllowedForSect, thousandAllowedForSect } from "./utils/sectUtils.js";
 
 const sectionHeaderMap = {
   "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
@@ -76,10 +77,18 @@ const isFullMode = !selectedThousandId;
 
   const thousands = state.thousandData || [];
 
-  // 🔥 FILTER (FOR 1–4 OR FULL 4000)
-  const filteredThousands = selectedThousandId
+  // Sect scope for this render (VM users carry sect='V')
+  const _sect    = localStorage.getItem("sect") || "T";
+  const _subsect = localStorage.getItem("subsect") || "";
+
+  // Accumulates every rendered thousand's audio queue → Full-4000 play button
+  let grandQueue = [];
+
+  // 🔥 FILTER (FOR 1–4 OR FULL 4000) + sect scoping
+  const filteredThousands = (selectedThousandId
     ? thousands.filter(t => Number(t.id) === Number(selectedThousandId))
-    : thousands;
+    : thousands
+  ).filter(t => thousandAllowedForSect(t.id, _sect));
 
   
   // =========================
@@ -161,6 +170,7 @@ html += `
 // 🔥 BUILD SECTIONS FROM anchor map (MUST BE INSIDE LOOP)
 // =========================
 const sections = [...new Set(anchorRows.map(r => r.section_id))]
+  .filter(id => sectionAllowedForSect(id, _sect))   // sect-scope the view
   .sort((a, b) => a - b)
   .map(id => ({ id }));
 
@@ -337,12 +347,13 @@ if (hasPasuram) {
 // Prepend the sect pothu thaniyan once (T→t, V→v, Madam→k then v) so a
 // thousand's playback opens with the global thaniyan before the pasurams.
 // (Empty queue → thousandPlayAll returns "", so the placeholder just clears.)
-const _ftSect    = localStorage.getItem("sect") || "T";
-const _ftSubsect = localStorage.getItem("subsect") || "";
 const _thousandFullQueue = thousandQueue.length
-  ? [...globalThaniyanUrls(_ftSect, _ftSubsect), ...thousandQueue]
+  ? [...globalThaniyanUrls(_sect, _subsect), ...thousandQueue]
   : thousandQueue;
 html = html.replace(`<!--FTP:${t.id}-->`, thousandPlayAll(t.id, t.name, _thousandFullQueue));
+
+// Accumulate (without the pothu prefix — Full-4000 adds it once at the top)
+grandQueue.push(...thousandQueue);
 
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
 
@@ -432,11 +443,28 @@ html += `
 // ✅ ONLY FOR FULL 4000 (STRICT)
 if (isFullMode) {
 
+  // Full-4000 Play All: pothu thaniyan once, then every thousand's queue in
+  // order. Items without audio were never queued; bad files are skipped by
+  // the player's onerror → playback just moves to the next item.
+  const _f4kQueue = grandQueue.length
+    ? [...globalThaniyanUrls(_sect, _subsect), ...grandQueue]
+    : [];
+  window._f4kPlayAll = () => { if (_f4kQueue.length) playUrls(_f4kQueue); };
+
+  const _f4kBtn = _f4kQueue.length ? `
+    <div style="text-align:center;margin:14px 0 4px;">
+      <button onclick="window._f4kPlayAll && window._f4kPlayAll()"
+        style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+               border-radius:22px;padding:10px 24px;font-size:15px;font-weight:700;cursor:pointer;
+               box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ முழு நாலாயிரமும்</button>
+    </div>` : "";
+
   html = `
   <div id="main-4000-heading" style="text-align:center;margin:40px 0 50px 0;">
     <div style="font-size:34px;font-weight:900;">
       நாலாயிர திவ்யப்பிரபந்தம்
     </div>
+    ${_f4kBtn}
     <div style="width:140px;height:2px;background:#b38b2e;margin:12px auto;"></div>
   </div>
 

@@ -8,6 +8,7 @@ import { state } from "../state.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { fetchThaniyanWithProsody } from "./displayHelper.js";
 import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL } from "./globalAudio.js";
+import { sectionAllowedForSect } from "../utils/sectUtils.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -253,7 +254,8 @@ export async function renderFullThaniyans(selectedThousandId = null) {
   for (const anchorRows of allAnchorRows) {
     const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
     for (const secId of sectionIds) {
-      if (!SKIP_THANIYAN_SECTIONS.includes(Number(secId))) {
+      if (!SKIP_THANIYAN_SECTIONS.includes(Number(secId)) &&
+          sectionAllowedForSect(secId, _sect)) {
         allSectionIds.add(secId);
       }
     }
@@ -281,9 +283,13 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
     // ── global thaniyan ONCE ────────────────────────────────────────────
     if (!globalRendered || !isFullMode) {
+      // Sect-filter the pothu rows: if rows carry a sect tag, keep only the
+      // user's sect (plus shared 'B'); rows without the tag pass through
+      // unchanged so untagged legacy data is never hidden by mistake.
+      const _rowSectOk = r => !r.sect || r.sect === "B" || r.sect === _sect;
       const globalRows = [
-        ...getRows(globalDataResolved, "global"),
-        ...getRows(globalDataResolved, "thousand")
+        ...getRows(globalDataResolved, "global").filter(_rowSectOk),
+        ...getRows(globalDataResolved, "thousand").filter(_rowSectOk)
       ];
       if (globalRows.length > 0) {
         // ONE heading only — label tag above, no separate inner title
@@ -306,6 +312,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
     for (const secId of sectionIds) {
       if (SKIP_THANIYAN_SECTIONS.includes(Number(secId))) continue;
+      if (!sectionAllowedForSect(secId, _sect)) continue;   // sect-scope the view
 
       const sectionRow = anchorRows.find(r => r.section_id === secId && r.type === "section");
       let baseName = sectionRow?.canonical_text || "";
