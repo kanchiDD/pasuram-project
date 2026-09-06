@@ -14,7 +14,7 @@ import { renderMadal, renderKootrirukkai } from "./render/special.js";
 import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
 import { renderThaniyan } from "./render/thaniyan.js";
-import { sectionAllowedForSect, thousandAllowedForSect } from "./utils/sectUtils.js";
+import { sectionAllowedForSect, thousandAllowedForSect, SECTION_SECT } from "./utils/sectUtils.js";
 
 const sectionHeaderMap = {
   "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
@@ -90,11 +90,43 @@ const isFullMode = !selectedThousandId;
     : thousands
   ).filter(t => thousandAllowedForSect(t.id, _sect));
 
+  // இதர பிரபந்தங்கள் (99) is NOT part of the 4000 — always render it LAST,
+  // after the 4000's closing, inside its own distinct box.
+  const _ordered = [...filteredThousands].sort(
+    (a, b) => (Number(a.id) === 99 ? 1 : 0) - (Number(b.id) === 99 ? 1 : 0)
+  );
+
+  // Is a section part of the core 4000 ('B') vs ithara (sect-specific)?
+  const _isItharaSection = id => (SECTION_SECT[Number(id)] || "B") !== "B";
+
+  const _CLOSING_4000 = `
+    <div style="text-align:center;margin:50px 0 30px 0;">
+      <div style="font-size:26px;font-weight:900;">
+        நாலாயிர திவ்யப்பிரபந்தம் முற்றிற்று
+      </div>
+      <div style="font-size:18px;margin-top:10px;color:#b38b2e;">
+        ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖
+      </div>
+    </div>
+  `;
+  let _closing4000Done = false;
+
   
   // =========================
   // 🔥 LOOP THOUSANDS
   // =========================
-  for (const t of filteredThousands) {
+  for (const t of _ordered) {
+
+    const _isIthara = Number(t.id) === 99;
+
+    // In full mode: close out the 4000 BEFORE ithara begins, and open a
+    // visually distinct box so users see ithara is a separate collection.
+    if (_isIthara && isFullMode) {
+      html += _CLOSING_4000;
+      _closing4000Done = true;
+      html += `<div style="border:3px double #b38b2e;border-radius:10px;
+                           padding:14px 10px;margin:26px 0;background:#fffdf5;">`;
+    }
 
     state.selectedThousandId = t.id;
     context.thousandId = t.id;
@@ -139,6 +171,13 @@ const res = await fetch(
 
 const anchorRows = await res.json();
 
+// Sections of this thousand, sect-scoped AND core/ithara-scoped:
+// core thousands render only shared ('B') sections; the ithara box
+// renders only the user's sect-specific (non-'B') sections.
+const _allowSec = id =>
+  sectionAllowedForSect(id, _sect) &&
+  (_isIthara ? _isItharaSection(id) : !_isItharaSection(id));
+
 // 🔥 accumulate for full index
 fullAnchorRows.push(...anchorRows);
 
@@ -156,7 +195,7 @@ if (selectedThousandId) {
       📑 Index
     </div>
 
-    ${renderIndex(anchorRows, t.id)}
+    ${renderIndex(anchorRows.filter(r => _allowSec(r.section_id)), t.id)}
 
   </div>
 `;
@@ -169,8 +208,10 @@ html += `
 // =========================
 // 🔥 BUILD SECTIONS FROM anchor map (MUST BE INSIDE LOOP)
 // =========================
+// Sections of this thousand, sect-scoped AND core/ithara-scoped (see
+// _allowSec above, defined right after the anchor-map fetch).
 const sections = [...new Set(anchorRows.map(r => r.section_id))]
-  .filter(id => sectionAllowedForSect(id, _sect))   // sect-scope the view
+  .filter(_allowSec)
   .sort((a, b) => a - b)
   .map(id => ({ id }));
 
@@ -350,10 +391,12 @@ if (hasPasuram) {
 const _thousandFullQueue = thousandQueue.length
   ? [...globalThaniyanUrls(_sect, _subsect), ...thousandQueue]
   : thousandQueue;
-html = html.replace(`<!--FTP:${t.id}-->`, thousandPlayAll(t.id, t.name, _thousandFullQueue));
+html = html.replace(`<!--FTP:${t.id}-->`,
+  thousandPlayAll(t.id, _isIthara ? "இதர பிரபந்தங்கள்" : t.name, _thousandFullQueue));
 
-// Accumulate (without the pothu prefix — Full-4000 adds it once at the top)
-grandQueue.push(...thousandQueue);
+// Ithara is NOT part of the 4000 — keep it out of the Full-4000 queue.
+// (It keeps its own Play button above; nothing lost.)
+if (!_isIthara) grandQueue.push(...thousandQueue);
 
 // 🔥 THOUSAND CLOSING (SAFE + NON-DESTRUCTIVE)
 
@@ -366,7 +409,8 @@ if (!closingText) {
     1: "முதலாமாயிரம் முற்றிற்று",
     2: "இரண்டாமாயிரம் முற்றிற்று",
     3: "முன்றாமாயிரம் / இயற்பா முற்றிற்று",
-    4: "நான்காமாயிரம் முற்றிற்று"
+    4: "நான்காமாயிரம் முற்றிற்று",
+    99: "இதர பிரபந்தங்கள் முற்றிற்று"
   };
   closingText = fallback[t.id];
 }
@@ -392,6 +436,11 @@ if (closingText) {
   </div>
 `;
 }
+
+// Close the distinct ithara box opened before this thousand's header.
+if (_isIthara && isFullMode) {
+  html += `</div>`;
+}
 } // ✅ CLOSE thousands loop properly
 
 // 🔥 ADD THIS BACK (CRITICAL FIX)
@@ -412,20 +461,8 @@ window.fullAnchorRows = fullAnchorRows;
 // =========================
 // 🔥 FINAL 4000 CLOSING
 // =========================
-if (!selectedThousandId) {
-  html += `
-    <div style="text-align:center;margin:50px 0 30px 0;">
-
-      <div style="font-size:26px;font-weight:900;">
-        நாலாயிர திவ்யப்பிரபந்தம் முற்றிற்று
-      </div>
-
-      <div style="font-size:18px;margin-top:10px;color:#b38b2e;">
-        ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖
-      </div>
-
-    </div>
-  `;
+if (!selectedThousandId && !_closing4000Done) {
+  html += _CLOSING_4000;
 }
 
 // =========================
@@ -459,6 +496,23 @@ if (isFullMode) {
                box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ முழு நாலாயிரமும்</button>
     </div>` : "";
 
+  // Index split: core 4000 sections vs ithara — separate boxes, separate
+  // numbering, both sect-scoped, so ithara never reads as "part of the 4000".
+  const _coreIdxRows = fullAnchorRows.filter(r =>
+    sectionAllowedForSect(r.section_id, _sect) && !_isItharaSection(r.section_id));
+  const _ithIdxRows = fullAnchorRows.filter(r =>
+    sectionAllowedForSect(r.section_id, _sect) && _isItharaSection(r.section_id));
+
+  const _ithIdxBox = _ithIdxRows.length ? `
+  <div class="index-border">
+    <div class="index-title">
+      📑 இதர பிரபந்தங்கள்
+    </div>
+
+    ${renderIndex(_ithIdxRows, null)}
+  </div>
+  ` : "";
+
   html = `
   <div id="main-4000-heading" style="text-align:center;margin:40px 0 50px 0;">
     <div style="font-size:34px;font-weight:900;">
@@ -473,8 +527,10 @@ if (isFullMode) {
       📑 Index
     </div>
 
-    ${renderIndex(fullAnchorRows, null)}
+    ${renderIndex(_coreIdxRows, null)}
   </div>
+
+  ${_ithIdxBox}
 
   <div class="page-spacer"></div>
 ` + html;
