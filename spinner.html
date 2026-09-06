@@ -169,7 +169,12 @@
 
   <div id="footer"></div>
 
-  <script>
+  <script type="module">
+    // Shared audio engine — same 3-buffer gapless player, control bar,
+    // auto-highlight and tap-to-resume used across the site.
+    import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL }
+      from "./js/render/globalAudio.js";
+
     const WORKER = "https://recitalworker.kanchitrust.workers.dev";
 
     // Font adjuster
@@ -255,7 +260,7 @@
 
       // Desam blocks
       for (const b of (data.desam_blocks || [])) {
-        html += `<div class="sp-desam-block">
+        html += `<div class="sp-desam-block" data-global-no="${b.global_no}">
           <div class="sp-desam-header">
             <span class="sp-desam-name">${b.canonical_name}</span>
             <span class="sp-desam-gno">${b.global_no}</span>
@@ -264,7 +269,40 @@
         </div>`;
       }
 
+      // ── Play All for TODAY's spin ────────────────────────────────
+      // Order mirrors the page: pothu thaniyan (sect/madam aware), each
+      // section thaniyan, then this day's desam pasurams. Items whose
+      // audio isn't uploaded yet are queued anyway and skipped by the
+      // player's onerror — new audio starts working with no code change.
+      const _sect    = localStorage.getItem("sect") || "T";
+      const _subsect = localStorage.getItem("subsect") || "";
+      const _queue   = [];
+      if (data.global_thaniyan?.length) _queue.push(...globalThaniyanUrls(_sect, _subsect));
+      for (const sid of Object.keys(data.section_thaniyans || {})) {
+        if ((data.section_thaniyans[sid] || []).length) _queue.push(THANIYAN_SEC_URL(sid));
+      }
+      for (const b of (data.desam_blocks || [])) {
+        if (b.global_no != null) _queue.push(PASURAM_URL(b.global_no));
+      }
+      window._spPlayAll = () => { if (_queue.length) playUrls(_queue, "Divyadesam Spinner"); };
+
       stage.innerHTML = html;
+
+      // Insert the Play All button just under the status line.
+      if (_queue.length) {
+        const statusEl = stage.querySelector(".sp-status");
+        if (statusEl) {
+          const wrap = document.createElement("div");
+          wrap.style.cssText = "text-align:center;margin:2px 0 14px;";
+          wrap.innerHTML = `<button id="sp-play-all"
+            style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+                   border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
+                   cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>`;
+          statusEl.insertAdjacentElement("afterend", wrap);
+          wrap.querySelector("#sp-play-all").addEventListener("click", () => window._spPlayAll());
+        }
+      }
+
       document.getElementById("sp-float-nav").style.display = "flex";
       renderActionBar(paused);
     }
@@ -350,6 +388,12 @@
       if (confirm("Cancel your Divyadesam Spinner?\nYou can restart it anytime."))
         doAction("cancel");
     }
+
+    // A module scope is NOT global, so inline onclick="..." handlers in the
+    // markup (float nav + action bar) must be re-exposed on window.
+    window.adjustFont    = adjustFont;
+    window.doAction      = doAction;
+    window.confirmCancel = confirmCancel;
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
