@@ -277,8 +277,10 @@ export function sectionAllowedForSect(sectionId, sect) {
   return tag === s;
 }
 
-// Thousand-level applicability (99 = Desika Prabandham, Vadagalai only)
-export const THOUSAND_SECT = { 1: "B", 2: "B", 3: "B", 4: "B", 99: "V" };
+// Thousand-level applicability. 99 = இதர பிரபந்தங்கள் container — a MIXED
+// bucket holding both sects' extra works, so it renders for everyone and
+// the per-section filter above differentiates what appears inside it.
+export const THOUSAND_SECT = { 1: "B", 2: "B", 3: "B", 4: "B", 99: "B" };
 
 export function thousandAllowedForSect(thousandId, sect) {
   const tag = THOUSAND_SECT[Number(thousandId)];
