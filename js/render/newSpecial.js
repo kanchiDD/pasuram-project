@@ -170,7 +170,7 @@ html += `</div>`; // CLOSE CONTENT BOX
 
   // data-recital-* attributes let recitalSync.js highlight this whole
   // madal block in sync with audio playback.
-  return `<div class="madal-container" data-recital-type="pasuram" data-recital-id="${globalNo}">${html}</div>`;
+  return `<div class="madal-container" data-recital-type="pasuram" data-recital-id="${globalNo}" data-global-no="${globalNo}">${html}</div>`;
 }
 
 /* ================= KOOTRIRUKKAI ================= */
@@ -224,7 +224,7 @@ html += `</div>`;
   // data-recital-* attributes let recitalSync.js highlight this whole
   // pasuram block in sync with audio playback (recorded as a single
   // continuous pasuram segment, not per-line).
-  return `<div class="kootrirukkai-container" data-recital-type="pasuram" data-recital-id="${globalNo}">${html}</div>`;
+  return `<div class="kootrirukkai-container" data-recital-type="pasuram" data-recital-id="${globalNo}" data-global-no="${globalNo}">${html}</div>`;
 }
 
 /* ================= RECITAL ================= */
