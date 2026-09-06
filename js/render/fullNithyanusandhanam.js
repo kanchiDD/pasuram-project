@@ -56,7 +56,9 @@ export async function renderFullNithyanusandhanam() {
       </div>`;
 
     // Fetch sequence
-    const items = await fetch(`${API}/nithyanusandhanam?sub=sequence`).then(r => r.json());
+    const _sq_sect = localStorage.getItem("sect") || "T";
+    const _sq_sub  = localStorage.getItem("subsect") || "";
+    const items = await fetch(`${API}/nithyanusandhanam?sub=sequence&sect=${_sq_sect}${_sq_sub ? "&subsect=" + _sq_sub : ""}`).then(r => r.json());
 
     // ── FIX 1: Fetch deduplicator ─────────────────────────────────────────────
     // When Promise.all fires 55 renders simultaneously, many call the same URL
@@ -104,7 +106,7 @@ export async function renderFullNithyanusandhanam() {
     const page = app.querySelector(".nnc-page");
     if (page) {
       page.innerHTML = `
-        <style>.nnc-thaniyan-box .ga-btn,.nnc-thaniyan-box button{display:none !important;}</style>
+        <style>.nnc-thaniyan-box .ga-btn,.nnc-thaniyan-box button,.nnc-thaniyan-box [class^="ga-"],.nnc-thaniyan-box [class*=" ga-"]{display:none !important;}</style>
         <div class="nnc-page-header">
           நித்யானுஸந்தானம்
           <div class="nnc-page-header-sub">நாலாயிர திவ்யப்பிரபந்தம்</div>
