@@ -259,7 +259,7 @@ export function gaCurrentGlobalNo() {
   try {
     const st = document.createElement("style");
     st.id = "ga-highlight-style";
-    st.textContent = ".ga-highlight{background:#d9f2d9 !important;transition:background .25s;}";
+    st.textContent = "html body [data-global-no].ga-highlight, html body [data-global-no].ga-highlight *{background:#d9f2d9 !important;} html body [data-global-no].ga-highlight{transition:background .25s;}";
     document.head.appendChild(st);
   } catch (e) {}
   window.addEventListener("ga-now-playing", (e) => {
