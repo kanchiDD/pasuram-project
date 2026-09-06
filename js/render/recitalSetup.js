@@ -1,5 +1,6 @@
 // ── recitalSetup.js ──────────────────────────────────────────────
 import { state } from "../state.js";
+import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL } from "./globalAudio.js";
 
 const WORKER              = "https://recitalworker.kanchitrust.workers.dev";
 const KOIL_API            = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -282,6 +283,38 @@ async function buildRecitalHTML() {
 }
 
 function buildRecitalDisplayHTML(blocks, plan) {
+  // ── Play-All queue (audio for the whole recital, in recital order) ──
+  // Rules: pothu thaniyan for the user's sect first (when present as a
+  // block), each section thaniyan, then pasurams. Sattrumurai is skipped
+  // (its separate-pitch audio isn't recorded yet). Items without audio
+  // are queued anyway and skipped gracefully by the player's onerror.
+  const _sect    = localStorage.getItem("sect") || "T";
+  const _subsect = localStorage.getItem("subsect") || "";
+  const _queue   = [];
+  for (const block of blocks) {
+    if (block.block_type === "global_thaniyan") {
+      _queue.push(...globalThaniyanUrls(_sect, _subsect));
+    } else if (block.block_type === "section_thaniyan") {
+      if (block.section_id) _queue.push(THANIYAN_SEC_URL(block.section_id));
+    } else if (block.block_type === "pasurams") {
+      for (const p of groupPasurams(block.pasurams)) {
+        if (p.global_no != null && (p.has_audio === undefined || p.has_audio)) {
+          _queue.push(PASURAM_URL(p.global_no));
+        }
+      }
+    }
+    // sattrumurai: intentionally no audio yet
+  }
+  window._recitalPlayAll = () => { if (_queue.length) playUrls(_queue, "Today's Recital"); };
+
+  const _playBtn = _queue.length ? `
+    <div style="text-align:center;margin:6px 0 12px;">
+      <button onclick="window._recitalPlayAll && window._recitalPlayAll()"
+        style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+               border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
+               box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ Play All</button>
+    </div>` : "";
+
   let html = `
   <div class="recital-wrap">
     ${recitalCSS()}
@@ -290,6 +323,7 @@ function buildRecitalDisplayHTML(blocks, plan) {
       <div class="recital-title" style="margin:0">Today's Recital</div>
       <span></span>
     </div>
+    ${_playBtn}
     <div class="r-recital-content">`;
 
   for (const block of blocks) {
@@ -306,7 +340,7 @@ function buildRecitalDisplayHTML(blocks, plan) {
     } else if (block.block_type === "pasurams") {
       const grouped = groupPasurams(block.pasurams);
       for (const pasuram of grouped) {
-        html += `<div class="r-block r-block-pasuram">
+        html += `<div class="r-block r-block-pasuram" data-global-no="${pasuram.global_no}">
           <div class="r-pasuram-no">${pasuram.local_pasuram_no}</div>
           <div class="r-pasuram-lines">`;
         for (const group of pasuram.groups) {

@@ -102,7 +102,11 @@ let _saveTimer = null;
 // Double-buffering for gapless (butt-joined) sequential playback: two <audio>
 // elements ping-pong so the next pasuram is fully loaded and starts the instant
 // the current one ends — no src-swap reload gap.
-let _gaActiveId = "ga-player";       // id of the element currently playing
+// Triple-buffering: three <audio> elements rotate so TWO pasurams ahead are
+// always fully preloaded — double the network runway before each swap, which
+// is what closes the audible stitch gap between short pasurams.
+const _GA_BUFFER_IDS = ["ga-player", "ga-player-2", "ga-player-3"];
+let _gaActiveIdx = 0;                // index into _GA_BUFFER_IDS of the PLAYING buffer
 let _gaRebindUI = null;              // set by ensureControlBar → rebinds seek UI on swap
 
 function saveState() {
@@ -146,11 +150,13 @@ function _mkAudio(id) {
 // Active buffer (what controls act on). getPlayer() stays the single entry point
 // used everywhere; it just follows whichever buffer is currently active.
 function getPlayer() {
-  return _mkAudio(_gaActiveId);
+  return _mkAudio(_GA_BUFFER_IDS[_gaActiveIdx]);
 }
 // The other (idle) buffer, used to preload the next file.
-function _idlePlayer() {
-  return _mkAudio(_gaActiveId === "ga-player" ? "ga-player-2" : "ga-player");
+// Buffer sitting `offset` slots ahead of the active one in the rotation
+// (offset 1 = next to play, offset 2 = the one after that).
+function _bufferAt(offset) {
+  return _mkAudio(_GA_BUFFER_IDS[(_gaActiveIdx + offset) % _GA_BUFFER_IDS.length]);
 }
 
 // ── Autoplay unlock ────────────────────────────────────────────
@@ -163,7 +169,7 @@ const _SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAA
 function _gaUnlockBuffers() {
   if (_gaUnlocked) return;
   _gaUnlocked = true;
-  ["ga-player", "ga-player-2"].forEach(id => {
+  ["ga-player", "ga-player-2", "ga-player-3"].forEach(id => {
     const el = _mkAudio(id);
     if (el.getAttribute("src")) return;      // already has (real) content — don't disturb it
     try {
@@ -202,17 +208,62 @@ function setBtnState(btn, playing) {
   }
 }
 
+// ── Now-playing notification (for highlighting the active pasuram) ──
+// URLs already encode global_no, so we can derive "what's playing" for
+// free — no offsets/master-file infrastructure needed for this.
+function _parseGlobalNo(url) {
+  if (!url) return null;
+  const m = String(url).match(/\/pasurams\/pasuram_(\d+)\.mp3/);
+  return m ? Number(m[1]) : null;
+}
+function _gaNotifyNow() {
+  const url = _gaState.urls[_gaState.idx - 1];
+  const global_no = _parseGlobalNo(url);
+  try {
+    window.dispatchEvent(new CustomEvent("ga-now-playing", { detail: { url, global_no, label: _gaState.label } }));
+  } catch (e) {}
+}
+export function gaCurrentGlobalNo() {
+  return _parseGlobalNo((_gaState.urls || [])[_gaState.idx - 1]);
+}
+
+// ── Auto-highlight (self-registering, works on EVERY page) ──────────
+// Any element carrying data-global-no="<n>" gets .ga-highlight while
+// pasuram n is playing. No per-page wiring needed — pages only need the
+// data attribute on their pasuram containers.
+(function _gaHighlightBoot() {
+  if (typeof window === "undefined" || window._gaHighlightBooted) return;
+  window._gaHighlightBooted = true;
+  try {
+    const st = document.createElement("style");
+    st.id = "ga-highlight-style";
+    st.textContent = ".ga-highlight{background:#fff8e6 !important;border-left:3px solid #C9A84C;transition:background .25s;}";
+    document.head.appendChild(st);
+  } catch (e) {}
+  window.addEventListener("ga-now-playing", (e) => {
+    document.querySelectorAll(".ga-highlight").forEach(el => el.classList.remove("ga-highlight"));
+    const no = e && e.detail ? e.detail.global_no : null;
+    if (no == null) return;
+    const el = document.querySelector('[data-global-no="' + no + '"]');
+    if (el) {
+      el.classList.add("ga-highlight");
+      try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e2) {}
+    }
+  });
+})();
+
 function stopAll() {
   // Stop and clear BOTH buffers (double-buffering)
-  ["ga-player", "ga-player-2"].forEach(id => {
+  ["ga-player", "ga-player-2", "ga-player-3"].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.pause(); el.src = ""; el.onended = null; el.onerror = null; try { el.volume = 1; } catch (e) {} }
   });
-  _gaActiveId = "ga-player";
+  _gaActiveIdx = 0;
   document.querySelectorAll(".ga-btn").forEach(b => setBtnState(b, false));
   hideAudioControls();
   _gaState = { urls: [], idx: 0, label: "" };
   clearState();
+  try { window.dispatchEvent(new CustomEvent("ga-now-playing", { detail: { url: null, global_no: null, label: "" } })); } catch (e) {}
 }
 
 // ── Floating playback control bar (Pause / Stop) ───────────────────
@@ -353,7 +404,7 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   startIdx  = startIdx  || 0;
   startTime = startTime || 0;
   stopAll();
-  _gaActiveId = "ga-player";
+  _gaActiveIdx = 0;
   _gaState = { urls: list, idx: startIdx, label: label || "" };
   showAudioControls(label || "இசை / Playing…");
   setMediaSession(label);
@@ -380,9 +431,11 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   try { first.load(); } catch (e) {}
   bindHandlers(first);
   if (typeof _gaRebindUI === "function") _gaRebindUI();
-  if (startIdx + 1 < list.length) preloadInto(_idlePlayer(), list[startIdx + 1]);
+  if (startIdx + 1 < list.length) preloadInto(_bufferAt(1), list[startIdx + 1]);
+  if (startIdx + 2 < list.length) preloadInto(_bufferAt(2), list[startIdx + 2]);
 
   _gaState.idx = startIdx + 1;             // idx = the NEXT file to advance to
+  _gaNotifyNow();
 
   // Advance to the already-preloaded idle buffer (butt-join: play instantly).
   // Invariant: _gaState.idx = index of the file to play NEXT (currently playing = idx-1).
@@ -394,7 +447,9 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
     oldActive.pause();
 
     // Swap: the idle buffer (already holding list[_gaState.idx]) becomes active.
-    _gaActiveId = (_gaActiveId === "ga-player") ? "ga-player-2" : "ga-player";
+    // Rotate: the buffer one slot ahead (already holding list[_gaState.idx],
+    // preloaded two steps ago) becomes active.
+    _gaActiveIdx = (_gaActiveIdx + 1) % _GA_BUFFER_IDS.length;
     const p = getPlayer();
     p.muted = false;                       // in case the unlock step left it muted
     bindHandlers(p);
@@ -418,9 +473,12 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
 
     _gaState.idx++;                        // idx now = next-to-play (currently playing = idx-1)
     saveState();
+    _gaNotifyNow();
 
     // Preload the following file into the now-idle buffer.
-    if (_gaState.idx < list.length) preloadInto(oldActive, list[_gaState.idx]);
+    // oldActive is now the free buffer two slots ahead of the new active one —
+    // load it with the pasuram two-ahead, keeping the 2-deep lookahead full.
+    if (_gaState.idx + 1 < list.length) preloadInto(oldActive, list[_gaState.idx + 1]);
   };
 
   // Start the first file (honouring resume position).
