@@ -19,7 +19,8 @@
 import { state }                       from "../state.js";
 import { fetchThaniyan, fetchPasuram } from "../api.js";
 import { renderPasuram }               from "./pasuram_full.js";
-import { sectionPlayAll }              from "./globalAudio.js";
+import { sectionPlayAll, sectionAudioUrls, playUrls, globalThaniyanUrls }
+                                       from "./globalAudio.js";
 import { getThaniyanHTML }             from "../thaniyanController.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
 
@@ -233,6 +234,7 @@ export async function renderFullStarPasuram(starName) {
   // ── Render loop ───────────────────────────────────────────────
   let html = "";
   let globalThaniyanShown = false;
+  const starQueue = [];   // whole-star Play All queue, in render order
   const context = { thousandId: null, globalTracker: {} };
 
   for (const secId of sectionIds) {
@@ -301,6 +303,9 @@ export async function renderFullStarPasuram(starName) {
     // Section Play All (audio-only, data-driven) — uses the section's
     // thaniyan + the pasurams actually shown for this star.
     html += sectionPlayAll(secId, state.thaniyanData, state.pasuramData);
+    // Accumulate this section's audio (thaniyan + the pasurams actually
+    // shown for this star) into the whole-star queue.
+    starQueue.push(...sectionAudioUrls(secId, state.thaniyanData, state.pasuramData));
 
 
 if ([22, 23].includes(Number(secId))) {
@@ -390,11 +395,30 @@ state.thaniyanData = savedThaniyan;
     </div>${floatNav()}`;
   }
 
+  // Whole-star Play All: pothu thaniyan once (sect/madam aware), then every
+  // section's audio in render order. Files not yet uploaded are skipped by
+  // the player's onerror, so new audio works with no code change.
+  const _sect    = localStorage.getItem("sect") || "T";
+  const _subsect = localStorage.getItem("subsect") || "";
+  const _starFullQueue = starQueue.length
+    ? [...globalThaniyanUrls(_sect, _subsect), ...starQueue]
+    : [];
+  window._fstarPlayAll = () => { if (_starFullQueue.length) playUrls(_starFullQueue, starName); };
+
+  const _starPlayBtn = _starFullQueue.length ? `
+    <div style="text-align:center;margin:2px 0 16px;">
+      <button onclick="window._fstarPlayAll && window._fstarPlayAll()"
+        style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
+               border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
+               cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>
+    </div>` : "";
+
   return `<div class="fstar-page">
     <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
     <div class="fstar-subtitle">${starName} நட்சத்திரம்</div>
     <div class="fstar-divider"></div>
     ${selectorHtml(starName)}
+    ${_starPlayBtn}
     ${html}
     <div style="text-align:center;color:#b38b2e;font-size:18px;letter-spacing:5px;margin:30px 0 16px;">❖ ❖ ❖ ❖ ❖</div>
   </div>${floatNav()}`;

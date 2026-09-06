@@ -90,7 +90,7 @@ export function renderMadal(data) {
   const globalNo = globalNoMap[sectionName];
 
   /* CONTENT BOX START */
-  html += `<div class="content-box">`;
+  html += `<div class="content-box"${globalNo ? ` data-global-no="${globalNo}"` : ""}>`;
 
 if (globalNo) {
   html += `
@@ -129,7 +129,7 @@ export function renderKootrirukkai(data) {
   const sectionName = state.selectedSectionName || "";
   const globalNo = globalNoMap[sectionName];
 
-  html += `<div class="content-box">`;
+  html += `<div class="content-box"${globalNo ? ` data-global-no="${globalNo}"` : ""}>`;
 
 if (globalNo) {
   html += `
