@@ -111,7 +111,7 @@ let _gaRebindUI = null;              // set by ensureControlBar → rebinds seek
 
 function saveState() {
   try {
-    const p = document.getElementById("ga-player");
+    const p = getPlayer();
     if (!_gaState.urls.length || !p || !p.src) { sessionStorage.removeItem("gaPlayback"); return; }
     sessionStorage.setItem("gaPlayback", JSON.stringify({
       urls: _gaState.urls, idx: Math.max(0, _gaState.idx - 1), label: _gaState.label,
@@ -231,13 +231,35 @@ export function gaCurrentGlobalNo() {
 // Any element carrying data-global-no="<n>" gets .ga-highlight while
 // pasuram n is playing. No per-page wiring needed — pages only need the
 // data attribute on their pasuram containers.
+(function _gaResumeBoot() {
+  if (typeof window === "undefined" || window._gaResumeBooted) return;
+  window._gaResumeBooted = true;
+  window.addEventListener("DOMContentLoaded", () => {
+    try {
+      const raw = sessionStorage.getItem("gaPlayback");
+      if (!raw || _gaState.urls.length) return;
+      const s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.urls) || !s.urls.length) return;
+      showAudioControls((s.label || "Recital") + " — ▶ continue");
+      const bar = (typeof ensureControlBar === "function") ? ensureControlBar() : null;
+      if (!bar) return;
+      const resume = (ev) => {
+        ev.stopPropagation();
+        bar.removeEventListener("click", resume, true);
+        _playQueue(s.urls, s.label, s.idx || 0, s.time || 0);
+      };
+      bar.addEventListener("click", resume, true);
+    } catch (e) {}
+  });
+})();
+
 (function _gaHighlightBoot() {
   if (typeof window === "undefined" || window._gaHighlightBooted) return;
   window._gaHighlightBooted = true;
   try {
     const st = document.createElement("style");
     st.id = "ga-highlight-style";
-    st.textContent = ".ga-highlight{background:#fff8e6 !important;border-left:3px solid #C9A84C;transition:background .25s;}";
+    st.textContent = ".ga-highlight{background:#ffe3a1 !important;transition:background .25s;}";
     document.head.appendChild(st);
   } catch (e) {}
   window.addEventListener("ga-now-playing", (e) => {
