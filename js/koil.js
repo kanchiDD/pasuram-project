@@ -99,13 +99,13 @@ const _koilPlayBtn = _koilQueue.length ? `
 document.getElementById("app").innerHTML = `
   <style>
     /* Koil view is Play-All only — hide the per-pasuram / per-thaniyan
-       play controls that pasuram_full.js renders. Scoped to #koil-view
-       so every other view keeps its individual buttons. */
+       play BUTTONS that pasuram_full.js renders, scoped to #koil-view so
+       every other view keeps its individual buttons.
+       NOTE: .ga-numline must stay visible — it wraps the pasuram NUMBER
+       (the play button sits inside it), so hiding it would blank out the
+       global_no of every pasuram. */
     #koil-view .ga-btn,
-    #koil-view .ga-center,
-    #koil-view [class^="ga-"],
-    #koil-view [class*=" ga-"] { display:none !important; }
-    #koil-view #koil-play-wrap [class^="ga-"] { display:block !important; }
+    #koil-view .ga-center { display:none !important; }
   </style>
 
   <div id="koil-view">
