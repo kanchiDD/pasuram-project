@@ -16,6 +16,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { getUserSect, VAZHI_GHOSHTI_ALL, FIXED_DEFS_GHOSHTI, getDefaultFixedTextState } from "../utils/sectUtils.js";
+import { t } from "../utils/uiStrings.js";
 
 const WORKER_GET = "https://cacheproxy.kanchitrust.workers.dev";
 const WORKER_POST = "https://recitalworker.kanchitrust.workers.dev";
@@ -338,7 +339,7 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
                        : [2, 1, 5]; // BOTH
   gsatState.selectedVaazhis = new Set();
 
-  container.innerHTML = '<div class="gsat-loading"><span class="gsat-lotus">LOTUS</span>Preparing Sattrumurai...</div>'.replace('LOTUS','\uD83E\uDE77');
+  container.innerHTML = '<div class="gsat-loading"><span class="gsat-lotus">LOTUS</span>${t("preparingSattrumurai")}</div>'.replace('LOTUS','\uD83E\uDE77');
 
   // Vazhi list from sectUtils — includes all (T+V) for ghoshti
   // Ghoshti is multi-sect; user selects what they need
@@ -669,7 +670,7 @@ function render(container) {
       ${(gsatState.segment === "T"  || gsatState.segment === "BOTH") ? renderMuktakaSection() : ""}
       ${(gsatState.segment === "V"  || gsatState.segment === "VM" || gsatState.segment === "BOTH") ? renderNamedMangalam("desika", 7, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று") : ""}
       ${(gsatState.segment === "VM" || gsatState.segment === "BOTH") ? renderNamedMangalam("adivan", 6, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று") : ""}
-      <button class="gsat-save-btn" onclick="gsatSave()" id="gsat-save-btn">Add my Sattrumurai \uD83D\uDE4F</button>
+      <button class="gsat-save-btn" onclick="gsatSave()" id="gsat-save-btn">${t("addMySattrumurai")} \uD83D\uDE4F</button>
       <span class="gsat-back" onclick="gsatBack()">\u2190 Back to Ghoshti</span>
     </div>
   `;
@@ -762,11 +763,11 @@ function renderManualAddSection() {
   return `<div class="gsat-section">
     <div class="gsat-section-head">\uD83D\uDD22 Add Pasuram by Number</div>
     <div style="padding:12px 14px;display:flex;gap:8px">
-      <input type="number" id="gsat-manual-no" placeholder="Global Pasuram No (1-4000)"
+      <input type="number" id="gsat-manual-no" placeholder="${t("globalPasuramNo")}"
         min="1" max="4000"
         style="flex:1;padding:8px 10px;border:1.5px solid #C9A84C;border-radius:8px;font-size:13px;color:#4a2c00;background:#fffdf5;outline:none">
       <button onclick="gsatAddManual()"
-        style="padding:8px 16px;background:#7a4d00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Add</button>
+        style="padding:8px 16px;background:#7a4d00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">${t("add")}</button>
     </div>
     <div id="gsat-manual-added" style="padding:0 14px 12px;font-size:12px;color:#4a2c00"></div>
   </div>`;
@@ -1010,7 +1011,7 @@ window.gsatMoveFixed = function(fid, dir) {
 
 window.gsatToggleFixedText = async function(key, fid, checked) {
   if (fid === 4 && checked) {
-    const ok = confirm("Adiyen, திருமங்கைமன்னன் வடிவழகு சூர்ணிகை is usually recited only on Thirumangai Azhwar Varusha Thirunatchathram. Do you still wish to add it?");
+    const ok = confirm(t("churnikaiConfirm", { name: "திருமங்கைமன்னன் வடிவழகு சூர்ணிகை" }));
     if (!ok) return;
   }
   gsatState.fixedText[key] = checked;
@@ -1140,8 +1141,8 @@ function gsatShowReorder(onDone) {
   const draw = () => {
     overlay.innerHTML = `
       <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
-        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">Re-order my sattrumurai ⇅</div>
-        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The sattrumurai will follow this order 🙏</div>
+        <div style="padding:14px 16px 4px;font-weight:700;color:#7a4d00;font-size:15px">${t("reorderSattrumurai")}</div>
+        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">${t("sattrumuraiOrderNote")}</div>
         <div style="overflow-y:auto;padding:6px 16px;flex:1">
           ${order.map((b, i) => `
             <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
@@ -1154,9 +1155,9 @@ function gsatShowReorder(onDone) {
         </div>
         <div style="padding:10px 16px 14px;display:flex;gap:8px">
           <button style="flex:1;padding:11px;border:1px solid #c8a84b;background:#fff;color:#7a4d00;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit"
-                  onclick="window._gsatReorderReset()">Reset order</button>
+                  onclick="window._gsatReorderReset()">${t("resetOrder")}</button>
           <button style="flex:1;padding:11px;border:none;background:#7a4d00;color:#fef0c0;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit"
-                  onclick="window._gsatReorderDone()">Continue 🙏</button>
+                  onclick="window._gsatReorderDone()">${t("continueLabel")}</button>
         </div>
       </div>`;
   };
@@ -1288,10 +1289,10 @@ window.gsatSave = async function() {
     }
     const data = await res.json();
     if (data.success) {
-      alert("சாற்றுமுறை சேர்க்கப்பட்டது \uD83D\uDE4F");
+      alert(t("sattrumuraiAdded"));
       window.location.href = `ghoshti.html?id=${gsatState.ghoshtiId}`;
     } else {
-      alert("Error: " + (data.error || "Please try again"));
+      alert(t("errorPrefix") + (data.error || t("pleaseTryAgain")));
       if (btn) { btn.disabled = false; btn.textContent = "Add my Sattrumurai \uD83D\uDE4F"; }
     }
   } catch(e) {

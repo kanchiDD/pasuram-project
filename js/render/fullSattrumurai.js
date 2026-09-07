@@ -3,6 +3,7 @@
 // =============================================================
 
 import { state } from "../state.js";
+import { t } from "../utils/uiStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -274,7 +275,7 @@ export function sattrumuraiSpinner() {
   return `
     <div class="fsat-spinner-wrap">
       <div class="fsat-lotus">🪷</div>
-      <div class="fsat-loading-text">Adiyen Content Loading...</div>
+      <div class="fsat-loading-text">${t("adiyenContentLoading")}</div>
     </div>
   `;
 }
@@ -283,12 +284,12 @@ export function sattrumuraiSpinner() {
 function floatingNav() {
   return `
     <div class="fsat-float-nav">
-      <button onclick="window.location.href='tree.html'" title="Home">🏠</button>
-      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">⬆</button>
-      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="Up">◀</button>
-      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="Down">▶</button>
-      <button onclick="fsatAdjFont(2)" title="Font+">A+</button>
-      <button onclick="fsatAdjFont(-2)" title="Font-">A-</button>
+      <button onclick="window.location.href='tree.html'" title="${t("home")}">🏠</button>
+      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${t("top")}">⬆</button>
+      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${t("up")}">◀</button>
+      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${t("down")}">▶</button>
+      <button onclick="fsatAdjFont(2)" title="${t("fontBigger")}">A+</button>
+      <button onclick="fsatAdjFont(-2)" title="${t("fontSmaller")}">A-</button>
     </div>
   `;
 }

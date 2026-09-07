@@ -50,6 +50,42 @@ const STRINGS = {
 
     // ── other view titles ─────────────────────────────────────
     azhwarThirunatchathraTitle: "Azhwar Thirunatchathra Recital",
+    adiyenContentLoading: "Adiyen Content Loading...",
+    contentsLoading:      "Contents Loading...",
+
+    // ── star pasuram ──────────────────────────────────────────
+    starSelectPrompt:  "— Select the Star —",
+    starSubtitle:      "Star-wise Pasuram Recital",
+    starPleaseSelect:  "🌟 Please Select the Star",
+
+    // ── sattrumurai ───────────────────────────────────────────
+    preparingSattrumurai: "Preparing Sattrumurai...",
+    addMySattrumurai:     "Add my Sattrumurai",
+    globalPasuramNo:      "Global Pasuram No (1-4000)",
+    add:                  "Add",
+    reorderSattrumurai:   "Re-order my sattrumurai ⇅",
+    sattrumuraiOrderNote: "The sattrumurai will follow this order 🙏",
+    resetOrder:           "Reset order",
+    continueLabel:        "Continue 🙏",
+    sattrumuraiAdded:     "Sattrumurai added 🙏",
+    errorPrefix:          "Error: ",
+    pleaseTryAgain:       "Please try again",
+    // {name} keeps the Tamil work name inline — the sentence is interface
+    // text, the name is content and must not be translated.
+    churnikaiConfirm:     "Adiyen, {name} is usually recited only on Thirumangai Azhwar Varusha Thirunatchathram. Do you still wish to add it?",
+    ahobilaConfirm:       "Adiyen 🙏 These Arulicheyals are recited by Sri Ahobilamadam followers, and selecting them will change the sattrumurai order. Do you wish to continue?",
+
+    // ── ghoshti setup ─────────────────────────────────────────
+    backArrow:        "← Back",
+    selectPasurams:   "Select Pasurams",
+    recitalOrder:     "Recital order",
+    yourSelection:    "Your Selection",
+    nothingSelected:  "Nothing selected yet",
+    egPasuramNo:      "e.g. 474",
+    selectPrabandham: "Select Prabandham",
+    adiyen:           "🙏 Adiyen",
+    cancel:           "Cancel",
+    orSelectSpecific: "— OR select specific —",
     dualRecitalTitle:           "Rettai / Dual Recital Pasurams",
     fontBigger:       "Font +",
     fontSmaller:      "Font −",

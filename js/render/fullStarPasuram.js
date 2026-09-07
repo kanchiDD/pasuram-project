@@ -17,6 +17,7 @@
 // =============================================================
 
 import { state }                       from "../state.js";
+import { t } from "../utils/uiStrings.js";
 import { fetchThaniyan, fetchPasuram } from "../api.js";
 import { renderPasuram }               from "./pasuram_full.js";
 import { sectionPlayAll, sectionAudioUrls, playUrls, globalThaniyanUrls }
@@ -107,7 +108,7 @@ function injectCSS() {
 export function starSpinner() {
   return `<div class="fstar-spinner">
     <div class="fstar-lotus">🪷</div>
-    <div class="fstar-loading-text">Contents Loading...</div>
+    <div class="fstar-loading-text">${t("contentsLoading")}</div>
   </div>`;
 }
 
@@ -155,7 +156,7 @@ function selectorHtml(selected) {
   ).join("");
   return `<div class="fstar-select-wrap">
     <select class="fstar-select" onchange="window._fstarSwitch(this.value)">
-      <option value="">— Select the Star —</option>
+      <option value="">${t("starSelectPrompt")}</option>
       ${opts}
     </select>
   </div>`;
@@ -177,10 +178,10 @@ export async function renderFullStarPasuram(starName) {
   if (!starName) {
     return `<div class="fstar-page">
       <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
-      <div class="fstar-subtitle">Star-wise Pasuram Recital</div>
+      <div class="fstar-subtitle">${t("starSubtitle")}</div>
       <div class="fstar-divider"></div>
       ${selectorHtml(null)}
-      <div class="fstar-empty">🌟 Please Select the Star</div>
+      <div class="fstar-empty">${t("starPleaseSelect")}</div>
     </div>${floatNav()}`;
   }
 
@@ -410,7 +411,7 @@ state.thaniyanData = savedThaniyan;
       <button onclick="window._fstarPlayAll && window._fstarPlayAll()"
         style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
                border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
-               cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>
+               cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">${t("playAll")}</button>
     </div>` : "";
 
   return `<div class="fstar-page">
