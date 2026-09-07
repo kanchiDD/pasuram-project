@@ -1,5 +1,6 @@
 // nncIndex.js — index builder with expand/collapse
 import { getKoilThirumozhi, getKoilThiruvaimozhi, getVazhiChildren } from "../utils/sectUtils.js";
+import { t } from "../utils/uiStrings.js";
 
 
 
@@ -44,7 +45,7 @@ export function registerIndexHandlers() {
 
 // ── Build index HTML ──────────────────────────────────────────────────────────
 export function buildIndex(items) {
-  let html = `<div class="nnc-index"><div class="nnc-index-title">Index</div>`;
+  let html = `<div class="nnc-index"><div class="nnc-index-title">${t("index")}</div>`;
 
   for (const item of items) {
     if (!item.show_in_index) continue;
@@ -79,7 +80,7 @@ export function buildIndex(items) {
             data-nid="${c.id}"
             onclick="${c.is_active ? "window._nncGo(this.dataset.nid)" : ""}">
             ${c.display_label}
-            ${!c.is_active ? '<span class="nnc-soon-badge">Soon</span>' : ""}
+            ${!c.is_active ? `<span class="nnc-soon-badge">${t("soon")}</span>` : ""}
           </div>`
         ).join("");
       }
@@ -136,7 +137,7 @@ export function buildIndex(items) {
           data-nid="${item.id}"
           onclick="${item.is_active !== false ? `window._nncGo(this.dataset.nid)` : ""}">
           ${item.display_label}
-          ${isComing ? '<span class="nnc-soon-badge">Soon</span>' : ""}
+          ${isComing ? `<span class="nnc-soon-badge">${t("soon")}</span>` : ""}
         </div>`;
     }
   }

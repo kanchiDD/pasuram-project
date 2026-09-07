@@ -46,6 +46,19 @@ const STRINGS = {
     // ── munnadi pinnadi ───────────────────────────────────────
     munnadiTitle:     "Munnadi Pinnadi",
     munnadiRotate:    "Please rotate to landscape to view Munnadi Pinnadi",
+    soon:             "Soon",
+    comingSoon:       "Coming Soon",
+    comingSoonAlert:  "Coming soon",
+
+    // ── main menu ─────────────────────────────────────────────
+    selectAnOption:       "Select an Option",
+    pleaseSelectOption:   "Please Select an Option",
+    clickToOpen:          "Click to Open",
+    menuArulicheyal:      "Arulicheyal (Sections)",
+    menuRegister:         "Register / Sign In",
+    menuMyRecitalPlan:    "My Recital Plan",
+    menuStarPasuram:      "Star & Pasuram",
+    menuSpinner:          "Divyadesam Spinner",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",

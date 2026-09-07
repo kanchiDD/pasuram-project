@@ -1,4 +1,5 @@
 import { loadSections } from "../navigation.js";
+import { t } from "../utils/uiStrings.js";
 import { state } from "../state.js";
 import "../cover.js"; // 🔥 ensures window.openBookCover is registered before any click
 
@@ -21,8 +22,8 @@ export function renderOptions() {
   if (isNaalayiram) {
 
     return `
-      <h3>Adiyen 🙏</h3>
-      <p>Select an Option</p>
+      <h3>${t("adiyen")}</h3>
+      <p>${t("selectAnOption")}</p>
 
       <div class="tree-list">
         <div class="tree-item" onclick="openDualRecital(null)">Irattai/Star Pasurams</div>
@@ -34,17 +35,17 @@ export function renderOptions() {
         <div class="tree-item" onclick="openKoil('THIRUMOZHI')">Koil Thirumozhi</div>
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
         <div class="tree-item" onclick="openSattrumurai(null)">Sattrumurai</div>
-        <div class="tree-item" onclick="openStarPasuram()">Star & Pasuram</div>
+        <div class="tree-item" onclick="openStarPasuram()">${t("menuStarPasuram")}</div>
         <div class="tree-item" onclick="openDivyadesamArchanai()">108 Divyadesa Archanai</div>
         <div class="tree-item" onclick="openAzhwarThirunatchathra()">Azhwar Thirunatcharam Goshti</div>
-        <div class="tree-item" onclick="openRegister()">Register / Sign In</div>
-        <div class="tree-item" onclick="openRecitalPlan()">My Recital Plan</div>
-        <div class="tree-item" onclick="openDivyadesamSpinner()">Divyadesam Spinner</div>
+        <div class="tree-item" onclick="openRegister()">${t("menuRegister")}</div>
+        <div class="tree-item" onclick="openRecitalPlan()">${t("menuMyRecitalPlan")}</div>
+        <div class="tree-item" onclick="openDivyadesamSpinner()">${t("menuSpinner")}</div>
 
         <!-- 🔥 FULL BOOK IMAGE -->
         <div class="book-image-card" onclick="showFullNaalayiram()">
           <img src="assets/images/full.png" class="book-img"/>
-          <div class="book-label">Click to Open</div>
+          <div class="book-label">${t("clickToOpen")}</div>
         </div>
 
       </div>
@@ -53,10 +54,10 @@ export function renderOptions() {
 
 if (isItaram) {
   return `
-    <h3>Adiyen 🙏</h3>
+    <h3>${t("adiyen")}</h3>
     <p>இதர பிரபந்தங்கள்</p>
     <div class="tree-list">
-      <div class="tree-item" onclick="loadSections()">Arulicheyal (Sections)</div>
+      <div class="tree-item" onclick="loadSections()">${t("menuArulicheyal")}</div>
     </div>
   `;
 }
@@ -77,23 +78,23 @@ if (isItaram) {
   const imageName = imageMap[state.selectedThousandId] || "full.png";
 
   return `
-    <h3>Adiyen 🙏</h3>
-    <p>Please Select an Option</p>
+    <h3>${t("adiyen")}</h3>
+    <p>${t("pleaseSelectOption")}</p>
 
     <div class="tree-list">
-      <div class="tree-item" onclick="loadSections()">Arulicheyal (Sections)</div>
+      <div class="tree-item" onclick="loadSections()">${t("menuArulicheyal")}</div>
       <div class="tree-item" onclick="openAzhwars(${state.selectedThousandId})">Azhwars</div>
       <div class="tree-item" onclick="openDualRecital(${state.selectedThousandId})">Rettai/Star Pasurams</div>
       <div class="tree-item" onclick="openFullThaniyans(${state.selectedThousandId})">Thaniyangal</div>
       <div class="tree-item" onclick="openDivyadesam(${state.selectedThousandId})">Divyadesam</div>
       <div class="tree-item" onclick="openMunnadiPinnadi(${state.selectedThousandId})">Munnadi Pinnadi</div>
       <div class="tree-item" onclick="openSattrumurai(${state.selectedThousandId})">Sattrumurai</div>
-      <div class="tree-item" onclick="openRegister()">Register / Sign In</div>
+      <div class="tree-item" onclick="openRegister()">${t("menuRegister")}</div>
 
       <!-- 🔥 BOOK IMAGE -->
       <div class="book-image-card" onclick="showFullByThousand(${state.selectedThousandId})">
         <img src="assets/images/${imageName}" class="book-img"/>
-        <div class="book-label">Click to Open</div>
+        <div class="book-label">${t("clickToOpen")}</div>
       </div>
 
     </div>
@@ -227,7 +228,7 @@ window.openDivyadesamSpinner = function() {
 // =========================
 
 window.comingSoon = window.comingSoon || function () {
-  alert("Coming soon");
+  alert(t("comingSoonAlert"));
 };
 
 window.loadSections = loadSections;
