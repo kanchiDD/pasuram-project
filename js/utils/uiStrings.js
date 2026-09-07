@@ -22,6 +22,7 @@ const STRINGS = {
     // ── generic ───────────────────────────────────────────────
     loading:          "Loading...",
     back:             "◀ Back",
+    backPlain:        "Back",
     backToList:       "◀ Back to List",
     backTo:           "◀ Back to {name}",
     previous:         "◀ Previous",
@@ -34,6 +35,22 @@ const STRINGS = {
     up:               "Up",
     down:             "Down",
     contentLoading:   "Content Loading...",
+    begin:            "Begin",
+    start:            "Start",
+    play:             "▶ Play",
+    pause:            "⏸ Pause",
+    goTo:             "🔢 Go To",
+
+    // ── archanai ──────────────────────────────────────────────
+    archLoading:      "Loading Archanai...",
+    archTitle:        "108 Divyadesa Archanai",
+    archSubtitle:     "108 Divyadesams — Namavalli",
+    archNoData:       "Archanai data not available.",
+    archGoToPrompt:   "Desam number (1-108):",
+
+    // ── other view titles ─────────────────────────────────────
+    azhwarThirunatchathraTitle: "Azhwar Thirunatchathra Recital",
+    dualRecitalTitle:           "Rettai / Dual Recital Pasurams",
     fontBigger:       "Font +",
     fontSmaller:      "Font −",
 

@@ -3,6 +3,7 @@ import { injectNNCCSS } from "./nncCSS.js";
 import { buildIndex, registerIndexHandlers } from "./nncIndex.js";
 import { renderItem } from "./nncRender.js";
 import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL } from "./globalAudio.js";
+import { t } from "../utils/uiStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -16,7 +17,7 @@ function entryScreen() {
         <div class="nnc-deity-name">ஸ்ரீ பெரிய பெருமாள் ஸ்ரீ பெரிய பிராட்டியார்</div>
         <div class="nnc-title">நித்யானுஸந்தானம்</div>
         <div class="nnc-subtitle">நாலாயிர திவ்யப்பிரபந்தம்</div>
-        <button class="nnc-begin-btn" onclick="window._nncBegin()">Begin 🙏</button>
+        <button class="nnc-begin-btn" onclick="window._nncBegin()">${t("begin")} 🙏</button>
       </div>
     </div>`;
 }
@@ -51,7 +52,7 @@ export async function renderFullNithyanusandhanam() {
         </div>
         <div class="nnc-spinner">
           <div class="nnc-spinner-lotus">🪷</div>
-          <div style="font-size:15px;color:#7a5a20;font-family:'Latha','Bamini',serif;">Loading...</div>
+          <div style="font-size:15px;color:#7a5a20;font-family:'Latha','Bamini',serif;">${t("loading")}</div>
         </div>
       </div>`;
 
@@ -114,7 +115,7 @@ export async function renderFullNithyanusandhanam() {
             <button onclick="window._nncPlayAll && window._nncPlayAll()"
               style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
                      border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
-                     box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ Play All</button>
+                     box-shadow:0 3px 10px rgba(0,0,0,0.2)">${t("playAll")}</button>
           </div>
         </div>
         ${indexHtml}

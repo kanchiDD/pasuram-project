@@ -5,6 +5,7 @@
 // =============================================================
 
 import { state } from "../state.js";
+import { t } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { numLinePlay, PASURAM_URL, sectionPlayAll } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
@@ -136,7 +137,7 @@ function injectCSS() {
 }
 
 export function dualRecitalSpinner() {
-  return `<div class="fdr-spinner-wrap"><div class="fdr-lotus">🪷</div><div class="fdr-loading-text">Content Loading...</div></div>`;
+  return `<div class="fdr-spinner-wrap"><div class="fdr-lotus">🪷</div><div class="fdr-loading-text">${t("contentLoading")}</div></div>`;
 }
 
 // ── Raw fetchers ──────────────────────────────────────────────────────────────
@@ -197,12 +198,12 @@ function renderPasuramBlock(pasurams, pasuramDisplayMap) {
 function floatingNav() {
   return `
     <div class="fdr-float-nav">
-      <button onclick="window.location.href='tree.html'" title="Home">🏠</button>
-      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">⬆</button>
-      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="Up">◀</button>
-      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="Down">▶</button>
-      <button onclick="fdrAdjFont(2)" title="Font+">A+</button>
-      <button onclick="fdrAdjFont(-2)" title="Font-">A-</button>
+      <button onclick="window.location.href='tree.html'" title="${t("home")}">🏠</button>
+      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${t("top")}">⬆</button>
+      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${t("up")}">◀</button>
+      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${t("down")}">▶</button>
+      <button onclick="fdrAdjFont(2)" title="${t("fontBigger")}">A+</button>
+      <button onclick="fdrAdjFont(-2)" title="${t("fontSmaller")}">A-</button>
     </div>
   `;
 }
@@ -322,7 +323,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
   let html = `
     <div class="fdr-page">
       <div class="fdr-page-title">${pageTitle}</div>
-      <div class="fdr-page-subtitle">★★ Rettai / Dual Recital Pasurams</div>
+      <div class="fdr-page-subtitle">★★ ${t("dualRecitalTitle")}</div>
       <div class="fdr-divider"></div>
   `;
 
