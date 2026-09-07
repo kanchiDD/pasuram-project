@@ -4,6 +4,7 @@
 // =============================================================
 
 import { API_DD, DESAM_TOTAL, friendlyLabel, ddSpinner } from "./ddCore.js";
+import { t } from "../../utils/uiStrings.js";
 
 // Verified desam_ids for each special group
 const SPECIAL_DESAM_IDS = {
@@ -12,29 +13,36 @@ const SPECIAL_DESAM_IDS = {
   irattai:         [50,18]                               // திருதொலைவில்லிமங்கலம் + திருவாலி-திருநகரி
 };
 
-const SPECIAL_LABELS = {
-  thirunangur:     "Thirunangur Divya Desams (11)",
-  navathiruppathi: "Nava Thiruppathi Divya Desams (9)",
-  irattai:         "Irattai Thiruppathi (2 Twin-Temple Desams)"
+// Labels resolve at render time so a UI-language switch takes effect
+// without reloading this module.
+const SPECIAL_LABEL_KEYS = {
+  thirunangur:     "ddSpecialThirunangur",
+  navathiruppathi: "ddSpecialNava",
+  irattai:         "ddSpecialIrattai"
 };
 
-const SPECIAL_SUB = {
-  thirunangur:     "11 Desams · ஸ்ரீ திருமங்கை ஆழ்வார்",
-  navathiruppathi: "9 Thiruppathis",
-  irattai:         "2 Irattai Thiruppathis"
+// Sub-labels: the interface part is translated; the Azhwar's name
+// stays in Tamil, as it is a canonical name and not interface text.
+const SPECIAL_SUB_KEYS = {
+  thirunangur:     "ddSubThirunangur",
+  navathiruppathi: "ddSubNava",
+  irattai:         "ddSubIrattai"
+};
+const SPECIAL_SUB_SUFFIX = {
+  thirunangur:     " · ஸ்ரீ திருமங்கை ஆழ்வார்"
 };
 
 // ── Special group menu (full 4000 only) ───────────────────────────────────────
 export function renderSpecialMenu() {
   const rows = Object.keys(SPECIAL_DESAM_IDS).map(key => `
     <div class="dd-list-item" onclick="ddOpenSpecial('${key}')">
-      <div class="dd-list-name">${SPECIAL_LABELS[key]}</div>
-      <div class="dd-list-sub">${SPECIAL_SUB[key]}</div>
+      <div class="dd-list-name">${t(SPECIAL_LABEL_KEYS[key])}</div>
+      <div class="dd-list-sub">${t(SPECIAL_SUB_KEYS[key])}${SPECIAL_SUB_SUFFIX[key] || ""}</div>
     </div>`).join("");
 
   return `
     <div class="dd-list-box">
-      <div class="dd-list-heading">Special Divya Desam Groups</div>
+      <div class="dd-list-heading">${t("ddSpecialHeading")}</div>
       ${rows}
     </div>`;
 }
@@ -44,12 +52,12 @@ export async function renderSpecialGroup(groupKey) {
   const content = document.getElementById("fdd-content");
   if (content) content.innerHTML = ddSpinner();
 
-  const back = `<div class="dd-back" onclick="ddView('special')">◀ Back to Special Groups</div>`;
+  const back = `<div class="dd-back" onclick="ddView('special')">${t("ddBackToSpecial")}</div>`;
 
   // Fetch the full list and filter to known desam_ids
   const desamIds = SPECIAL_DESAM_IDS[groupKey];
   if (!desamIds) {
-    if (content) content.innerHTML = back + `<div style="text-align:center;padding:20px;color:#aaa;">Unknown group</div>`;
+    if (content) content.innerHTML = back + `<div style="text-align:center;padding:20px;color:#aaa;">${t("unknownGroup")}</div>`;
     return;
   }
 
@@ -76,7 +84,7 @@ export async function renderSpecialGroup(groupKey) {
 
   if (!desams.length) {
     if (content) content.innerHTML = back +
-      `<div style="text-align:center;padding:20px;color:#aaa;">No Desams found</div>`;
+      `<div style="text-align:center;padding:20px;color:#aaa;">${t("noDesams")}</div>`;
     return;
   }
 
@@ -96,7 +104,7 @@ export async function renderSpecialGroup(groupKey) {
 
   if (content) content.innerHTML = back + `
     <div class="dd-list-box">
-      <div class="dd-list-heading">${SPECIAL_LABELS[groupKey]} (${desams.length})</div>
+      <div class="dd-list-heading">${t("ddGroupCount", { label: t(SPECIAL_LABEL_KEYS[groupKey]), n: desams.length })}</div>
       ${listHtml}
     </div>`;
 }

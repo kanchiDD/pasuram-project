@@ -10,6 +10,7 @@ import {
   SECTION_TO_THOUSAND, DESAM_TOTAL, GRAND_TOTAL,
   API_DD, friendlyLabel
 } from "./ddCore.js";
+import { t } from "../../utils/uiStrings.js";
 
 import { renderDesamList, renderDesamDetail } from "./ddByDesam.js";
 import { renderAzhwarList, renderAzhwarDetail } from "./ddByAzhwar.js";
@@ -101,17 +102,17 @@ async function buildMenu(thousandId) {
     </div>`;
 
   const countLabel = thousandId
-    ? `${relevant.length} Desams`
-    : `All 108 · ${GRAND_TOTAL} Pasurams`;
+    ? t("ddDesamCount", { n: relevant.length })
+    : t("ddAllCount",   { n: GRAND_TOTAL });
 
   // Mandalam/State/District/Special only in full 4000 (not per-thousand)
   return [
-    hasDesams              ? btn("🛕", "By Divyadesam",  countLabel,              "desam")    : "",
-    hasAzhwars             ? btn("🙏", "By Azhwar",      "Select an Azhwar",      "azhwar")   : "",
-    (!thousandId && hasDesams)  ? btn("🗺️", "By Mandalam",   "Region filter",    "mandalam") : "",
-    (!thousandId && hasDesams)  ? btn("📍", "By State",       "State filter",     "state")    : "",
-    (!thousandId && hasDesams)  ? btn("🏘️", "By District",   "District filter",  "district") : "",
-    (!thousandId && hasSpecial) ? btn("⭐",  "Special Groups", "Thirunangur · Nava...", "special") : ""
+    hasDesams              ? btn("🛕", t("ddByDesam"),  countLabel,            "desam")    : "",
+    hasAzhwars             ? btn("🙏", t("ddByAzhwar"), t("ddSelectAzhwar"),   "azhwar")   : "",
+    (!thousandId && hasDesams)  ? btn("🗺️", t("ddByMandalam"), t("ddRegionFilter"),   "mandalam") : "",
+    (!thousandId && hasDesams)  ? btn("📍", t("ddByState"),    t("ddStateFilter"),    "state")    : "",
+    (!thousandId && hasDesams)  ? btn("🏘️", t("ddByDistrict"), t("ddDistrictFilter"), "district") : "",
+    (!thousandId && hasSpecial) ? btn("⭐",  t("ddSpecialGroups"), t("ddSpecialSub"), "special") : ""
   ].filter(Boolean).join("");
 }
 
@@ -131,7 +132,7 @@ export async function renderDivyadesamIndex(selectedThousandId = null) {
   return `
     <div class="dd-page">
       <div class="dd-page-title">${thousandName}</div>
-      <div class="dd-page-sub">Divya Desam Pasurams</div>
+      <div class="dd-page-sub">${t("ddSubtitle")}</div>
       <div class="dd-divider"></div>
       <div class="dd-menu-grid">${menuHtml}</div>
       <div id="fdd-content"></div>

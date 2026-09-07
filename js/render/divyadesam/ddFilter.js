@@ -7,6 +7,7 @@ import {
   API_DD, DESAM_TOTAL, AZHWARS, SECTION_TO_THOUSAND,
   friendlyLabel, ddSpinner
 } from "./ddCore.js";
+import { t } from "../../utils/uiStrings.js";
 
 // ── Render filter with native dropdown ────────────────────────────────────────
 export async function renderFilterList(filterType, thousandId, page) {
@@ -18,7 +19,7 @@ export async function renderFilterList(filterType, thousandId, page) {
                  : filterType === "state"    ? res.states
                  : res.districts;
 
-  const labels = { mandalam:"Mandalam", state:"State", district:"District" };
+  const labels = { mandalam: t("mandalam"), state: t("state"), district: t("district") };
   const label  = labels[filterType] || filterType;
 
   const options = rawItems.map(v =>
@@ -27,14 +28,14 @@ export async function renderFilterList(filterType, thousandId, page) {
 
   content.innerHTML = `
     <div class="dd-list-box">
-      <div class="dd-list-heading">Filter by ${label}</div>
+      <div class="dd-list-heading">${t("filterBy", { label })}</div>
       <div style="padding:8px 0;">
         <select id="dd-filter-select"
           style="width:100%;padding:10px 12px;font-size:15px;font-family:'Latha','Bamini',serif;
                  border:2px solid #b38b2e;border-radius:8px;background:#fff;color:#2a1a00;
                  -webkit-appearance:none;appearance:none;cursor:pointer;"
           onchange="ddPickFilter('${filterType}', this.value)">
-          <option value="">— Select a ${label} —</option>
+          <option value="">${t("selectA", { label })}</option>
           ${options}
         </select>
       </div>
@@ -54,12 +55,12 @@ export async function renderFilterResult(filterType, value, thousandId) {
     `${API_DD}?sub=${subMap[filterType]}&${paramMap[filterType]}=${encodeURIComponent(value)}`
   ).then(r => r.json());
 
-  const back = `<div class="dd-back" onclick="ddView('${filterType}')">◀ Back to ${value}</div>`;
+  const back = `<div class="dd-back" onclick="ddView('${filterType}')">${t("backTo", { name: value })}</div>`;
   const desams = Array.isArray(res) ? res : [];
 
   if (!desams.length) {
     if (content) content.innerHTML = back +
-      `<div style="text-align:center;padding:20px;color:#aaa;">No Divyadesams found</div>`;
+      `<div style="text-align:center;padding:20px;color:#aaa;">${t("noDivyadesams")}</div>`;
     return;
   }
 
@@ -79,7 +80,7 @@ export async function renderFilterResult(filterType, value, thousandId) {
   const displayVal = friendlyLabel(value) || value;
   if (content) content.innerHTML = back + `
     <div class="dd-list-box">
-      <div class="dd-list-heading" style="text-align:left;font-size:13px;">${displayVal} — ${desams.length} Desam${desams.length>1?"s":""}</div>
+      <div class="dd-list-heading" style="text-align:left;font-size:13px;">${t("desamsFor", { value: displayVal, n: desams.length, s: desams.length > 1 ? "s" : "" })}</div>
       ${listHtml}
     </div>`;
 }

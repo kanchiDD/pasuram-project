@@ -16,6 +16,7 @@ import {
   buildThirumozhiDisplayMap,
   buildPathuDisplayMap
 } from "../displayHelper.js";
+import { t } from "../../utils/uiStrings.js";
 
 export { renderThaniyan, injectDisplayCSS, fetchDisplayData,
          fetchThaniyanWithProsody, renderSectionDisplayItems,
@@ -206,7 +207,7 @@ export function injectDDCSS() {
 
 // ── Spinner HTML ──────────────────────────────────────────────────────────────
 export function ddSpinner() {
-  return `<div class="dd-spinner"><div class="dd-lotus">🪷</div><div class="dd-loading-text">Loading...</div></div>`;
+  return `<div class="dd-spinner"><div class="dd-lotus">🪷</div><div class="dd-loading-text">${t("loading")}</div></div>`;
 }
 
 // ── Floating nav ──────────────────────────────────────────────────────────────
@@ -240,9 +241,9 @@ export function renderPickList(items, title, pageFnName, page, renderItemFn) {
   const totalPages = Math.ceil(items.length / PAGE_SIZE);
   const pagination = totalPages > 1 ? `
     <div class="dd-pagination">
-      <button class="dd-page-btn" onclick="${pageFnName}(${page-1})" ${page===0?"disabled":""}>◀ Previous</button>
+      <button class="dd-page-btn" onclick="${pageFnName}(${page-1})" ${page===0?"disabled":""}>${t("previous")}</button>
       <span class="dd-page-info">${page+1} / ${totalPages}</span>
-      <button class="dd-page-btn" onclick="${pageFnName}(${page+1})" ${page>=totalPages-1?"disabled":""}>Next ▶</button>
+      <button class="dd-page-btn" onclick="${pageFnName}(${page+1})" ${page>=totalPages-1?"disabled":""}>${t("next")}</button>
     </div>` : "";
   return `
     <div class="dd-list-box">
