@@ -21,6 +21,10 @@ let userOrdered      = false;  // true → user set a custom recital order (is_u
 let includePothuT    = true;   // pothu thaniyan checkboxes (ghoshti shows both by default)
 let includePothuV    = true;
 let includePothuM    = false;  // Kesavarya (Ahobila Madam) — default on for Madam creators
+// Order the selected pothu thaniyan OPENINGS are recited in. Default is the
+// traditional தென்கலை → மடம் → வடகலை; the creator can reorder via the
+// number box beside each checkbox. Saved to the plan as e.g. "V,M,T".
+let pothuOrder = ["T", "M", "V"];
 let onSaveCallback   = null;   // called with result after save
 let _isSaving        = false; // true when user has unsaved changes on current day
 let planLoadedForDay = null;  // which day's plan is currently shown
@@ -165,18 +169,40 @@ function buildSetupHTML() {
       <label id="g-pothu-row-t" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-t" checked
                onchange="window._ghoshtiTogglePothu('T', this.checked)">
+        <input type="number" id="g-pothu-t-ord" min="1" max="3" class="g-pothu-ord"
+               title="Recital order"
+               onclick="event.preventDefault();event.stopPropagation();"
+               onchange="window._ghoshtiSetPothuOrder('T', this.value)"
+               style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
+                      border:1px solid #d8c48a;border-radius:5px;background:#fffdf5">
         <span>பொது தனியன்கள்</span>
       </label>
       <label id="g-pothu-row-m" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-m"
                onchange="window._ghoshtiTogglePothu('M', this.checked)">
+        <input type="number" id="g-pothu-m-ord" min="1" max="3" class="g-pothu-ord"
+               title="Recital order"
+               onclick="event.preventDefault();event.stopPropagation();"
+               onchange="window._ghoshtiSetPothuOrder('M', this.value)"
+               style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
+                      border:1px solid #d8c48a;border-radius:5px;background:#fffdf5">
         <span>பொது தனியன் — அஹோபிலமடம் (கேஶவார்ய)</span>
       </label>
       <label id="g-pothu-row-v" style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;cursor:pointer">
         <input type="checkbox" id="g-pothu-v" checked
                onchange="window._ghoshtiTogglePothu('V', this.checked)">
+        <input type="number" id="g-pothu-v-ord" min="1" max="3" class="g-pothu-ord"
+               title="Recital order"
+               onclick="event.preventDefault();event.stopPropagation();"
+               onchange="window._ghoshtiSetPothuOrder('V', this.value)"
+               style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
+                      border:1px solid #d8c48a;border-radius:5px;background:#fffdf5">
         <span>பொது தனியன்கள் (வடகலை)</span>
       </label>
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px">
+        எண் = சொல்லும் வரிசை · When more than one is chosen, only the opening
+        thaniyans follow this order — the common thaniyans are recited once at the end.
+      </div>
     </div>
 
     <div class="r-selected-wrap">
@@ -822,6 +848,13 @@ async function loadExistingGhoshtiPlan(plan_id) {
         includePothuT = Number(data.plan.include_pothu_t) === 1;
         includePothuV = Number(data.plan.include_pothu_v) === 1;
         includePothuM = Number(data.plan.include_pothu_m) === 1;
+        if (data.plan.pothu_order) {
+          const saved = String(data.plan.pothu_order).split(",")
+            .map(x => x.trim().toUpperCase()).filter(x => ["T","M","V"].includes(x));
+          for (const k of ["T","M","V"]) if (!saved.includes(k)) saved.push(k);
+          pothuOrder = saved;
+        }
+        if (window._ghoshtiSyncPothuOrder) window._ghoshtiSyncPothuOrder();
         const tCb = document.getElementById("g-pothu-t");
         const vCb = document.getElementById("g-pothu-v");
         const mCb = document.getElementById("g-pothu-m");
@@ -1520,6 +1553,27 @@ function registerGhoshtiBindings() {
     window._ghoshtiCloseModal();
   };
 
+  // Paint the order boxes from `pothuOrder` (1-based position per sect).
+  window._ghoshtiSyncPothuOrder = () => {
+    ["T", "M", "V"].forEach(k => {
+      const el = document.getElementById("g-pothu-" + k.toLowerCase() + "-ord");
+      if (el) el.value = pothuOrder.indexOf(k) + 1;
+    });
+  };
+
+  // Move `which` to the requested 1-based slot; the others close ranks so
+  // the three always hold positions 1,2,3 with no duplicates.
+  window._ghoshtiSetPothuOrder = (which, value) => {
+    let pos = parseInt(value, 10);
+    if (!Number.isFinite(pos)) { window._ghoshtiSyncPothuOrder(); return; }
+    pos = Math.min(3, Math.max(1, pos));
+    const rest = pothuOrder.filter(k => k !== which);
+    rest.splice(pos - 1, 0, which);
+    pothuOrder = rest;
+    isDirty = true;
+    window._ghoshtiSyncPothuOrder();
+  };
+
   window._ghoshtiTogglePothu = (which, checked) => {
     if (which === "T")      includePothuT = !!checked;
     else if (which === "M") includePothuM = !!checked;
@@ -1529,6 +1583,7 @@ function registerGhoshtiBindings() {
   // Madam creators: pre-tick Kesavarya on entry
   const mCbInit = document.getElementById("g-pothu-m");
   if (mCbInit) mCbInit.checked = includePothuM;
+  window._ghoshtiSyncPothuOrder();
 
   window._ghoshtiBack = () => {
     if (isDirty && !confirm("Adiyen, you have unsaved changes. Go back anyway?")) return;
@@ -1681,6 +1736,7 @@ function registerGhoshtiBindings() {
           include_pothu_t: includePothuT ? 1 : 0,
           include_pothu_m: includePothuM ? 1 : 0,
           include_pothu_v: includePothuV ? 1 : 0,
+          pothu_order:     pothuOrder.join(","),
           is_user_ordered: userOrdered ? 1 : 0,
           is_temple:       ghoshtiIsTemple ? 1 : 0,
           ...(ghoshtiMeta.plan_id ? { plan_id: ghoshtiMeta.plan_id } : { ghoshti_new: true })
