@@ -1,4 +1,5 @@
 import { scrollToExactThirumozhi } from "./scrollManager.js";
+import { t } from "./utils/uiStrings.js";
 function getTamilNumber(text) {
 
   if (!text) return "";
@@ -95,7 +96,7 @@ export function renderInlineOptions(sectionId, anchorRows) {
   // =========================
   html += `
     <div class="option-item" onclick="event.stopPropagation(); scrollToSection(${sectionId})">
-      ▶ Full Section
+      ▶ ${t("fullSection")}
     </div>
   `;
 
@@ -120,7 +121,7 @@ if (isPathuSection) {
         <!-- ✅ FULL PATHU (KEEP SECTION SCROLL) -->
         <div class="option-item"
              onclick="event.stopPropagation(); openPathuStart(${sectionId}, '${pathuName}')">
-          ▶ Full ${getPathuShortName(pathuName)}
+          ▶ ${t("fullOf", { name: getPathuShortName(pathuName) })}
         </div>
     `;
 

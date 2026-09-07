@@ -1,4 +1,5 @@
 import { openPathuSelector } from "./render/pathuSelector.js";
+import { t } from "./utils/uiStrings.js";
 import { state } from "./state.js";
 import { render } from "./render/layout.js";
 import { renderInlineOptions } from "./inlinePathuUI.js";
@@ -400,7 +401,7 @@ function buildInlineMenu(sectionId) {
 
   let html = `
     <div class="option-item" onclick="scrollToSection(${sectionId})">
-      ▶ Full Section
+      ▶ ${t("fullSection")}
     </div>
   `;
 
@@ -491,5 +492,3 @@ window.openPathuStart = function(sectionId, pathuName) {
     first.thirumozhi_heading
   );
 };
-
-

@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { t } from "./utils/uiStrings.js";
 import { getKoilThirumozhi, getKoilThiruvaimozhi } from "./utils/sectUtils.js";
 import { fetchThaniyan, fetchPasuram } from "./api.js";
 import { render } from "./render/layout.js";
@@ -93,7 +94,7 @@ const _koilPlayBtn = _koilQueue.length ? `
     <button onclick="window._koilPlayAll && window._koilPlayAll()"
       style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
              border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;
-             cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">▶ Play All</button>
+             cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)">${t("playAll")}</button>
   </div>` : "";
 
 document.getElementById("app").innerHTML = `

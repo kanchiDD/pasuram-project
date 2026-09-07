@@ -1,3 +1,4 @@
+import { t } from "./utils/uiStrings.js";
 
 // =========================
 // 🔥 COVER ENTRY
@@ -126,7 +127,7 @@ async function showSpinner(loadPromise, thousandName) {
       <div class="spinner-title">Naalayira Divya Prabandham</div>
 
       <div class="spinner-msg">
-        Loading all 4000 Pasurams &amp; Index&hellip;
+        ${t("coverLoadingAll")}
       </div>
 
       <div class="spinner-bar-track">
@@ -134,7 +135,7 @@ async function showSpinner(loadPromise, thousandName) {
       </div>
 
       <div class="spinner-sub">
-        Honoring the 12 Azhwars &amp; their divine compositions
+        ${t("coverHonoring")}
       </div>
 
     </div>
@@ -214,7 +215,7 @@ async function showFinalScreen(loadPromise, thousandName) {
         ${thousandName}
       </div>
 
-      <button id="enterBtn">Take me to Index</button>
+      <button id="enterBtn">${t("coverTakeMeIndex")}</button>
 
     </div>
   `;

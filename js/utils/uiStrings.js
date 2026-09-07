@@ -97,6 +97,14 @@ const STRINGS = {
     voiceNotAvailable:     "🙏 Adiyen, the contents{forName} are currently not available. Please check later.",
     voiceAnaMargazhi:      "🙏 Adiyen, during Anadhyayana Kalam we can play Ithara Prabandham, and in Margazhi, Thiruppavai and Thiruppalliyezhuchi.",
     voiceAnaOnly:          "🙏 Adiyen, during Anadhyayana Kalam we can play only Ithara Prabandham.",
+
+    // ── book cover ────────────────────────────────────────────
+    coverLoadingAll:  "Loading all 4000 Pasurams &amp; Index&hellip;",
+    coverHonoring:    "Honoring the 12 Azhwars &amp; their divine compositions",
+    coverTakeMeIndex: "Take me to Index",
+
+    // ── index inline options ──────────────────────────────────
+    fullSection:      "Full Section",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",
