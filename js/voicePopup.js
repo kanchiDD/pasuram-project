@@ -15,6 +15,7 @@
  */
 
 import { resolveVoiceQuery, executeVoiceResult } from "./voiceSearch.js?v=5";
+import { t } from "./utils/uiStrings.js";
 
 // ═══════════════════════════════════════════════════════
 // STYLES — injected once, scoped to voice UI elements
@@ -604,7 +605,7 @@ function showListeningPopup() {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen</div>
-        <div class="vp-subgreeting">You are being heard…</div>
+        <div class="vp-subgreeting">${t("voiceBeingHeard")}</div>
       </div>
     </div>
     <div class="vp-lotus">
@@ -654,14 +655,14 @@ function showResultsPopup(transcript, results) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen</div>
-        <div class="vp-subgreeting">We heard you</div>
+        <div class="vp-subgreeting">${t("voiceWeHeard")}</div>
       </div>
     </div>
 
-    <div class="vp-heard-label">You said</div>
+    <div class="vp-heard-label">${t("voiceYouSaid")}</div>
     <div class="vp-heard-text">"${escHtml(transcript)}"</div>
 
-    <div class="vp-dym-label">Do you mean…</div>
+    <div class="vp-dym-label">${t("voiceDoYouMean")}</div>
     <div class="vp-options">${optionsHtml}</div>
 
     <div class="vp-actions">
@@ -687,12 +688,12 @@ function showOffTopicPopup(transcript) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen</div>
-        <div class="vp-subgreeting">We heard you</div>
+        <div class="vp-subgreeting">${t("voiceWeHeard")}</div>
       </div>
     </div>
 
     ${!isNoSpeech ? `
-      <div class="vp-heard-label">You said</div>
+      <div class="vp-heard-label">${t("voiceYouSaid")}</div>
       <div class="vp-heard-text offtopic">"${escHtml(transcript)}"</div>
     ` : ""}
 
@@ -743,7 +744,7 @@ function showNetworkPopup(kind) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen</div>
-        <div class="vp-subgreeting">Voice search</div>
+        <div class="vp-subgreeting">${t("voiceSearchLabel")}</div>
       </div>
     </div>
     <div class="vp-offtopic-msg">${msg}</div>

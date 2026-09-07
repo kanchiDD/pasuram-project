@@ -106,6 +106,17 @@ const STRINGS = {
     // ── index inline options ──────────────────────────────────
     fullSection:      "Full Section",
     playFullNaalayiram: "▶ Play Full Naalayiram",
+
+    // ── voice search ──────────────────────────────────────────
+    voiceListening:   "Listening… speak in Tamil or English",
+    voiceBeingHeard:  "You are being heard…",
+    voiceWeHeard:     "We heard you",
+    voiceYouSaid:     "You said",
+    voiceDoYouMean:   "Do you mean…",
+    voiceSearchLabel: "Voice search",
+    search:           "Search",
+    close:            "Close",
+    opening:          "Opening ",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",

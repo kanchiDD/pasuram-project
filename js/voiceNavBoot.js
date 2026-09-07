@@ -8,6 +8,7 @@
  */
 
 import { state, pushState } from "./state.js";
+import { t } from "./utils/uiStrings.js";
 import { render }           from "./render/layout.js";
 import {
   fetchThaniyan, fetchPasuram,
@@ -316,7 +317,7 @@ function voiceOpenDivyadesamById(desamId, desamName, mode) {
     + "align-items:center;justify-content:center;background:#fff8ec;color:#7a4d00;"
     + "font-family:inherit;gap:16px";
   ov.innerHTML = `
-    <div style="font-size:15px;font-weight:700">${desamName ? "Opening " + desamName + " \u2026" : "Opening \u2026"}</div>
+    <div style="font-size:15px;font-weight:700">${desamName ? t("opening") + desamName + " \u2026" : "Opening \u2026"}</div>
     <div style="font-size:34px;animation:vdd-spin 1.4s linear infinite">\uD83E\uDEB7</div>
     <style>@keyframes vdd-spin{to{transform:rotate(360deg)}}</style>`;
   document.body.appendChild(ov);
