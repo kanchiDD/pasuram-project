@@ -31,6 +31,9 @@ const STRINGS = {
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",
+    up:               "Up",
+    down:             "Down",
+    contentLoading:   "Content Loading...",
     fontBigger:       "Font +",
     fontSmaller:      "Font −",
 

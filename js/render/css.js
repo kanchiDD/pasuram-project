@@ -1,4 +1,5 @@
 // =============================================================
+import { t } from "../utils/uiStrings.js";
 // 🎨 css.js  →  js/render/css.js
 // Import once at top of layout.js:  import "./css.js";
 // =============================================================
@@ -233,12 +234,12 @@ body, .pasuram-line, .thaniyan-line, .section-heading, .thaniyan-container {
     nav.id = "naal-float-nav";
     nav.className = "naal-float-nav";
     nav.innerHTML = `
-      <button onclick="window.location.href='tree.html'" title="Home">🏠</button>
-      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Top">⬆</button>
-      <button onclick="window.scrollBy({top:-window.innerHeight*0.8,behavior:'smooth'})" title="Up">◀</button>
-      <button onclick="window.scrollBy({top:window.innerHeight*0.8,behavior:'smooth'})" title="Down">▶</button>
-      <button onclick="naalAdjFont(2)" title="Font+">A+</button>
-      <button onclick="naalAdjFont(-2)" title="Font−">A−</button>
+      <button onclick="window.location.href='tree.html'" title="${t("home")}">🏠</button>
+      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${t("top")}">⬆</button>
+      <button onclick="window.scrollBy({top:-window.innerHeight*0.8,behavior:'smooth'})" title="${t("up")}">◀</button>
+      <button onclick="window.scrollBy({top:window.innerHeight*0.8,behavior:'smooth'})" title="${t("down")}">▶</button>
+      <button onclick="naalAdjFont(2)" title="${t("fontBigger")}">A+</button>
+      <button onclick="naalAdjFont(-2)" title="${t("fontSmaller")}">A−</button>
     `;
     document.body.appendChild(nav);
   }
