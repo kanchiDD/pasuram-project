@@ -1427,10 +1427,33 @@
         // still play the Thenkalai pothu thaniyan (display already does this).
         // The worker emits up to three global_thaniyan blocks in this exact
         // order (T, Madam, V), so we map one file per block by position.
+        const _pWant = {
+          T: Number(renderData.include_pothu_t) === 1,
+          M: Number(renderData.include_pothu_m) === 1,
+          V: Number(renderData.include_pothu_v) === 1
+        };
+        // Same ordering rule the worker uses to lay out the blocks.
+        const _pDefault = ["T", "M", "V"];
+        const _pOrder = (renderData.pothu_order ? String(renderData.pothu_order) : "")
+          .split(",").map(x => x.trim().toUpperCase()).filter(x => _pDefault.includes(x));
+        for (const k of _pDefault) if (!_pOrder.includes(k)) _pOrder.push(k);
+
+        const _pCount = (_pWant.T ? 1 : 0) + (_pWant.M ? 1 : 0) + (_pWant.V ? 1 : 0);
+
+        // Single sect → the complete recorded set for that sect.
+        // Mixed  → openings in the chosen order, then the shared remainder
+        //          once, mirroring the merged block on screen.
+        const _pFull = { T: "t", M: "k", V: "v" };
+        const _pHead = { T: "t_head", M: "k", V: "v_head" };
         const _planPothuUrls = [];
-        if (Number(renderData.include_pothu_t) === 1) _planPothuUrls.push(window._gaThaniyanUrl("t"));
-        if (Number(renderData.include_pothu_m) === 1) _planPothuUrls.push(window._gaThaniyanUrl("k"));
-        if (Number(renderData.include_pothu_v) === 1) _planPothuUrls.push(window._gaThaniyanUrl("v"));
+        if (_pCount > 1) {
+          for (const k of _pOrder) if (_pWant[k]) _planPothuUrls.push(window._gaThaniyanUrl(_pHead[k]));
+          _planPothuUrls.push(window._gaThaniyanUrl("common"));
+        } else {
+          for (const k of _pOrder) if (_pWant[k]) _planPothuUrls.push(window._gaThaniyanUrl(_pFull[k]));
+        }
+        // Mixed sets render as ONE block but need several files played for it.
+        const _pothuIsMerged = _pCount > 1;
 
         window._recitalPlayAll = function() {
           // Legacy plans carry no flags — fall back to the viewer's sect,
@@ -1443,11 +1466,14 @@
           stage.querySelectorAll("[data-thaniyan-global],[data-thaniyan-sec],[data-global-no]")
             .forEach(el => {
               if (el.hasAttribute("data-thaniyan-global")) {
-                if (_planPothuUrls.length) {
+                if (!_planPothuUrls.length) {
+                  if (_pothuIdx++ === 0) q.push(..._fallback);
+                } else if (_pothuIsMerged) {
+                  // One merged block on screen → play its whole sequence.
+                  if (_pothuIdx++ === 0) q.push(..._planPothuUrls);
+                } else {
                   const u = _planPothuUrls[_pothuIdx++];
                   if (u) q.push(u);
-                } else if (_pothuIdx++ === 0) {
-                  q.push(..._fallback);
                 }
               }
               else if (el.hasAttribute("data-thaniyan-sec")) q.push(window._gaThaniyanSecUrl(el.getAttribute("data-thaniyan-sec")));
