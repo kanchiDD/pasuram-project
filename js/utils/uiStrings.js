@@ -83,6 +83,20 @@ const STRINGS = {
     todaysRecital:    "Today's Recital",
     todaysRecitalTitle: "🙏 Today's Recital",
     anadhyayanaLabel: "Anadhyayana Kalam",
+
+    // ── start screen ──────────────────────────────────────────
+    whatWouldYouLike: "What would you like to do?",
+    seeFullNaalayiram:"See Full Naalayiram",
+    exploreByThousand:"Explore by Thousand",
+    testNewIndex:     "Test New Index",
+    loadingFullThousand: "Loading full thousand...",
+    loadingIndex:     "Loading index...",
+    failedLoadIndex:  "Failed to load index",
+
+    // ── voice play toasts ─────────────────────────────────────
+    voiceNotAvailable:     "🙏 Adiyen, the contents{forName} are currently not available. Please check later.",
+    voiceAnaMargazhi:      "🙏 Adiyen, during Anadhyayana Kalam we can play Ithara Prabandham, and in Margazhi, Thiruppavai and Thiruppalliyezhuchi.",
+    voiceAnaOnly:          "🙏 Adiyen, during Anadhyayana Kalam we can play only Ithara Prabandham.",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",

@@ -20,6 +20,7 @@ import {
   playUrls, PASURAM_URL, thaniyanFileUrl,
   globalThaniyanUrls, specialSectionUrls
 } from "./globalAudio.js";
+import { t } from "../utils/uiStrings.js";
 
 const API_VOICE = "https://cdnaalayiram-api.kanchitrust.workers.dev/voice";
 const API_DD    = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -81,9 +82,7 @@ function voiceAnaNotice(margazhi) {
   ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
     + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
     + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
-  ov.innerHTML = margazhi
-    ? "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play Ithara Prabandham, and in Margazhi, Thiruppavai and Thiruppalliyezhuchi."
-    : "\uD83D\uDE4F Adiyen, during Anadhyayana Kalam we can play only Ithara Prabandham.";
+  ov.innerHTML = margazhi ? t("voiceAnaMargazhi") : t("voiceAnaOnly");
   document.body.appendChild(ov);
   setTimeout(() => ov.remove(), 4600);
 }
@@ -94,7 +93,7 @@ export function voiceNotAvailable(name) {
   ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
     + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
     + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
-  ov.innerHTML = `\uD83D\uDE4F Adiyen, the contents${name ? " for <b>" + name + "</b>" : ""} are currently not available. Please check later.`;
+  ov.innerHTML = t("voiceNotAvailable", { forName: name ? " for <b>" + name + "</b>" : "" });
   document.body.appendChild(ov);
   setTimeout(() => ov.remove(), 4200);
 }

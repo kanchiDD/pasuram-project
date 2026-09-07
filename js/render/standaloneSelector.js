@@ -1,4 +1,5 @@
 import { renderPasuram } from "./pasuram.js";
+import { t } from "../utils/uiStrings.js";
 import { render } from "./layout.js";
 import { state } from "../state.js";
 
@@ -24,23 +25,23 @@ export function openStandaloneSelector(sectionId, sectionName, data) {
     <div class="adiyen-modal">
 
       <div class="modal-header">
-        🙏 Adiyen
+        ${t("adiyen")}
         <span id="closeModal">✖</span>
       </div>
 
       <div class="adiyen-question">
-  Do you want:
+  ${t("doYouWant")}
 </div>
 
 <div class="adiyen-options">
 
   <label class="option">
     <input type="radio" name="mode" value="full">
-    Full ${sectionName}
+    ${t("fullOf", { name: sectionName })}
   </label>
 
   <div class="adiyen-sub-divider">
-    — OR (select any one) —
+    ${t("orSelectAnyOne")}
   </div>
 
         

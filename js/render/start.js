@@ -1,4 +1,5 @@
 import { loadThousand } from "../navigation.js";
+import { t } from "../utils/uiStrings.js";
 import { testFullThousand } from "../test_fullThousand.js";
 import { renderIndex } from "../index.js";
 import { state } from "../state.js";
@@ -6,13 +7,13 @@ import { state } from "../state.js";
 export function renderStart() {
 
   return `
-    <h3>Adiyen 🙏</h3>
-    <p>What would you like to do?</p>
+    <h3>${t("adiyen")}</h3>
+    <p>${t("whatWouldYouLike")}</p>
 
     <div class="tree-list">
-      <div class="tree-item" onclick="showFull()">See Full Naalayiram</div>
-      <div class="tree-item" onclick="loadThousand()">Explore by Thousand</div>
-      <div class="tree-item" onclick="showIndexTest()">Test New Index</div>
+      <div class="tree-item" onclick="showFull()">${t("seeFullNaalayiram")}</div>
+      <div class="tree-item" onclick="loadThousand()">${t("exploreByThousand")}</div>
+      <div class="tree-item" onclick="showIndexTest()">${t("testNewIndex")}</div>
     </div>
   `;
 }
@@ -27,7 +28,7 @@ window.showFull = async function () {
 
   const app = document.getElementById("app");
 
-  app.innerHTML = "Loading full thousand...";
+  app.innerHTML = t("loadingFullThousand");
 
   const html = await testFullThousand();
 
@@ -43,7 +44,7 @@ window.showFull = showFull;
 window.showIndexTest = async function () {
 
   const app = document.getElementById("app");
-  app.innerHTML = "Loading index...";
+  app.innerHTML = t("loadingIndex");
 
   try {
 
@@ -71,7 +72,7 @@ window.showIndexTest = async function () {
 
     app.innerHTML =
       `<div style="padding:20px;color:red">
-        Failed to load index
+        ${t("failedLoadIndex")}
       </div>`;
   }
 };
