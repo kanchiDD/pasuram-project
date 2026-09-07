@@ -855,6 +855,7 @@ async function loadExistingGhoshtiPlan(plan_id) {
           pothuOrder = saved;
         }
         if (window._ghoshtiSyncPothuOrder) window._ghoshtiSyncPothuOrder();
+        if (window._ghoshtiEnforcePothuRule) window._ghoshtiEnforcePothuRule();
         const tCb = document.getElementById("g-pothu-t");
         const vCb = document.getElementById("g-pothu-v");
         const mCb = document.getElementById("g-pothu-m");
@@ -1563,6 +1564,29 @@ function registerGhoshtiBindings() {
 
   // Move `which` to the requested 1-based slot; the others close ranks so
   // the three always hold positions 1,2,3 with no duplicates.
+  // Sampradaya rule: கேஶவார்ய (Madam) always precedes the Vadakalai
+  // thaniyan. Ordering V ahead of M means a plain Vadakalai gathering,
+  // so Kesavarya drops out entirely. Thenkalai sits anywhere freely.
+  window._ghoshtiEnforcePothuRule = () => {
+    // V ordered ahead of M = a plain Vadakalai gathering: Kesavarya is
+    // then not applicable at all, so it is unticked AND fully disabled —
+    // it only becomes selectable again once M precedes V.
+    const vFirst = includePothuV && pothuOrder.indexOf("V") < pothuOrder.indexOf("M");
+    const mCb    = document.getElementById("g-pothu-m");
+    const mOrd   = document.getElementById("g-pothu-m-ord");
+    const mRow   = document.getElementById("g-pothu-row-m");
+    if (vFirst && includePothuM) includePothuM = false;
+    if (mCb)  { mCb.disabled = vFirst; if (vFirst) mCb.checked = false; }
+    if (mOrd) { mOrd.disabled = vFirst; }
+    if (mRow) {
+      mRow.style.opacity = vFirst ? "0.45" : "";
+      mRow.style.cursor  = vFirst ? "not-allowed" : "pointer";
+      mRow.title = vFirst
+        ? "வடகலை தனியன் முதலில் வரும்போது கேஶவார்ய தனியன் இல்லை"
+        : "";
+    }
+  };
+
   window._ghoshtiSetPothuOrder = (which, value) => {
     let pos = parseInt(value, 10);
     if (!Number.isFinite(pos)) { window._ghoshtiSyncPothuOrder(); return; }
@@ -1571,6 +1595,7 @@ function registerGhoshtiBindings() {
     rest.splice(pos - 1, 0, which);
     pothuOrder = rest;
     isDirty = true;
+    window._ghoshtiEnforcePothuRule();
     window._ghoshtiSyncPothuOrder();
   };
 
@@ -1578,12 +1603,24 @@ function registerGhoshtiBindings() {
     if (which === "T")      includePothuT = !!checked;
     else if (which === "M") includePothuM = !!checked;
     else                    includePothuV = !!checked;
+    // Ticking Kesavarya on pulls it ahead of Vadakalai, since it may
+    // never follow it; other cases just re-check the rule.
+    if (which === "M" && checked && includePothuV &&
+        pothuOrder.indexOf("V") < pothuOrder.indexOf("M")) {
+      const rest = pothuOrder.filter(k => k !== "M");
+      rest.splice(rest.indexOf("V"), 0, "M");
+      pothuOrder = rest;
+    } else {
+      window._ghoshtiEnforcePothuRule();
+    }
+    window._ghoshtiSyncPothuOrder();
     isDirty = true;
   };
   // Madam creators: pre-tick Kesavarya on entry
   const mCbInit = document.getElementById("g-pothu-m");
   if (mCbInit) mCbInit.checked = includePothuM;
   window._ghoshtiSyncPothuOrder();
+  window._ghoshtiEnforcePothuRule();
 
   window._ghoshtiBack = () => {
     if (isDirty && !confirm("Adiyen, you have unsaved changes. Go back anyway?")) return;

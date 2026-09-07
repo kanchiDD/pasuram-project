@@ -121,6 +121,9 @@
     /* Thaniyan content */
     .r-thaniyan-title   { font-size: 14px; font-weight: 900; color: #4a2c00; text-align: center; margin-bottom: 4px; }
     .r-thaniyan-subhead { font-size: 11px; color: #b38b2e; text-align: center; margin-bottom: 6px; font-style: italic; }
+    /* Separate each thaniyan inside a merged pothu block — space plus a
+       faint rule, so a mixed-sect set doesn't read as one run-on passage. */
+    .r-thaniyan-sep { margin-top: 16px; padding-top: 12px; border-top: 1px dashed #e8d8a0; }
     .r-thaniyan-group   { margin-bottom: 10px; }
     .r-thaniyan-line    { font-size: var(--pf); color: #4a2c00; line-height: 1.9; }
 
@@ -526,12 +529,22 @@
 
     function thaniyanLines(lines, prosodyMaster) {
       let html = "", cg = null, lastProsodyId = null;
+      // A subhead that follows actual verse lines starts a NEW thaniyan —
+      // give it separation. Consecutive subheads (name + author) stay together.
+      let seenLine = false, prevWasSubhead = false;
       for (const l of lines) {
         if (l.line_role === "title") {
           html += `<div class="r-thaniyan-title">${l.line_text}</div>`;
+          prevWasSubhead = false;
         } else if (l.line_role === "subhead") {
-          html += `<div class="r-thaniyan-subhead">${l.line_text}</div>`;
+          const startsNew = seenLine && !prevWasSubhead;
+          if (startsNew && cg !== null) { html += `</div>`; cg = null; }
+          html += `<div class="r-thaniyan-subhead${startsNew ? " r-thaniyan-sep" : ""}">${l.line_text}</div>`;
+          if (startsNew) seenLine = false;
+          prevWasSubhead = true;
         } else {
+          seenLine = true;
+          prevWasSubhead = false;
           // Show prosody name when prosody_id changes
           if (l.prosody_id && l.prosody_id !== lastProsodyId && prosodyMaster) {
             lastProsodyId = l.prosody_id;
