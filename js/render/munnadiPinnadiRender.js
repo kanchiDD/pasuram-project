@@ -1,6 +1,7 @@
 // munnadiPinnadiRender.js
 
 import { injectMunnadiCSS } from "./munnadiCSS.js";
+import { t } from "../utils/uiStrings.js";
 import { buildMunnadiIndex, registerMunnadiIndexHandlers } from "./munnadiIndex.js";
 
 const API_BASE = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -127,21 +128,21 @@ export function munnadiSpinner() {
   return `
     <div class="mp-portrait-gate">
       <div class="mp-rotate-icon">🔄</div>
-      <div class="mp-rotate-msg">Please rotate to landscape to view Munnadi Pinnadi</div>
+      <div class="mp-rotate-msg">${t("munnadiRotate")}</div>
     </div>
     <div class="mp-page">
-      <div class="mp-page-header">Munnadi Pinnadi<div class="mp-page-header-sub">Naalayira Divya Prabandham</div></div>
-      <div class="mp-spinner"><div class="mp-spinner-lotus">🪷</div><div style="font-size:13px;color:#7a5a20;">Loading...</div></div>
+      <div class="mp-page-header">${t("munnadiTitle")}<div class="mp-page-header-sub">Naalayira Divya Prabandham</div></div>
+      <div class="mp-spinner"><div class="mp-spinner-lotus">🪷</div><div style="font-size:13px;color:#7a5a20;">${t("loading")}</div></div>
     </div>`;
 }
 
 // ── Float nav ──
 function floatNav() {
   return `<div class="mp-float-nav">
-    <button title="Home"      onclick="window.goHome?.()">🏠</button>
-    <button title="Top"       onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-    <button title="Page up"   onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})">◀</button>
-    <button title="Page down" onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})">▶</button>
+    <button title="${t("home")}"      onclick="window.goHome?.()">🏠</button>
+    <button title="${t("top")}"       onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+    <button title="${t("pageUp")}"   onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})">◀</button>
+    <button title="${t("pageDown")}" onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})">▶</button>
     <button title="Zoom in"   onclick="(()=>{const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mp-font')||'11');document.documentElement.style.setProperty('--mp-font',(v+1)+'px')})()">A+</button>
     <button title="Zoom out"  onclick="(()=>{const v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mp-font')||'11');document.documentElement.style.setProperty('--mp-font',(Math.max(8,v-1))+'px')})()">A-</button>
   </div>`;
@@ -167,7 +168,7 @@ function buildPage(data, globalThaniyan) {
   parts.push(`
     <div class="mp-portrait-gate">
       <div class="mp-rotate-icon">🔄</div>
-      <div class="mp-rotate-msg">Please rotate to landscape to view Munnadi Pinnadi</div>
+      <div class="mp-rotate-msg">${t("munnadiRotate")}</div>
     </div>`);
   parts.push(`<div class="mp-page">`);
   parts.push(`<div class="mp-page-header">Munnadi Pinnadi<div class="mp-page-header-sub">${data.thousand_name || ''}</div></div>`);

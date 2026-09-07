@@ -38,6 +38,14 @@ const STRINGS = {
     nowPlaying:       "Playing…",
     tapToResume:      "— ▶ Resume",
     showMyTree:       "Show My Naalayiram Tree",
+    mute:             "Mute",
+    index:            "Index",
+    pageUp:           "Page up",
+    pageDown:         "Page down",
+
+    // ── munnadi pinnadi ───────────────────────────────────────
+    munnadiTitle:     "Munnadi Pinnadi",
+    munnadiRotate:    "Please rotate to landscape to view Munnadi Pinnadi",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",

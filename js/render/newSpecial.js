@@ -5,6 +5,7 @@
 // =====================================================
 
 import { state } from "../state.js";
+import { t } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./newThaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 
@@ -53,22 +54,22 @@ function buildMiniAudioControls(audioId, src) {
     <audio id="${audioId}" src="${src}" style="display:none;"></audio>
     <div style="display:flex;gap:22px;justify-content:center;align-items:flex-start;margin:8px 0;">
       <div style="${groupStyle}">
-        <button type="button" title="Play"
+        <button type="button" title="${t("playPlain")}"
           onclick="document.getElementById('${audioId}').play()"
           style="${btnStyle}background:#3cb043;">▶</button>
-        <span style="${labelStyle}">Play</span>
+        <span style="${labelStyle}">${t("playPlain")}</span>
       </div>
       <div style="${groupStyle}">
-        <button type="button" title="Stop"
+        <button type="button" title="${t("stop")}"
           onclick="var a=document.getElementById('${audioId}');a.pause();a.currentTime=0;"
           style="${btnStyle}background:#555;">■</button>
-        <span style="${labelStyle}">Stop</span>
+        <span style="${labelStyle}">${t("stop")}</span>
       </div>
       <div style="${groupStyle}">
-        <button type="button" title="Mute"
+        <button type="button" title="${t("mute")}"
           onclick="var a=document.getElementById('${audioId}');a.muted=!a.muted;this.textContent=a.muted?'🔇':'🔊';"
           style="${btnStyle}background:#777;">🔊</button>
-        <span style="${labelStyle}">Mute</span>
+        <span style="${labelStyle}">${t("mute")}</span>
       </div>
     </div>
   `;
