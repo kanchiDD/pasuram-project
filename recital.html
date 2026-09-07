@@ -350,11 +350,12 @@
 
     // Shared audio engine — 3-buffer gapless player, control bar,
     // auto-highlight and tap-to-resume, same as the rest of the site.
-    import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL }
+    import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, THANIYAN_URL, PASURAM_URL }
       from "./js/render/globalAudio.js";
     window._gaPlayUrls           = playUrls;
     window._gaGlobalThaniyanUrls = globalThaniyanUrls;
     window._gaThaniyanSecUrl     = THANIYAN_SEC_URL;
+    window._gaThaniyanUrl        = THANIYAN_URL;
     window._gaPasuramUrl         = PASURAM_URL;
   </script>
 </head>
@@ -1421,17 +1422,38 @@
         // Sattrumurai carries no marker (separate-pitch audio pending),
         // and files not yet uploaded are skipped by the player's onerror —
         // new audio starts working with no code change.
+        // Pothu thaniyan audio follows the PLAN's own flags, not the
+        // viewer's sect — a Thenkalai ghoshti opened by a Madam user must
+        // still play the Thenkalai pothu thaniyan (display already does this).
+        // The worker emits up to three global_thaniyan blocks in this exact
+        // order (T, Madam, V), so we map one file per block by position.
+        const _planPothuUrls = [];
+        if (Number(renderData.include_pothu_t) === 1) _planPothuUrls.push(window._gaThaniyanUrl("t"));
+        if (Number(renderData.include_pothu_m) === 1) _planPothuUrls.push(window._gaThaniyanUrl("k"));
+        if (Number(renderData.include_pothu_v) === 1) _planPothuUrls.push(window._gaThaniyanUrl("v"));
+
         window._recitalPlayAll = function() {
+          // Legacy plans carry no flags — fall back to the viewer's sect,
+          // which matches the worker's own legacy behaviour.
           const _sect    = localStorage.getItem("sect") || "T";
           const _subsect = localStorage.getItem("subsect") || "";
+          const _fallback = window._gaGlobalThaniyanUrls(_sect, _subsect);
+          let _pothuIdx = 0;
           const q = [];
           stage.querySelectorAll("[data-thaniyan-global],[data-thaniyan-sec],[data-global-no]")
             .forEach(el => {
-              if (el.hasAttribute("data-thaniyan-global")) q.push(...window._gaGlobalThaniyanUrls(_sect, _subsect));
+              if (el.hasAttribute("data-thaniyan-global")) {
+                if (_planPothuUrls.length) {
+                  const u = _planPothuUrls[_pothuIdx++];
+                  if (u) q.push(u);
+                } else if (_pothuIdx++ === 0) {
+                  q.push(..._fallback);
+                }
+              }
               else if (el.hasAttribute("data-thaniyan-sec")) q.push(window._gaThaniyanSecUrl(el.getAttribute("data-thaniyan-sec")));
               else q.push(window._gaPasuramUrl(el.getAttribute("data-global-no")));
             });
-          if (q.length) window._gaPlayUrls(q, "Today's Recital");
+          if (q.length) window._gaPlayUrls(q, isGhoshtiView ? (ghoshtiName || "Ghoshti") : "Today's Recital");
         };
 
         const _recPlayBtn = `
