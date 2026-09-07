@@ -1,4 +1,5 @@
 import { state } from "../state.js";
+import { t } from "../utils/uiStrings.js";
 import { render } from "./layout.js";
 
 /* 🔥 HELPERS */
@@ -50,26 +51,26 @@ function getPathuShortName(pathuName) {
 
 export function openPathuSelector() {
   const modal = document.getElementById("pathuModal");
-  const sectionName = state.selectedSectionName || "Section";
+  const sectionName = state.selectedSectionName || t("sectionFallback");
 
   let html = `
     <div class="overlay">
       <div class="adiyen-modal">
         <div class="modal-header">
-          🙏 Adiyen
+          ${t("adiyen")}
           <span onclick="closePathuModal()">✖</span>
         </div>
 
-        <div class="adiyen-question">Do you want:</div>
+        <div class="adiyen-question">${t("doYouWant")}</div>
 
         <div class="adiyen-options">
 
           <label class="option">
             <input type="radio" name="pathu" value="full" onclick="setTimeout(confirmPathu,0)">
-            Full ${sectionName}
+            ${t("fullOf", { name: sectionName })}
           </label>
 
-          <div class="adiyen-sub-divider">— OR (select any one) —</div>
+          <div class="adiyen-sub-divider">${t("orSelectAnyOne")}</div>
   `;
 
   const source = state.pasuramData || [];
@@ -162,22 +163,22 @@ function openThirumozhiSelector() {
       <div class="adiyen-modal">
 
         <div class="modal-header">
-          🙏 Adiyen
+          ${t("adiyen")}
           <span onclick="closePathuModal()">✖</span>
         </div>
 
         <div class="adiyen-question">
-          Select ${state.selectedSectionName}:
+          ${t("selectOf", { name: state.selectedSectionName })}
         </div>
 
         <div class="adiyen-options">
 
           <label class="option">
             <input type="radio" name="thirumozhi" value="full" onclick="setTimeout(confirmThirumozhi,0)">
-            Full ${pathuName}
+            ${t("fullOf", { name: pathuName })}
           </label>
 
-          <div class="adiyen-sub-divider">— OR (select any one) —</div>
+          <div class="adiyen-sub-divider">${t("orSelectAnyOne")}</div>
   `;
 
   list.forEach(obj => {

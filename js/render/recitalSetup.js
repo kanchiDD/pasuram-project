@@ -1,5 +1,6 @@
 // ── recitalSetup.js ──────────────────────────────────────────────
 import { state } from "../state.js";
+import { t } from "../utils/uiStrings.js";
 import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL } from "./globalAudio.js";
 
 const WORKER              = "https://recitalworker.kanchitrust.workers.dev";
@@ -112,12 +113,12 @@ function buildIntroHTML() {
   return `
   <div class="recital-wrap">
     ${recitalCSS()}
-    <div class="recital-title">🙏 My Recital Plan</div>
+    <div class="recital-title">${t("myRecitalPlan")}</div>
     <div class="recital-sub">
       Your personal daily recital from the Naalayira Divya Prabandham
     </div>
     <div class="recital-intro-card">
-      <div class="recital-intro-how">How it works</div>
+      <div class="recital-intro-how">${t("howItWorks")}</div>
       <div class="recital-intro-step">
         <span class="recital-step-no">1</span>
         Choose sections, pathus or thirumozhi from the full 4000
@@ -157,21 +158,21 @@ function buildSetupHTML() {
   <div class="recital-wrap">
     ${recitalCSS()}
     <div class="recital-nav-row">
-      <span class="recital-back-link" onclick="window._recitalGoIntro()">← Back</span>
-      <div class="recital-title" style="margin:0">Setup My Plan</div>
+      <span class="recital-back-link" onclick="window._recitalGoIntro()">${t("backArrow")}</span>
+      <div class="recital-title" style="margin:0">${t("setupMyPlan")}</div>
       <span></span>
     </div>
 
-    <div class="r-section-label">Assign to day</div>
+    <div class="r-section-label">${t("assignToDay")}</div>
     <div class="r-day-row">${dayBtns}</div>
 
     <div class="r-selected-wrap">
       <div class="r-selected-label">Your Selection
         <span style="float:right;font-size:12px;color:#7a4d00;cursor:pointer;text-decoration:underline;font-weight:400"
-              onclick="window._recitalReorder()">Reorder ⇅</span>
+              onclick="window._recitalReorder()">${t("reorder")}</span>
       </div>
       <div id="r-selected-list">
-        <div class="r-selected-empty">Nothing selected yet</div>
+        <div class="r-selected-empty">${t("nothingSelected")}</div>
       </div>
     </div>
 
@@ -179,15 +180,15 @@ function buildSetupHTML() {
       <div class="r-pasuram-label">Add specific Pasuram — enter pasuram number (1–3776)</div>
       <div class="r-pasuram-row">
         <input type="number" id="r-pasuram-input" class="r-pasuram-input"
-               placeholder="e.g. 474" min="1" max="3776">
-        <button class="r-pasuram-btn" onclick="window._recitalLookupPasuram()">Add</button>
+               placeholder="${t("egPasuramNo")}" min="1" max="3776">
+        <button class="r-pasuram-btn" onclick="window._recitalLookupPasuram()">${t("add")}</button>
       </div>
       <div id="r-pasuram-preview" class="r-pasuram-preview"></div>
     </div>
 
-    <div class="r-section-label">Select Prabandham</div>
+    <div class="r-section-label">${t("selectPrabandham")}</div>
     <div id="r-catalog-list">
-      <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">Loading...</div>
+      <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">${t("loading")}</div>
     </div>
 
     <button class="recital-btn-primary" style="width:100%;margin-top:8px"
@@ -200,7 +201,7 @@ function buildSetupHTML() {
   <!-- Full/Rettai popup -->
   <div class="r-popup-overlay" id="r-popup-overlay">
     <div class="r-popup-box">
-      <div class="r-popup-title">🙏 Adiyen</div>
+      <div class="r-popup-title">${t("adiyen")}</div>
       <div class="r-popup-sub" id="r-popup-sub"></div>
       <button class="recital-btn-primary" style="width:100%;margin-bottom:8px"
               onclick="window._recitalPickFull()">
@@ -212,7 +213,7 @@ function buildSetupHTML() {
       </button>
       <div style="text-align:center;margin-top:10px">
         <span style="font-size:12px;color:#b38b2e;cursor:pointer;text-decoration:underline"
-              onclick="window._recitalCancelPopup()">Cancel</span>
+              onclick="window._recitalCancelPopup()">${t("cancel")}</span>
       </div>
     </div>
   </div>
@@ -226,7 +227,7 @@ function buildSetupHTML() {
         <div class="r-modal-close" onclick="window._recitalCloseModal()">✕</div>
       </div>
       <div class="r-modal-back" id="r-modal-back"
-           onclick="window._recitalModalBack()">← Back</div>
+           onclick="window._recitalModalBack()">${t("backArrow")}</div>
       <div id="r-modal-content"></div>
     </div>
   </div>
@@ -257,7 +258,7 @@ async function buildRecitalHTML() {
       app.innerHTML = `
         <div class="recital-wrap">
           ${recitalCSS()}
-          <div class="recital-title">🙏 Today's Recital</div>
+          <div class="recital-title">${t("todaysRecitalTitle")}</div>
           <div style="text-align:center;padding:30px;color:#999;font-size:14px">
             No plan set up for today.<br>
             <button class="recital-btn-primary" style="margin-top:16px"
@@ -312,15 +313,15 @@ function buildRecitalDisplayHTML(blocks, plan) {
       <button onclick="window._recitalPlayAll && window._recitalPlayAll()"
         style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
                border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
-               box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ Play All</button>
+               box-shadow:0 3px 10px rgba(0,0,0,0.2)">${t("playAll")}</button>
     </div>` : "";
 
   let html = `
   <div class="recital-wrap">
     ${recitalCSS()}
     <div class="recital-nav-row">
-      <span class="recital-back-link" onclick="window._recitalGoIntro()">← Back</span>
-      <div class="recital-title" style="margin:0">Today's Recital</div>
+      <span class="recital-back-link" onclick="window._recitalGoIntro()">${t("backArrow")}</span>
+      <div class="recital-title" style="margin:0">${t("todaysRecital")}</div>
       <span></span>
     </div>
     ${_playBtn}
@@ -579,7 +580,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   // Ahobila Madam Arulicheyals: inform before adding — their selection
   // switches the sattrumurai to the Madam order.
   if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)) {
-    const ok = confirm("Adiyen \ud83d\ude4f These Arulicheyals are recited by Sri Ahobilamadam followers, and selecting them will change the sattrumurai order. Do you wish to continue?");
+    const ok = confirm(t("ahobilaConfirm"));
     if (!ok) return;
   }
   // For full pathu (pathu_id=null, is_child=false): skip early-return duplicate check
@@ -739,7 +740,7 @@ function renderCatalogIntoDOM() {
   if (_anaState && _anaState.active) {
     html += `<div style="background:#fff6e0;border:1px solid #e0c070;border-radius:10px;
       padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7a4d00;line-height:1.5">
-      🙏 <b>Anadhyayana Kalam</b> — only these Prabandhams are recited in this period.
+      🙏 <b>${t("anadhyayanaLabel")}</b> — only these Prabandhams are recited in this period.
       To recite anything else, please use the Naalayiram Tree.</div>`;
   }
 
@@ -798,11 +799,11 @@ function showReorderScreen(onDone) {
     overlay.innerHTML = `
       <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:430px;width:100%;max-height:82vh;display:flex;flex-direction:column;font-family:inherit">
         <div style="padding:14px 16px 4px;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-weight:700;color:#7a4d00;font-size:15px">Re-order my selection ⇅</span>
+          <span style="font-weight:700;color:#7a4d00;font-size:15px">${t("reorderSelection")}</span>
           <span style="cursor:pointer;font-size:18px;color:#7a4d00;line-height:1;padding:0 4px"
                 onclick="window._rReorderExit()" title="Close">✕</span>
         </div>
-        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">The recital will follow this order 🙏</div>
+        <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">${t("recitalOrderNote")}</div>
         <div style="overflow-y:auto;padding:6px 16px;flex:1">
           ${order.map((it, i) => `
             <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
@@ -815,9 +816,9 @@ function showReorderScreen(onDone) {
         </div>
         <div style="padding:10px 16px 14px;display:flex;gap:8px">
           <button class="recital-btn-secondary" style="flex:1"
-                  onclick="window._rReorderReset()">Reset order</button>
+                  onclick="window._rReorderReset()">${t("resetOrder")}</button>
           <button class="recital-btn-primary" style="flex:1"
-                  onclick="window._rReorderDone()">Apply 🙏</button>
+                  onclick="window._rReorderDone()">${t("apply")}</button>
         </div>
       </div>`;
   };
@@ -854,7 +855,7 @@ function renderSelected() {
   const el = document.getElementById("r-selected-list");
   if (!el) return;
   if (!selectedItems.length) {
-    el.innerHTML = `<div class="r-selected-empty">Nothing selected yet</div>`;
+    el.innerHTML = `<div class="r-selected-empty">${t("nothingSelected")}</div>`;
     return;
   }
   // Canonical priority order (sec1 → sec8 → sec3 → others by global_no_start)
@@ -921,7 +922,7 @@ function renderModalContent() {
                ${frame.global_no_start||0},this.checked)">
       <span class="r-modal-option-label">Full ${frame.section_name}</span>
     </div>
-    <div class="r-modal-divider">— OR select specific —</div>`;
+    <div class="r-modal-divider">${t("orSelectSpecific")}</div>`;
 
     if (frame.data.type === "pathu") {
       for (const p of frame.data.items) {
@@ -966,7 +967,7 @@ function renderModalContent() {
                ${frame.pathu_id},'${escHtml(frame.pathu_name)}',${frame.pathu_no||0},${frame.global_no_start||0},this.checked)">
       <span class="r-modal-option-label">Full ${frame.pathu_name}</span>
     </div>
-    <div class="r-modal-divider">— OR select specific Thirumozhi —</div>`;
+    <div class="r-modal-divider">${t("orSelectThirumozhi")}</div>`;
 
     for (const t of frame.data.items) {
       const subunit  = t.pathu_subunit_name || "";
@@ -1419,7 +1420,7 @@ export function registerRecitalBindings() {
     document.getElementById("r-modal-content").innerHTML = `
       <div style="display:flex;flex-direction:column;gap:8px">
         <button class="recital-btn-primary" style="width:100%"
-                onclick="window._recitalKoilAddFull(${koilId})">Add Full</button>
+                onclick="window._recitalKoilAddFull(${koilId})">${t("addFull")}</button>
         <button type="button"
                 style="width:100%;padding:10px;border:1px solid #d4a843;background:#fff;color:#7a4d00;border-radius:8px;cursor:pointer;font-size:14px"
                 onclick="window._recitalKoilToggleList()">Select from the List</button>
