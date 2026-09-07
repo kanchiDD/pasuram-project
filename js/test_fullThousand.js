@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { t } from "./utils/uiStrings.js";
 import {
   fetchSections,
   fetchThaniyan,
@@ -192,7 +193,7 @@ if (selectedThousandId) {
   <div class="index-border">
 
     <div class="index-title">
-      📑 Index
+      📑 ${t("index")}
     </div>
 
     ${renderIndex(anchorRows.filter(r => _allowSec(r.section_id)), t.id)}
@@ -493,7 +494,7 @@ if (isFullMode) {
       <button onclick="window._f4kPlayAll && window._f4kPlayAll()"
         style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
                border-radius:22px;padding:10px 24px;font-size:15px;font-weight:700;cursor:pointer;
-               box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ முழு நாலாயிரமும்</button>
+               box-shadow:0 3px 10px rgba(0,0,0,0.2)">${t("playFullNaalayiram")}</button>
     </div>` : "";
 
   // Index split: core 4000 sections vs ithara — separate boxes, separate
@@ -524,7 +525,7 @@ if (isFullMode) {
 
   <div class="index-border">
     <div class="index-title">
-      📑 Index
+      📑 ${t("index")}
     </div>
 
     ${renderIndex(_coreIdxRows, null)}

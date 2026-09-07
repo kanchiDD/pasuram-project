@@ -105,6 +105,7 @@ const STRINGS = {
 
     // ── index inline options ──────────────────────────────────
     fullSection:      "Full Section",
+    playFullNaalayiram: "▶ Play Full Naalayiram",
     home:             "Home",
     top:              "Top",
     bottom:           "Bottom",
