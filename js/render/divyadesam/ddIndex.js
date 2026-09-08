@@ -88,12 +88,12 @@ async function buildMenu(thousandId) {
     !thousandId || (d.thousand_ids || []).includes(Number(thousandId))
   );
 
-  const t = Number(thousandId);
+  const tid = Number(thousandId);
   const hasDesams   = relevant.length > 0;
   const hasAzhwars  = AZHWARS.some(a =>
-    !thousandId || a.sections.some(s => SECTION_TO_THOUSAND[s] === t)
+    !thousandId || a.sections.some(s => SECTION_TO_THOUSAND[s] === tid)
   );
-  const hasSpecial  = !thousandId || t === 2 || t === 4;
+  const hasSpecial  = !thousandId || tid === 2 || tid === 4;
 
   const btn = (icon, label, sub, view) =>
     `<div class="dd-menu-btn" onclick="ddView('${view}')">
