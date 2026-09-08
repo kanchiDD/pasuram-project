@@ -1,4 +1,4 @@
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 // =============================================================
 // globalAudio.js  →  js/render/globalAudio.js
 // ONE audio design for the whole site:
@@ -200,12 +200,12 @@ function setBtnState(btn, playing) {
     btn.style.background = "#c0392b";     // red
     btn.textContent = "■";
     btn.classList.add("ga-playing");
-    if (label) { label.textContent = t("stop"); label.style.color = "#c0392b"; }
+    if (label) { label.textContent = uiText("stop"); label.style.color = "#c0392b"; }
   } else {
     btn.style.background = "#2e7d32";     // green
     btn.textContent = "▶";
     btn.classList.remove("ga-playing");
-    if (label) { label.textContent = label.dataset.idle || t("playPlain"); label.style.color = "#2e7d32"; }
+    if (label) { label.textContent = label.dataset.idle || uiText("playPlain"); label.style.color = "#2e7d32"; }
   }
 }
 
@@ -241,7 +241,7 @@ export function gaCurrentGlobalNo() {
       if (!raw || _gaState.urls.length) return;
       const s = JSON.parse(raw);
       if (!s || !Array.isArray(s.urls) || !s.urls.length) return;
-      showAudioControls((s.label || t("nowPlaying")) + " " + t("tapToResume"));
+      showAudioControls((s.label || uiText("nowPlaying")) + " " + uiText("tapToResume"));
       const bar = (typeof ensureControlBar === "function") ? ensureControlBar() : null;
       if (!bar) return;
       const resume = (ev) => {
@@ -309,8 +309,8 @@ function ensureControlBar() {
   bar.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px">
       <span id="ga-ctl-label" style="flex:1;font-size:13px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\u0b87\u0b9a\u0bc8 / Playing…</span>
-      <button id="ga-ctl-pause" title="${t("pausePlain")}" style="width:38px;height:38px;border-radius:50%;border:none;background:#C9A84C;color:#3a2a18;font-size:16px;cursor:pointer">\u2225</button>
-      <button id="ga-ctl-stop" title="${t("stop")}" style="width:38px;height:38px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">\u25A0</button>
+      <button id="ga-ctl-pause" title="${uiText("pausePlain")}" style="width:38px;height:38px;border-radius:50%;border:none;background:#C9A84C;color:#3a2a18;font-size:16px;cursor:pointer">\u2225</button>
+      <button id="ga-ctl-stop" title="${uiText("stop")}" style="width:38px;height:38px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">\u25A0</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span id="ga-ctl-cur" style="font-size:11px;color:#e8d9b5;min-width:34px;text-align:right">0:00</span>
@@ -380,7 +380,7 @@ function updatePauseIcon() {
   if (!btn) return;
   const p = getPlayer();
   btn.textContent = p.paused ? "\u25B6" : "\u2225";
-  btn.title = p.paused ? t("resume") : t("pausePlain");
+  btn.title = p.paused ? uiText("resume") : uiText("pausePlain");
 }
 function showAudioControls(label) {
   const bar = ensureControlBar();
@@ -408,7 +408,7 @@ window._gaToggle = function (id) {
 
   // Delegate to the double-buffered queue player for gapless (butt-joined)
   // playback; reset this button's state when the queue finishes naturally.
-  const label = btn.getAttribute("data-ga-label") || t("nowPlaying");
+  const label = btn.getAttribute("data-ga-label") || uiText("nowPlaying");
   const ok = _playQueue(data.urls, label, 0, 0, true, () => setBtnState(btn, false));
   if (ok) setBtnState(btn, true);
 };
@@ -429,7 +429,7 @@ function _playQueue(urls, label, startIdx, startTime, autoplay, onDone) {
   stopAll();
   _gaActiveIdx = 0;
   _gaState = { urls: list, idx: startIdx, label: label || "" };
-  showAudioControls(label || t("nowPlaying"));
+  showAudioControls(label || uiText("nowPlaying"));
   setMediaSession(label);
 
   // Bind the per-queue handlers (pause/play icon, state-save) to a buffer.
@@ -540,7 +540,7 @@ export function globalThaniyanUrls(sect, subsect) {
 // ── ONE builder ────────────────────────────────────────────────
 // size: "sm" (inline pasuram) | "lg" (thaniyan / section)
 // label: idle subscript text ("Play", "Play All")
-export function audioBtn(id, urls, size = "sm", label = t("playPlain")) {
+export function audioBtn(id, urls, size = "sm", label = uiText("playPlain")) {
   _registry.set(id, { urls: Array.isArray(urls) ? urls : [urls] });
   const d    = size === "lg" ? 26 : 18;
   const fs   = size === "lg" ? 12 : 9;
@@ -563,10 +563,10 @@ export function audioBtn(id, urls, size = "sm", label = t("playPlain")) {
 // centerPlayBtn : plays a single url (thaniyan / pasuram)
 // centerQueueBtn: plays a queue (section Play All) — same look
 export function centerPlayBtn(id, url) {
-  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, url, "sm", t("playPlain"))}</div>`;
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, url, "sm", uiText("playPlain"))}</div>`;
 }
 export function centerQueueBtn(id, urls) {
-  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, urls, "sm", t("playAllPlain"))}</div>`;
+  return `<div class="ga-center" style="display:flex;justify-content:center;margin:3px 0 5px">${audioBtn(id, urls, "sm", uiText("playAllPlain"))}</div>`;
 }
 
 // ── Pasuram number + play on ONE line (no extra row) ──
@@ -574,7 +574,7 @@ export function centerQueueBtn(id, urls) {
 // The number pins to the left; the small green ▶ (with Play/Stop
 // subscript that flips green→red automatically) centers on the SAME line.
 export function numLinePlay(numberHtml, id, url, hasAudio) {
-  const btn = hasAudio ? audioBtn(id, url, "sm", t("playPlain")) : "";
+  const btn = hasAudio ? audioBtn(id, url, "sm", uiText("playPlain")) : "";
   return `<div class="ga-numline" style="display:flex;align-items:center;min-height:24px">
     <span style="flex:0 0 auto">${numberHtml}</span>
     <span style="flex:1;display:flex;justify-content:center">${btn}</span>
@@ -642,8 +642,8 @@ export function thousandPlayAll(thousandId, thousandName, urls) {
         style="background:#2e7d32;color:#fff;border:none;border-radius:50%;
                width:30px;height:30px;font-size:15px;cursor:pointer;
                line-height:1;padding:0;display:flex;align-items:center;justify-content:center">▶</button>
-      <span class="ga-sub" data-idle="${t("playFull")}"
-        style="font-size:12px;color:#2e7d32;margin-top:3px;line-height:1.1;font-weight:600">${t("playFull")}</span>
+      <span class="ga-sub" data-idle="${uiText("playFull")}"
+        style="font-size:12px;color:#2e7d32;margin-top:3px;line-height:1.1;font-weight:600">${uiText("playFull")}</span>
       ${nameHtml}
     </span>
   </div>`;

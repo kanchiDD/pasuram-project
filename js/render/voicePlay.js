@@ -20,7 +20,7 @@ import {
   playUrls, PASURAM_URL, thaniyanFileUrl,
   globalThaniyanUrls, specialSectionUrls
 } from "./globalAudio.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 
 const API_VOICE = "https://cdnaalayiram-api.kanchitrust.workers.dev/voice";
 const API_DD    = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
@@ -82,7 +82,7 @@ function voiceAnaNotice(margazhi) {
   ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
     + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
     + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
-  ov.innerHTML = margazhi ? t("voiceAnaMargazhi") : t("voiceAnaOnly");
+  ov.innerHTML = margazhi ? uiText("voiceAnaMargazhi") : uiText("voiceAnaOnly");
   document.body.appendChild(ov);
   setTimeout(() => ov.remove(), 4600);
 }
@@ -93,7 +93,7 @@ export function voiceNotAvailable(name) {
   ov.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:99999;"
     + "max-width:88%;background:#fff6e0;color:#7a4d00;border:1px solid #e0c070;border-radius:12px;"
     + "padding:12px 16px;font-family:inherit;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,0.18);text-align:center";
-  ov.innerHTML = t("voiceNotAvailable", { forName: name ? " for <b>" + name + "</b>" : "" });
+  ov.innerHTML = uiText("voiceNotAvailable", { forName: name ? " for <b>" + name + "</b>" : "" });
   document.body.appendChild(ov);
   setTimeout(() => ov.remove(), 4200);
 }

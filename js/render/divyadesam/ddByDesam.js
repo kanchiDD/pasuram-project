@@ -18,7 +18,7 @@ import {
   renderSectionClosing, fetchDisplayData, fetchThaniyanWithProsody,
   renderThaniyan, buildPasuramDisplayMap, ddSpinner
 } from "./ddCore.js";
-import { t } from "../../utils/uiStrings.js";
+import { t as uiText } from "../../utils/uiStrings.js";
 
 
 // ── Fetch lines for special sections 21/22/23 ─────────────────────────────────
@@ -314,8 +314,8 @@ export async function renderDesamDetail(desamId, thousandId) {
 
   if (!filtered.length) {
     if (content) content.innerHTML =
-      `<div class="dd-back" onclick="ddView('desam')">${t("backToList")}</div>
-       <div style="text-align:center;padding:20px;color:#aaa;">${t("noPasurams")} for this Thousand</div>`;
+      `<div class="dd-back" onclick="ddView('desam')">${uiText("backToList")}</div>
+       <div style="text-align:center;padding:20px;color:#aaa;">${uiText("noPasurams")} for this Thousand</div>`;
     return;
   }
 
@@ -331,7 +331,7 @@ export async function renderDesamDetail(desamId, thousandId) {
     if (q.length) playUrls(q, desam.canonical_name || "Divyadesam");
   };
   let html = `
-    <div class="dd-back" onclick="ddView('desam')">${t("backToList")}</div>
+    <div class="dd-back" onclick="ddView('desam')">${uiText("backToList")}</div>
     <div class="dd-desam-card">
       <div class="dd-desam-title">${desam.canonical_name}${countLabel}</div>
       <div style="text-align:center;margin:8px 0 2px;">

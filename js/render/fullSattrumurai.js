@@ -3,7 +3,7 @@
 // =============================================================
 
 import { state } from "../state.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -275,7 +275,7 @@ export function sattrumuraiSpinner() {
   return `
     <div class="fsat-spinner-wrap">
       <div class="fsat-lotus">🪷</div>
-      <div class="fsat-loading-text">${t("adiyenContentLoading")}</div>
+      <div class="fsat-loading-text">${uiText("adiyenContentLoading")}</div>
     </div>
   `;
 }
@@ -284,12 +284,12 @@ export function sattrumuraiSpinner() {
 function floatingNav() {
   return `
     <div class="fsat-float-nav">
-      <button onclick="window.location.href='tree.html'" title="${t("home")}">🏠</button>
-      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${t("top")}">⬆</button>
-      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${t("up")}">◀</button>
-      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${t("down")}">▶</button>
-      <button onclick="fsatAdjFont(2)" title="${t("fontBigger")}">A+</button>
-      <button onclick="fsatAdjFont(-2)" title="${t("fontSmaller")}">A-</button>
+      <button onclick="window.location.href='tree.html'" title="${uiText("home")}">🏠</button>
+      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${uiText("top")}">⬆</button>
+      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${uiText("up")}">◀</button>
+      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${uiText("down")}">▶</button>
+      <button onclick="fsatAdjFont(2)" title="${uiText("fontBigger")}">A+</button>
+      <button onclick="fsatAdjFont(-2)" title="${uiText("fontSmaller")}">A-</button>
     </div>
   `;
 }

@@ -1,4 +1,4 @@
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 // munnadiIndex.js
 // Worker output shape:
 //   pathu sections:      groups[{type:'pathu',      id:pathu_id,      label, children:[{id:pathu_id, label}]}]
@@ -20,7 +20,7 @@ export function buildMunnadiIndex(data) {
   const { index } = data;
 
   let html = `<div class="mp-index">`;
-  html += `<div class="mp-index-title">${t("index")}</div>`;
+  html += `<div class="mp-index-title">${uiText("index")}</div>`;
 
   index.forEach(sec => {
     const hasGroups = sec.groups && sec.groups.length > 0;

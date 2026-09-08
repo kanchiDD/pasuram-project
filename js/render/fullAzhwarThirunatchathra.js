@@ -16,7 +16,7 @@
 // =============================================================
 
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -108,7 +108,7 @@ function injectCSS() {
 export function thirunatchathraSpinner() {
   return `<div class="fathn-spinner">
     <div class="fathn-lotus">🪷</div>
-    <div class="fathn-loading-text">${t("loading")}</div>
+    <div class="fathn-loading-text">${uiText("loading")}</div>
   </div>`;
 }
 
@@ -206,7 +206,7 @@ export async function renderFullAzhwarThirunatchathra() {
   return `
     <div class="fathn-page" id="fathn-root">
       <div class="fathn-title">ஆழ்வார் திருநட்சத்திர அனுஸந்தானம்</div>
-      <div class="fathn-subtitle">${t("azhwarThirunatchathraTitle")}</div>
+      <div class="fathn-subtitle">${uiText("azhwarThirunatchathraTitle")}</div>
       <div class="fathn-divider"></div>
       ${listHtml}
     </div>
@@ -363,7 +363,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
           <div class="fathn-modal-actions">
             <button class="fathn-modal-btn cancel" onclick="window._fathnCloseModal()">close</button>
             ${modeSequence.length ? `<button class="fathn-modal-btn confirm"
-              onclick="window._fathnStartRecital(${azhwar.author_id})">🙏 ${t("start")}</button>` : ""}
+              onclick="window._fathnStartRecital(${azhwar.author_id})">🙏 ${uiText("start")}</button>` : ""}
           </div>
         </div>
       </div>`;
@@ -405,7 +405,7 @@ function _showSelectionModal(azhwar, sequence, customItems) {
                 document.getElementById("app");
     if (app) app.innerHTML = `<div class="fathn-spinner">
       <div class="fathn-lotus">🪷</div>
-      <div class="fathn-loading-text">${t("contentLoading")}</div>
+      <div class="fathn-loading-text">${uiText("contentLoading")}</div>
     </div>`;
 
     // Build selected sequence_nos: all compulsory + user-selected optional

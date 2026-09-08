@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 
@@ -74,7 +74,7 @@ if (sectionName) {
   }
 
   /* Floating Recital Button */
-  html += `<div class="recital-float" onclick="openRecital()" title="${t("recitalMode")}">🎤</div>`;
+  html += `<div class="recital-float" onclick="openRecital()" title="${uiText("recitalMode")}">🎤</div>`;
 
   return html;
 }

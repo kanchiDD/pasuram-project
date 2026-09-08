@@ -17,7 +17,7 @@
  */
 
 import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=6";
-import { t } from "./utils/uiStrings.js";
+import { t as uiText } from "./utils/uiStrings.js";
 import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js?v=2";
 
 // Use extended if available, fall back to base
@@ -279,7 +279,7 @@ function showListening() {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
-        <div class="vp-subgreeting">${t("voiceListening")}</div>
+        <div class="vp-subgreeting">${uiText("voiceListening")}</div>
       </div>
     </div>
     <div class="vp-dots">
@@ -289,7 +289,7 @@ function showListening() {
       தேவரீர் திருவாக்கினை கேட்கிறோம்…
     </div>
     <div class="vp-actions">
-      <button class="vp-btn-close" onclick="cancelVoice()">${t("cancel")}</button>
+      <button class="vp-btn-close" onclick="cancelVoice()">${uiText("cancel")}</button>
     </div>
   `);
 }
@@ -388,19 +388,19 @@ function showResults(transcript, results) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
-        <div class="vp-subgreeting">${t("voiceWeHeard")}</div>
+        <div class="vp-subgreeting">${uiText("voiceWeHeard")}</div>
       </div>
     </div>
 
-    <div class="vp-heard-label">${t("voiceYouSaid")}</div>
+    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
     <div class="vp-heard-text">"${esc(displayTranscript)}"</div>
 
-    <div class="vp-dym-label">${t("voiceDoYouMean")}</div>
+    <div class="vp-dym-label">${uiText("voiceDoYouMean")}</div>
     <div class="vp-options">${optionsHtml}</div>
 
     <div class="vp-actions">
       <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>
-      <button class="vp-btn-search" onclick="confirmSearch()">${t("search")}</button>
+      <button class="vp-btn-search" onclick="confirmSearch()">${uiText("search")}</button>
     </div>
   `);
 }
@@ -414,12 +414,12 @@ function showOffTopic(transcript) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
-        <div class="vp-subgreeting">${t("voiceWeHeard")}</div>
+        <div class="vp-subgreeting">${uiText("voiceWeHeard")}</div>
       </div>
     </div>
 
     ${ !noSpeech ? `
-      <div class="vp-heard-label">${t("voiceYouSaid")}</div>
+      <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
       <div class="vp-heard-text offtopic">"${esc(transcript)}"</div>
     ` : "" }
 
@@ -432,7 +432,7 @@ function showOffTopic(transcript) {
 
     <div class="vp-actions">
       <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>
-      <button class="vp-btn-close" onclick="closePopup()">${t("close")}</button>
+      <button class="vp-btn-close" onclick="closePopup()">${uiText("close")}</button>
     </div>
   `);
 }
@@ -444,18 +444,18 @@ function showNotice(transcript, message) {
       <div class="vp-namaste">🙏</div>
       <div>
         <div class="vp-greeting">Adiyen — நமஸ்காரம்</div>
-        <div class="vp-subgreeting">${t("voiceWeHeard")}</div>
+        <div class="vp-subgreeting">${uiText("voiceWeHeard")}</div>
       </div>
     </div>
 
-    <div class="vp-heard-label">${t("voiceYouSaid")}</div>
+    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
     <div class="vp-heard-text offtopic">"${esc(displayTranscript)}"</div>
 
     <div class="vp-offtopic-msg">${esc(message)}</div>
 
     <div class="vp-actions">
       <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>
-      <button class="vp-btn-close" onclick="closePopup()">${t("close")}</button>
+      <button class="vp-btn-close" onclick="closePopup()">${uiText("close")}</button>
     </div>
   `);
 }
@@ -470,7 +470,7 @@ function showPermissionError() {
       Please allow microphone access in your browser
       to use voice search.
     </div>
-    <button class="vp-btn-close" onclick="closePopup()">${t("close")}</button>
+    <button class="vp-btn-close" onclick="closePopup()">${uiText("close")}</button>
   `);
 }
 
@@ -484,7 +484,7 @@ function showNoSupport() {
       Voice search works best in Chrome browser.<br/>
       Please open this page in Chrome to use voice search.
     </div>
-    <button class="vp-btn-close" onclick="closePopup()">${t("close")}</button>
+    <button class="vp-btn-close" onclick="closePopup()">${uiText("close")}</button>
   `);
 }
 

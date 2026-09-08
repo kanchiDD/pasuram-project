@@ -9,9 +9,9 @@
 // Tamil, because they are the works themselves.
 //
 // Usage:
-//   import { t } from "../utils/uiStrings.js";
-//   t("playAll")                  → "Play All"
-//   t("filterBy", { label: "State" }) → "Filter by State"
+//   import { t as uiText } from "../utils/uiStrings.js";
+//   uiText("playAll")                  → "Play All"
+//   uiText("filterBy", { label: "State" }) → "Filter by State"
 //
 // Adding a UI language later = add a locale block below and set
 // window._uiLang; no changes needed in any render file.

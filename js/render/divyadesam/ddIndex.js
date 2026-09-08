@@ -10,7 +10,7 @@ import {
   SECTION_TO_THOUSAND, DESAM_TOTAL, GRAND_TOTAL,
   API_DD, friendlyLabel
 } from "./ddCore.js";
-import { t } from "../../utils/uiStrings.js";
+import { t as uiText } from "../../utils/uiStrings.js";
 
 import { renderDesamList, renderDesamDetail } from "./ddByDesam.js";
 import { renderAzhwarList, renderAzhwarDetail } from "./ddByAzhwar.js";
@@ -102,17 +102,17 @@ async function buildMenu(thousandId) {
     </div>`;
 
   const countLabel = thousandId
-    ? t("ddDesamCount", { n: relevant.length })
-    : t("ddAllCount",   { n: GRAND_TOTAL });
+    ? uiText("ddDesamCount", { n: relevant.length })
+    : uiText("ddAllCount",   { n: GRAND_TOTAL });
 
   // Mandalam/State/District/Special only in full 4000 (not per-thousand)
   return [
-    hasDesams              ? btn("🛕", t("ddByDesam"),  countLabel,            "desam")    : "",
-    hasAzhwars             ? btn("🙏", t("ddByAzhwar"), t("ddSelectAzhwar"),   "azhwar")   : "",
-    (!thousandId && hasDesams)  ? btn("🗺️", t("ddByMandalam"), t("ddRegionFilter"),   "mandalam") : "",
-    (!thousandId && hasDesams)  ? btn("📍", t("ddByState"),    t("ddStateFilter"),    "state")    : "",
-    (!thousandId && hasDesams)  ? btn("🏘️", t("ddByDistrict"), t("ddDistrictFilter"), "district") : "",
-    (!thousandId && hasSpecial) ? btn("⭐",  t("ddSpecialGroups"), t("ddSpecialSub"), "special") : ""
+    hasDesams              ? btn("🛕", uiText("ddByDesam"),  countLabel,            "desam")    : "",
+    hasAzhwars             ? btn("🙏", uiText("ddByAzhwar"), uiText("ddSelectAzhwar"),   "azhwar")   : "",
+    (!thousandId && hasDesams)  ? btn("🗺️", uiText("ddByMandalam"), uiText("ddRegionFilter"),   "mandalam") : "",
+    (!thousandId && hasDesams)  ? btn("📍", uiText("ddByState"),    uiText("ddStateFilter"),    "state")    : "",
+    (!thousandId && hasDesams)  ? btn("🏘️", uiText("ddByDistrict"), uiText("ddDistrictFilter"), "district") : "",
+    (!thousandId && hasSpecial) ? btn("⭐",  uiText("ddSpecialGroups"), uiText("ddSpecialSub"), "special") : ""
   ].filter(Boolean).join("");
 }
 
@@ -132,7 +132,7 @@ export async function renderDivyadesamIndex(selectedThousandId = null) {
   return `
     <div class="dd-page">
       <div class="dd-page-title">${thousandName}</div>
-      <div class="dd-page-sub">${t("ddSubtitle")}</div>
+      <div class="dd-page-sub">${uiText("ddSubtitle")}</div>
       <div class="dd-divider"></div>
       <div class="dd-menu-grid">${menuHtml}</div>
       <div id="fdd-content"></div>

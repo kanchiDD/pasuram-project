@@ -4,7 +4,7 @@
 // =============================================================
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 
 function injectCSS() {
   if (document.getElementById("farch-style")) return;
@@ -165,7 +165,7 @@ function injectCSS() {
 export function archanaiSpinner() {
   return `<div class="farch-spinner" style="background:#1a0a00;min-height:60vh;">
     <div class="farch-lotus">🪷</div>
-    <div class="farch-loading-text">${t("archLoading")}</div>
+    <div class="farch-loading-text">${uiText("archLoading")}</div>
   </div>`;
 }
 
@@ -174,27 +174,27 @@ function floatNav() {
 
     <div class="fnav-item">
       <button onclick="history.back()">🏠</button>
-      <div class="fnav-label">${t("home")}</div>
+      <div class="fnav-label">${uiText("home")}</div>
     </div>
 
     <div class="fnav-item">
       <button onclick="window.location.href='tree.html'">↩</button>
-      <div class="fnav-label">${t("backPlain")}</div>
+      <div class="fnav-label">${uiText("backPlain")}</div>
     </div>
 
     <div class="fnav-item">
       <button onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆</button>
-      <div class="fnav-label">${t("top")}</div>
+      <div class="fnav-label">${uiText("top")}</div>
     </div>
 
     <div class="fnav-item">
       <button onclick="window.scrollBy({top:-window.innerHeight*.85,behavior:'smooth'})">◀</button>
-      <div class="fnav-label">${t("up")}</div>
+      <div class="fnav-label">${uiText("up")}</div>
     </div>
 
     <div class="fnav-item">
       <button onclick="window.scrollBy({top:window.innerHeight*.85,behavior:'smooth'})">▶</button>
-      <div class="fnav-label">${t("down")}</div>
+      <div class="fnav-label">${uiText("down")}</div>
     </div>
 
   </div>`;
@@ -212,9 +212,9 @@ export async function renderFullDivyadesamArchanai() {
 
   if (!desams.length) {
     return `<div class="farch-page">
-      <div class="farch-title">${t("archTitle")}</div>
+      <div class="farch-title">${uiText("archTitle")}</div>
       <div style="color:#c9a84c;text-align:center;padding:40px;">
-        ${t("archNoData")}
+        ${uiText("archNoData")}
       </div>
     </div>`;
   }
@@ -303,7 +303,7 @@ export async function renderFullDivyadesamArchanai() {
     if (_idx >= DESAMS.length - 1) {
       _playing = false;
       const btn = document.getElementById("farch-play-btn");
-      if (btn) { btn.textContent = t("play"); btn.classList.remove("active"); }
+      if (btn) { btn.textContent = uiText("play"); btn.classList.remove("active"); }
       clearInterval(_timer); _timer = null; return;
     }
     _farchShow(_idx + 1);
@@ -318,10 +318,10 @@ export async function renderFullDivyadesamArchanai() {
     _playing = !_playing;
     const btn = document.getElementById("farch-play-btn");
     if (_playing) {
-      if (btn) { btn.textContent = t("pause"); btn.classList.add("active"); }
+      if (btn) { btn.textContent = uiText("pause"); btn.classList.add("active"); }
       _farchStartTimer();
     } else {
-      if (btn) { btn.textContent = t("play"); btn.classList.remove("active"); }
+      if (btn) { btn.textContent = uiText("play"); btn.classList.remove("active"); }
       clearInterval(_timer); _timer = null;
     }
   };
@@ -346,7 +346,7 @@ export async function renderFullDivyadesamArchanai() {
   };
 
   window.farchGoTo = function() {
-    const n = parseInt(prompt(t("archGoToPrompt")), 10);
+    const n = parseInt(prompt(uiText("archGoToPrompt")), 10);
     if (!isNaN(n) && n >= 1 && n <= 108) {
       clearInterval(_timer); _timer = null;
       _farchShow(n - 1);
@@ -364,8 +364,8 @@ export async function renderFullDivyadesamArchanai() {
 
   return `
 <div class="farch-page" id="farch-root">
-  <div class="farch-title">${t("archTitle")}</div>
-  <div class="farch-subtitle">${t("archSubtitle")}</div>
+  <div class="farch-title">${uiText("archTitle")}</div>
+  <div class="farch-subtitle">${uiText("archSubtitle")}</div>
 
   <div class="farch-lang-wrap">
     <button class="farch-lang-btn active" data-lang="ta" onclick="farchSetLang('ta')">அ Tamil</button>
@@ -391,11 +391,11 @@ export async function renderFullDivyadesamArchanai() {
     <button class="farch-btn active" id="farch-play-btn"
       onclick="farchToggle()"
       style="width:200px;font-size:16px;padding:12px;">
-      ${t("pause")}
+      ${uiText("pause")}
     </button>
     <div style="display:flex;gap:14px;justify-content:center;">
-      <button class="farch-btn" onclick="farchPrev()">${t("previous")}</button>
-      <button class="farch-btn" onclick="farchNext()">${t("next")}</button>
+      <button class="farch-btn" onclick="farchPrev()">${uiText("previous")}</button>
+      <button class="farch-btn" onclick="farchNext()">${uiText("next")}</button>
     </div>
   </div>
 
@@ -412,7 +412,7 @@ export async function renderFullDivyadesamArchanai() {
       onclick="(()=>{let v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font')||'17');document.documentElement.style.setProperty('--base-font',(v+2)+'px')})()">A+</button>
     <button class="farch-btn"
       onclick="(()=>{let v=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font')||'17');if(v>12)document.documentElement.style.setProperty('--base-font',(v-2)+'px')})()">A-</button>
-    <button class="farch-btn" onclick="farchGoTo()">${t("goTo")}</button>
+    <button class="farch-btn" onclick="farchGoTo()">${uiText("goTo")}</button>
     <button class="farch-btn" onclick="window.location.href='tree.html'">🏠</button>
   </div>
 </div>${floatNav()}`;

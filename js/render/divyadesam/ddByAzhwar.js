@@ -11,7 +11,7 @@ import {
   renderSectionClosing, fetchDisplayData, fetchThaniyanWithProsody,
   renderThaniyan, buildPasuramDisplayMap
 } from "./ddCore.js";
-import { t } from "../../utils/uiStrings.js";
+import { t as uiText } from "../../utils/uiStrings.js";
 
 
 // ── Fetch lines for special sections 21/22/23 ─────────────────────────────────
@@ -272,7 +272,7 @@ export async function renderAzhwarDetail(authorId, thousandId) {
   if (content) content.innerHTML = ddSpinner();
 
   const az = AZHWARS.find(a => a.id === Number(authorId));
-  const back = `<div class="dd-back" onclick="ddView('azhwar')">${t("back")}</div>`;
+  const back = `<div class="dd-back" onclick="ddView('azhwar')">${uiText("back")}</div>`;
   if (!az) { if (content) content.innerHTML = back; return; }
 
   const isAcharya = ACHARYA_IDS.has(az.id);
@@ -293,7 +293,7 @@ export async function renderAzhwarDetail(authorId, thousandId) {
 
   if (!desams.length) {
     if (content) content.innerHTML = back +
-      `<div style="text-align:center;padding:20px;color:#aaa;">${t("noDivyadesams")}</div>`;
+      `<div style="text-align:center;padding:20px;color:#aaa;">${uiText("noDivyadesams")}</div>`;
     return;
   }
 

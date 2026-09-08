@@ -1,5 +1,5 @@
 // ── ghoshtiSetup.js ──────────────────────────────────────────────
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 const WORKER              = "https://recitalworker.kanchitrust.workers.dev";
 const KOIL_API            = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 const PATHU_SECTIONS      = new Set([2, 11, 26]);
@@ -155,8 +155,8 @@ function buildSetupHTML() {
   <div class="recital-wrap">
     ${recitalCSS()}
     <div class="recital-nav-row">
-      <span class="recital-back-link" onclick="window._ghoshtiBack()">${t("backArrow")}</span>
-      <div class="recital-title" style="margin:0">${t("selectPasurams")}</div>
+      <span class="recital-back-link" onclick="window._ghoshtiBack()">${uiText("backArrow")}</span>
+      <div class="recital-title" style="margin:0">${uiText("selectPasurams")}</div>
       <span></span>
     </div>
 
@@ -171,7 +171,7 @@ function buildSetupHTML() {
         <input type="checkbox" id="g-pothu-t" checked
                onchange="window._ghoshtiTogglePothu('T', this.checked)">
         <input type="number" id="g-pothu-t-ord" min="1" max="3" class="g-pothu-ord"
-               title="${t("recitalOrder")}"
+               title="${uiText("recitalOrder")}"
                onclick="event.preventDefault();event.stopPropagation();"
                onchange="window._ghoshtiSetPothuOrder('T', this.value)"
                style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
@@ -182,7 +182,7 @@ function buildSetupHTML() {
         <input type="checkbox" id="g-pothu-m"
                onchange="window._ghoshtiTogglePothu('M', this.checked)">
         <input type="number" id="g-pothu-m-ord" min="1" max="3" class="g-pothu-ord"
-               title="${t("recitalOrder")}"
+               title="${uiText("recitalOrder")}"
                onclick="event.preventDefault();event.stopPropagation();"
                onchange="window._ghoshtiSetPothuOrder('M', this.value)"
                style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
@@ -193,7 +193,7 @@ function buildSetupHTML() {
         <input type="checkbox" id="g-pothu-v" checked
                onchange="window._ghoshtiTogglePothu('V', this.checked)">
         <input type="number" id="g-pothu-v-ord" min="1" max="3" class="g-pothu-ord"
-               title="${t("recitalOrder")}"
+               title="${uiText("recitalOrder")}"
                onclick="event.preventDefault();event.stopPropagation();"
                onchange="window._ghoshtiSetPothuOrder('V', this.value)"
                style="width:38px;padding:2px 4px;font-size:12px;text-align:center;
@@ -207,9 +207,9 @@ function buildSetupHTML() {
     </div>
 
     <div class="r-selected-wrap">
-      <div class="r-selected-label">${t("yourSelection")}</div>
+      <div class="r-selected-label">${uiText("yourSelection")}</div>
       <div id="r-selected-list">
-        <div class="r-selected-empty">${t("nothingSelected")}</div>
+        <div class="r-selected-empty">${uiText("nothingSelected")}</div>
       </div>
     </div>
 
@@ -217,15 +217,15 @@ function buildSetupHTML() {
       <div class="r-pasuram-label">Add specific Pasuram — enter pasuram number (1–3776)</div>
       <div class="r-pasuram-row">
         <input type="number" id="r-pasuram-input" class="r-pasuram-input"
-               placeholder="${t("egPasuramNo")}" min="1" max="3776">
-        <button class="r-pasuram-btn" onclick="window._ghoshtiLookupPasuram()">${t("add")}</button>
+               placeholder="${uiText("egPasuramNo")}" min="1" max="3776">
+        <button class="r-pasuram-btn" onclick="window._ghoshtiLookupPasuram()">${uiText("add")}</button>
       </div>
       <div id="r-pasuram-preview" class="r-pasuram-preview"></div>
     </div>
 
-    <div class="r-section-label">${t("selectPrabandham")}</div>
+    <div class="r-section-label">${uiText("selectPrabandham")}</div>
     <div id="r-catalog-list">
-      <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">${t("loading")}</div>
+      <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">${uiText("loading")}</div>
     </div>
 
     <button class="recital-btn-primary" style="width:100%;margin-top:8px"
@@ -238,7 +238,7 @@ function buildSetupHTML() {
   <!-- Full/Rettai popup -->
   <div class="r-popup-overlay" id="r-popup-overlay">
     <div class="r-popup-box">
-      <div class="r-popup-title">${t("adiyen")}</div>
+      <div class="r-popup-title">${uiText("adiyen")}</div>
       <div class="r-popup-sub" id="r-popup-sub"></div>
       <button class="recital-btn-primary" style="width:100%;margin-bottom:8px"
               onclick="window._ghoshtiPickFull()">
@@ -250,7 +250,7 @@ function buildSetupHTML() {
       </button>
       <div style="text-align:center;margin-top:10px">
         <span style="font-size:12px;color:#b38b2e;cursor:pointer;text-decoration:underline"
-              onclick="window._ghoshtiCancelPopup()">${t("cancel")}</span>
+              onclick="window._ghoshtiCancelPopup()">${uiText("cancel")}</span>
       </div>
     </div>
   </div>
@@ -264,7 +264,7 @@ function buildSetupHTML() {
         <div class="r-modal-close" onclick="window._ghoshtiCloseModal()">✕</div>
       </div>
       <div class="r-modal-back" id="r-modal-back"
-           onclick="window._ghoshtiModalBack()">${t("backArrow")}</div>
+           onclick="window._ghoshtiModalBack()">${uiText("backArrow")}</div>
       <div id="r-modal-content"></div>
     </div>
   </div>
@@ -464,7 +464,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
   // Vadakalai-Madam ghoshti the creator already knows, so no prompt.
   if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)
       && ghoshtiSegment === "BOTH") {
-    const ok = confirm(t("ahobilaConfirm"));
+    const ok = confirm(uiText("ahobilaConfirm"));
     if (!ok) return;
   }
   const isFullPathu = entity_type === "pathu" && pathu_id === null && !is_child;
@@ -638,7 +638,7 @@ function renderSelected() {
   const el = document.getElementById("r-selected-list");
   if (!el) return;
   if (!selectedItems.length) {
-    el.innerHTML = `<div class="r-selected-empty">${t("nothingSelected")}</div>`;
+    el.innerHTML = `<div class="r-selected-empty">${uiText("nothingSelected")}</div>`;
     return;
   }
   // Canonical priority order (sec1 → sec8 → sec3 → others by global_no_start)
@@ -704,7 +704,7 @@ function renderModalContent() {
                ${frame.global_no_start||0},this.checked)">
       <span class="r-modal-option-label">Full ${frame.section_name}</span>
     </div>
-    <div class="r-modal-divider">${t("orSelectSpecific")}</div>`;
+    <div class="r-modal-divider">${uiText("orSelectSpecific")}</div>`;
 
     if (frame.data.type === "pathu") {
       for (const p of frame.data.items) {

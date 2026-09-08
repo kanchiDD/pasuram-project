@@ -4,7 +4,7 @@
 // =============================================================
 
 import { API_DD, DESAM_TOTAL, friendlyLabel, ddSpinner } from "./ddCore.js";
-import { t } from "../../utils/uiStrings.js";
+import { t as uiText } from "../../utils/uiStrings.js";
 
 // Verified desam_ids for each special group
 const SPECIAL_DESAM_IDS = {
@@ -42,7 +42,7 @@ export function renderSpecialMenu() {
 
   return `
     <div class="dd-list-box">
-      <div class="dd-list-heading">${t("ddSpecialHeading")}</div>
+      <div class="dd-list-heading">${uiText("ddSpecialHeading")}</div>
       ${rows}
     </div>`;
 }
@@ -52,12 +52,12 @@ export async function renderSpecialGroup(groupKey) {
   const content = document.getElementById("fdd-content");
   if (content) content.innerHTML = ddSpinner();
 
-  const back = `<div class="dd-back" onclick="ddView('special')">${t("ddBackToSpecial")}</div>`;
+  const back = `<div class="dd-back" onclick="ddView('special')">${uiText("ddBackToSpecial")}</div>`;
 
   // Fetch the full list and filter to known desam_ids
   const desamIds = SPECIAL_DESAM_IDS[groupKey];
   if (!desamIds) {
-    if (content) content.innerHTML = back + `<div style="text-align:center;padding:20px;color:#aaa;">${t("unknownGroup")}</div>`;
+    if (content) content.innerHTML = back + `<div style="text-align:center;padding:20px;color:#aaa;">${uiText("unknownGroup")}</div>`;
     return;
   }
 
@@ -84,7 +84,7 @@ export async function renderSpecialGroup(groupKey) {
 
   if (!desams.length) {
     if (content) content.innerHTML = back +
-      `<div style="text-align:center;padding:20px;color:#aaa;">${t("noDesams")}</div>`;
+      `<div style="text-align:center;padding:20px;color:#aaa;">${uiText("noDesams")}</div>`;
     return;
   }
 
@@ -104,7 +104,7 @@ export async function renderSpecialGroup(groupKey) {
 
   if (content) content.innerHTML = back + `
     <div class="dd-list-box">
-      <div class="dd-list-heading">${t("ddGroupCount", { label: t(SPECIAL_LABEL_KEYS[groupKey]), n: desams.length })}</div>
+      <div class="dd-list-heading">${uiText("ddGroupCount", { label: t(SPECIAL_LABEL_KEYS[groupKey]), n: desams.length })}</div>
       ${listHtml}
     </div>`;
 }

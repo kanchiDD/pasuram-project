@@ -4,7 +4,7 @@
 // =============================================================
 
 import { state } from "../state.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { numLinePlay, PASURAM_URL, sectionPlayAll, specialSectionPlayAll } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
@@ -141,7 +141,7 @@ function injectCSS() {
 }
 
 export function azhwarSpinner() {
-  return `<div class="faz-spinner-wrap"><div class="faz-lotus">🪷</div><div class="faz-loading-text">${t("contentLoading")}</div></div>`;
+  return `<div class="faz-spinner-wrap"><div class="faz-lotus">🪷</div><div class="faz-loading-text">${uiText("contentLoading")}</div></div>`;
 }
 
 // ── Raw fetchers ──────────────────────────────────────────────────────────────
@@ -374,12 +374,12 @@ function buildIndex(azhwarsToShow) {
 function floatingNav() {
   return `
     <div class="faz-float-nav">
-      <button onclick="window.location.href='tree.html'" title="${t("home")}">🏠</button>
-      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${t("top")}">⬆</button>
-      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${t("up")}">◀</button>
-      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${t("down")}">▶</button>
-      <button onclick="fazAdjFont(2)" title="${t("fontBigger")}">A+</button>
-      <button onclick="fazAdjFont(-2)" title="${t("fontSmaller")}">A-</button>
+      <button onclick="window.location.href='tree.html'" title="${uiText("home")}">🏠</button>
+      <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="${uiText("top")}">⬆</button>
+      <button onclick="window.scrollBy({top:-window.innerHeight*0.85,behavior:'smooth'})" title="${uiText("up")}">◀</button>
+      <button onclick="window.scrollBy({top:window.innerHeight*0.85,behavior:'smooth'})" title="${uiText("down")}">▶</button>
+      <button onclick="fazAdjFont(2)" title="${uiText("fontBigger")}">A+</button>
+      <button onclick="fazAdjFont(-2)" title="${uiText("fontSmaller")}">A-</button>
     </div>
   `;
 }

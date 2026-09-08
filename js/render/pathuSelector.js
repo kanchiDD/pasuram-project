@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 import { render } from "./layout.js";
 
 /* 🔥 HELPERS */
@@ -51,26 +51,26 @@ function getPathuShortName(pathuName) {
 
 export function openPathuSelector() {
   const modal = document.getElementById("pathuModal");
-  const sectionName = state.selectedSectionName || t("sectionFallback");
+  const sectionName = state.selectedSectionName || uiText("sectionFallback");
 
   let html = `
     <div class="overlay">
       <div class="adiyen-modal">
         <div class="modal-header">
-          ${t("adiyen")}
+          ${uiText("adiyen")}
           <span onclick="closePathuModal()">✖</span>
         </div>
 
-        <div class="adiyen-question">${t("doYouWant")}</div>
+        <div class="adiyen-question">${uiText("doYouWant")}</div>
 
         <div class="adiyen-options">
 
           <label class="option">
             <input type="radio" name="pathu" value="full" onclick="setTimeout(confirmPathu,0)">
-            ${t("fullOf", { name: sectionName })}
+            ${uiText("fullOf", { name: sectionName })}
           </label>
 
-          <div class="adiyen-sub-divider">${t("orSelectAnyOne")}</div>
+          <div class="adiyen-sub-divider">${uiText("orSelectAnyOne")}</div>
   `;
 
   const source = state.pasuramData || [];
@@ -163,22 +163,22 @@ function openThirumozhiSelector() {
       <div class="adiyen-modal">
 
         <div class="modal-header">
-          ${t("adiyen")}
+          ${uiText("adiyen")}
           <span onclick="closePathuModal()">✖</span>
         </div>
 
         <div class="adiyen-question">
-          ${t("selectOf", { name: state.selectedSectionName })}
+          ${uiText("selectOf", { name: state.selectedSectionName })}
         </div>
 
         <div class="adiyen-options">
 
           <label class="option">
             <input type="radio" name="thirumozhi" value="full" onclick="setTimeout(confirmThirumozhi,0)">
-            ${t("fullOf", { name: pathuName })}
+            ${uiText("fullOf", { name: pathuName })}
           </label>
 
-          <div class="adiyen-sub-divider">${t("orSelectAnyOne")}</div>
+          <div class="adiyen-sub-divider">${uiText("orSelectAnyOne")}</div>
   `;
 
   list.forEach(obj => {

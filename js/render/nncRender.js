@@ -1,6 +1,6 @@
 // nncRender.js — content renderers using exact fullDualRecital.js patterns
 import { renderThaniyan } from "./thaniyan.js";
-import { t } from "../utils/uiStrings.js";
+import { t as uiText } from "../utils/uiStrings.js";
 import { buildMadalCoupletsHTML } from "./madalKootrirukkaiCore.js";
 import {
   fetchDisplayData, fetchThaniyanWithProsody,
@@ -617,7 +617,7 @@ export function comingSoonBox(label, anchor) {
     <div class="nnc-coming-box" ${anchor||""}>
       <div style="font-size:24px;">🪷</div>
       <div style="font-size:14px;">${label}</div>
-      <div style="font-size:12px;margin-top:4px;">${t("comingSoon")}</div>
+      <div style="font-size:12px;margin-top:4px;">${uiText("comingSoon")}</div>
     </div>`;
 }
 
