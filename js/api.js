@@ -9,7 +9,7 @@ function safeRender() {
 
 export async function fetchThousand() {
   if (state.thousandData) return;
-  const res = await fetch("https://cacheproxy.kanchitrust.workers.dev/api/thousand");
+  const res = await fetch("https://overlay-worker.kanchitrust.workers.dev/api/thousand");
   state.thousandData = await res.json();
   safeRender();
 }
@@ -26,7 +26,7 @@ export async function fetchSections() {
 
   // Bypass cache proxy for section — sect-specific, cache proxy can't handle per-sect caching
   const res = await fetch(
-    "https://cdnaalayiram-api.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId + "&sect=" + sect
+    "https://overlay-worker.kanchitrust.workers.dev/api/section?thousand_id=" + state.selectedThousandId + "&sect=" + sect
   );
 
   const data = await res.json();
@@ -37,7 +37,7 @@ export async function fetchSections() {
 
 export async function fetchThaniyan() {
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/thaniyan?section_id=" + state.selectedSectionId
+    "https://overlay-worker.kanchitrust.workers.dev/api/thaniyan?section_id=" + state.selectedSectionId
   );
 
   const data = await res.json();
@@ -53,7 +53,7 @@ export async function fetchMadal() {
   const sectionId = state.selectedSectionId;
 
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/madal?section_id=" + sectionId
+    "https://overlay-worker.kanchitrust.workers.dev/api/madal?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -61,7 +61,7 @@ export async function fetchMadal() {
 
   try {
     const displayRes = await fetch(
-      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://overlay-worker.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -86,7 +86,7 @@ export async function fetchKootrirukkai() {
   const sectionId = state.selectedSectionId;
 
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/kootrirukkai?section_id=" + sectionId
+    "https://overlay-worker.kanchitrust.workers.dev/api/kootrirukkai?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -94,7 +94,7 @@ export async function fetchKootrirukkai() {
 
   try {
     const displayRes = await fetch(
-      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://overlay-worker.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -124,7 +124,7 @@ export async function fetchPasuram() {
   if (!sectionId) return;
 
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/pasuram?section_id=" + sectionId
+    "https://overlay-worker.kanchitrust.workers.dev/api/pasuram?section_id=" + sectionId
   );
 
   const data = await res.json();
@@ -136,7 +136,7 @@ export async function fetchPasuram() {
 
   try {
     const displayRes = await fetch(
-      "https://cacheproxy.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
+      "https://overlay-worker.kanchitrust.workers.dev/api/pasuram-display?section_id=" + sectionId
     );
     const displayData = await displayRes.json();
     state.displayMap = {
@@ -159,7 +159,7 @@ export async function fetchPasuram() {
 
 export async function fetchThirumozhiList(sectionId) {
   const res = await fetch(
-    "https://cacheproxy.kanchitrust.workers.dev/api/thirumozhi?section_id=" + sectionId
+    "https://overlay-worker.kanchitrust.workers.dev/api/thirumozhi?section_id=" + sectionId
   );
   const data = await res.json();
   console.log("THIRUMOZHI LIST:", data);
@@ -167,8 +167,47 @@ export async function fetchThirumozhiList(sectionId) {
 }
 
 export async function fetchEntitySearch() {
-  const res = await fetch("https://cacheproxy.kanchitrust.workers.dev/api/entity-search");
+  const res = await fetch("https://overlay-worker.kanchitrust.workers.dev/api/entity-search");
   const data = await res.json();
 
   state.entitySearchData = data || [];
+}
+
+
+// ── Transliteration script support ───────────────────────────────
+// Every API call above now goes through the overlay worker, which
+// forwards to the cacheproxy unchanged. The interceptor below adds
+// &script= ONLY when the reader has chosen a non-Tamil script, so
+// with the default (Tamil) every request is byte-identical to before.
+const OVERLAY_HOST = "overlay-worker.kanchitrust.workers.dev";
+const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
+
+export function getScript() {
+  const s = (localStorage.getItem("script") || "ta").toLowerCase();
+  return VALID_SCRIPTS.includes(s) ? s : "ta";
+}
+
+export function setScript(s) {
+  if (s && s !== "ta" && VALID_SCRIPTS.includes(s)) localStorage.setItem("script", s);
+  else localStorage.removeItem("script");
+}
+
+if (typeof window !== "undefined" && !window.__scriptFetchPatched) {
+  window.__scriptFetchPatched = true;
+  const _fetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    try {
+      const sc = getScript();
+      if (sc !== "ta") {
+        const url = typeof input === "string" ? input
+                  : (input && input.url) ? input.url : null;
+        if (url && url.includes(OVERLAY_HOST) && !url.includes("script=")) {
+          const joined = url + (url.includes("?") ? "&" : "?") + "script=" + sc;
+          if (typeof input === "string") input = joined;
+          else input = new Request(joined, input);
+        }
+      }
+    } catch (e) { /* never block a request */ }
+    return _fetch(input, init);
+  };
 }
