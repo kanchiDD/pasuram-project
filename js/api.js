@@ -175,11 +175,19 @@ export async function fetchEntitySearch() {
 
 
 // ── Transliteration script support ───────────────────────────────
-// Every API call above now goes through the overlay worker, which
-// forwards to the cacheproxy unchanged. The interceptor below adds
-// &script= ONLY when the reader has chosen a non-Tamil script, so
-// with the default (Tamil) every request is byte-identical to before.
+// TAMIL PATH — completely untouched. Every fetch above names the
+// overlay host, which forwards to the cacheproxy unchanged, and the
+// interceptor below returns immediately when the script is "ta". So a
+// Tamil reader's requests are byte-identical to what they were before
+// any of this existed: same host, same URL, no script param.
+//
+// NON-TAMIL PATH — the interceptor rewrites the request to the
+// separate i18n worker (a xerox of the production worker bound to the
+// same D1) and appends &script=. Endpoints not yet wired there simply
+// ignore the param and return Tamil, which is the intended fallback
+// while the remaining endpoints are being worked through.
 const OVERLAY_HOST = "overlay-worker.kanchitrust.workers.dev";
+const I18N_HOST    = "workeri18n.kanchitrust.workers.dev";
 const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
 
 export function getScript() {
@@ -202,7 +210,8 @@ if (typeof window !== "undefined" && !window.__scriptFetchPatched) {
         const url = typeof input === "string" ? input
                   : (input && input.url) ? input.url : null;
         if (url && url.includes(OVERLAY_HOST) && !url.includes("script=")) {
-          const joined = url + (url.includes("?") ? "&" : "?") + "script=" + sc;
+          const joined = url.replace(OVERLAY_HOST, I18N_HOST)
+                       + (url.includes("?") ? "&" : "?") + "script=" + sc;
           if (typeof input === "string") input = joined;
           else input = new Request(joined, input);
         }
