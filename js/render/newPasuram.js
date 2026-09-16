@@ -9,6 +9,7 @@ import { state } from "../state.js";
 import { renderThaniyan } from "./newThaniyan.js"; // isolated — only for section view
 import { THANIYAN_URL, PASURAM_URL, sectionListenBtn, sectionQueueBtn, inlinePlayBtn, numLinePlay } from "./globalAudio.js";
 import { renderMadal, renderKootrirukkai } from "./newSpecial.js";
+import { isAdivaravu } from "../utils/displayTags.js";
 
 const sectionHeaderMap = {
   "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
@@ -167,7 +168,7 @@ if (state.kootrirukkaiData) {
             d.text &&
             typeof d.text === "string" &&
             d.text.trim() !== "" &&
-            !(d.text && d.text.toLowerCase().includes("அடிவரவு"))
+            !isAdivaravu(d)
           )
           .map(d => `
             <div class="display-item ${d.type || ""}">
@@ -226,7 +227,7 @@ if (p.pathu_id !== null && p.pathu_id !== undefined) {
       html += '<div class="display-block">';
 
       state.displayMap.pathu[pathuKey]
-        .filter(d => d && d.text && !d.text.includes("அடிவரவு"))
+        .filter(d => d && d.text && !isAdivaravu(d))
         .forEach(function(d) {
           html += '<div class="display-item">' + d.text + '</div>';
         });
@@ -263,7 +264,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
       html += '<div class="display-block">';
 
       state.displayMap.thirumozhi[thiruKey].items
-        .filter(d => d && d.text && !d.text.includes("அடிவரவு"))
+        .filter(d => d && d.text && !isAdivaravu(d))
         .forEach(function(d) {
           html += '<div class="display-item">' + d.text + '</div>';
         });
@@ -293,7 +294,7 @@ else if (p.thirumozhi_id !== null && p.thirumozhi_id !== undefined) {
         html += '<div class="display-block">';
 
         state.displayMap.pasuram[key]
-          .filter(d => d && d.text && !d.text.includes("அடிவரவு"))
+          .filter(d => d && d.text && !isAdivaravu(d))
           .forEach(function(d) {
             html += '<div class="display-item">' + d.text + '</div>';
           });
@@ -370,7 +371,7 @@ html += '</div>';
         const pathuKey = String(p.pathu_id);
 
         ((state.displayMap && state.displayMap.pathu && state.displayMap.pathu[pathuKey]) || [])
-          .filter(d => d && d.text && d.text.includes("அடிவரவு"))
+          .filter(d => d && d.text && isAdivaravu(d))
           .forEach(function(d) {
             html += '<div class="display-item">' + d.text + '</div>';
           });
@@ -387,7 +388,7 @@ html += '</div>';
           state.displayMap.thirumozhi &&
           state.displayMap.thirumozhi[thiruKey] &&
           state.displayMap.thirumozhi[thiruKey].items) || [])
-          .filter(d => d && d.text && d.text.includes("அடிவரவு"))
+          .filter(d => d && d.text && isAdivaravu(d))
           .forEach(function(d) {
             html += '<div class="display-item">' + d.text + '</div>';
           });
@@ -415,7 +416,7 @@ html += '</div>';
       if (isLastStandalone) {
 
         ((state.displayMap && displayMap.section) || [])
-          .filter(d => d && d.text && d.text.includes("அடிவரவு"))
+          .filter(d => d && d.text && isAdivaravu(d))
           .forEach(function(d) {
             html += '<div class="display-item">' + d.text + '</div>';
           });

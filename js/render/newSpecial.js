@@ -8,6 +8,7 @@ import { state } from "../state.js";
 import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./newThaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
+import { isAdivaravu } from "../utils/displayTags.js";
 
 /* ================= SECTION META ================= */
 // Keyed by section_id, NOT by section name. The name now arrives already
@@ -179,7 +180,7 @@ export function renderMadal(data) {
 
   if (state.displayMap?.section) {
     state.displayMap.section.forEach(d => {
-      if (d?.text && !d.text.includes("அடிவரவு"))
+      if (d?.text && !isAdivaravu(d))
         html += `<div class="display-item">${d.text}</div>`;
     });
   }
@@ -232,7 +233,7 @@ export function renderKootrirukkai(data) {
 
   if (state.displayMap?.section) {
     state.displayMap.section.forEach(d => {
-      if (d?.text && !d.text.includes("அடிவரவு"))
+      if (d?.text && !isAdivaravu(d))
         html += `<div class="display-item">${d.text}</div>`;
     });
   }

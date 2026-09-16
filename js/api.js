@@ -186,7 +186,12 @@ export async function fetchEntitySearch() {
 // same D1) and appends &script=. Endpoints not yet wired there simply
 // ignore the param and return Tamil, which is the intended fallback
 // while the remaining endpoints are being worked through.
+// Two source hosts get rewritten. The overlay carries everything that goes
+// through this file; cdnaalayiram-api is called directly by a few renderers
+// (test_fullThousand.js fetches the anchor map from it), and without it in
+// this list the book index and section headings stayed Tamil.
 const OVERLAY_HOST = "overlay-worker.kanchitrust.workers.dev";
+const API_HOST     = "cdnaalayiram-api.kanchitrust.workers.dev";
 const I18N_HOST    = "workeri18n.kanchitrust.workers.dev";
 const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
 
@@ -209,8 +214,12 @@ if (typeof window !== "undefined" && !window.__scriptFetchPatched) {
       if (sc !== "ta") {
         const url = typeof input === "string" ? input
                   : (input && input.url) ? input.url : null;
-        if (url && url.includes(OVERLAY_HOST) && !url.includes("script=")) {
-          const joined = url.replace(OVERLAY_HOST, I18N_HOST)
+        const srcHost = !url ? null
+                      : url.includes(OVERLAY_HOST) ? OVERLAY_HOST
+                      : url.includes(API_HOST)     ? API_HOST
+                      : null;
+        if (srcHost && !url.includes("script=")) {
+          const joined = url.replace(srcHost, I18N_HOST)
                        + (url.includes("?") ? "&" : "?") + "script=" + sc;
           if (typeof input === "string") input = joined;
           else input = new Request(joined, input);
