@@ -2,6 +2,7 @@ import { renderPasuram } from "./pasuram.js";
 import { t as uiText } from "../utils/uiStrings.js";
 import { render } from "./layout.js";
 import { state } from "../state.js";
+import { isTamilScript } from "../utils/contentStrings.js";
 
 export function openStandaloneSelector(sectionId, sectionName, data) {
 
@@ -13,6 +14,7 @@ export function openStandaloneSelector(sectionId, sectionName, data) {
     if (p.thirumozhi_heading) {
       map[p.thirumozhi_heading] = {
         name: p.thirumozhi_heading,
+        unit: p.thirumozhi_name || p.pathu_subunit_name || "",
         section_id: p.section_id
       };
     }
@@ -52,7 +54,7 @@ export function openStandaloneSelector(sectionId, sectionName, data) {
     html += `
       <label class="option">
         <input type="radio" name="mode" value="thiru_${t.name}">
-        ${i + 1}ம் திருமொழி – ${t.name}
+        ${isTamilScript() ? `${i + 1}ம் திருமொழி` : (t.unit || `${i + 1}`)} – ${t.name}
       </label>
     `;
   });

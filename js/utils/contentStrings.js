@@ -102,6 +102,13 @@ export async function ensureContentStrings() {
   return inflight;
 }
 
+// True when no script is chosen. Renderers use this to keep Tamil-only
+// label construction (ordinal words, "1ம் திருமொழி") on the Tamil path and
+// fall back to the already-converted database name in every other script.
+export function isTamilScript() {
+  return activeScript() === "ta";
+}
+
 // Synchronous lookup for use inside renderers.
 export function c(key) {
   if (loaded && loaded[key]) return loaded[key];

@@ -1,5 +1,6 @@
 import { scrollToExactThirumozhi } from "./scrollManager.js";
 import { t as uiText } from "./utils/uiStrings.js";
+import { isTamilScript } from "./utils/contentStrings.js";
 function getTamilNumber(text) {
 
   if (!text) return "";
@@ -133,11 +134,18 @@ if (isPathuSection) {
       const num = getTamilNumber(subText);
       const heading = t.heading || "";
 
+      // Tamil keeps the assembled "1ம் திருமொழி" form. Any other script uses
+      // the subunit's own converted name — reconstructing it from Tamil
+      // ordinals cannot work once the text is transliterated, which is what
+      // left a bare "ம் திருமொழி" with no number in the list.
       const unitWord =
         Number(sectionId) === 26 ? "திருவாய்மொழி" : "திருமொழி";
 
-      const displayText =
-        `${pathuShort} - ${num ? num + "ம் " + unitWord : subText} - ${heading}`;
+      const unitLabel = isTamilScript()
+        ? (num ? num + "ம் " + unitWord : subText)
+        : subText;
+
+      const displayText = `${pathuShort} - ${unitLabel} - ${heading}`;
 
       html += `
         <div class="option-item"

@@ -1,6 +1,7 @@
 import { state } from "../state.js";
 import { t as uiText } from "../utils/uiStrings.js";
 import { render } from "./layout.js";
+import { isTamilScript } from "../utils/contentStrings.js";
 
 /* 🔥 HELPERS */
 
@@ -182,10 +183,17 @@ function openThirumozhiSelector() {
   `;
 
   list.forEach(obj => {
+    // Tamil keeps the assembled "1ம் திருவாய்மொழி" form; other scripts use the
+    // subunit's own converted name, since the ordinal words it is built from
+    // no longer match once transliterated.
+    const unitLabel = isTamilScript()
+      ? `${getTamilNumber(obj.subName)}ம் ${getUnitLabel(state.selectedSectionName)}`
+      : (obj.subName || "");
+
     html += `
       <label class="option">
         <input type="radio" name="thirumozhi" value="${String(obj.no)}" onclick="setTimeout(confirmThirumozhi,0)">
-        ${getPathuShortName(pathuName)} - ${getTamilNumber(obj.subName)}ம் ${getUnitLabel(state.selectedSectionName)} - ${obj.heading}
+        ${getPathuShortName(pathuName)} - ${unitLabel} - ${obj.heading}
       </label>
     `;
   });
