@@ -2,6 +2,7 @@ import { state } from "../state.js";
 import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
+import { isAdivaravu } from "../utils/displayTags.js";
 
 /* ================= HEADER MAP ================= */
 
@@ -59,7 +60,7 @@ if (sectionName) {
   /* Carnatic */
   if (state.displayMap && state.displayMap.section) {
     state.displayMap.section.forEach(d => {
-      if (d && d.text && !d.text.includes("அடிவரவு")) {
+      if (d && d.text && !isAdivaravu(d)) {
         html += `<div class="display-item">${d.text}</div>`;
       }
     });
