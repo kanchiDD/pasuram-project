@@ -16,40 +16,8 @@ import { getThaniyanHTML } from "./thaniyanController.js";
 import { renderIndex } from "./index.js";
 import { renderThaniyan } from "./render/thaniyan.js";
 import { sectionAllowedForSect, thousandAllowedForSect, SECTION_SECT } from "./utils/sectUtils.js";
+import { c, sectionTitle, ensureContentStrings } from "./utils/contentStrings.js";
 
-const sectionHeaderMap = {
-  "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  "பெரியாழ்வார் திருமொழி": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  "திருப்பாவை": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  "நாச்சியார் திருமொழி": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  "பெருமாள் திருமொழி": "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  "திருச்சந்தவிருத்தம்": "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  "திருமாலை": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  "திருப்பள்ளியெழுச்சி": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலனாதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  "பெரிய திருமொழி": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  "திருகுறுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  "திருநெடுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  "முதல்‌ திருவந்தாதி": "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  "இரண்டாம்‌ திருவந்தாதி": "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  "மூன்றாம்‌ திருவந்தாதி": "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  "நான்முகன்‌திருவந்தாதி": "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  "திருவிருத்தம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  "திருவாசிரியம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த யஜுர்வேதஸாரமான திருவாசிரியம்",
-  "பெரியதிருவந்தாதி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  "திருவெழுகூற்றிருக்கை": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  "இராமாநுச நூற்றந்தாதி": "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த ப்ரபந்நகாயத்ரி என்னும்‌ இராமாநுச நூற்றந்தாதி",
-  "உபதேசரத்தினமாலை": "ஸ்ரீ பெரியஜீயர் அருளிச்செய்த உபதேசரத்தினமாலை",
-  "திருவாய்மொழி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
-  "திருவாய்மொழி நூற்றந்தாதி": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த திருவாய்மொழி நூற்றந்தாதி",
-  "ஞானசாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய  ஞானசாரம்",
-  "ப்ரமேயஸாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ப்ரமேயஸாரம்",
-  "ஸப்தகாதை": "ஸ்ரீ விலாஞ்சோலைப்பிள்ளை  அருளிச்செய்த  ஸப்தகாதை",
-  "ஆர்த்தி ப்ரபந்தம்": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்"
-};
 
 // =========================
 // 🔥 MAIN FUNCTION
@@ -62,6 +30,9 @@ let fullAnchorRows = [];
 // ✅ ADD THIS
 const isFullMode = !selectedThousandId;
 
+
+  // Converted content strings must be in hand before any HTML is built.
+  await ensureContentStrings();
 
   state.isFullRender = true;
 
@@ -103,7 +74,7 @@ const isFullMode = !selectedThousandId;
   const _CLOSING_4000 = `
     <div style="text-align:center;margin:50px 0 30px 0;">
       <div style="font-size:26px;font-weight:900;">
-        நாலாயிர திவ்யப்பிரபந்தம் முற்றிற்று
+        ${c("common.naalayiram")} ${c("common.muttrittru")}
       </div>
       <div style="font-size:18px;margin-top:10px;color:#b38b2e;">
         ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖ ❖
@@ -144,16 +115,16 @@ html += `
     ${
       selectedThousandId
         ? `<div style="font-size:26px;font-weight:900;">
-             நாலாயிர திவ்யப்பிரபந்தம்
+             ${c("common.naalayiram")}
            </div>`
         : ``
     }
 
     <div style="font-size:20px;font-weight:700;margin-top:6px;">
   ${
-    t.name === "நாலாயிர திவ்யப்பிரபந்தம்"
+    t.name === c("common.naalayiram")
       ? ""
-      : (Number(t.id) === 99 ? "இதர பிரபந்தங்கள்" : t.name)
+      : (Number(t.id) === 99 ? c("common.ithara") : t.name)
   }
 </div>
 
@@ -245,7 +216,7 @@ for (const sec of sections) {
 
   state.selectedSectionName = baseName;
 
-  const sectionTitle = sectionHeaderMap[baseName] || baseName;
+  const secTitle = sectionTitle(sec.id, baseName);
 
 
       // =========================
@@ -303,7 +274,7 @@ html += `<div id="section-${sec.section_id || sec.id}" style="height:1px;"></div
       ${specialHtml}
 
       <div class="section-final-ending">
-      ${sectionHeaderMap[state.selectedSectionName] || state.selectedSectionName} முற்றிற்று
+      ${sectionTitle(sec.id, state.selectedSectionName)} ${c("common.muttrittru")}
       </div>
 
     </div>
@@ -370,7 +341,7 @@ if (hasPasuram) {
       <div id="section-${sec.id}"
            class="section-heading"
            style="scroll-margin-top:80px;">
-        ${sectionTitle}
+        ${secTitle}
       </div>
 
       ${sectionPlayAll(sec.id, state.thaniyanData, state.pasuramData)}
@@ -393,7 +364,7 @@ const _thousandFullQueue = thousandQueue.length
   ? [...globalThaniyanUrls(_sect, _subsect), ...thousandQueue]
   : thousandQueue;
 html = html.replace(`<!--FTP:${t.id}-->`,
-  thousandPlayAll(t.id, _isIthara ? "இதர பிரபந்தங்கள்" : t.name, _thousandFullQueue));
+  thousandPlayAll(t.id, _isIthara ? c("common.ithara") : t.name, _thousandFullQueue));
 
 // Ithara is NOT part of the 4000 — keep it out of the Full-4000 queue.
 // (It keeps its own Play button above; nothing lost.)
@@ -507,7 +478,7 @@ if (isFullMode) {
   const _ithIdxBox = _ithIdxRows.length ? `
   <div class="index-border">
     <div class="index-title">
-      📑 இதர பிரபந்தங்கள்
+      📑 ${c("common.ithara")}
     </div>
 
     ${renderIndex(_ithIdxRows, null)}
@@ -517,7 +488,7 @@ if (isFullMode) {
   html = `
   <div id="main-4000-heading" style="text-align:center;margin:40px 0 50px 0;">
     <div style="font-size:34px;font-weight:900;">
-      நாலாயிர திவ்யப்பிரபந்தம்
+      ${c("common.naalayiram")}
     </div>
     ${_f4kBtn}
     <div style="width:140px;height:2px;background:#b38b2e;margin:12px auto;"></div>

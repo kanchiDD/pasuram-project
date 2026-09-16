@@ -3,20 +3,24 @@ import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./thaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 import { isAdivaravu } from "../utils/displayTags.js";
+import { sectionTitle } from "../utils/contentStrings.js";
 
-/* ================= HEADER MAP ================= */
-
-const sectionHeaderMap = {
-  "திருவெழுகூற்றிருக்கை": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்"
+/* ================= SECTION META ================= */
+// Keyed by section_id, not by the Tamil section name — the name arrives
+// transliterated once a script is active, so a name-keyed lookup silently
+// missed and took the global number and the couplet cap with it.
+const SECTION_META = {
+  21: { globalNo: 2672, maxCouplet: 77 },
+  22: { globalNo: 2673, maxCouplet: 77 },
+  23: { globalNo: 2674, maxCouplet: 148 }
 };
+SECTION_META[2672] = SECTION_META[21];
+SECTION_META[2673] = SECTION_META[22];
+SECTION_META[2674] = SECTION_META[23];
 
-const globalNoMap = {
-  "திருவெழுகூற்றிருக்கை": 2672,
-  "சிறியதிருமடல்": 2673,
-  "பெரியதிருமடல்": 2674
-};
+function sectionMeta() {
+  return SECTION_META[state.selectedSectionId] || null;
+}
 
 /* ================= HEADER ================= */
 
@@ -45,9 +49,7 @@ if (state.thaniyanData && !state.isFullRender) {
 const sectionName = state.selectedSectionName || "";
 
 if (sectionName) {
-  const title =
-    sectionHeaderMap[sectionName] ||
-    sectionName;
+  const title = sectionTitle(state.selectedSectionId, sectionName);
 
   html += `
     <div style="text-align:center;margin:20px 0 10px 0;font-weight:600;">
@@ -88,8 +90,8 @@ export function renderMadal(data) {
 
   let html = renderHeader();
 
-  const sectionName = state.selectedSectionName || "";
-  const globalNo = globalNoMap[sectionName];
+  const meta = sectionMeta();
+  const globalNo = meta?.globalNo;
 
   /* CONTENT BOX START */
   html += `<div class="content-box"${globalNo ? ` data-global-no="${globalNo}"` : ""}>`;
@@ -105,7 +107,7 @@ if (globalNo) {
   // Couplet rendering delegated to shared core module — single
   // source of truth used by NNC, Azhwar Thirunatchathram, special.js,
   // and recital.html. CSS class prefix "sp" -> .sp-madal-couplet-card etc.
-  const maxCouplet = sectionName === "பெரியதிருமடல்" ? 148 : 77;
+  const maxCouplet = meta?.maxCouplet ?? 77;
   const madalHtml = buildMadalCoupletsHTML(data, "sp", maxCouplet);
   html += `<div class="sp-madal-body">${madalHtml}</div>`;
 
@@ -128,8 +130,8 @@ export function renderKootrirukkai(data) {
 
   let html = renderHeader();
 
-  const sectionName = state.selectedSectionName || "";
-  const globalNo = globalNoMap[sectionName];
+  const meta = sectionMeta();
+  const globalNo = meta?.globalNo;
 
   html += `<div class="content-box"${globalNo ? ` data-global-no="${globalNo}"` : ""}>`;
 

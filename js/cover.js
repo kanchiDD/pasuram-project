@@ -1,9 +1,12 @@
 import { t as uiText } from "./utils/uiStrings.js";
+import { c, ensureContentStrings } from "./utils/contentStrings.js";
 
 // =========================
 // 🔥 COVER ENTRY
 // =========================
 window.openBookCover = async function(type, thousandName = "") {
+
+  await ensureContentStrings();
 
   const app = document.getElementById("app");
 
@@ -56,21 +59,21 @@ window.openBookCover = async function(type, thousandName = "") {
 function startCoverAnimation(thousandName, loadPromise, msPerImage, isFullMode) {
 
   const images = [
-    { src: "assets/images/first.png",        name: "ஸ்ரீ பெரிய பெருமாள்  ஸ்ரீ பெரிய பிராட்டியார்" },
-    { src: "assets/images/top.png",           name: "ஸ்ரீ நம்மாழ்வார்" },
-    { src: "assets/images/poigai.png",        name: "ஸ்ரீ பொய்கை ஆழ்வார்" },
-    { src: "assets/images/bootham.png",       name: "ஸ்ரீ பூதத்தாழ்வார்" },
-    { src: "assets/images/pei.png",           name: "ஸ்ரீ பேயாழ்வார்" },
-    { src: "assets/images/thirumazhisai.png", name: "ஸ்ரீ திருமழிசை ஆழ்வார்" },
-    { src: "assets/images/mathurakavi.png",   name: "ஸ்ரீ மதுரகவி ஆழ்வார்" },
-    { src: "assets/images/periyazhwar.png",   name: "ஸ்ரீ பெரியாழ்வார்" },
-    { src: "assets/images/andal.png",         name: "ஸ்ரீ ஆண்டாள்" },
-    { src: "assets/images/kulasekara.png",    name: "ஸ்ரீ குலசேகராழ்வார்" },
-    { src: "assets/images/thondar.png",       name: "ஸ்ரீ தொண்டரடிப்பொடி ஆழ்வார்" },
-    { src: "assets/images/thiruppanar.png",   name: "ஸ்ரீ திருப்பாணாழ்வார்" },
-    { src: "assets/images/bottom.png",        name: "ஸ்ரீ திருமங்கை ஆழ்வார்" },
-    { src: "assets/images/left.png",          name: "ஸ்ரீ எம்பெருமானார்" },
-    { src: "assets/images/right.png",         name: "ஸ்ரீ மணவாளமாமுனிகள்" }
+    { src: "assets/images/first.png",        key: "cover.img.first" },
+    { src: "assets/images/top.png",           key: "cover.img.top" },
+    { src: "assets/images/poigai.png",        key: "cover.img.poigai" },
+    { src: "assets/images/bootham.png",       key: "cover.img.bootham" },
+    { src: "assets/images/pei.png",           key: "cover.img.pei" },
+    { src: "assets/images/thirumazhisai.png", key: "cover.img.thirumazhisai" },
+    { src: "assets/images/mathurakavi.png",   key: "cover.img.mathurakavi" },
+    { src: "assets/images/periyazhwar.png",   key: "cover.img.periyazhwar" },
+    { src: "assets/images/andal.png",         key: "cover.img.andal" },
+    { src: "assets/images/kulasekara.png",    key: "cover.img.kulasekara" },
+    { src: "assets/images/thondar.png",       key: "cover.img.thondar" },
+    { src: "assets/images/thiruppanar.png",   key: "cover.img.thiruppanar" },
+    { src: "assets/images/bottom.png",        key: "cover.img.bottom" },
+    { src: "assets/images/left.png",          key: "cover.img.left" },
+    { src: "assets/images/right.png",         key: "cover.img.right" }
   ];
 
   // 🔇 AUDIO REMOVED ENTIRELY
@@ -95,7 +98,7 @@ function startCoverAnimation(thousandName, loadPromise, msPerImage, isFullMode) 
     slideshow.innerHTML = `
       <div class="cover-slide">
         <div class="cover-image" style="background-image:url(${item.src})"></div>
-        <div class="cover-caption">${item.name}</div>
+        <div class="cover-caption">${c(item.key)}</div>
       </div>
     `;
 
@@ -204,11 +207,11 @@ async function showFinalScreen(loadPromise, thousandName) {
     <div class="cover-final">
 
       <div class="line1">
-        மயர்வற மதிநலம் அருளப்பெற்ற ஆழ்வார்களின் அருளிச்செயலான
+        ${c("cover.line1")}
       </div>
 
       <div class="line2">
-        நாலாயிர திவ்யப்பிரபந்தம்
+        ${c("common.naalayiram")}
       </div>
 
       <div class="line3">

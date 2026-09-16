@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { render } from "./render/layout.js";
+import { ensureContentStrings } from "./utils/contentStrings.js";
 
 // 🔥 Safe render — never fires during back navigation
 function safeRender() {
@@ -8,6 +9,7 @@ function safeRender() {
 }
 
 export async function fetchThousand() {
+  await ensureContentStrings();
   if (state.thousandData) return;
   const res = await fetch("https://overlay-worker.kanchitrust.workers.dev/api/thousand");
   state.thousandData = await res.json();
@@ -117,6 +119,7 @@ export async function fetchKootrirukkai() {
 }
 
 export async function fetchPasuram() {
+  await ensureContentStrings();
   state.pasuramData = [];
   state.displayMap = { section: [], pathu: {}, thirumozhi: {}, pasuram: {} };
 

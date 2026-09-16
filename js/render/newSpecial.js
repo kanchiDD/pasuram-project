@@ -9,6 +9,7 @@ import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./newThaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 import { isAdivaravu } from "../utils/displayTags.js";
+import { sectionTitle as ceremonialTitle } from "../utils/contentStrings.js";
 
 /* ================= SECTION META ================= */
 // Keyed by section_id, NOT by section name. The name now arrives already
@@ -23,21 +24,18 @@ const SECTION_META = {
   21: {
     globalNo:    2672,
     maxCouplet:  77,
-    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_22.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2672.mp3"
   },
   22: {
     globalNo:    2673,
     maxCouplet:  77,
-    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_23.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2673.mp3"
   },
   23: {
     globalNo:    2674,
     maxCouplet:  148,
-    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_24.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2674.mp3"
   }
@@ -62,25 +60,11 @@ function sectionMeta() {
       || null;
 }
 
-// Read directly rather than importing getScript from api.js — api.js already
-// imports the render layer, so importing it back here would close a cycle.
-const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
-function activeScript() {
-  try {
-    const s = (localStorage.getItem("script") || "ta").toLowerCase();
-    return VALID_SCRIPTS.includes(s) ? s : "ta";
-  } catch (e) {
-    return "ta";
-  }
-}
 
-// Tamil keeps the full ceremonial heading, which lives only here in JS and
-// has no converted counterpart. Any other script gets the section's own
-// converted name rather than a Tamil string in the middle of Telugu text.
+// The ceremonial heading now lives in ui_text_master, keyed by section_id,
+// so it transliterates with everything else instead of being a JS literal.
 function sectionTitle(meta) {
-  const converted = state.selectedSectionName || "";
-  if (activeScript() !== "ta") return converted || meta?.titleTa || "";
-  return meta?.titleTa || converted;
+  return ceremonialTitle(state.selectedSectionId, state.selectedSectionName || "");
 }
 
 /* ================= MINIMAL AUDIO CONTROLS ================= */
