@@ -2,6 +2,7 @@ import { loadSections } from "../navigation.js";
 import { t as uiText } from "../utils/uiStrings.js";
 import { state } from "../state.js";
 import "../cover.js"; // 🔥 ensures window.openBookCover is registered before any click
+import { c } from "../utils/contentStrings.js";
 
 export function renderOptions() {
 
@@ -55,7 +56,7 @@ export function renderOptions() {
 if (isItaram) {
   return `
     <h3>${uiText("adiyen")}</h3>
-    <p>இதர பிரபந்தங்கள்</p>
+    <p>${c("common.ithara")}</p>
     <div class="tree-list">
       <div class="tree-item" onclick="loadSections()">${uiText("menuArulicheyal")}</div>
     </div>
@@ -107,11 +108,14 @@ if (isItaram) {
 // =========================
 
 window.showFullNaalayiram = function () {
-  openBookCover("full", "நாலாயிர திவ்யப்பிரபந்தம்");
+  openBookCover("full", c("common.naalayiram"));
 };
 
 window.showFullByThousand = function (thousandId) {
 
+  // The thousand's name is already in state.thousandData, converted to the
+  // reader's script by /api/thousand. The Tamil map below is only a fallback
+  // for the case where that data has not loaded yet.
   const names = {
     1: "முதலாமாயிரம்",
     2: "இரண்டாமாயிரம்",
@@ -119,7 +123,10 @@ window.showFullByThousand = function (thousandId) {
     4: "நான்காமாயிரம்"
   };
 
-  const name = names[thousandId] || "";
+  const fromData = (state.thousandData || [])
+    .find(t => Number(t.id) === Number(thousandId));
+
+  const name = fromData?.name || names[thousandId] || "";
 
   openBookCover(thousandId, name);
 };
