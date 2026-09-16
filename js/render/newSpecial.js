@@ -9,37 +9,78 @@ import { t as uiText } from "../utils/uiStrings.js";
 import { renderThaniyan } from "./newThaniyan.js";
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 
-/* ================= HEADER MAP ================= */
-
-const sectionHeaderMap = {
-  "திருவெழுகூற்றிருக்கை": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்"
-};
-
-const globalNoMap = {
-  "திருவெழுகூற்றிருக்கை": 2672,
-  "சிறியதிருமடல்": 2673,
-  "பெரியதிருமடல்": 2674
-};
-
+/* ================= SECTION META ================= */
+// Keyed by section_id, NOT by section name. The name now arrives already
+// transliterated whenever a script is active, so every name-keyed lookup
+// missed silently and took the audio controls, the global number, the full
+// heading and the Periya couplet cap with it. section_id never changes.
+//
 // Only sections listed here have actual split/recorded audio files.
-// Sections NOT in this map get NO audio controls at all — this
-// prevents the wrong section's audio being wired in by mistake.
-const SECTION_AUDIO_MAP = {
-  "திருவெழுகூற்றிருக்கை": {
+// Sections NOT listed get NO audio controls at all — this prevents the
+// wrong section's audio being wired in by mistake.
+const SECTION_META = {
+  21: {
+    globalNo:    2672,
+    maxCouplet:  77,
+    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_22.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2672.mp3"
   },
-  "சிறியதிருமடல்": {
+  22: {
+    globalNo:    2673,
+    maxCouplet:  77,
+    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_23.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2673.mp3"
   },
-  "பெரியதிருமடல்": {
+  23: {
+    globalNo:    2674,
+    maxCouplet:  148,
+    titleTa:     "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
     thaniyanSrc: "https://audio.arulicheyal.org/thaniyans/thaniyan_24.mp3",
     pasuramSrc:  "https://audio.arulicheyal.org/pasurams/pasuram_2674.mp3"
   }
 };
+// The Full-4000 path addresses the same three works by global number.
+SECTION_META[2672] = SECTION_META[21];
+SECTION_META[2673] = SECTION_META[22];
+SECTION_META[2674] = SECTION_META[23];
+
+// Kept only as a safety net for any caller that sets the section name but
+// not the id. Tamil names only — a transliterated name simply misses here
+// and the id lookup above is what actually does the work.
+const NAME_TO_SECTION = {
+  "திருவெழுகூற்றிருக்கை": 21,
+  "சிறியதிருமடல்": 22,
+  "பெரியதிருமடல்": 23
+};
+
+function sectionMeta() {
+  return SECTION_META[state.selectedSectionId]
+      || SECTION_META[NAME_TO_SECTION[state.selectedSectionName]]
+      || null;
+}
+
+// Read directly rather than importing getScript from api.js — api.js already
+// imports the render layer, so importing it back here would close a cycle.
+const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
+function activeScript() {
+  try {
+    const s = (localStorage.getItem("script") || "ta").toLowerCase();
+    return VALID_SCRIPTS.includes(s) ? s : "ta";
+  } catch (e) {
+    return "ta";
+  }
+}
+
+// Tamil keeps the full ceremonial heading, which lives only here in JS and
+// has no converted counterpart. Any other script gets the section's own
+// converted name rather than a Tamil string in the middle of Telugu text.
+function sectionTitle(meta) {
+  const converted = state.selectedSectionName || "";
+  if (activeScript() !== "ta") return converted || meta?.titleTa || "";
+  return meta?.titleTa || converted;
+}
 
 /* ================= MINIMAL AUDIO CONTROLS ================= */
 // Horizontal row, centered: play / stop / mute, each with a small
@@ -99,18 +140,18 @@ function renderHeader() {
       // Section-specific thaniyan — only attach audio controls if THIS
       // section actually has recorded/split audio. Otherwise render
       // plain, with no controls, to avoid wiring the wrong audio in.
-      const sectionAudio = SECTION_AUDIO_MAP[state.selectedSectionName];
+      const meta = sectionMeta();
 
       if (sectionRows.length > 0) {
-        const thaniyanControls = sectionAudio
-          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
+        const thaniyanControls = meta
+          ? buildMiniAudioControls("thaniyanAudio_" + meta.globalNo, meta.thaniyanSrc)
           : "";
         html += renderThaniyan(sectionRows, state.prosodyMap, thaniyanControls);
       }
 
       if (globalRows.length === 0 && sectionRows.length === 0) {
-        const fallbackControls = sectionAudio
-          ? buildMiniAudioControls("thaniyanAudio_" + globalNoMap[state.selectedSectionName], sectionAudio.thaniyanSrc)
+        const fallbackControls = meta
+          ? buildMiniAudioControls("thaniyanAudio_" + meta.globalNo, meta.thaniyanSrc)
           : "";
         html += renderThaniyan(allRows, state.prosodyMap, fallbackControls);
       }
@@ -128,11 +169,11 @@ export function renderMadal(data) {
 
   let html = renderHeader();
 
-  const sectionName = state.selectedSectionName || "";
-  const globalNo = globalNoMap[sectionName];
+  const meta = sectionMeta();
+  const globalNo = meta?.globalNo;
 
   /* CONTENT BOX — heading + display + prosody inside */
-  const madalTitle = sectionHeaderMap[sectionName] || sectionName;
+  const madalTitle = sectionTitle(meta);
   html += `<div class="content-box">`;
   if (madalTitle) html += `<div class="content-heading">${madalTitle}</div>`;
 
@@ -151,13 +192,12 @@ export function renderMadal(data) {
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
 
   // Minimal play/stop/mute controls — only if this section actually
-  // has recorded/split audio (see SECTION_AUDIO_MAP above).
-  const madalSectionAudio = SECTION_AUDIO_MAP[sectionName];
-  if (madalSectionAudio) {
-    html += buildMiniAudioControls("pasuramAudio_" + globalNo, madalSectionAudio.pasuramSrc);
+  // has recorded/split audio (see SECTION_META above).
+  if (meta) {
+    html += buildMiniAudioControls("pasuramAudio_" + globalNo, meta.pasuramSrc);
   }
 
-  const maxCouplet = sectionName === "பெரியதிருமடல்" ? 148 : 77;
+  const maxCouplet = meta?.maxCouplet ?? 77;
   const madalHtml = buildMadalCoupletsHTML(data, "sp", maxCouplet);
   html += `<div class="sp-madal-body">${madalHtml}</div>`;
 
@@ -182,11 +222,11 @@ export function renderKootrirukkai(data) {
 
   let html = renderHeader();
 
-  const sectionName = state.selectedSectionName || "";
-  const globalNo = globalNoMap[sectionName];
+  const meta = sectionMeta();
+  const globalNo = meta?.globalNo;
 
   /* CONTENT BOX — heading + display + prosody inside */
-  const kootriTitle = sectionHeaderMap[sectionName] || sectionName;
+  const kootriTitle = sectionTitle(meta);
   html += `<div class="content-box">`;
   if (kootriTitle) html += `<div class="content-heading">${kootriTitle}</div>`;
 
@@ -205,10 +245,9 @@ export function renderKootrirukkai(data) {
   if (globalNo) html += `<div style="font-weight:600;margin-bottom:6px;">${globalNo}</div>`;
 
   // Minimal play/stop/mute controls — only if this section actually
-  // has recorded/split audio (see SECTION_AUDIO_MAP above).
-  const kootriSectionAudio = SECTION_AUDIO_MAP[sectionName];
-  if (kootriSectionAudio) {
-    html += buildMiniAudioControls("pasuramAudio_" + globalNo, kootriSectionAudio.pasuramSrc);
+  // has recorded/split audio (see SECTION_META above).
+  if (meta) {
+    html += buildMiniAudioControls("pasuramAudio_" + globalNo, meta.pasuramSrc);
   }
 
   const kootriHtml = buildKootrirukkaiLinesHTML(data, "sp", 41);
