@@ -4,6 +4,8 @@
 
 import { state } from "../state.js";
 import { t as uiText } from "../utils/uiStrings.js";
+// imported as `cs`, not `c`: this file already uses `c` for item.content
+import { c as cs, ensureContentStrings } from "../utils/contentStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -303,6 +305,8 @@ function isAuthorLabel(line) {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────
 export async function renderFullSattrumurai(sattrumuraiId) {
+  // the converted overlay must be loaded before any cs() call below
+  await ensureContentStrings();
   injectCSS();
 
   window.fsatAdjFont = function(delta) {
@@ -335,7 +339,7 @@ export async function renderFullSattrumurai(sattrumuraiId) {
 
   // If this thousand has no sattrumurais at all, show message
   if (!sattrumuraiId) {
-    return `<div class="fsat-error">இந்த ஆயிரத்தில் சாற்றுமுறை இல்லை.</div>`;
+    return `<div class="fsat-error">No Sattrumurai wired for this Thousand yet.</div>`;
   }
 
   // ── Fetch selected sattrumurai ────────────────────────────
@@ -343,11 +347,11 @@ export async function renderFullSattrumurai(sattrumuraiId) {
   try {
     data = await cachedFetch(`${API}/sattrumurai/${sattrumuraiId}`);
   } catch (e) {
-    return `<div class="fsat-error">தொடர்பு தோல்வி: ${e.message}</div>`;
+    return `<div class="fsat-error">Connection lost: ${e.message}</div>`;
   }
 
   if (!data.success) {
-    return `<div class="fsat-error">பிழை: ${data.error || "தெரியவில்லை"}</div>`;
+    return `<div class="fsat-error">Error: ${data.error || "Unknown"}</div>`;
   }
 
   const { sattrumurai, sequence } = data;
@@ -414,7 +418,7 @@ export async function renderFullSattrumurai(sattrumuraiId) {
   // NO subtitle repeated outside the box
   return `
     <div class="fsat-page">
-      <div class="fsat-page-title">சாற்றுமுறை</div>
+      <div class="fsat-page-title">${cs("sat.page.title") || "சாற்றுமுறை"}</div>
       <div class="fsat-divider"></div>
       ${dropdownHtml}
       <div class="fsat-box">
@@ -438,7 +442,7 @@ function renderItem(item) {
 // ── Pasuram ───────────────────────────────────────────────────
 function renderPasuramItem(item) {
   const c = item.content;
-  if (!c) return `<div class="fsat-error">பாசுரம் #${item.entity_id} கிடைக்கவில்லை</div>`;
+  if (!c) return `<div class="fsat-error">Pasuram #${item.entity_id} not found</div>`;
 
   let linesHtml = "";
   let prevGroup = null;
@@ -497,9 +501,10 @@ function renderVazhiItem(item) {
   const c = item.content;
   if (!c) return "";
 
-  // vazhi_name comes from worker: "ஸ்ரீ " + author canonical_name
+  // vazhi_name comes from the worker and already carries the converted ஸ்ரீ
+  const vazhiLabel = cs("sat.vazhi.heading") || "வாழி திருநாமம்";
   const authorLine = c.vazhi_name
-    ? `<span class="fsat-vazhi-author">${c.vazhi_name} வாழி திருநாமம்</span>`
+    ? `<span class="fsat-vazhi-author">${c.vazhi_name} ${vazhiLabel}</span>`
     : "";
 
   let groupsHtml = "";
@@ -512,7 +517,7 @@ function renderVazhiItem(item) {
 
   return `
     <div>
-      <span class="fsat-section-heading">வாழி திருநாமம்</span>
+      <span class="fsat-section-heading">${vazhiLabel}</span>
       ${authorLine}
       ${groupsHtml}
     </div>
