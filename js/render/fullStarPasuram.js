@@ -18,6 +18,7 @@
 
 import { state }                       from "../state.js";
 import { t as uiText } from "../utils/uiStrings.js";
+import { c, ensureContentStrings } from "../utils/contentStrings.js";
 import { fetchThaniyan, fetchPasuram } from "../api.js";
 import { renderPasuram }               from "./pasuram_full.js";
 import { sectionPlayAll, sectionAudioUrls, playUrls, globalThaniyanUrls }
@@ -36,6 +37,19 @@ export const STARS = [
   "பூராடம்","உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்",
   "பூரட்டாதி","உத்திரட்டாதி","ரேவதி"
 ];
+
+// The star name is BOTH a display label and the API's lookup key: the worker
+// builds the entity_master tag as `star + " நட்சத்திர பாசுரங்கள்"`, and those tags are
+// stored in Tamil. So STARS stays Tamil and is what goes on the wire; only the
+// label the reader sees is converted, keyed by the star's position (1-28).
+export function starLabel(tamilName) {
+  const i = STARS.indexOf(tamilName);
+  return (i >= 0 && c("star.name." + (i + 1))) || tamilName || "";
+}
+
+function starPageTitle() {
+  return c("star.page.title") || "நட்சத்திர பாசுரங்கள்";
+}
 
 const SKIP_THANIYAN = [2, 12, 13];
 
@@ -151,8 +165,9 @@ window._fstarFont = function(delta) {
 };
 
 function selectorHtml(selected) {
+  // value stays Tamil (it is the API key); only the label is converted
   const opts = STARS.map(s =>
-    `<option value="${s}" ${s === selected ? "selected" : ""}>${s}</option>`
+    `<option value="${s}" ${s === selected ? "selected" : ""}>${starLabel(s)}</option>`
   ).join("");
   return `<div class="fstar-select-wrap">
     <select class="fstar-select" onchange="window._fstarSwitch(this.value)">
@@ -164,6 +179,8 @@ function selectorHtml(selected) {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────
 export async function renderFullStarPasuram(starName) {
+  // the converted overlay must be loaded before any c()/starLabel() call
+  await ensureContentStrings();
   injectCSS();
 
   window._fstarSwitch = function(star) {
@@ -177,7 +194,7 @@ export async function renderFullStarPasuram(starName) {
 
   if (!starName) {
     return `<div class="fstar-page">
-      <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
+      <div class="fstar-title">${starPageTitle()}</div>
       <div class="fstar-subtitle">${uiText("starSubtitle")}</div>
       <div class="fstar-divider"></div>
       ${selectorHtml(null)}
@@ -198,10 +215,10 @@ export async function renderFullStarPasuram(starName) {
 
   if (!hasAny) {
     return `<div class="fstar-page">
-      <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
+      <div class="fstar-title">${starPageTitle()}</div>
       <div class="fstar-divider"></div>
       ${selectorHtml(starName)}
-      <div class="fstar-empty">${starName} NO- Star Pasurams</div>
+      <div class="fstar-empty">${starLabel(starName)} — no star pasurams</div>
     </div>${floatNav()}`;
   }
 
@@ -389,10 +406,10 @@ state.thaniyanData = savedThaniyan;
 
   if (!html) {
     return `<div class="fstar-page">
-      <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
+      <div class="fstar-title">${starPageTitle()}</div>
       <div class="fstar-divider"></div>
       ${selectorHtml(starName)}
-      <div class="fstar-empty">${starName} — No Pasuram's found</div>
+      <div class="fstar-empty">${starLabel(starName)} — no pasurams found</div>
     </div>${floatNav()}`;
   }
 
@@ -404,7 +421,7 @@ state.thaniyanData = savedThaniyan;
   const _starFullQueue = starQueue.length
     ? [...globalThaniyanUrls(_sect, _subsect), ...starQueue]
     : [];
-  window._fstarPlayAll = () => { if (_starFullQueue.length) playUrls(_starFullQueue, starName); };
+  window._fstarPlayAll = () => { if (_starFullQueue.length) playUrls(_starFullQueue, starLabel(starName)); };
 
   const _starPlayBtn = _starFullQueue.length ? `
     <div style="text-align:center;margin:2px 0 16px;">
@@ -415,8 +432,8 @@ state.thaniyanData = savedThaniyan;
     </div>` : "";
 
   return `<div class="fstar-page">
-    <div class="fstar-title">நட்சத்திர பாசுரங்கள்</div>
-    <div class="fstar-subtitle">${starName} நட்சத்திரம்</div>
+    <div class="fstar-title">${starPageTitle()}</div>
+    <div class="fstar-subtitle">${starLabel(starName)} ${c("star.suffix") || "நட்சத்திரம்"}</div>
     <div class="fstar-divider"></div>
     ${selectorHtml(starName)}
     ${_starPlayBtn}
