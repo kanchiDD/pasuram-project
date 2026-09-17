@@ -13,49 +13,19 @@ import {
   injectDisplayCSS,
   fetchDisplayData,
   fetchThaniyanWithProsody,
-  renderSectionDisplayItems,
-  renderSectionProsody,
-  renderSectionClosing,
-  buildPasuramDisplayMap,
-  buildThirumozhiDisplayMap,
-  buildPathuDisplayMap
+  renderSectionClosing
 } from "./displayHelper.js";
+import { c, sectionTitle, ensureContentStrings } from "../utils/contentStrings.js";
+
+// This view lists ONLY the ★★ dual-recital pasurams extracted from a section,
+// so it deliberately shows no display items from entity_master (adivaravu,
+// ragam/talam, song reference) and no prosody. Those describe the complete
+// prabandham and are misleading on an extract. Same in every script,
+// Tamil included.
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
-const sectionHeaderMap = {
-  "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  "பெரியாழ்வார் திருமொழி": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  "திருப்பாவை": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  "நாச்சியார் திருமொழி": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  "பெருமாள் திருமொழி": "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  "திருச்சந்தவிருத்தம்": "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  "திருமாலை": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  "திருப்பள்ளியெழுச்சி": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலனாதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  "பெரிய திருமொழி": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  "திருகுறுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  "திருநெடுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  "முதல்‌ திருவந்தாதி": "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  "இரண்டாம்‌ திருவந்தாதி": "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  "மூன்றாம்‌ திருவந்தாதி": "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  "நான்முகன்‌திருவந்தாதி": "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  "திருவிருத்தம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  "திருவாசிரியம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த யஜுர்வேதஸாரமான திருவாசிரியம்",
-  "பெரியதிருவந்தாதி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  "திருவெழுகூற்றிருக்கை": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  "இராமாநுச நூற்றந்தாதி": "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த ப்ரபந்நகாயத்ரி என்னும்‌ இராமாநுச நூற்றந்தாதி",
-  "உபதேசரத்தினமாலை": "ஸ்ரீ பெரியஜீயர் அருளிச்செய்த உபதேசரத்தினமாலை",
-  "திருவாய்மொழி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
-  "திருவாய்மொழி நூற்றந்தாதி": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த திருவாய்மொழி நூற்றந்தாதி",
-  "ஞானசாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய  ஞானசாரம்",
-  "ப்ரமேயஸாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ப்ரமேயஸாரம்",
-  "ஸப்தகாதை": "ஸ்ரீ விலாஞ்சோலைப்பிள்ளை  அருளிச்செய்த  ஸப்தகாதை",
-  "ஆர்த்தி ப்ரபந்தம்": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்"
-};
+// Ceremonial titles come from ui_text_master (sec.title.<id>) via sectionTitle().
 
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
 const SPECIAL_MADAL  = [22, 23]; // சிறியதிருமடல், பெரியதிருமடல்
@@ -175,16 +145,13 @@ function renderLinesWithGroups(lines) {
 }
 
 // ── Render ★★ pasurams for one thirumozhi with per-pasuram display items ──────
-function renderPasuramBlock(pasurams, pasuramDisplayMap) {
+function renderPasuramBlock(pasurams) {
   let html = "";
   for (let i = 0; i < pasurams.length; i++) {
     const p = pasurams[i];
     if (i > 0) html += `<div class="fdr-pasuram-sep"></div>`;
-    // per-pasuram display item (e.g. ragam/talam shown above specific pasurams)
-    const displayItem = pasuramDisplayMap?.get(String(p.global_no)) || "";
     html += `
       <div class="fdr-pasuram-block">
-        ${displayItem}
         ${numLinePlay(`<span class="fdr-global-no">${p.global_no}</span>`, 'ga-p-' + p.global_no, PASURAM_URL(p.global_no), p.has_audio)}
         <div class="fdr-lines">${renderLinesWithGroups(p.lines)}</div>
         <div class="fdr-local-no">${p.local_no}</div>
@@ -216,19 +183,11 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
   const dualPasurams = pasurams.filter(p => p.double_recital === 1);
   if (dualPasurams.length === 0) return "";
 
-  // build lookup maps from display data
-  const pasuramDisplayMap   = buildPasuramDisplayMap(displayData);
-  const thirumozhiDisplayMap = buildThirumozhiDisplayMap(displayData);
-  const pathuDisplayMap     = buildPathuDisplayMap(displayData);
-
-  // section-level display (carnatic/prosody) shown at top
-  const sectionDisplayHtml = renderSectionDisplayItems(displayData);
-  const prosodyHtml        = renderSectionProsody(displayData);
-  const closingHtml        = renderSectionClosing(displayData, "fdr-section-closing");
+  const closingHtml = renderSectionClosing(displayData, "fdr-section-closing");
 
   const thaniyanHtml = thaniyanRows.length > 0 ? `
     <div class="fdr-thaniyan-box">
-      <div class="fdr-thaniyan-label">தனியன்</div>
+      <div class="fdr-thaniyan-label">${c("common.thaniyan")}</div>
       ${renderThaniyan(thaniyanRows, thaniyanRows._prosodyMap || {})}
     </div>
   ` : "";
@@ -254,9 +213,6 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
   let groupsHtml = "";
   for (const [pk, pathu] of pathuMap) {
     if (pathu.label) groupsHtml += `<div class="fdr-pathu-heading">${pathu.label}</div>`;
-    // pathu-level display items
-    const pathuDisplay = pk !== "__none__" ? (pathuDisplayMap.get(pk) || "") : "";
-    if (pathuDisplay) groupsHtml += pathuDisplay;
 
     for (const [tk, thiru] of pathu.thiruMap) {
       const line1 = thiru.thiruName || thiru.subunit || "";
@@ -266,17 +222,10 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
         ? `<div class="fdr-thirumozhi-heading">${parts.join(" — ")}</div>`
         : "";
 
-      // thirumozhi-level display items and closing
-      const thiruDisplay = tk !== "__none__" ? (thirumozhiDisplayMap.get(tk) || {}) : {};
-      const thiruDisplayHtml = thiruDisplay.displayHtml || "";
-      const thiruClosingHtml = thiruDisplay.closingHtml || "";
-
       groupsHtml += `
         <div class="fdr-thirumozhi-box">
           ${thiruHeadingHtml}
-          ${thiruDisplayHtml}
-          ${renderPasuramBlock(thiru.pasurams, pasuramDisplayMap)}
-          ${thiruClosingHtml}
+          ${renderPasuramBlock(thiru.pasurams)}
         </div>
       `;
     }
@@ -291,8 +240,6 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
       <div class="fdr-section-heading">${heading}${countBadge}</div>
       ${thaniyanHtml}
       ${sectionPlayAll(pasurams[0]?.section_id, thaniyanRows, dualPasurams)}
-      ${sectionDisplayHtml}
-      ${prosodyHtml}
       ${groupsHtml}
       ${closingHtml}
     </div>
@@ -301,6 +248,8 @@ function buildSectionBlock(heading, thaniyanRows, pasurams, displayData) {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export async function renderFullDualRecital(selectedThousandId = null) {
+  await ensureContentStrings();
+
   injectCSS();
   injectDisplayCSS();
 
@@ -318,7 +267,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
     : thousands;
 
   const isFullMode = !selectedThousandId;
-  const pageTitle = isFullMode ? "நாலாயிர திவ்யப்பிரபந்தம்" : (filtered[0]?.name || "");
+  const pageTitle = isFullMode ? c("common.naalayiram") : (filtered[0]?.name || "");
 
   let html = `
     <div class="fdr-page">
@@ -384,7 +333,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
     const anchorRows = allAnchorRows[ti];
 
     if (isFullMode) {
-      const tName = t.name === "நாலாயிர திவ்யப்பிரபந்தம்" ? "" : t.name;
+      const tName = t.name === c("common.naalayiram") ? "" : t.name;
       if (tName) html += `<div class="fdr-thousand-heading">${tName}</div>`;
     }
 
@@ -401,7 +350,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
       const { thaniyanRows, displayData, contentData, isSpecialMadal, isSpecialKootri }
         = sectionDataMap.get(secId);
 
-      const heading = sectionHeaderMap[baseName] || baseName;
+      const heading = sectionTitle(secId, baseName);
 
       // ── special sections use renderMadal / renderKootrirukkai ──────────────
       if (isSpecialMadal || isSpecialKootri) {
@@ -452,7 +401,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
           });
 
           const couplets = Object.keys(grouped).map(Number).sort((a,b) => a-b);
-          const maxCouplet = sectionNameMap[Number(secId)] === "பெரியதிருமடல்" ? 148 : 77;
+          const maxCouplet = Number(secId) === 23 ? 148 : 77;   // பெரியதிருமடல்
           let prevBlockRule = null;
 
           const units = [];
@@ -529,7 +478,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
         // wrap in section box with thaniyan
         const spThaniyanHtml = thaniyanRows.length > 0 ? `
           <div class="fdr-thaniyan-box">
-            <div class="fdr-thaniyan-label">தனியன்</div>
+            <div class="fdr-thaniyan-label">${c("common.thaniyan")}</div>
             ${renderThaniyan(thaniyanRows, thaniyanRows._prosodyMap || {})}
           </div>
         ` : "";
@@ -540,9 +489,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
           <div class="fdr-section-box">
             <div class="fdr-section-heading">${heading}</div>
             ${spThaniyanHtml}
-            ${renderSectionDisplayItems(displayData)}
-            ${renderSectionProsody(displayData)}
-            ${specialDualHtml || '<div style="text-align:center;color:#aaa;font-style:italic;padding:10px 0;">★★ பாசுரங்கள் இல்லை</div>'}
+            ${specialDualHtml || '<div style="text-align:center;color:#aaa;font-style:italic;padding:10px 0;">No ★★ pasurams in this section</div>'}
             ${spClosing ? `<div class="fdr-section-closing">${spClosing}</div>` : ""}
           </div>
         `;
