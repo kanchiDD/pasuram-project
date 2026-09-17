@@ -3,7 +3,8 @@
 // Thirunangur(11) / Navathiruppathi(9) / Irattai(2)
 // =============================================================
 
-import { API_DD, DESAM_TOTAL, friendlyLabel, ddSpinner } from "./ddCore.js";
+import { API_DD, DESAM_TOTAL, friendlyLabel, ddSpinner,
+         azhwarName, c } from "./ddCore.js";
 import { t as uiText } from "../../utils/uiStrings.js";
 
 // Verified desam_ids for each special group
@@ -28,16 +29,18 @@ const SPECIAL_SUB_KEYS = {
   navathiruppathi: "ddSubNava",
   irattai:         "ddSubIrattai"
 };
-const SPECIAL_SUB_SUFFIX = {
-  thirunangur:     " · ஸ்ரீ திருமங்கை ஆழ்வார்"
-};
+// Resolved at render time so the Azhwar name follows the chosen script
+// (author_id 12 = Sri Thirumangai Azhwar).
+function specialSubSuffix(key) {
+  return key === "thirunangur" ? " · " + azhwarName(12) : "";
+}
 
 // ── Special group menu (full 4000 only) ───────────────────────────────────────
 export function renderSpecialMenu() {
   const rows = Object.keys(SPECIAL_DESAM_IDS).map(key => `
     <div class="dd-list-item" onclick="ddOpenSpecial('${key}')">
-      <div class="dd-list-name">${t(SPECIAL_LABEL_KEYS[key])}</div>
-      <div class="dd-list-sub">${t(SPECIAL_SUB_KEYS[key])}${SPECIAL_SUB_SUFFIX[key] || ""}</div>
+      <div class="dd-list-name">${uiText(SPECIAL_LABEL_KEYS[key])}</div>
+      <div class="dd-list-sub">${uiText(SPECIAL_SUB_KEYS[key])}${specialSubSuffix(key)}</div>
     </div>`).join("");
 
   return `
@@ -66,10 +69,14 @@ export async function renderSpecialGroup(groupKey) {
     await fetch(`${API_DD}?sub=list`).then(r => r.json());
 
   // Deity name overrides for special desams
+  // Tamil below is the built-in default; c() returns the converted form
+  // when a script is active (keys dd.deity.50.perumal / .thayar).
   const DEITY_OVERRIDE = {
     50: {
-      perumal_name: "ஸ்ரீ தேவப்பிரான் & ஸ்ரீ அரவிந்தலோசனர்",
-      thayar_name:  "ஸ்ரீ கருந்தடங்கண்ணி நாயகி & ஸ்ரீ வக்ஷஸ்தல லக்ஷ்மி"
+      perumal_name: c("dd.deity.50.perumal") ||
+        "ஸ்ரீ தேவப்பிரான் & ஸ்ரீ அரவிந்தலோசனர்",
+      thayar_name:  c("dd.deity.50.thayar") ||
+        "ஸ்ரீ கருந்தடங்கண்ணி நாயகி & ஸ்ரீ வக்ஷஸ்தல லக்ஷ்மி"
     }
   };
 
@@ -104,7 +111,7 @@ export async function renderSpecialGroup(groupKey) {
 
   if (content) content.innerHTML = back + `
     <div class="dd-list-box">
-      <div class="dd-list-heading">${uiText("ddGroupCount", { label: t(SPECIAL_LABEL_KEYS[groupKey]), n: desams.length })}</div>
+      <div class="dd-list-heading">${uiText("ddGroupCount", { label: uiText(SPECIAL_LABEL_KEYS[groupKey]), n: desams.length })}</div>
       ${listHtml}
     </div>`;
 }

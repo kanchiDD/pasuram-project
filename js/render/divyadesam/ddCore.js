@@ -17,6 +17,10 @@ import {
   buildPathuDisplayMap
 } from "../displayHelper.js";
 import { t as uiText } from "../../utils/uiStrings.js";
+import { c, sectionTitle, ensureContentStrings } from "../../utils/contentStrings.js";
+import { isAdivaravu } from "../../utils/displayTags.js";
+
+export { c, sectionTitle, ensureContentStrings, isAdivaravu };
 
 export { renderThaniyan, injectDisplayCSS, fetchDisplayData,
          fetchThaniyanWithProsody, renderSectionDisplayItems,
@@ -95,13 +99,22 @@ export const REGION_LABELS = {
   uttar_pradesh:"Uttar Pradesh", uttarakhand:"Uttarakhand",
   nepal:"Nepal", vinnulagam:"Vinnulagam"
 };
+// The Tamil table above is the built-in default. When a script is active the
+// converted label comes from /api/ui-text (keys dd.region.<slug>); slugs with
+// no key at all (districts, English state names) fall through unchanged.
 export function friendlyLabel(slug) {
-  return REGION_LABELS[slug] || slug || "";
+  if (!slug) return "";
+  return c("dd.region." + slug) || REGION_LABELS[slug] || slug;
+}
+
+// Thousand name — converted when a script is active.
+export function thousandName(id) {
+  return c("dd.thousand." + id) || THOUSAND_NAMES[id] || "";
 }
 
 // ── Get azhwar name by id ─────────────────────────────────────────────────────
 export function azhwarName(id) {
-  return AZHWARS.find(a => a.id === Number(id))?.name || "";
+  return c("azh.name." + id) || AZHWARS.find(a => a.id === Number(id))?.name || "";
 }
 
 // ── Get sections for an azhwar filtered by thousand ──────────────────────────
@@ -281,27 +294,37 @@ export function renderPasuramCard(p, isFirst, pasuramDisplayMap) {
 }
 
 // ── Render grouped pasurams (pathu → thirumozhi) ──────────────────────────────
-// Strip adivaravu entries from a display map (DD views never show adivaravu)
-function stripAdivaravu(map) {
-  map.forEach((val, key) => {
-    if (typeof val === "string") {
-      // pathu map: val is HTML string — remove dh-thirumozhi-display divs containing adivaravu
-      const cleaned = val.replace(/<div class="dh-thirumozhi-display">[^<]*(?:adivaravu|அடிவரவு)[^<]*<\/div>/gi, "");
-      if (cleaned !== val) map.set(key, cleaned);
-    } else if (val && typeof val === "object") {
-      // thirumozhi map: val = {displayHtml, closingHtml}
-      if (val.displayHtml) {
-        val.displayHtml = val.displayHtml.replace(/<div class="dh-thirumozhi-display">[^<]*(?:adivaravu|அடிவரவு)[^<]*<\/div>/gi, "");
-      }
+// Divyadesam views never show adivaravu. This used to strip it out of the
+// already-rendered HTML by matching the Tamil word, which can never match a
+// converted script. It now filters the DATA, using the meta_key tag, so it
+// works identically in every script.
+function withoutAdivaravu(displayData) {
+  if (!displayData || typeof displayData !== "object") return displayData;
+  const clean = arr => (Array.isArray(arr) ? arr.filter(d => !isAdivaravu(d)) : arr);
+  const cleanGroup = obj => {
+    if (!obj || typeof obj !== "object") return obj;
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (Array.isArray(v))                    out[k] = clean(v);
+      else if (v && Array.isArray(v.items))    out[k] = { ...v, items: clean(v.items) };
+      else                                     out[k] = v;
     }
-  });
-  return map;
+    return out;
+  };
+  return {
+    ...displayData,
+    section:    clean(displayData.section),
+    pathu:      cleanGroup(displayData.pathu),
+    thirumozhi: cleanGroup(displayData.thirumozhi),
+    pasuram:    cleanGroup(displayData.pasuram)
+  };
 }
 
 export function renderGroupedPasurams(pasurams, displayData) {
-  const pdMap  = buildPasuramDisplayMap(displayData);
-  const tdMap  = stripAdivaravu(buildThirumozhiDisplayMap(displayData));
-  const patMap = stripAdivaravu(buildPathuDisplayMap(displayData));
+  const dd     = withoutAdivaravu(displayData);
+  const pdMap  = buildPasuramDisplayMap(dd);
+  const tdMap  = buildThirumozhiDisplayMap(dd);
+  const patMap = buildPathuDisplayMap(dd);
 
   const pathuMap = new Map();
   for (const p of pasurams) {
@@ -336,7 +359,9 @@ export function renderGroupedPasurams(pasurams, displayData) {
 
 // ── Render one section block (thaniyan + content box) ─────────────────────────
 export async function renderSectionBlock(sectionId, sectionHeaderMap, extraHeader = "") {
-  const heading = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
+  const heading = sectionTitle(sectionId, "") ||
+                  (sectionHeaderMap && sectionHeaderMap[sectionId]) ||
+                  `Section ${sectionId}`;
 
   // thaniyan
   let thaniyanHtml = "";

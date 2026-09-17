@@ -14,8 +14,11 @@
 // is not, so Tamil behaviour is unchanged either way.
 // =============================================================
 
+// The divyadesam endpoint names the same tag `key` rather than `meta_key`,
+// on both the Tamil and the script path — accept either spelling.
 export function isAdivaravu(d) {
   if (!d) return false;
-  if (d.meta_key) return d.meta_key === "adivaravu";
+  const tag = d.meta_key ?? d.key;
+  if (tag) return tag === "adivaravu";
   return typeof d.text === "string" && d.text.includes("அடிவரவு");
 }

@@ -55,7 +55,7 @@ export async function renderFilterResult(filterType, value, thousandId) {
     `${API_DD}?sub=${subMap[filterType]}&${paramMap[filterType]}=${encodeURIComponent(value)}`
   ).then(r => r.json());
 
-  const back = `<div class="dd-back" onclick="ddView('${filterType}')">${uiText("backTo", { name: value })}</div>`;
+  const back = `<div class="dd-back" onclick="ddView('${filterType}')">${uiText("backTo", { name: friendlyLabel(value) || value })}</div>`;
   const desams = Array.isArray(res) ? res : [];
 
   if (!desams.length) {

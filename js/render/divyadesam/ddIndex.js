@@ -8,7 +8,8 @@ import {
   injectDDCSS, injectDisplayCSS, initFontAdjuster,
   ddSpinner, ddFloatNav, THOUSAND_NAMES, AZHWARS,
   SECTION_TO_THOUSAND, DESAM_TOTAL, GRAND_TOTAL,
-  API_DD, friendlyLabel
+  API_DD, friendlyLabel, thousandName,
+  c, ensureContentStrings
 } from "./ddCore.js";
 import { t as uiText } from "../../utils/uiStrings.js";
 
@@ -118,20 +119,22 @@ async function buildMenu(thousandId) {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export async function renderDivyadesamIndex(selectedThousandId = null) {
+  // the converted overlay must be in hand before any c() call below
+  await ensureContentStrings();
   injectDDCSS();
   injectDisplayCSS();
   initFontAdjuster();
   registerHandlers(selectedThousandId);
 
-  const thousandName = selectedThousandId
-    ? (THOUSAND_NAMES[selectedThousandId] || "")
-    : "நாலாயிர திவ்யப்பிரபந்தம்";
+  const pageTitle = selectedThousandId
+    ? thousandName(selectedThousandId)
+    : c("common.naalayiram");
 
   const menuHtml = await buildMenu(selectedThousandId);
 
   return `
     <div class="dd-page">
-      <div class="dd-page-title">${thousandName}</div>
+      <div class="dd-page-title">${pageTitle}</div>
       <div class="dd-page-sub">${uiText("ddSubtitle")}</div>
       <div class="dd-divider"></div>
       <div class="dd-menu-grid">${menuHtml}</div>

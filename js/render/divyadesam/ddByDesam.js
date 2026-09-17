@@ -16,7 +16,8 @@ import {
   renderPickList, renderLines, renderGroupedPasurams,
   renderSectionDisplayItems, renderSectionProsody,
   renderSectionClosing, fetchDisplayData, fetchThaniyanWithProsody,
-  renderThaniyan, buildPasuramDisplayMap, ddSpinner
+  renderThaniyan, buildPasuramDisplayMap, ddSpinner,
+  sectionTitle
 } from "./ddCore.js";
 import { t as uiText } from "../../utils/uiStrings.js";
 
@@ -148,34 +149,6 @@ async function buildSpecialPasuram(secId) {
 
 const SKIP_THANIYAN = [2, 12, 13];
 
-const SECTION_HEADER = {
-  1:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  2:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  3:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  4:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  5:"ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  6:"ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  7:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  8:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  9:"ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  10:"ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  11:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  12:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  13:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  14:"ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  15:"ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  16:"ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  17:"ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  18:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவிருத்தம்",
-  19:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாசிரியம்",
-  20:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த பெரியதிருவந்தாதி",
-  21:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  22:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  23:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  24:"ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த இராமாநுச நூற்றந்தாதி",
-  26:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி"
-};
-
 // ── Build azhwar summary line (full names, no counts at thousand level) ───────
 function buildAzhwarSummary(desam, thousandId) {
   const counts = desam.azhwar_counts || {};
@@ -185,7 +158,8 @@ function buildAzhwarSummary(desam, thousandId) {
     if (!cnt) continue;
     if (thousandId && !az.sections.some(s => SECTION_TO_THOUSAND[s] === Number(thousandId))) continue;
     // Show count only for full 4000
-    parts.push(thousandId ? az.name : `${az.name} (${cnt})`);
+    const nm = azhwarName(az.id);
+    parts.push(thousandId ? nm : `${nm} (${cnt})`);
   }
   return parts.join(" | ");
 }
@@ -364,7 +338,7 @@ export async function renderDesamDetail(desamId, thousandId) {
     html += `<div class="dd-azhwar-group"><div class="dd-azhwar-label">${azName}</div>`;
 
     for (const [secId, secPasurams] of sectionMap) {
-      const secHeading = SECTION_HEADER[secId] || secPasurams[0]?.section_name || "";
+      const secHeading = sectionTitle(secId, secPasurams[0]?.section_name || "");
 
       // Thaniyan: from pre-fetched map — no extra API call
       let thaniyanHtml = "";

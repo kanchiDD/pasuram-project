@@ -9,7 +9,8 @@ import {
   friendlyLabel, renderPickList, ddSpinner,
   renderGroupedPasurams, renderSectionDisplayItems, renderSectionProsody,
   renderSectionClosing, fetchDisplayData, fetchThaniyanWithProsody,
-  renderThaniyan, buildPasuramDisplayMap
+  renderThaniyan, buildPasuramDisplayMap,
+  azhwarName, sectionTitle
 } from "./ddCore.js";
 import { t as uiText } from "../../utils/uiStrings.js";
 
@@ -144,34 +145,6 @@ const SKIP_THANIYAN = [2, 12, 13];
 // Āchārya — not an Āzhwār, display differently
 const ACHARYA_IDS = new Set([13]);
 
-const SECTION_HEADER = {
-  1:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  2:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  3:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  4:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  5:"ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  6:"ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  7:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  8:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  9:"ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  10:"ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  11:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  12:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  13:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  14:"ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  15:"ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  16:"ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  17:"ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  18:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவிருத்தம்",
-  19:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாசிரியம்",
-  20:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த பெரியதிருவந்தாதி",
-  21:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  22:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  23:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  24:"ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த இராமாநுச நூற்றந்தாதி",
-  26:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி"
-};
-
 const _tc = {};
 async function getThaniyan(secId) {
   if (_tc[secId]) return _tc[secId];
@@ -196,7 +169,7 @@ export function renderAzhwarList(thousandId, page) {
       ? `<span style="font-size:10px;background:#e8d5a0;color:#4a2c00;padding:1px 6px;border-radius:8px;margin-left:6px;">Āchārya</span>`
       : "";
     return `<div class="dd-list-item" onclick="ddOpenAzhwar(${a.id})">
-              <div class="dd-list-name">${a.name}${tag}</div>
+              <div class="dd-list-name">${azhwarName(a.id)}${tag}</div>
             </div>`;
   };
 
@@ -300,7 +273,7 @@ export async function renderAzhwarDetail(authorId, thousandId) {
   let html = back + `
     <div style="text-align:left;padding:10px 0 4px;">
       <div style="font-size:11px;color:#b38b2e;font-weight:700;text-transform:uppercase;letter-spacing:1px;">${roleLabel}</div>
-      <div style="font-size:17px;font-weight:900;color:#4a2c00;">${az.name}</div>
+      <div style="font-size:17px;font-weight:900;color:#4a2c00;">${azhwarName(az.id)}</div>
     </div>
     <div style="font-size:12px;color:#7a5a20;margin-bottom:14px;">${desams.length} Divya Desam${desams.length>1?"s":""}</div>`;
 
@@ -324,7 +297,7 @@ export async function renderAzhwarDetail(authorId, thousandId) {
     }
 
     for (const [secId, secPasurams] of sectionMap) {
-      const secHeading = SECTION_HEADER[secId] || "";
+      const secHeading = sectionTitle(secId, secPasurams[0]?.section_name || "");
 
       let thaniyanHtml = "";
       if (!shownThaniyan.has(secId)) {
