@@ -17,6 +17,10 @@
 
 const TAMIL = {
   "common.muttrittru": "முற்றிற்று",
+  "common.thaniyan": "தனியன்",
+  "common.sri": "ஸ்ரீ",
+  "azh.index.title": "ஆழ்வார்கள் — அட்டவணை",
+  "azh.page.subtitle": "ஆழ்வார்கள் — அருளிச்செயல்",
   "common.naalayiram": "நாலாயிர திவ்யப்பிரபந்தம்",
   "common.ithara": "இதர பிரபந்தங்கள்",
   "cover.line1": "மயர்வற மதிநலம் அருளப்பெற்ற ஆழ்வார்களின் அருளிச்செயலான",

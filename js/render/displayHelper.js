@@ -14,6 +14,8 @@
 //   prosodyMaster  → [{prosody_id, canonical_name_tamil, ...}]
 // =============================================================
 
+import { isAdivaravu } from "../utils/displayTags.js";
+
 // ── CSS for display items (injected once) ─────────────────────────────────────
 export function injectDisplayCSS() {
   if (document.getElementById("display-helper-style")) return;
@@ -102,7 +104,7 @@ export async function fetchThaniyanWithProsody(sectionId) {
 export function renderSectionDisplayItems(displayData) {
   if (!displayData?.section) return "";
   return displayData.section
-    .filter(d => d?.text && !d.text.includes("அடிவரவு"))
+    .filter(d => d?.text && !isAdivaravu(d))
     .map(d => `<div class="dh-section-display">${d.text}</div>`)
     .join("");
 }
@@ -120,7 +122,7 @@ export function renderSectionProsody(displayData) {
 // ── Adivaravu (section-level, shown after all pasurams) ──────────────────────
 export function renderAdivaravu(displayData) {
   if (!displayData?.section) return "";
-  const item = displayData.section.find(d => d?.text?.includes("அடிவரவு"));
+  const item = displayData.section.find(d => isAdivaravu(d));
   return item ? `<div class="dh-adivaravu">${item.text}</div>` : "";
 }
 

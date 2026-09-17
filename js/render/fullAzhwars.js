@@ -20,6 +20,7 @@ import {
   buildThirumozhiDisplayMap,
   buildPathuDisplayMap
 } from "./displayHelper.js";
+import { c, sectionTitle, isTamilScript, ensureContentStrings } from "../utils/contentStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -48,6 +49,12 @@ const AZHWARS = [
   { id:13, name:"திருவரங்கத்தமுதனார்",      month:null,        star:null,          acharya:true, sections:[24] }
 ];
 
+// The AZHWARS ids match author_master.author_id, so the worker can serve the
+// converted name and birth star. The literals above stay as the Tamil default.
+function azhName(a)  { return c("azh.name."  + a.id) || a.name; }
+function azhMonth(a) { return c("azh.month." + a.id) || a.month; }
+function azhStar(a)  { return c("azh.star."  + a.id) || a.star; }
+
 const SECTION_TO_THOUSAND = {
   1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1,10:1,
   11:2,12:2,13:2,
@@ -59,33 +66,9 @@ const SPECIAL_MADAL  = [22, 23];
 const SPECIAL_KOOTRI = [21];
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
 
-const sectionHeaderMap = {
-  1:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  2:"ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  3:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  4:"ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  5:"ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  6:"ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  7:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  8:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  9:"ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  10:"ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  11:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  12:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  13:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  14:"ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  15:"ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  16:"ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  17:"ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  18:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  19:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த யஜுர்வேதஸாரமான திருவாசிரியம்",
-  20:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  21:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  22:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  23:"ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  24:"ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த ப்ரபந்நகாயத்ரி என்னும்‌ இராமாநுச நூற்றந்தாதி",
-  26:"ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி"
-};
+// Ceremonial section titles come from ui_text_master (sec.title.<id>) via
+// sectionTitle(), so they convert with everything else. Tamil is unchanged —
+// contentStrings holds the same strings as its built-in defaults.
 
 const sectionNameMap = { 21:"திருவெழுகூற்றிருக்கை", 22:"சிறியதிருமடல்", 23:"பெரியதிருமடல்" };
 
@@ -246,7 +229,7 @@ function renderGroupedPasurams(pasurams, displayData) {
 
 // ── Build normal section ──────────────────────────────────────────────────────
 async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
-  const heading = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
+  const heading = sectionTitle(sectionId, `Section ${sectionId}`);
 
   let thaniyanHtml = "";
   let thaniyanRows = [];
@@ -257,7 +240,7 @@ async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
     if (rows.length > 0) {
       thaniyanHtml = `
         <div class="faz-thaniyan-box">
-          <div class="faz-thaniyan-label">தனியன்</div>
+          <div class="faz-thaniyan-label">${c("common.thaniyan")}</div>
           ${renderThaniyan(rows, thaniyanProsodyMap)}
         </div>
       `;
@@ -295,7 +278,7 @@ async function buildNormalSectionBlock(sectionId, azhwarHeader = "") {
 
 // ── Build special section (21/22/23) ─────────────────────────────────────────
 async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
-  const heading    = sectionHeaderMap[sectionId] || `Section ${sectionId}`;
+  const heading    = sectionTitle(sectionId, `Section ${sectionId}`);
   const sectionName = sectionNameMap[sectionId] || "";
 
   let thaniyanHtml = "";
@@ -304,7 +287,7 @@ async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
   if (rows.length > 0) {
     thaniyanHtml = `
       <div class="faz-thaniyan-box">
-        <div class="faz-thaniyan-label">தனியன்</div>
+        <div class="faz-thaniyan-label">${c("common.thaniyan")}</div>
         ${renderThaniyan(rows, thaniyanProsodyMap)}
       </div>
     `;
@@ -353,14 +336,14 @@ async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
 function buildIndex(azhwarsToShow) {
   return `
     <div class="faz-index-box">
-      <div class="faz-index-title">📑 ஆழ்வார்கள் — அட்டவணை</div>
+      <div class="faz-index-title">📑 ${c("azh.index.title")}</div>
       ${azhwarsToShow.map((a, i) => {
-        const birth = a.month && a.star ? `${a.month} — ${a.star}` : "";
+        const birth = a.month && a.star ? `${azhMonth(a)} — ${azhStar(a)}` : "";
         return `
           <a class="faz-index-row" href="#faz-azhwar-${a.id}">
             <span class="faz-index-num">${i + 1}.</span>
             <span style="flex:1;">
-              <span class="faz-index-name">ஸ்ரீ ${a.name}</span>
+              <span class="faz-index-name">${c("common.sri")} ${azhName(a)}</span>
               ${birth ? `<span class="faz-index-birth">${birth}</span>` : ""}
             </span>
           </a>
@@ -386,6 +369,8 @@ function floatingNav() {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export async function renderFullAzhwars(selectedThousandId = null) {
+  await ensureContentStrings();
+
   injectCSS();
   injectDisplayCSS();
 
@@ -403,14 +388,20 @@ export async function renderFullAzhwars(selectedThousandId = null) {
     isFullMode || a.sections.some(secId => SECTION_TO_THOUSAND[secId] === Number(selectedThousandId))
   );
 
+  // The thousand's own name is already converted in state.thousandData; the
+  // Tamil map is only a fallback for when that has not loaded.
+  const thousandFallback = {1:"முதலாமாயிரம்",2:"இரண்டாமாயிரம்",3:"மூன்றாமாயிரம்",4:"நான்காமாயிரம்"};
+  const fromData = (state.thousandData || [])
+    .find(t => Number(t.id) === Number(selectedThousandId));
+
   const pageTitle = isFullMode
-    ? "நாலாயிர திவ்யப்பிரபந்தம்"
-    : ({1:"முதலாமாயிரம்",2:"இரண்டாமாயிரம்",3:"மூன்றாமாயிரம்",4:"நான்காமாயிரம்"}[selectedThousandId] || "");
+    ? c("common.naalayiram")
+    : (fromData?.name || thousandFallback[selectedThousandId] || "");
 
   let html = `
     <div class="faz-page">
       <div class="faz-page-title">${pageTitle}</div>
-      <div class="faz-page-subtitle">ஆழ்வார்கள் — அருளிச்செயல்</div>
+      <div class="faz-page-subtitle">${c("azh.page.subtitle")}</div>
       <div class="faz-divider"></div>
       ${buildIndex(azhwarsToShow)}
   `;
@@ -421,13 +412,18 @@ export async function renderFullAzhwars(selectedThousandId = null) {
       : azhwar.sections.filter(secId => SECTION_TO_THOUSAND[secId] === Number(selectedThousandId));
     if (sectionsToShow.length === 0) continue;
 
-    const birthLine = azhwar.month && azhwar.star
-      ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
+    // Tamil keeps the "மாதம் … நட்சத்திரம்" wording; other scripts use the
+    // plain "month — star" form the index already uses.
+    const birthOf = a => !a.month || !a.star ? ""
+      : (isTamilScript()
+          ? `${a.month} மாதம் — ${a.star} நட்சத்திரம்`
+          : `${azhMonth(a)} — ${azhStar(a)}`);
+
+    const birthLine = birthOf(azhwar);
 
     // azhwar name + birth stored — injected into FIRST section's content box heading
-    const azhwarLabel = azhwar.name; // ஸ்ரீ added in azhHdr below — no double prefix
-    const azhwarBirth = azhwar.month
-      ? `${azhwar.month} மாதம் — ${azhwar.star} நட்சத்திரம்` : "";
+    const azhwarLabel = azhName(azhwar); // ஸ்ரீ added in azhHdr below — no double prefix
+    const azhwarBirth = birthOf(azhwar);
     let firstSection = true;
 
     html += `<div class="faz-azhwar-block" id="faz-azhwar-${azhwar.id}">`;
@@ -436,7 +432,7 @@ export async function renderFullAzhwars(selectedThousandId = null) {
     for (const secId of sectionsToShow) {
       // Build azhwar header — injected inside first section's content box only
       const azhHdr = isFirstSec ? `
-        <div style="text-align:center;font-size:16px;font-weight:900;color:#4a2c00;margin-bottom:2px;">ஸ்ரீ ${azhwarLabel}</div>
+        <div style="text-align:center;font-size:16px;font-weight:900;color:#4a2c00;margin-bottom:2px;">${c("common.sri")} ${azhwarLabel}</div>
         ${azhwarBirth ? `<div style="text-align:center;font-size:12px;color:#7a5a20;font-style:italic;margin-bottom:8px;">${azhwarBirth}</div>` : ""}
         <div style="height:1px;background:#d4a843;margin:0 0 12px;"></div>
       ` : "";
