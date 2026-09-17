@@ -1,6 +1,8 @@
 // nncRender.js — content renderers using exact fullDualRecital.js patterns
 import { renderThaniyan } from "./thaniyan.js";
 import { t as uiText } from "../utils/uiStrings.js";
+import { c, sectionTitle } from "../utils/contentStrings.js";
+import { isAdivaravu } from "../utils/displayTags.js";
 import { buildMadalCoupletsHTML } from "./madalKootrirukkaiCore.js";
 import {
   fetchDisplayData, fetchThaniyanWithProsody,
@@ -19,47 +21,7 @@ const SKIP_THANIYAN_SECTIONS = new Set([
   42, 43, 44, 45, 46, 47, 48, 49, 50, 51
 ]);
 
-// ── Section header map — respectful full titles for content headings ──────────
-const SECTION_HEADER_MAP = {
-  "திருப்பல்லாண்டு":        "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  "பெரியாழ்வார் திருமொழி":  "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  "திருப்பாவை":             "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  "நாச்சியார் திருமொழி":    "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  "பெருமாள் திருமொழி":      "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  "திருச்சந்தவிருத்தம்":    "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  "திருமாலை":               "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  "திருப்பள்ளியெழுச்சி":   "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலனாதிபிரான்":         "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  "பெரிய திருமொழி":         "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  "திருகுறுந்தாண்டகம்":    "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  "திருநெடுந்தாண்டகம்":    "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  "முதல்‌ திருவந்தாதி":    "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  "இரண்டாம்‌ திருவந்தாதி": "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  "மூன்றாம்‌ திருவந்தாதி": "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  "நான்முகன்‌திருவந்தாதி": "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  "திருவிருத்தம்":          "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  "திருவாசிரியம்":          "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த யஜுர்வேதஸாரமான திருவாசிரியம்",
-  "பெரியதிருவந்தாதி":       "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  "திருவெழுகூற்றிருக்கை":  "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்":          "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்":          "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  "இராமாநுச நூற்றந்தாதி":  "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த ப்ரபந்நகாயத்ரி என்னும்‌ இராமாநுச நூற்றந்தாதி",
-  "உபதேசரத்தினமாலை":       "ஸ்ரீ பெரியஜீயர் அருளிச்செய்த உபதேசரத்தினமாலை",
-  "திருவாய்மொழி":           "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
-  "திருவாய்மொழி நூற்றந்தாதி": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த திருவாய்மொழி நூற்றந்தாதி",
-  "ஞானசாரம்":               "பரமகாருணிகரான அருளாளப் பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ஞானசாரம்",
-  "ப்ரமேயஸாரம்":            "பரமகாருணிகரான அருளாளப் பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ப்ரமேயஸாரம்",
-  "ஸப்தகாதை":               "ஸ்ரீ விலாஞ்சோலைப்பிள்ளை அருளிச்செய்த ஸப்தகாதை",
-  "ஆர்த்தி ப்ரபந்தம்":      "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்",
-  "கோயில் திருமொழி":        "கோயில் திருமொழி",
-  "கோயில் திருவாய்மொழி":    "கோயில் திருவாய்மொழி"
-};
 
-// Get full respectful heading for a label
-function getHeading(label) {
-  return SECTION_HEADER_MAP[label] || label;
-}
 
 // ── Local pathu display parser ────────────────────────────────────────────────
 function buildNNCPathuMap(displayData) {
@@ -68,11 +30,11 @@ function buildNNCPathuMap(displayData) {
   for (const [key, items] of Object.entries(displayData.pathu)) {
     if (!Array.isArray(items) || !items.length) continue;
     const displayHtml = items
-      .filter(d => d?.text && !d.text.includes("அடிவரவு"))
+      .filter(d => d?.text && !isAdivaravu(d))
       .map(d => `<div class="dh-thirumozhi-display">${d.text}</div>`)
       .join("");
     const adivaravuHtml = items
-      .filter(d => d?.text && d.text.includes("அடிவரவு"))
+      .filter(d => d?.text && isAdivaravu(d))
       .map(d => `<div class="dh-adivaravu">${d.text}</div>`)
       .join("");
     map.set(String(key), { displayHtml, adivaravuHtml });
@@ -130,7 +92,7 @@ export function renderThaniyanBox(rows, prosodyMap, audioRef) {
     : (audioRef ? `data-thaniyan-sec="${audioRef}"` : "");
   return `
     <div class="nnc-thaniyan-box" ${audioAttr}>
-      <div class="nnc-thaniyan-label">தனியன்</div>
+      <div class="nnc-thaniyan-label">${c("common.thaniyan") || "தனியன்"}</div>
       ${renderThaniyan(rows, prosodyMap)}
     </div>`;
 }
@@ -249,8 +211,8 @@ export async function renderSection(refValue, label, anchor) {
   const sectionAdiv = hasPathu ? "" : renderAdivaravu(displayData);
   const grouped     = buildGroupedContent(pasurams, displayData, false);
 
-  // Use respectful full heading
-  const heading = getHeading(label);
+  // Ceremonial title by section_id — never by Tamil label
+  const heading = sectionTitle(secId, label);
 
   return `
     ${thHtml}
@@ -298,7 +260,7 @@ export async function renderPathu(refValue, label, anchor) {
   const sectionName   = pasurams[0]?.section_name || label;
   const pathuName     = pasurams[0]?.pathu_name || "";
   const pathuSubunit  = pasurams[0]?.pathu_subunit_name || "";
-  const heading       = getHeading(sectionName);
+  const heading       = sectionTitle(secId, sectionName);
   const pathuSubParts = [pathuName, pathuSubunit].filter(Boolean);
   const pathuSubHead  = pathuSubParts.length
     ? `<div class="nnc-thirumozhi-subheading">${pathuSubParts.join(" — ")}</div>`
@@ -360,17 +322,17 @@ export async function renderThirumozhi(refValue, label, anchor) {
   const firstP = thPasurams[0];
   const sectionName = firstP?.section_name || label;
   const thiruName   = [firstP?.thirumozhi_name || firstP?.pathu_subunit_name, firstP?.thirumozhi_heading].filter(Boolean).join(" — ");
-  const heading = getHeading(sectionName);
+  const heading = sectionTitle(Number(secId), sectionName);
   const subHeading = thiruName ? `<div class="nnc-thirumozhi-subheading">${thiruName}</div>` : "";
   // For standalone thirumozhi (no pathu), adivaravu is inside thirumozhi items[]
   // Split it out manually so it renders AFTER pasurams not before
   const rawThiruItems = displayData?.thirumozhi?.[tk]?.items || [];
   const thiruDisplayHtml = rawThiruItems
-    .filter(d => d?.text && !d.text.includes("அடிவரவு"))
+    .filter(d => d?.text && !isAdivaravu(d))
     .map(d => `<div class="dh-thirumozhi-display">${d.text}</div>`)
     .join("");
   const thiruAdivaravuHtml = rawThiruItems
-    .filter(d => d?.text && d.text.includes("அடிவரவு"))
+    .filter(d => d?.text && isAdivaravu(d))
     .map(d => `<div class="dh-adivaravu">${d.text}</div>`)
     .join("");
 
@@ -427,7 +389,7 @@ export async function renderSinglePasuram(refValue, anchor) {
   _lastAnnexSecId   = info.secId;
   return `
     <div ${anchor}>
-      ${showHeading ? `<div class="nnc-annex-heading">${getHeading(info.heading)}</div>` : ""}
+      ${showHeading ? `<div class="nnc-annex-heading">${sectionTitle(info.secId, info.heading)}</div>` : ""}
       ${renderPasuramBlock([p], new Map())}
     </div>`;
 }
@@ -435,7 +397,12 @@ export async function renderSinglePasuram(refValue, anchor) {
 // ── Render koil ───────────────────────────────────────────────────────────────
 export async function renderKoil(refValue, anchor) {
   const sectionId = refValue === "THIRUMOZHI" ? 11 : 26;
-  const title     = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+  // Two different strings, deliberately. `matchTitle` stays Tamil because it is
+  // compared against entity_master.meta_value, which is stored in Tamil — if
+  // /api/entity-search is ever script-wired this comparison must be revisited.
+  // `title` is what the reader sees, so it follows the chosen script.
+  const matchTitle = refValue === "THIRUMOZHI" ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+  const title = c(refValue === "THIRUMOZHI" ? "nnc.koil.thirumozhi" : "nnc.koil.thiruvaimozhi") || matchTitle;
   const [allPasurams, entityRes, thaniyanData, displayData] = await Promise.all([
     fetchPasurams({ section_id: sectionId }),
     fetch(`${API}/entity-search?section_id=${sectionId}&meta_key=tag`).then(r=>r.json()).catch(()=>[]),
@@ -444,7 +411,7 @@ export async function renderKoil(refValue, anchor) {
   ]);
   const koilPathuSet = new Set(
     (Array.isArray(entityRes) ? entityRes : [])
-      .filter(e => e.meta_key==="tag" && e.meta_value?.trim()===title && e.entity_type==="pathu")
+      .filter(e => e.meta_key==="tag" && e.meta_value?.trim()===matchTitle && e.entity_type==="pathu")
       .map(e => Number(e.entity_id))
   );
   const filtered = koilPathuSet.size > 0
@@ -456,9 +423,7 @@ export async function renderKoil(refValue, anchor) {
   const closing = (displayData.sectionClosing || [])[0]?.closing_text || "";
   const grouped = buildGroupedContent(filtered, displayData, true);
   // Koil heading: section name (author) on line 1, koil title on line 2
-  const koilSectionName = refValue === "THIRUMOZHI"
-    ? "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி"
-    : "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி";
+  const koilSectionName = sectionTitle(sectionId, "");
 
   return `
     ${thHtml}
@@ -498,7 +463,7 @@ const secDisp  = renderSectionDisplayItems(displayData);
 
     return `
       <div class="nnc-section-box" ${anchor} data-global-no="${globalNo}">
-        <div class="nnc-section-heading">${getHeading(label)}</div>
+        <div class="nnc-section-heading">${sectionTitle(Number(refValue), label)}</div>
         <div class="nnc-section-inner">
           ${secDisp}${prosody}
           <div class="nnc-global-no">${globalNo}</div>
@@ -541,7 +506,12 @@ export async function renderFixed(refValue, label, anchor) {
     const _endsHalf   = t => /।$|[|]$/.test(t.trimEnd());
     const _endsFull   = t => /॥$|\|\|$/.test(t.trimEnd());
     const _isBracket  = t => t.startsWith("(") && t.endsWith(")");
-    const _isClosing  = t => t.includes("முற்றிற்று") || t.includes("ஸமாப்தம்");
+    // Test the converted forms too — a Tamil-literal test can never match once
+    // the line has been transliterated, and the closing line would then be
+    // laid out as an ordinary verse line.
+    const _closingWords = ["முற்றிற்று", "ஸமாப்தம்",
+                           c("common.muttrittru"), c("common.samaptham")].filter(Boolean);
+    const _isClosing  = t => _closingWords.some(w => t.includes(w));
 
     let html = "";
     let slokaLines = [];

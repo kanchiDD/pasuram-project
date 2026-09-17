@@ -4,8 +4,14 @@ import { buildIndex, registerIndexHandlers } from "./nncIndex.js";
 import { renderItem } from "./nncRender.js";
 import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL } from "./globalAudio.js";
 import { t as uiText } from "../utils/uiStrings.js";
+import { c, ensureContentStrings } from "../utils/contentStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+
+// Page name and its subtitle, converted when a script is active.
+function nncTitle() {
+  return c("nnc.title") || "நித்யானுஸந்தானம்";
+}
 
 // ── Entry screen ──────────────────────────────────────────────────────────────
 function entryScreen() {
@@ -14,9 +20,9 @@ function entryScreen() {
       <div class="nnc-frame">
         <img src="assets/images/vaishnava_transparent.png" class="nnc-logo" alt=""/>
         <img src="assets/images/first.png" class="nnc-deity-img" alt=""/>
-        <div class="nnc-deity-name">ஸ்ரீ பெரிய பெருமாள் ஸ்ரீ பெரிய பிராட்டியார்</div>
-        <div class="nnc-title">நித்யானுஸந்தானம்</div>
-        <div class="nnc-subtitle">நாலாயிர திவ்யப்பிரபந்தம்</div>
+        <div class="nnc-deity-name">${c("cover.img.first") || "ஸ்ரீ பெரிய பெருமாள் ஸ்ரீ பெரிய பிராட்டியார்"}</div>
+        <div class="nnc-title">${nncTitle()}</div>
+        <div class="nnc-subtitle">${c("common.naalayiram")}</div>
         <button class="nnc-begin-btn" onclick="window._nncBegin()">${uiText("begin")} 🙏</button>
       </div>
     </div>`;
@@ -36,6 +42,8 @@ function floatNav() {
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export async function renderFullNithyanusandhanam() {
+  // the converted overlay must be loaded before any c() call below
+  await ensureContentStrings();
   injectNNCCSS();
   registerIndexHandlers();
 
@@ -47,8 +55,8 @@ export async function renderFullNithyanusandhanam() {
     app.innerHTML = `
       <div class="nnc-page">
         <div class="nnc-page-header">
-          நித்யானுஸந்தானம்
-          <div class="nnc-page-header-sub">நாலாயிர திவ்யப்பிரபந்தம்</div>
+          ${nncTitle()}
+          <div class="nnc-page-header-sub">${c("common.naalayiram")}</div>
         </div>
         <div class="nnc-spinner">
           <div class="nnc-spinner-lotus">🪷</div>
@@ -98,7 +106,7 @@ export async function renderFullNithyanusandhanam() {
     const contentHtml = `
       <div id="nnc-content">
         ${htmlParts.join("")}
-        <div class="nnc-final-closing">நித்யானுஸந்தானம் முற்றிற்று 🙏</div>
+        <div class="nnc-final-closing">${nncTitle()} ${c("common.muttrittru")} 🙏</div>
       </div>`;
 
     // Build index AFTER content (so koil IDs are available)
@@ -109,8 +117,8 @@ export async function renderFullNithyanusandhanam() {
       page.innerHTML = `
         <style>.nnc-thaniyan-box .ga-btn,.nnc-thaniyan-box button,.nnc-thaniyan-box [class^="ga-"],.nnc-thaniyan-box [class*=" ga-"]{display:none !important;}</style>
         <div class="nnc-page-header">
-          நித்யானுஸந்தானம்
-          <div class="nnc-page-header-sub">நாலாயிர திவ்யப்பிரபந்தம்</div>
+          ${nncTitle()}
+          <div class="nnc-page-header-sub">${c("common.naalayiram")}</div>
           <div style="text-align:center;margin:10px 0 2px;">
             <button onclick="window._nncPlayAll && window._nncPlayAll()"
               style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
@@ -137,7 +145,7 @@ export async function renderFullNithyanusandhanam() {
           else if (el.hasAttribute("data-thaniyan-sec")) q.push(THANIYAN_SEC_URL(el.getAttribute("data-thaniyan-sec")));
           else q.push(PASURAM_URL(el.getAttribute("data-global-no")));
         });
-        if (q.length) playUrls(q, "நித்யானுஸந்தானம்");
+        if (q.length) playUrls(q, nncTitle());
       };
     }
   };
