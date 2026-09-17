@@ -102,6 +102,43 @@ export function injectMunnadiCSS() {
     .mp-float-nav { position:fixed; bottom:20px; right:14px; display:flex; flex-direction:column; gap:8px; z-index:999; }
     .mp-float-nav button { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#c9a227,#e8c060); border:2px solid #b38b2e; color:#2a1a00; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans Tamil','Latha','Bamini',serif; }
     .mp-final-closing { text-align:center; font-size:16px; font-weight:900; color:#4a2c00; padding:24px 12px; border-top:3px double #b38b2e; margin:12px; }
+
+    /* ── NON-TAMIL SCRIPTS ──────────────────────────────────────────────
+       The same line is longer in Telugu, Kannada, Malayalam, Devanagari and
+       (most of all) IAST than it is in Tamil, and the Munnadi column is the
+       opening words of a verse — clipping it to an ellipsis destroys the one
+       thing this page exists to show. So outside Tamil the Munnadi column
+       wraps instead of being cut, and every heading and index label is
+       allowed to break rather than spill out of its box. The font size is
+       untouched; A+ / A- still work as before. */
+    .mp-page.mp-script-other .mp-line1 {
+      white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere;
+    }
+    .mp-page.mp-script-other .mp-line2 { overflow-wrap:anywhere; }
+    .mp-page.mp-script-other .mp-pasuram-row { line-height:1.6; }
+
+    .mp-page.mp-script-other .mp-idx-item,
+    .mp-page.mp-script-other .mp-idx-child,
+    .mp-page.mp-script-other .mp-idx-child-label,
+    .mp-page.mp-script-other .mp-idx-grandchild {
+      overflow-wrap:anywhere; word-break:normal;
+    }
+
+    .mp-page.mp-script-other .mp-section-heading,
+    .mp-page.mp-script-other .mp-pathu-heading,
+    .mp-page.mp-script-other .mp-thirumozhi-heading,
+    .mp-page.mp-script-other .mp-subunit-heading,
+    .mp-page.mp-script-other .mp-section-closing,
+    .mp-page.mp-script-other .mp-tm-closing,
+    .mp-page.mp-script-other .mp-thaniyan-line,
+    .mp-page.mp-script-other .mp-final-closing {
+      overflow-wrap:anywhere;
+    }
+
+    /* IAST is Latin with diacritics and runs longest of the five — give the
+       two verse columns a little more room by tightening the number gutters. */
+    .mp-page.mp-script-iast .mp-pasuram-row,
+    .mp-page.mp-script-iast .mp-col-headers { grid-template-columns:30px 1fr 1px 1fr 22px; }
   `;
   document.head.appendChild(s);
 

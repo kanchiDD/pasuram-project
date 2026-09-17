@@ -2,34 +2,11 @@
 
 import { injectMunnadiCSS } from "./munnadiCSS.js";
 import { t as uiText } from "../utils/uiStrings.js";
+import { c, sectionTitle, isTamilScript, ensureContentStrings } from "../utils/contentStrings.js";
 import { buildMunnadiIndex, registerMunnadiIndexHandlers } from "./munnadiIndex.js";
 
 const API_BASE = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
-// ── Section heading map (full "Sri X arulicheyta Y" title) ──
-const SECTION_HEADER = {
-  1:  "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  2:  "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  3:  "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  4:  "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  5:  "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  6:  "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  7:  "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  8:  "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  9:  "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  10: "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  11: "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  12: "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  13: "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  14: "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  15: "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  16: "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  17: "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  18: "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  20: "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  24: "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த இராமாநுச நூற்றந்தாதி",
-  26: "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
-};
 
 // ── Section closing text (from section_closing_master) keyed by section_id ──
 // Worker does not return this — embedded client-side
@@ -123,6 +100,14 @@ async function fetchThaniyans() {
   return _thaniyanCache.get('data');
 }
 
+// Layout class: outside Tamil the verse columns wrap instead of clipping.
+function pageClass() {
+  if (isTamilScript()) return "mp-page";
+  let sc = "";
+  try { sc = (localStorage.getItem("script") || "").toLowerCase(); } catch (e) {}
+  return "mp-page mp-script-other" + (sc === "iast" ? " mp-script-iast" : "");
+}
+
 // ── Spinner ──
 export function munnadiSpinner() {
   return `
@@ -130,7 +115,7 @@ export function munnadiSpinner() {
       <div class="mp-rotate-icon">🔄</div>
       <div class="mp-rotate-msg">${uiText("munnadiRotate")}</div>
     </div>
-    <div class="mp-page">
+    <div class="${pageClass()}">
       <div class="mp-page-header">${uiText("munnadiTitle")}<div class="mp-page-header-sub">Naalayira Divya Prabandham</div></div>
       <div class="mp-spinner"><div class="mp-spinner-lotus">🪷</div><div style="font-size:13px;color:#7a5a20;">${uiText("loading")}</div></div>
     </div>`;
@@ -150,6 +135,8 @@ function floatNav() {
 
 // ── Main entry ──
 export async function renderMunnadiPinnadi(scope = "full", part = null) {
+  // the converted overlay must be loaded before any c()/sectionTitle() call
+  await ensureContentStrings();
   injectMunnadiCSS();
   registerMunnadiIndexHandlers();
   const [data, globalThaniyan] = await Promise.all([
@@ -157,7 +144,7 @@ export async function renderMunnadiPinnadi(scope = "full", part = null) {
     fetchGlobalThaniyan(),
   ]);
   if (data.error) {
-    return `<div class="mp-page"><div style="padding:20px;color:red;">Error: ${data.error}</div></div>`;
+    return `<div class="${pageClass()}"><div style="padding:20px;color:red;">Error: ${data.error}</div></div>`;
   }
   return buildPage(data, globalThaniyan);
 }
@@ -170,7 +157,7 @@ function buildPage(data, globalThaniyan) {
       <div class="mp-rotate-icon">🔄</div>
       <div class="mp-rotate-msg">${uiText("munnadiRotate")}</div>
     </div>`);
-  parts.push(`<div class="mp-page">`);
+  parts.push(`<div class="${pageClass()}">`);
   parts.push(`<div class="mp-page-header">Munnadi Pinnadi<div class="mp-page-header-sub">${data.thousand_name || ''}</div></div>`);
   parts.push(buildMunnadiIndex(data));
   parts.push(`<div id="mp-content">`);
@@ -207,7 +194,8 @@ function buildPage(data, globalThaniyan) {
   for (const sec of (data.sections || [])) {
     parts.push(buildSection(sec));
   }
-  parts.push(`<div class="mp-final-closing">— முன்னடி -பின்னடி முற்றிற்று 🙏 —</div>`);
+  const finalClosing = c("mp.final.closing") || "முன்னடி -பின்னடி முற்றிற்று";
+  parts.push(`<div class="mp-final-closing">— ${finalClosing} 🙏 —</div>`);
   parts.push(`</div>`);
   parts.push(floatNav());
   parts.push(`</div>`);
@@ -217,8 +205,9 @@ function buildPage(data, globalThaniyan) {
 // ── Build one section ──
 function buildSection(sec) {
   const parts       = [];
-  const closingText = SECTION_CLOSING[sec.section_id] || '';
-  const heading     = SECTION_HEADER[sec.section_id]  || sec.section_name || '';
+  // sec.closing_text arrives only on the script path; Tamil keeps the table.
+  const closingText = sec.closing_text || SECTION_CLOSING[sec.section_id] || '';
+  const heading     = sectionTitle(sec.section_id, sec.section_name || '');
 
   parts.push(`<div id="mp-sec-${sec.section_id}">`);
 
@@ -335,12 +324,17 @@ function buildPasurams(pasurams) {
   for (const p of pasurams) {
     const dual = p.double_recital ? `<span class="mp-dual-marker">** </span>` : "";
     if (p.merged) {
+      // The worker already merges verse 1 and verse 2 into line_1 / line_2,
+      // so take them from the data rather than repeating them in Tamil here —
+      // that is what makes this row follow the chosen script.
+      const m1 = p.line_1 || "பல்லாண்டு பல்லாண்டு";
+      const m2 = p.line_2 || "அடியோமோடும் நின்னோடும்";
       parts.push(`
         <div class="mp-pasuram-row mp-pasuram-merged" id="mp-p-1">
           <span class="mp-pno">1&amp;2</span>
-          <span class="mp-line1"><span class="mp-dual-marker">** </span>பல்லாண்டு பல்லாண்டு</span>
+          <span class="mp-line1"><span class="mp-dual-marker">** </span>${m1}</span>
           <span class="mp-vline"></span>
-          <span class="mp-line2">அடியோமோடும் நின்னோடும்</span>
+          <span class="mp-line2">${m2}</span>
           <span class="mp-localn">1&amp;2</span>
         </div>`);
       continue;
