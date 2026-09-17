@@ -324,11 +324,15 @@ function buildPasurams(pasurams) {
   for (const p of pasurams) {
     const dual = p.double_recital ? `<span class="mp-dual-marker">** </span>` : "";
     if (p.merged) {
-      // The worker already merges verse 1 and verse 2 into line_1 / line_2,
-      // so take them from the data rather than repeating them in Tamil here —
-      // that is what makes this row follow the chosen script.
-      const m1 = p.line_1 || "பல்லாண்டு பல்லாண்டு";
-      const m2 = p.line_2 || "அடியோமோடும் நின்னோடும்";
+      // REVERTED — do NOT take these from p.line_1 / p.line_2.
+      // The merged 1&2 row is a deliberate hand-made exception: the split in
+      // munnadi_pinnadi_master does not line up with the split in
+      // pasuram_line_master here, and these two lines were corrected by hand
+      // against the printed text. The DB row is not what should be shown.
+      // So the Tamil below stays authoritative; c() only supplies the
+      // transliterated form of these same two lines in other scripts.
+      const m1 = c("mp.merged.line1") || "பல்லாண்டு பல்லாண்டு";
+      const m2 = c("mp.merged.line2") || "அடியோமோடும் நின்னோடும்";
       parts.push(`
         <div class="mp-pasuram-row mp-pasuram-merged" id="mp-p-1">
           <span class="mp-pno">1&amp;2</span>
