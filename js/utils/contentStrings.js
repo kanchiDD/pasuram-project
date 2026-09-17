@@ -18,6 +18,8 @@
 const TAMIL = {
   "common.muttrittru": "முற்றிற்று",
   "common.thaniyan": "தனியன்",
+  "common.pothu.thaniyan": "பொது தனியன்",
+  "thy.page.subtitle": "தனியன்கள் — முழு தொகுப்பு",
   "common.sri": "ஸ்ரீ",
   "azh.index.title": "ஆழ்வார்கள் — அட்டவணை",
   "azh.page.subtitle": "ஆழ்வார்கள் — அருளிச்செயல்",

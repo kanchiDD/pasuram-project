@@ -10,42 +10,11 @@ import { renderThaniyan } from "./thaniyan.js";
 import { fetchThaniyanWithProsody } from "./displayHelper.js";
 import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL } from "./globalAudio.js";
 import { sectionAllowedForSect } from "../utils/sectUtils.js";
+import { c, sectionTitle, ensureContentStrings } from "../utils/contentStrings.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
-const sectionHeaderMap = {
-  "திருப்பல்லாண்டு": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த திருப்பல்லாண்டு",
-  "பெரியாழ்வார் திருமொழி": "ஸ்ரீ பெரியாழ்வார் அருளிச்செய்த பெரியாழ்வார் திருமொழி",
-  "திருப்பாவை": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த திருப்பாவை",
-  "நாச்சியார் திருமொழி": "ஸ்ரீ ஆண்டாள் அருளிச்செய்த நாச்சியார் திருமொழி",
-  "பெருமாள் திருமொழி": "ஸ்ரீ குலசேகர பெருமாள் அருளிச்செய்த பெருமாள் திருமொழி",
-  "திருச்சந்தவிருத்தம்": "ஸ்ரீ திருமழிசைப்பிரான் அருளிச்செய்த திருச்சந்தவிருத்தம்",
-  "திருமாலை": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருமாலை",
-  "திருப்பள்ளியெழுச்சி": "ஸ்ரீ தொண்டரடிப்பொடியாழ்வார் அருளிச்செய்த திருப்பள்ளியெழுச்சி",
-  "அமலனாதிபிரான்": "ஸ்ரீ திருப்பாணாழ்வார் அருளிச்செய்த அமலனாதிபிரான்",
-  "கண்ணிநுண்சிறுத்தாம்பு": "ஸ்ரீ மதுரகவி ஆழ்வார் அருளிச்செய்த கண்ணிநுண்சிறுத்தாம்பு",
-  "பெரிய திருமொழி": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரிய திருமொழி",
-  "திருகுறுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருகுறுந்தாண்டகம்",
-  "திருநெடுந்தாண்டகம்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருநெடுந்தாண்டகம்",
-  "முதல்‌ திருவந்தாதி": "ஸ்ரீ பொய்கையாழ்வார்‌ அருளிச்செய்த முதல்‌ திருவந்தாதி",
-  "இரண்டாம்‌ திருவந்தாதி": "ஸ்ரீ பூதத்தாழ்வார்‌ அருளிச்செய்த இரண்டாம்‌ திருவந்தாதி",
-  "மூன்றாம்‌ திருவந்தாதி": "ஸ்ரீ பேயாழ்வார்‌ அருளிச்செய்த மூன்றாம்‌ திருவந்தாதி",
-  "நான்முகன்‌திருவந்தாதி": "ஸ்ரீ திருமழிசைப்பிரான்‌ அருளிச்செய்த நான்முகன்‌திருவந்தாதி",
-  "திருவிருத்தம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த ருக்வேதஸாரமான திருவிருத்தம்",
-  "திருவாசிரியம்": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த யஜுர்வேதஸாரமான திருவாசிரியம்",
-  "பெரியதிருவந்தாதி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த அதர்வணவேத ஸாரமான பெரியதிருவந்தாதி",
-  "திருவெழுகூற்றிருக்கை": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை",
-  "சிறியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்",
-  "பெரியதிருமடல்": "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்",
-  "இராமாநுச நூற்றந்தாதி": "ஸ்ரீ திருவரங்கத்தமுதனார்‌ அருளிச்செய்த ப்ரபந்நகாயத்ரி என்னும்‌ இராமாநுச நூற்றந்தாதி",
-  "உபதேசரத்தினமாலை": "ஸ்ரீ பெரியஜீயர் அருளிச்செய்த உபதேசரத்தினமாலை",
-  "திருவாய்மொழி": "ஸ்ரீ நம்மாழ்வார்‌ அருளிச்செய்த திருவாய்மொழி",
-  "திருவாய்மொழி நூற்றந்தாதி": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த திருவாய்மொழி நூற்றந்தாதி",
-  "ஞானசாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய  ஞானசாரம்",
-  "ப்ரமேயஸாரம்": "பரமகாருணிகரான அருளாளப்  பெருமாள் எம்பெருமானார் திருவாய் மலர்ந்தருளிய ப்ரமேயஸாரம்",
-  "ஸப்தகாதை": "ஸ்ரீ விலாஞ்சோலைப்பிள்ளை  அருளிச்செய்த  ஸப்தகாதை",
-  "ஆர்த்தி ப்ரபந்தம்": "ஸ்ரீ மணவாள மாமுனிகள் அருளிச்செய்த ஆர்த்தி ப்ரபந்தம்"
-};
+// Ceremonial titles come from ui_text_master (sec.title.<id>) via sectionTitle().
 
 const SKIP_THANIYAN_SECTIONS = [2, 12, 13];
 
@@ -199,6 +168,8 @@ function floatingNav() {
 
 // ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export async function renderFullThaniyans(selectedThousandId = null) {
+  await ensureContentStrings();
+
   injectCSS();
 
   // font adjuster (global, safe to re-register)
@@ -217,18 +188,18 @@ export async function renderFullThaniyans(selectedThousandId = null) {
 
   const isFullMode = !selectedThousandId;
   const pageTitle = isFullMode
-    ? "நாலாயிர திவ்யப்பிரபந்தம்"
+    ? c("common.naalayiram")
     : (filtered[0]?.name || "");
 
   let html = `
     <div class="ft-page">
       <div class="ft-page-title">${pageTitle}</div>
-      <div class="ft-page-subtitle">தனியன்கள் — முழு தொகுப்பு</div>
+      <div class="ft-page-subtitle">${c("thy.page.subtitle")}</div>
       <div style="text-align:center;margin:6px 0 10px">
         <button id="ft-play-all" onclick="window._ftPlayAll && window._ftPlayAll()"
           style="background:linear-gradient(135deg,#2f7d32,#1b5e20);color:#fff;border:none;
                  border-radius:22px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;
-                 box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ அனைத்து தனியன்களும்</button>
+                 box-shadow:0 3px 10px rgba(0,0,0,0.2)">▶ Play All Thaniyans</button>
       </div>
       <div class="ft-divider"></div>
   `;
@@ -278,7 +249,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
     const anchorRows = allAnchorRows[ti];
 
     if (isFullMode) {
-      const tName = t.name === "நாலாயிர திவ்யப்பிரபந்தம்" ? "" : t.name;
+      const tName = t.name === c("common.naalayiram") ? "" : t.name;
       if (tName) html += `<div class="ft-thousand-heading">${tName}</div>`;
     }
 
@@ -297,8 +268,8 @@ export async function renderFullThaniyans(selectedThousandId = null) {
         html += `
           <div class="ft-box">
             <div class="ft-box-heading">
-              <div><span class="ft-global-tag">பொது தனியன்</span></div>
-              ${isFullMode ? "நாலாயிர திவ்யப்பிரபந்தம்" : pageTitle}
+              <div><span class="ft-global-tag">${c("common.pothu.thaniyan")}</span></div>
+              ${isFullMode ? c("common.naalayiram") : pageTitle}
             </div>
             ${renderThaniyan(globalRows, globalProsodyMap)}
           </div>
@@ -329,7 +300,7 @@ export async function renderFullThaniyans(selectedThousandId = null) {
       if (sectionRows.length === 0) continue;
       if (sectionRows.some(r => r.has_audio)) playAllSecIds.push(secId);
 
-      const heading = sectionHeaderMap[baseName] || baseName;
+      const heading = sectionTitle(secId, baseName);
 
       // ONE heading only — no badge/tag inside, just the section name
       html += `
