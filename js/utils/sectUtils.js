@@ -4,6 +4,17 @@
 //  Import this wherever sect-based content selection is needed
 // ═══════════════════════════════════════════════════════════════
 
+import { c } from "./contentStrings.js";
+
+// ── Script-aware labels ───────────────────────────────────────
+// The Tamil arrays below stay exactly as they are and remain the built-in
+// default. When a script is active, c() returns the converted label from
+// /api/ui-text instead. The getters map over the arrays rather than mutating
+// them, so the raw Tamil is never lost and Tamil rendering is unchanged.
+//   koil.label.<pathu_id>   — one row serves both the T and V lists
+//   vazhi.name.<vazhi_id>   — one row serves T, V and the Ghoshti list
+//   fixed.label.<fixed_id>  — Ghoshti pothu-saatru labels
+
 // ── User sect preference ──────────────────────────────────────
 export function getUserSect() {
   return localStorage.getItem('sect') || 'T';
@@ -53,7 +64,8 @@ export const KOIL_THIRUMOZHI_V = [
 ];
 
 export function getKoilThirumozhi() {
-  return isVadagalai() ? KOIL_THIRUMOZHI_V : KOIL_THIRUMOZHI_T;
+  const list = isVadagalai() ? KOIL_THIRUMOZHI_V : KOIL_THIRUMOZHI_T;
+  return list.map(k => ({ ...k, label: c("koil.label." + k.pathuId) || k.label }));
 }
 
 // ── Koil Thiruvaimozhi pathu lists ───────────────────────────
@@ -90,7 +102,8 @@ export const KOIL_THIRUVAIMOZHI_V = [
 ];
 
 export function getKoilThiruvaimozhi() {
-  return isVadagalai() ? KOIL_THIRUVAIMOZHI_V : KOIL_THIRUVAIMOZHI_T;
+  const list = isVadagalai() ? KOIL_THIRUVAIMOZHI_V : KOIL_THIRUVAIMOZHI_T;
+  return list.map(k => ({ ...k, label: c("koil.label." + k.pathuId) || k.label }));
 }
 
 // ── Vazhi Thirunamam lists ────────────────────────────────────
@@ -177,7 +190,8 @@ export const VAZHI_CHILDREN_V = [
 ];
 
 export function getVazhiChildren() {
-  return isVadagalai() ? VAZHI_CHILDREN_V : VAZHI_CHILDREN_T;
+  const list = isVadagalai() ? VAZHI_CHILDREN_V : VAZHI_CHILDREN_T;
+  return list.map(v => ({ ...v, name: c("vazhi.name." + v.vazhi_id) || v.name }));
 }
 
 // ── Ghoshti vazhi list — always show all three options ───────
@@ -225,6 +239,15 @@ export const VAZHI_GHOSHTI_ALL = [
   { vazhi_id: 38, author_name: "ஸ்ரீ நிகமாந்த மஹாதேசிகன் நாள்பாட்டு" },
 ];
 
+// Ghoshti reads VAZHI_GHOSHTI_ALL directly today. This getter returns the
+// same list with converted names, ready for when ghoshtiSattrumurai.js is
+// wired — the raw constant above is left untouched so nothing breaks now.
+export function getVazhiGhoshtiAll() {
+  return VAZHI_GHOSHTI_ALL.map(v => ({
+    ...v, author_name: c("vazhi.name." + v.vazhi_id) || v.author_name
+  }));
+}
+
 // ── Ghoshti fixed text (pothu saatru) definitions ────────────
 // Both T and V shown as checkboxes in ghoshti
 // Pre-select based on user's sect
@@ -235,6 +258,11 @@ export const FIXED_DEFS_GHOSHTI = [
   { id: 3, key: "muktaka",  label: "முக்தக மங்களம்" },
   { id: 4, key: "surnikai", label: "திருமங்கைமன்னன் வடிவழகு சூர்ணிகை" },
 ];
+
+// Same pattern as getVazhiGhoshtiAll — for use once Ghoshti is wired.
+export function getFixedDefsGhoshti() {
+  return FIXED_DEFS_GHOSHTI.map(f => ({ ...f, label: c("fixed.label." + f.id) || f.label }));
+}
 
 // Default fixed text state based on user sect
 export function getDefaultFixedTextState() {
