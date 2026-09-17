@@ -336,7 +336,9 @@ async function buildSpecialSectionBlock(sectionId, azhwarHeader = "") {
 function buildIndex(azhwarsToShow) {
   return `
     <div class="faz-index-box">
-      <div class="faz-index-title">📑 ${c("azh.index.title")}</div>
+      <!-- Index heading is interface, not scripture: English in every script,
+           matching the book index. Move to uiStrings.js on the next pass there. -->
+      <div class="faz-index-title">📑 Azhwar Index</div>
       ${azhwarsToShow.map((a, i) => {
         const birth = a.month && a.star ? `${azhMonth(a)} — ${azhStar(a)}` : "";
         return `
