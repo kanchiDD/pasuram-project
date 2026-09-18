@@ -18,6 +18,7 @@
 
 import { resolveVoiceQuery as _resolveBase, resolveVoiceQueryExtended as _resolveExtended } from "./voiceSearch.js?v=6";
 import { t as uiText } from "./utils/uiStrings.js";
+import { translitLive, hasTamil, activeScript } from "./utils/translitLive.js";
 import { playSectionAudio, playPasuramAudio, playThirumozhiAudio, playStandaloneAudio, playPathuAudio } from "./render/voicePlay.js?v=2";
 
 // Use extended if available, fall back to base
@@ -352,6 +353,33 @@ function canonicalizeRecitalWord(transcript) {
   return content ? `${content} ${CANON}` : CANON;
 }
 
+// The "You said" box. What was heard is always Tamil — the recogniser runs
+// in ta-IN whatever script the reader uses, because the words being spoken
+// are Tamil. So the echo is transliterated for display, and the Tamil is
+// kept underneath: the reader sees their own script, and can still check
+// what the microphone actually caught.
+// Option labels and sublabels come from voiceSearch.js, where the Tamil is
+// also the matcher's search key — so it is converted here, at the moment of
+// display, and left alone at the source. English inside a label ("Koil
+// Thirumozhi") passes through untouched, so mixed labels convert only their
+// Tamil half.
+function disp(text) {
+  return translitLive(text == null ? "" : text, activeScript());
+}
+
+function heardBox(text, cls) {
+  const sc = activeScript();
+  const shown = translitLive(text, sc);
+  const showOriginal = sc && hasTamil(text) && shown !== text;
+  return `
+    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
+    <div class="vp-heard-text${cls ? " " + cls : ""}">"${esc(shown)}"${
+      showOriginal
+        ? `<div class="vp-heard-orig">${esc(text)}</div>`
+        : ""
+    }</div>`;
+}
+
 function showResults(transcript, results) {
 
   // A single "notice" result (e.g. out-of-range ordinal) → message card, not
@@ -376,8 +404,8 @@ function showResults(transcript, results) {
         <input type="radio" name="vp-choice"
                ${i === 0 ? "checked" : ""} />
         <div>
-          <div class="vp-opt-label">${esc(r.label)}</div>
-          <div class="vp-opt-sub">${esc(r.sublabel)}</div>
+          <div class="vp-opt-label">${esc(disp(r.label))}</div>
+          <div class="vp-opt-sub">${esc(disp(r.sublabel))}</div>
         </div>
       </label>
     `;
@@ -392,8 +420,7 @@ function showResults(transcript, results) {
       </div>
     </div>
 
-    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
-    <div class="vp-heard-text">"${esc(displayTranscript)}"</div>
+    ${heardBox(displayTranscript)}
 
     <div class="vp-dym-label">${uiText("voiceDoYouMean")}</div>
     <div class="vp-options">${optionsHtml}</div>
@@ -419,13 +446,12 @@ function showOffTopic(transcript) {
     </div>
 
     ${ !noSpeech ? `
-      <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
-      <div class="vp-heard-text offtopic">"${esc(transcript)}"</div>
+      ${heardBox(transcript, "offtopic")}
     ` : "" }
 
     <div class="vp-offtopic-msg">
       Adiyen, kindly search for topics related to<br/>
-      <strong>நாலாயிர திவ்யப்பிரபந்தம்</strong> —
+      <strong>${esc(disp("நாலாயிர திவ்யப்பிரபந்தம்"))}</strong> —
       pasurams, azhwars, divyadesams,<br/>
       thaniyans, and related sacred works.
     </div>
@@ -448,10 +474,9 @@ function showNotice(transcript, message) {
       </div>
     </div>
 
-    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
-    <div class="vp-heard-text offtopic">"${esc(displayTranscript)}"</div>
+    ${heardBox(displayTranscript, "offtopic")}
 
-    <div class="vp-offtopic-msg">${esc(message)}</div>
+    <div class="vp-offtopic-msg">${esc(disp(message))}</div>
 
     <div class="vp-actions">
       <button class="vp-btn-retry" onclick="retryVoice()">🎙 Try again</button>

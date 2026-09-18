@@ -16,6 +16,7 @@
 
 import { resolveVoiceQuery, executeVoiceResult } from "./voiceSearch.js?v=5";
 import { t as uiText } from "./utils/uiStrings.js";
+import { translitLive, hasTamil, activeScript } from "./utils/translitLive.js";
 
 // ═══════════════════════════════════════════════════════
 // STYLES — injected once, scoped to voice UI elements
@@ -161,6 +162,15 @@ function injectStyles() {
       margin-bottom: 16px;
       font-style: italic;
       border-left: 3px solid #C9A84C;
+    }
+
+    .vp-heard-orig {
+      font-size: 12px;
+      font-style: normal;
+      color: #9A7A55;
+      margin-top: 6px;
+      padding-top: 5px;
+      border-top: 1px dotted #D4B896;
     }
 
     .vp-heard-text.offtopic {
@@ -634,6 +644,23 @@ function showListeningPopup() {
   `);
 }
 
+// See voice.js — the echo is transliterated for display, Tamil kept below.
+// See voice.js — converted at display, untouched at the source.
+function disp(text) {
+  return translitLive(text == null ? "" : text, activeScript());
+}
+
+function heardBox(text, cls) {
+  const sc = activeScript();
+  const shown = translitLive(text, sc);
+  const showOriginal = sc && hasTamil(text) && shown !== text;
+  return `
+    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
+    <div class="vp-heard-text${cls ? " " + cls : ""}">"${escHtml(shown)}"${
+      showOriginal ? `<div class="vp-heard-orig">${escHtml(text)}</div>` : ""
+    }</div>`;
+}
+
 function showResultsPopup(transcript, results) {
 
   let optionsHtml = "";
@@ -643,8 +670,8 @@ function showResultsPopup(transcript, results) {
              onclick="window._voiceSelectOpt(${i})">
         <input type="radio" name="vp-choice" value="${i}" />
         <div>
-          <div class="vp-option-label">${r.label}</div>
-          <div class="vp-option-sub">${r.sublabel}</div>
+          <div class="vp-option-label">${escHtml(disp(r.label))}</div>
+          <div class="vp-option-sub">${escHtml(disp(r.sublabel))}</div>
         </div>
       </label>
     `;
@@ -659,8 +686,7 @@ function showResultsPopup(transcript, results) {
       </div>
     </div>
 
-    <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
-    <div class="vp-heard-text">"${escHtml(transcript)}"</div>
+    ${heardBox(transcript)}
 
     <div class="vp-dym-label">${uiText("voiceDoYouMean")}</div>
     <div class="vp-options">${optionsHtml}</div>
@@ -693,8 +719,7 @@ function showOffTopicPopup(transcript) {
     </div>
 
     ${!isNoSpeech ? `
-      <div class="vp-heard-label">${uiText("voiceYouSaid")}</div>
-      <div class="vp-heard-text offtopic">"${escHtml(transcript)}"</div>
+      ${heardBox(transcript, "offtopic")}
     ` : ""}
 
     <div class="vp-offtopic-msg">
