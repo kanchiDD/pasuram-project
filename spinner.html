@@ -174,8 +174,74 @@
     // auto-highlight and tap-to-resume used across the site.
     import { playUrls, globalThaniyanUrls, THANIYAN_SEC_URL, PASURAM_URL }
       from "./js/render/globalAudio.js";
+    import { c, ensureContentStrings } from "./js/utils/contentStrings.js";
 
-    const WORKER = "https://recitalworker.kanchitrust.workers.dev";
+    // ── Script (language) plumbing ─────────────────────────────────────────
+    // Production recitalworker is never touched; ?script= traffic goes to the
+    // permanent duplicate, which is bound to the same D1.
+    const WORKER_PROD = "https://recitalworker.kanchitrust.workers.dev";
+    const WORKER_I18N = "https://recitalworkeri18n.kanchitrust.workers.dev";
+
+    const SP_SCRIPTS = ["te", "kn", "ml", "deva", "iast"];
+    function _activeScript() {
+      try {
+        const s = (localStorage.getItem("script") || "ta").toLowerCase();
+        return SP_SCRIPTS.includes(s) ? s : "";
+      } catch (e) { return ""; }
+    }
+    // "" on the Tamil path, and every branch keys off that.
+    const SCRIPT = _activeScript();
+    const WORKER = SCRIPT ? WORKER_I18N : WORKER_PROD;
+    function sq(url) {
+      return SCRIPT ? url + (url.includes("?") ? "&" : "?") + "script=" + SCRIPT : url;
+    }
+
+    // Slim script picker, same look as the tree. Inline rather than imported:
+    // scriptBanner.js pulls in api.js, whose fetch interceptor would then start
+    // rewriting this page's requests behind the explicit hosts above.
+    function injectScriptBanner() {
+      if (document.getElementById("script-banner")) return;
+      const LIST = [
+        { code: "ta",   label: "\u0ba4\u0bae\u0bbf\u0bb4\u0bcd", name: "Tamil" },
+        { code: "te",   label: "\u0c24\u0c46\u0c32\u0c41\u0c17\u0c41", name: "Telugu" },
+        { code: "kn",   label: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1", name: "Kannada" },
+        { code: "ml",   label: "\u0d2e\u0d32\u0d2f\u0d3e\u0d33\u0d02", name: "Malayalam" },
+        { code: "deva", label: "\u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940", name: "Devanagari" },
+        { code: "iast", label: "Roman", name: "Roman (IAST)" },
+      ];
+      const current = SCRIPT || "ta";
+      const bar = document.createElement("div");
+      bar.id = "script-banner";
+      bar.style.cssText = "background:#fff8e6;border-bottom:1px solid #e8d8a0;padding:7px 10px;"
+        + "text-align:center;font-family:Arial,sans-serif;display:flex;align-items:center;"
+        + "justify-content:center;gap:6px;flex-wrap:wrap;";
+      const lbl = document.createElement("span");
+      lbl.textContent = "Read in:";
+      lbl.style.cssText = "font-size:12px;color:#8a7a5a;margin-right:2px";
+      bar.appendChild(lbl);
+      for (const s of LIST) {
+        const b = document.createElement("button");
+        b.textContent = s.label; b.title = s.name;
+        const on = s.code === current;
+        b.style.cssText = "border:1px solid " + (on ? "#2f7d32" : "#d8c48a")
+          + ";background:" + (on ? "#2f7d32" : "#fff")
+          + ";color:" + (on ? "#fff" : "#4a3728")
+          + ";border-radius:14px;padding:4px 12px;font-size:13px;cursor:pointer;font-weight:"
+          + (on ? "700" : "500") + ";";
+        b.addEventListener("click", () => {
+          if (s.code === current) return;
+          try {
+            if (s.code === "ta") localStorage.removeItem("script");
+            else localStorage.setItem("script", s.code);
+          } catch (e) {}
+          location.reload();
+        });
+        bar.appendChild(b);
+      }
+      const stage = document.getElementById("sp-stage");
+      if (stage && stage.parentNode) stage.parentNode.insertBefore(bar, stage);
+      else document.body.insertBefore(bar, document.body.firstChild);
+    }
 
     // Font adjuster
     function adjustFont(delta) {
@@ -186,6 +252,9 @@
     }
 
     async function init() {
+      injectScriptBanner();
+      // Nothing that calls c() may run before this resolves.
+      await ensureContentStrings();
       const mobile = localStorage.getItem("mobile");
       const stage  = document.getElementById("sp-stage");
       if (!mobile) {
@@ -199,7 +268,7 @@
       const spinUrl = testDay !== null
         ? `${WORKER}/recital/spinner?mobile=${encodeURIComponent(mobile)}&test_day=${testDay}`
         : `${WORKER}/recital/spinner?mobile=${encodeURIComponent(mobile)}`;
-      const res  = await fetch(spinUrl);
+      const res  = await fetch(sq(spinUrl));
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         render(data);
@@ -249,13 +318,13 @@
 
       // Global thaniyan
       if (data.global_thaniyan?.length) {
-        html += renderThaniyan("பொது தனியன்", data.global_thaniyan);
+        html += renderThaniyan(c("common.pothu.thaniyan") || "பொது தனியன்", data.global_thaniyan);
       }
 
       // Section thaniyans
       for (const sid of Object.keys(data.section_thaniyans || {})) {
         const lines = data.section_thaniyans[sid];
-        if (lines?.length) html += renderThaniyan("தனியன்", lines);
+        if (lines?.length) html += renderThaniyan(c("common.thaniyan") || "தனியன்", lines);
       }
 
       // Desam blocks
