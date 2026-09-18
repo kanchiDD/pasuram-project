@@ -973,6 +973,20 @@
     //    "manual", dual) — plus section-25's auto sattrumurai (last-3, incl its
     //    single). Section 10 (Kanninun) never greyed. Manual adds never greyed
     //    (a natural overlap is still greyed via its auto entry). ──
+    // NEVER greyed, whatever the sattrumurai holds. These are the BODIES of
+    // works whose own closing verses serve as the sattrumurai: Kanninun
+    // Siruthambu, Thiruppavai 474-501, Upadesarathinamalai 25001-25071 and
+    // Prabandhasaram 49001-49016. Greying one of these would drop a verse from
+    // the recital it actually belongs to, which is the opposite of what the
+    // grey-out is for. Each work's own closing verses fall OUTSIDE its range
+    // here — Thiruppavai 502-503, Upadesa 25072-25074, Prabandhasaram
+    // 49017-49018 — so those keep greying exactly as before.
+    const GREY_NEVER = [[474, 501], [937, 947], [25001, 25071], [49001, 49016]];
+    function greyExempt(g) {
+      for (const [lo, hi] of GREY_NEVER) if (g >= lo && g <= hi) return true;
+      return false;
+    }
+
     let _greySet = new Set();
     let _madalGhoshti = false;   // ghoshti recital → grey the madal sattrumurai (dual) block
     let _greyRun = { active: false };
@@ -980,11 +994,14 @@
       const set = new Set();
       if (!satData || !Array.isArray(satData.pasurams)) return set;
       for (const p of satData.pasurams) {
-        if (p.group === "manual") continue;      // manual adds never greyed
         const g = Number(p.global_no);
         if (!g) continue;                        // headings / madal_lines / text / kanninun have no global_no
-        if (g >= 937 && g <= 947) continue;      // section 10 — never
-        if (g >= 25001 && g <= 25074) { set.add(g); continue; } // section 25 — last-3 incl single
+        if (greyExempt(g)) continue;             // body verses — never greyed
+        // A hand-added pasuram is recited at the sattrumurai exactly like an
+        // automatic one, so leaving it lit in the body asked the ghoshti to
+        // recite it twice. It is greyed now, dual or not.
+        if (p.group === "manual") { set.add(g); continue; }
+        if (g >= 25001 && g <= 25074) { set.add(g); continue; } // section 25 closing, incl its single
         if (p.dual === true) set.add(g);         // auto dual pasurams
       }
       return set;
