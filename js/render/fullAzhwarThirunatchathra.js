@@ -17,6 +17,8 @@
 
 import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML } from "./madalKootrirukkaiCore.js";
 import { t as uiText } from "../utils/uiStrings.js";
+import { c, sectionTitle, ensureContentStrings } from "../utils/contentStrings.js";
+import { isAdivaravu } from "../utils/displayTags.js";
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 
@@ -26,24 +28,45 @@ function cf(url) {
   return _cache.get(url);
 }
 
-// ── Azhwar list (static — author_ids match your SECTION_AUTHOR map) ──
+// ── Azhwar / Acharya list (static — author_ids match your SECTION_AUTHOR map) ──
+// `type` splits the two groups on screen: ids 13-16 are Acharyas, not
+// Azhwars — Thiruvarangathamudhanar's work is in the 4000, but he is an
+// Acharya. The ui_text rows are keyed ath.author.<id> for that reason.
+// star_no is the position in the canonical 27-star list (the same numbering
+// star.name.<script>.<n> uses); month_no is the Tamil solar month 1-12. The
+// Tamil name stays as the fallback and as what a Tamil reader sees.
 const AZHWARS = [
-  { author_id:1,  name:"ஸ்ரீ பொய்கையாழ்வார்",  month:"ஐப்பசி",    star:"ஓணம்",  type:"azhwar" },
-  { author_id:2,  name:"ஸ்ரீ பூதத்தாழ்வார்",       month:"ஐப்பசி", star:"அவிட்டம்",      type:"azhwar" },
-  { author_id:3,  name:"ஸ்ரீ பேயாழ்வார்",         month:"ஐப்பசி",  star:"சதயம்",      type:"azhwar" },
-  { author_id:4,  name:"ஸ்ரீ திருமழிசையாழ்வார்",  month:"தை",  star:"மகம்",          type:"azhwar" },
-  { author_id:5,  name:"ஸ்ரீ மதுரகவியாழ்வார்",    month:"சித்திரை",  star:"சித்திரை",    type:"azhwar" },
-  { author_id:6,  name:"ஸ்ரீ நம்மாழ்வார்",         month:"வைகாசி", star:"விசாகம்",      type:"azhwar" },
-  { author_id:7,  name:"ஸ்ரீ பெரியாழ்வார்",       month:"ஆனி",  star:"ஸ்வாதி",         type:"azhwar" },
-  { author_id:8,  name:"ஸ்ரீ ஆண்டாள்",           month:"ஆடி",  star:"பூரம்",         type:"azhwar" },
-  { author_id:9,  name:"ஸ்ரீ குலசேகரஆழ்வார்",           month:"மாசி", star:"புனர் பூசம்",        type:"azhwar" },
-  { author_id:10, name:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார்", month:"மார்கழி",  star:"கேட்டை",   type:"azhwar" },
-  { author_id:11, name:"ஸ்ரீ திருப்பாணாழ்வார்",     month:"கார்த்திகை",  star:"ரோகிணி",  type:"azhwar" },
-  { author_id:12, name:"ஸ்ரீ திருமங்கையாழ்வார்",    month:"கார்த்திகை",  star:"கார்த்திகை",  type:"azhwar" },
-  { author_id:13, name:"ஸ்ரீ திருவரங்கத்தமுதனார்",  month:"பங்குனி",   star:"ஹஸ்தம்",            type:"acharya" },
-  { author_id:14, name:"ஸ்ரீ இராமாநுஜர்",           month:"சித்திரை", star:"திருவாதிரை",    type:"acharya" },
-  { author_id:15, name:"ஸ்ரீ மணவாளமாமுனிகள்",   month:"ஐப்பசி",    star:"மூலம்",            type:"acharya" }
+  { author_id:1,  name:"ஸ்ரீ பொய்கையாழ்வார்",         month:"ஐப்பசி",     month_no:7,  star:"ஓணம்",         star_no:22, type:"azhwar" },
+  { author_id:2,  name:"ஸ்ரீ பூதத்தாழ்வார்",          month:"ஐப்பசி",     month_no:7,  star:"அவிட்டம்",      star_no:23, type:"azhwar" },
+  { author_id:3,  name:"ஸ்ரீ பேயாழ்வார்",             month:"ஐப்பசி",     month_no:7,  star:"சதயம்",         star_no:24, type:"azhwar" },
+  { author_id:4,  name:"ஸ்ரீ திருமழிசையாழ்வார்",      month:"தை",         month_no:10, star:"மகம்",          star_no:10, type:"azhwar" },
+  { author_id:5,  name:"ஸ்ரீ மதுரகவியாழ்வார்",        month:"சித்திரை",   month_no:1,  star:"சித்திரை",      star_no:14, type:"azhwar" },
+  { author_id:6,  name:"ஸ்ரீ நம்மாழ்வார்",            month:"வைகாசி",     month_no:2,  star:"விசாகம்",       star_no:16, type:"azhwar" },
+  { author_id:7,  name:"ஸ்ரீ பெரியாழ்வார்",           month:"ஆனி",        month_no:3,  star:"ஸ்வாதி",        star_no:15, type:"azhwar" },
+  { author_id:8,  name:"ஸ்ரீ ஆண்டாள்",                month:"ஆடி",        month_no:4,  star:"பூரம்",         star_no:11, type:"azhwar" },
+  { author_id:9,  name:"ஸ்ரீ குலசேகரஆழ்வார்",         month:"மாசி",       month_no:11, star:"புனர் பூசம்",   star_no:7,  type:"azhwar" },
+  { author_id:10, name:"ஸ்ரீ தொண்டரடிப்பொடியாழ்வார்", month:"மார்கழி",    month_no:9,  star:"கேட்டை",        star_no:18, type:"azhwar" },
+  { author_id:11, name:"ஸ்ரீ திருப்பாணாழ்வார்",       month:"கார்த்திகை", month_no:8,  star:"ரோகிணி",        star_no:4,  type:"azhwar" },
+  { author_id:12, name:"ஸ்ரீ திருமங்கையாழ்வார்",      month:"கார்த்திகை", month_no:8,  star:"கார்த்திகை",    star_no:3,  type:"azhwar" },
+  { author_id:13, name:"ஸ்ரீ திருவரங்கத்தமுதனார்",    month:"பங்குனி",    month_no:12, star:"ஹஸ்தம்",        star_no:13, type:"acharya" },
+  { author_id:14, name:"ஸ்ரீ இராமாநுஜர்",             month:"சித்திரை",   month_no:1,  star:"திருவாதிரை",    star_no:6,  type:"acharya" },
+  { author_id:15, name:"ஸ்ரீ மணவாளமாமுனிகள்",        month:"ஐப்பசி",     month_no:7,  star:"மூலம்",         star_no:19, type:"acharya" },
+  { author_id:16, name:"ஸ்ரீ நிகமாந்த மஹாதேசிகன்",    month:"புரட்டாசி",  month_no:6,  star:"திருவோணம்",     star_no:22, type:"acharya" }
 ];
+
+// Current script, for the star/month rows that carry a native name per
+// language rather than a transliteration.
+function _sc() {
+  try {
+    const s = (localStorage.getItem("script") || "").toLowerCase();
+    return ["te", "kn", "ml", "deva", "iast"].includes(s) ? s : "";
+  } catch (e) { return ""; }
+}
+const athName  = a => c("ath.author." + a.author_id) || a.name;
+const athStar  = a => (_sc() && c("star.name."  + _sc() + "." + a.star_no))
+                   || c("star.name."  + a.star_no)  || a.star  || "";
+const athMonth = a => (_sc() && c("month.name." + _sc() + "." + a.month_no))
+                   || c("month.name." + a.month_no) || a.month || "";
 
 // ── Section name map — respectful full names ─────────────────
 const SECTION_HEADER_MAP = {
@@ -82,6 +105,8 @@ const SECTION_HEADER_MAP = {
 
 // Known custom entity key → Tamil label (fallback when API unavailable)
 // Keyed by both string key AND numeric id
+// Tamil fallbacks. The converted forms come from ui_text: the two koil names
+// are the same rows koil.js and Nithyanusandhanam already use.
 const CUSTOM_KEY_MAP = {
   "pothu_sattrumurai": "பொது சாற்றுமுறை",
   "koil_thirumozhi":    "கோயில் திருமொழி",
@@ -89,10 +114,24 @@ const CUSTOM_KEY_MAP = {
   "1": "கோயில் திருமொழி",    // numeric id fallback
   "2": "கோயில் திருவாய்மொழி" // numeric id fallback
 };
+const CUSTOM_UI_KEY = {
+  "pothu_sattrumurai": "ath.pothu.sattrumurai",
+  "koil_thirumozhi":   "nnc.koil.thirumozhi",
+  "koil_thiruvaimozhi":"nnc.koil.thiruvaimozhi",
+  "1": "nnc.koil.thirumozhi",
+  "2": "nnc.koil.thiruvaimozhi"
+};
+function _customLabel(key, fallback) {
+  const k = CUSTOM_UI_KEY[String(key)];
+  return (k && c(k)) || fallback || CUSTOM_KEY_MAP[String(key)] || String(key);
+}
 
-// Helper: resolve any display name through respectful section heading map
-function _sectionHeading(name) {
-  return SECTION_HEADER_MAP[name] || name;
+// Respectful section heading. Keyed on section_id — the Tamil name cannot be
+// the key once a script is on, because it is no longer Tamil. The map below
+// stays as the Tamil fallback, so a Tamil reader sees exactly what they did.
+function _sectionHeading(sectionId, name) {
+  return (sectionId != null ? sectionTitle(sectionId, "") : "")
+      || SECTION_HEADER_MAP[name] || name || "";
 }
 
 // ── CSS — loaded from external file ─────────────────────────
@@ -134,6 +173,9 @@ window._fathnFont = function(delta) {
 // ── Render main list ──────────────────────────────────────────
 export async function renderFullAzhwarThirunatchathra() {
   injectCSS();
+  // The converted overlay must be in hand before any c() / sectionTitle()
+  // call. Cheap after the first time; a no-op on the Tamil path.
+  await ensureContentStrings();
 
   // Gated the same way as ghoshti/spinner/recital — showing the wrong
   // sect's content here would be actively misleading, not just a
@@ -163,17 +205,17 @@ export async function renderFullAzhwarThirunatchathra() {
     return `
       <div class="fathn-card" onclick="window._fathnOpenModal(${a.author_id})">
         <div>
-          <div class="fathn-card-name">${a.name}</div>
-          ${a.star ? `<div class="fathn-card-star">⭐ ${a.month} - ${a.star}</div>` : ""}
+          <div class="fathn-card-name">${athName(a)}</div>
+          ${a.star ? `<div class="fathn-card-star">⭐ ${athMonth(a)} - ${athStar(a)}</div>` : ""}
         </div>
         <div class="fathn-card-arrow">▶</div>
       </div>`;
   }
 
   const listHtml = `
-    <div class="fathn-section-label">ஆழ்வார்கள்</div>
+    <div class="fathn-section-label">${c("ath.group.azhwars") || "ஆழ்வார்கள்"}</div>
     <div class="fathn-list">${azhwars.map(card).join("")}</div>
-    <div class="fathn-section-label" style="margin-top:20px;">ஆச்சார்யர்கள்</div>
+    <div class="fathn-section-label" style="margin-top:20px;">${c("ath.group.acharyas") || "ஆச்சார்யர்கள்"}</div>
     <div class="fathn-list">${acharyas.map(card).join("")}</div>`;
 
   // Register modal handler
@@ -205,7 +247,7 @@ export async function renderFullAzhwarThirunatchathra() {
 
   return `
     <div class="fathn-page" id="fathn-root">
-      <div class="fathn-title">ஆழ்வார் திருநட்சத்திர அனுஸந்தானம்</div>
+      <div class="fathn-title">${c("ath.page.title") || "ஆழ்வார் திருநட்சத்திர அனுஸந்தானம்"}</div>
       <div class="fathn-subtitle">${uiText("azhwarThirunatchathraTitle")}</div>
       <div class="fathn-divider"></div>
       ${listHtml}
@@ -219,11 +261,11 @@ function _showSelectionModal(azhwar, sequence, customItems) {
 
   // Build custom item map — keyed by custom_key AND by id (numeric)
   const custMap = {};
-  for (const c of customItems) {
-    custMap[c.custom_key] = c.tamil_name;          // "koil_thirumozhi" → name
-    if (c.id != null) custMap[String(c.id)] = c.tamil_name;  // "1" → name
-    if (c.custom_recital_entity_id != null)
-      custMap[String(c.custom_recital_entity_id)] = c.tamil_name;
+  for (const ce of customItems) {
+    custMap[ce.custom_key] = ce.tamil_name;          // "koil_thirumozhi" → name
+    if (ce.id != null) custMap[String(ce.id)] = ce.tamil_name;  // "1" → name
+    if (ce.custom_recital_entity_id != null)
+      custMap[String(ce.custom_recital_entity_id)] = ce.tamil_name;
   }
 
   // ── Monthly / Yearly mode — yearly is a superset (shows monthly
@@ -269,7 +311,8 @@ function _showSelectionModal(azhwar, sequence, customItems) {
     // Section — use respectful full heading from map
     if (s.entity_type === "section") {
       const dn = s.content?.display_name || "";
-      return _sectionHeading(dn) || `பிரிவு ${s.entity_id}`;
+      return _sectionHeading(s.entity_id, dn) ||
+             `${c("ath.word.section") || "பிரிவு"} ${s.entity_id}`;
     }
     // Custom — entity_id may be numeric or string key
     if (s.entity_type === "custom") {
@@ -283,28 +326,33 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       const ref = s.content?.ref || "";
       const secId = ref.startsWith("section_") ? Number(ref.replace("section_","")) : null;
       const rawName = secId ? (sectionNameById[secId] || "") : "";
-      const fullName = rawName ? _sectionHeading(rawName) : "";
+      const fullName = secId ? _sectionHeading(secId, rawName) : "";
       // Count siblings to decide தனியன் vs தனியன்கள்
       const sibCount = sequence.filter(si =>
         si.entity_type === "thaniyan" && (si.content?.ref || "") === ref
       ).length;
-      const word = sibCount > 1 ? "தனியன்கள்" : "தனியன்";
+      const word = sibCount > 1
+        ? (c("ath.thaniyangal") || "தனியன்கள்")
+        : (c("common.thaniyan") || "தனியன்");
       return fullName ? `${fullName} ${word}` : word;
     }
     // Pasuram — show "SectionName சாற்றுமுறை பாசுரம்" so user knows what it is
     if (s.entity_type === "pasuram") {
       const secName = s.content?.section_name ||
                       sectionNameById[s.content?.section_id] || "";
-      return secName ? `${secName} — சாற்றுமுறை பாசுரம்` : `சாற்றுமுறை பாசுரம்`;
+      const sp = c("ath.sattrumurai.pasuram") || "சாற்றுமுறை பாசுரம்";
+      return secName ? `${secName} — ${sp}` : sp;
     }
-    if (s.entity_type === "fixed_text") return `சாற்றுமுறை`;
+    if (s.entity_type === "fixed_text") return c("ath.sattrumurai") || `சாற்றுமுறை`;
     if (s.entity_type === "vazhi_thirunamam") {
+      const vh = c("ath.vazhi.heading") || "வாழித் திருநாமம்";
       const vn = s.content?.vazhi_name;
-      return vn ? `வாழித் திருநாமம் — ${vn}` : `வாழித் திருநாமம்`;
+      return vn ? `${vh} — ${vn}` : vh;
     }
-    if (s.entity_type === "pathu")      return `பத்து ${s.entity_id}`;
+    if (s.entity_type === "pathu")
+      return `${c("ath.word.pathu") || "பத்து"} ${s.entity_id}`;
     const heading = s.content?.display_name || s.content?.title || s.content?.name;
-    if (heading) return _sectionHeading(heading);
+    if (heading) return _sectionHeading(s.content?.section_id ?? null, heading);
     return `${s.entity_type} ${s.entity_id}`;
   }
 
@@ -336,13 +384,13 @@ function _showSelectionModal(azhwar, sequence, customItems) {
           <input type="radio" name="fathn-mode" value="monthly"
             ${currentMode === "monthly" ? "checked" : ""}
             onchange="window._fathnSetMode('monthly')" style="accent-color:#4a2c00;">
-          மாதாந்திரம்
+          ${c("ath.mode.monthly") || "மாதாந்திரம்"}
         </label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
           <input type="radio" name="fathn-mode" value="yearly"
             ${currentMode === "yearly" ? "checked" : ""}
             onchange="window._fathnSetMode('yearly')" style="accent-color:#4a2c00;">
-          வருஷம்
+          ${c("ath.mode.yearly") || "வருஷம்"}
         </label>
       </div>`;
 
@@ -350,8 +398,8 @@ function _showSelectionModal(azhwar, sequence, customItems) {
       <div class="fathn-modal-overlay" id="fathn-modal-overlay"
            onclick="if(event.target===this)window._fathnCloseModal()">
         <div class="fathn-modal">
-          <div class="fathn-modal-title">${azhwar.name}</div>
-          ${azhwar.star ? `<div class="fathn-modal-sub">⭐ ${azhwar.month} மாதம் — ${azhwar.star} திருநட்சத்திரம்</div>` : ""}
+          <div class="fathn-modal-title">${athName(azhwar)}</div>
+          ${azhwar.star ? `<div class="fathn-modal-sub">⭐ ${athMonth(azhwar)} ${c("ath.word.month") || "மாதம்"} — ${athStar(azhwar)} ${c("ath.word.star") || "திருநட்சத்திரம்"}</div>` : ""}
           ${modeToggle}
           <div class="fathn-modal-greeting">🙏 Adiyen — Select the Arulicheyal you want to recite.</div>
 
@@ -425,7 +473,9 @@ function _showSelectionModal(azhwar, sequence, customItems) {
 
 // ── Render the actual recital ─────────────────────────────────
 async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mode = "yearly") {
-  const modeLabel = mode === "monthly" ? "மாதாந்திர" : "வருஷ";
+  const modeLabel = mode === "monthly"
+    ? (c("ath.modelabel.monthly") || "மாதாந்திர")
+    : (c("ath.modelabel.yearly")  || "வருஷ");
 
   const selectedItems = sequence
     .filter(s => selectedSeqNos.includes(s.sequence_no))
@@ -448,12 +498,12 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
       </div>
 
       <div class="fathn-recital-header">
-        ${azhwar.name} ${modeLabel} திருநக்ஷத்ர அநுஸந்தானம்
+        ${athName(azhwar)} ${modeLabel} ${c("ath.thirunakshatra") || "திருநக்ஷத்ர அநுஸந்தானம்"}
       </div>
 
       ${azhwar.star ? `
         <div class="fathn-recital-star">
-          ⭐ ${azhwar.month} மாதம் — ${azhwar.star} திருநட்சத்திரம்
+          ⭐ ${athMonth(azhwar)} ${c("ath.word.month") || "மாதம்"} — ${athStar(azhwar)} ${c("ath.word.star") || "திருநட்சத்திரம்"}
         </div>
       ` : ""}
   `;
@@ -480,17 +530,19 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         const siblingCount = selectedItems.filter(si =>
           si.entity_type === "thaniyan" && si.content?.ref === sectionRef
         ).length;
-        const thaniyanWord = siblingCount > 1 ? "தனியன்கள்" : "தனியன்";
+        const thaniyanWord = siblingCount > 1
+          ? (c("ath.thaniyangal") || "தனியன்கள்")
+          : (c("common.thaniyan") || "தனியன்");
 
         let secFullName = "";
         if (sectionRef && sectionRef !== "global") {
           const secIdFromRef = Number(sectionRef.replace("section_", ""));
           const secRawName   = sectionNameById[secIdFromRef] || "";
-          secFullName = _sectionHeading(secRawName);
+          secFullName = _sectionHeading(secIdFromRef, secRawName);
         }
         const thaniyanHeading = secFullName
           ? `${secFullName} ${thaniyanWord}`
-          : `பொது ${thaniyanWord}`;
+          : `${c("ath.word.pothu") || "பொது"} ${thaniyanWord}`;
 
         // Render exactly like thaniyan.js renderThaniyan():
         // title   → .fathn-thaniyan-title  (individual thaniyan name)
@@ -543,27 +595,27 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         // ── Special sections 21/22/23 ──────────────────────
         if (s.section_type === "kootrirukkai") {
           html += `<div class="fathn-thaniyan-box">`;
-          html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.display_name)}</div>`;
+          html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.section_id, s.display_name)}</div>`;
           for (const d of (s.display?.section || []))
-            if (d.text && !d.text.includes("அடிவரவு"))
+            if (d.text && !isAdivaravu(d))
               html += `<div class="fathn-display-item">${d.text}</div>`;
           // Line rendering delegated to shared core module — each line
           // now wrapped in its own card (matches madal couplet treatment)
           const kootriHtml = buildKootrirukkaiLinesHTML({ lines: s.lines || [] }, "fathn", 41);
           html += `<div class="fathn-madal-body">${kootriHtml}</div>`;
-          const adiv = (s.display?.section || []).find(d => d.text?.includes("அடிவரவு"));
+          const adiv = (s.display?.section || []).find(d => isAdivaravu(d));
           if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
           if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
-          html += `<div class="fathn-section-final">${_sectionHeading(s.display_name)} முற்றிற்று</div>`;
+          html += `<div class="fathn-section-final">${_sectionHeading(s.section_id, s.display_name)} ${c("common.muttrittru") || "முற்றிற்று"}</div>`;
           html += `</div>`;
           continue;
         }
 
         if (s.section_type === "madal") {
           html += `<div class="fathn-thaniyan-box">`;
-          html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.display_name)}</div>`;
+          html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.section_id, s.display_name)}</div>`;
           for (const d of (s.display?.section || []))
-            if (d.text && !d.text.includes("அடிவரவு"))
+            if (d.text && !isAdivaravu(d))
               html += `<div class="fathn-display-item">${d.text}</div>`;
           // Couplet rendering delegated to shared core module — same
           // algorithm/markup as NNC and recital.html. Uses fathn- prefix
@@ -575,10 +627,10 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
             maxCouplet
           );
           html += `<div class="fathn-madal-body">${madalHtml}</div>`;
-          const adiv = (s.display?.section || []).find(d => d.text?.includes("அடிவரவு"));
+          const adiv = (s.display?.section || []).find(d => isAdivaravu(d));
           if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
           if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
-          html += `<div class="fathn-section-final">${_sectionHeading(s.display_name)} முற்றிற்று</div>`;
+          html += `<div class="fathn-section-final">${_sectionHeading(s.section_id, s.display_name)} ${c("common.muttrittru") || "முற்றிற்று"}</div>`;
           html += `</div>`;
           continue;
         }
@@ -589,11 +641,11 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         const pasurams = s.pasurams || [];
 
         html += `<div class="fathn-thaniyan-box">`;
-        html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.display_name)}</div>`;
+        html += `<div class="fathn-thaniyan-heading">${_sectionHeading(s.section_id, s.display_name)}</div>`;
 
         // Section-level display items (shown once at top — not adivaravu)
         for (const d of (disp.section || []))
-          if (d.text && !d.text.includes("அடிவரவு"))
+          if (d.text && !isAdivaravu(d))
             html += `<div class="fathn-display-item">${d.text}</div>`;
 
         let _lastPathu   = null;
@@ -614,7 +666,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
             // Pathu display items (carnatic etc)
             const pDisp = disp.pathu[String(p.pathu_id)] || [];
             for (const d of pDisp)
-              if (d.text && !d.text.includes("அடிவரவு"))
+              if (d.text && !isAdivaravu(d))
                 html += `<div class="fathn-display-item">${d.text}</div>`;
           }
 
@@ -629,7 +681,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
               // Thirumozhi display from s.display.thirumozhi
               const tDisp = disp.thirumozhi[String(p.thirumozhi_id)] || {};
               for (const d of (tDisp.items || []))
-                if (d.text && !d.text.includes("அடிவரவு"))
+                if (d.text && !isAdivaravu(d))
                   html += `<div class="fathn-display-item">${d.text}</div>`;
             }
           } else if (p.thirumozhi_id != null && p.thirumozhi_id !== _lastThiru) {
@@ -640,7 +692,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
             if (th) html += `<div class="fathn-ph-line3">${th}</div>`;
             const tDisp = disp.thirumozhi[String(p.thirumozhi_id)] || {};
             for (const d of (tDisp.items || []))
-              if (d.text && !d.text.includes("அடிவரவு"))
+              if (d.text && !isAdivaravu(d))
                 html += `<div class="fathn-display-item">${d.text}</div>`;
           }
 
@@ -653,7 +705,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           // ── Pasuram display items (pasuram level — திருப்பாவை, திருவிருத்தம் etc) ──
           const pDispItems = disp.pasuram[String(p.global_no)] || [];
           for (const d of pDispItems)
-            if (d.text && !d.text.includes("அடிவரவு"))
+            if (d.text && !isAdivaravu(d))
               html += `<div class="fathn-display-item">${d.text}</div>`;
 
           // ── Render pasuram lines ──
@@ -665,7 +717,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           const isLastOfPathu = p.pathu_id && (!next || next.pathu_id !== p.pathu_id);
           if (isLastOfPathu) {
             const pDisp = disp.pathu[String(p.pathu_id)] || [];
-            const adiv  = pDisp.find(d => d.text && d.text.includes("அடிவரவு"));
+            const adiv  = pDisp.find(d => d.text && isAdivaravu(d));
             if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
             if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
           }
@@ -674,7 +726,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           const isLastOfThiru = p.thirumozhi_id && (!next || next.thirumozhi_id !== p.thirumozhi_id);
           if (isLastOfThiru) {
             const tDisp = disp.thirumozhi[String(p.thirumozhi_id)] || {};
-            const adiv  = (tDisp.items || []).find(d => d.text && d.text.includes("அடிவரவு"));
+            const adiv  = (tDisp.items || []).find(d => d.text && isAdivaravu(d));
             if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
             if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
             if (p.pathu_id == null) { html += `</div>`; _lastThiru = null; }
@@ -683,14 +735,14 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           // ── Simple section adivaravu + closing at very end ──
           // (for sections with no pathu/thirumozhi grouping)
           if (!next && !p.pathu_id && !p.thirumozhi_id) {
-            const adiv = (disp.section || []).find(d => d.text && d.text.includes("அடிவரவு"));
+            const adiv = (disp.section || []).find(d => d.text && isAdivaravu(d));
             if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
             if (s.closing_text) html += `<div class="fathn-closing">${s.closing_text}</div>`;
           }
 
           // ── Section முற்றிற்று at very end ──
           if (!next)
-            html += `<div class="fathn-section-final">${_sectionHeading(s.display_name)} முற்றிற்று</div>`;
+            html += `<div class="fathn-section-final">${_sectionHeading(s.section_id, s.display_name)} ${c("common.muttrittru") || "முற்றிற்று"}</div>`;
         }
 
         html += `</div>`; // close fathn-thaniyan-box
@@ -705,7 +757,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         if (!sattrumuraiStarted) {
           sattrumuraiStarted = true;
           html += `<div class="fathn-thaniyan-box" style="margin-top:4px;">
-            <div class="fathn-thaniyan-heading">${azhwar.name} ${modeLabel} திருநக்ஷத்ர சாற்றுமுறை</div>`;
+            <div class="fathn-thaniyan-heading">${athName(azhwar)} ${modeLabel} ${c("ath.thirunakshatra.sattrumurai") || "திருநக்ஷத்ர சாற்றுமுறை"}</div>`;
         }
 
         const p = item.content;
@@ -742,7 +794,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
                 border-radius:8px;
                 padding:10px;
               ">
-              பொது சாற்றுமுறை
+              ${c("ath.pothu.sattrumurai") || "பொது சாற்றுமுறை"}
             </div>
           `;
         }
@@ -770,9 +822,11 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         // The worker stores custom_key + tamil_name in content.
         // Actual pasurams are in the full sequence as section items
         // tagged with matching koilTitle — find and render them here.
-        const c = item.content;
-        const koilTitle = (c && c.tamil_name) ||
-                          CUSTOM_KEY_MAP[item.entity_id] ||
+        const cc = item.content;
+        // content.tamil_name already arrives converted from the worker; the
+        // ui_text row is the fallback when the custom entity has no content.
+        const koilTitle = (cc && cc.tamil_name) ||
+                          _customLabel(item.entity_id) ||
                           item.entity_id;
 
         // Custom entity content comes from the worker's custom map.
@@ -781,7 +835,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         // Otherwise fall back to filtering sequence section items.
 
         // Case 1: worker returns pasurams directly in content
-        const directPasurams = c?.pasurams || c?.sections?.[0]?.pasurams || [];
+        const directPasurams = cc?.pasurams || cc?.sections?.[0]?.pasurams || [];
 
         // Case 2: find matching section items already in sequence
         const koilSections = sequence.filter(si =>
@@ -794,19 +848,19 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         html += `<div class="fathn-thaniyan-box">
             <div class="fathn-thaniyan-heading">${koilTitle}</div>`;
 
-        // c.display = { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
-        // c.pasurams = array of pasuram objects
-        const cDisp = c?.display || { section:[], pathu:{}, thirumozhi:{}, pasuram:{} };
+        // cc.display = { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
+        // cc.pasurams = array of pasuram objects
+        const cDisp = cc?.display || { section:[], pathu:{}, thirumozhi:{}, pasuram:{} };
 
         // Section-level display items
         for (const d of (cDisp.section || []))
-          if (d.text && !d.text.includes("அடிவரவு"))
+          if (d.text && !isAdivaravu(d))
             html += `<div class="fathn-display-item">${d.text}</div>`;
 
         let _cLastPathu   = null;
         let _cLastThiru   = null;
         let _cLastProsody = null;
-        const cPasurams   = c?.pasurams || [];
+        const cPasurams   = cc?.pasurams || [];
 
         for (let ci = 0; ci < cPasurams.length; ci++) {
           const p    = cPasurams[ci];
@@ -821,7 +875,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
             </div>`;
             const pDisp = cDisp.pathu[String(p.pathu_id)] || [];
             for (const d of pDisp)
-              if (d.text && !d.text.includes("அடிவரவு"))
+              if (d.text && !isAdivaravu(d))
                 html += `<div class="fathn-display-item">${d.text}</div>`;
           }
 
@@ -832,7 +886,7 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
               html += `<div class="fathn-ph-line3">${th}</div>`;
               const tDisp = cDisp.thirumozhi[String(p.thirumozhi_id)] || {};
               for (const d of (tDisp.items || []))
-                if (d.text && !d.text.includes("அடிவரவு"))
+                if (d.text && !isAdivaravu(d))
                   html += `<div class="fathn-display-item">${d.text}</div>`;
             }
           }
@@ -848,13 +902,13 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
           const isLastOfPathu = p.pathu_id && (!next || next.pathu_id !== p.pathu_id);
           if (isLastOfPathu) {
             const pDisp = cDisp.pathu[String(p.pathu_id)] || [];
-            const adiv  = pDisp.find(d => d.text && d.text.includes("அடிவரவு"));
+            const adiv  = pDisp.find(d => d.text && isAdivaravu(d));
             if (adiv) html += `<div class="fathn-adivaravu">${adiv.text}</div>`;
-            if (c.closing_text) html += `<div class="fathn-closing">${c.closing_text}</div>`;
+            if (cc.closing_text) html += `<div class="fathn-closing">${cc.closing_text}</div>`;
           }
         }
 
-        const closing = koilTitle + " முற்றிற்று";
+        const closing = koilTitle + " " + (c("common.muttrittru") || "முற்றிற்று");
         html += `
             <div class="fathn-closing">${closing}</div>
           </div>
@@ -872,8 +926,8 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         // ids 1-2 = சிறிய திருமடல், ids 3-7 = பெரிய திருமடல்
         // Only 2 headings will ever render — one per group
         const heading = (m.madal_sattrumurai_id <= 2)
-          ? "சிறிய திருமடல் சாற்றுமுறை"
-          : "பெரிய திருமடல் சாற்றுமுறை";
+          ? (c("ath.madal.siriya") || "சிறிய திருமடல் சாற்றுமுறை")
+          : (c("ath.madal.periya") || "பெரிய திருமடல் சாற்றுமுறை");
 
         const allMadal = selectedItems.filter(i => i.entity_type === "madal_sattrumurai");
         const isFirst  = allMadal[0]?.sequence_no === item.sequence_no;
@@ -884,7 +938,9 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
         const prevMadal = allMadal[allMadal.indexOf(item) - 1];
         const prevMid   = prevMadal?.content?.madal_sattrumurai_id;
         const prevHeading = prevMid
-          ? (prevMid <= 2 ? "சிறிய திருமடல் சாற்றுமுறை" : "பெரிய திருமடல் சாற்றுமுறை")
+          ? (prevMid <= 2
+              ? (c("ath.madal.siriya") || "சிறிய திருமடல் சாற்றுமுறை")
+              : (c("ath.madal.periya") || "பெரிய திருமடல் சாற்றுமுறை"))
           : null;
         const headingChanged = !prevHeading || (prevHeading !== heading);
 
@@ -928,14 +984,14 @@ async function _renderRecital(azhwar, sequence, selectedSeqNos, customItems, mod
                 border-radius:8px;
                 padding:10px;
               ">
-              வாழித் திருநாமம்
+              ${c("ath.vazhi.heading") || "வாழித் திருநாமம்"}
             </div>
           `;
         }
 
         html += `
           <div class="fathn-thaniyan-box">
-            <div class="fathn-thaniyan-heading">வாழி திருநாமம்</div>
+            <div class="fathn-thaniyan-heading">${c("sat.vazhi.heading") || "வாழி திருநாமம்"}</div>
             ${v.vazhi_name ? `<span class="fathn-vazhi-author">${v.vazhi_name}</span>` : ""}
             ${(v.groups || []).map(g => `
               <div class="fathn-vazhi-group">
