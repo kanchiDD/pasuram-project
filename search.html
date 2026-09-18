@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+  <title>Search — நாலாயிர திவ்யப்பிரபந்தம்</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=861">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #FFFFF8; min-height: 100vh; display: flex; flex-direction: column; }
+    #header { width: 100%; }
+    #footer { width: 100%; margin-top: auto; }
+
+    /* ── script picker ── */
+    #sp-bar { background: #FFF8E6; border-bottom: 1px solid #E8D8A0; padding: 7px 10px;
+              display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+    #sp-bar .sp-label { font-size: 12px; color: #8A7A5A; margin-right: 2px; }
+    #sp-bar button { border: 1px solid #D8C48A; background: #FFF; color: #4A3728;
+                     border-radius: 14px; padding: 5px 13px; font-size: 13px; cursor: pointer;
+                     font-weight: 500; -webkit-tap-highlight-color: transparent; }
+    #sp-bar button.on { border-color: #2F7D32; background: #2F7D32; color: #FFF; font-weight: 700; }
+
+    /* ── stage ── */
+    #search-stage { flex: 1; display: flex; flex-direction: column; align-items: center;
+                    padding: 28px 16px 60px; gap: 18px; }
+    .ss-title { text-align: center; }
+    .ss-title h1 { font-size: 19px; font-weight: 600; color: #3B2410; letter-spacing: 0.02em; }
+    .ss-title p  { font-size: 13px; color: #8B6A45; margin-top: 5px; }
+
+    .ss-boxwrap { width: 100%; max-width: 560px; position: relative; }
+    .ss-inputrow { display: flex; align-items: center; gap: 10px; background: #FFF;
+                   border: 1.5px solid #C9A84C; border-radius: 26px; padding: 11px 16px;
+                   box-shadow: 0 2px 10px rgba(74,55,40,0.08); transition: box-shadow 0.15s, border-color 0.15s; }
+    .ss-inputrow:focus-within { border-color: #4A3728; box-shadow: 0 4px 18px rgba(74,55,40,0.16); }
+    .ss-inputrow i { color: #B09070; font-size: 15px; flex-shrink: 0; }
+    #ss-input { flex: 1; border: none; outline: none; background: transparent;
+                font-size: 17px; color: #3B2410; font-family: inherit; min-width: 0; }
+    #ss-input::placeholder { color: #C0A88A; font-size: 15px; }
+    #ss-clear { border: none; background: transparent; color: #B09070; font-size: 17px;
+                cursor: pointer; display: none; padding: 0 2px; line-height: 1; }
+    #ss-clear.show { display: block; }
+
+    /* ── suggestions ── */
+    #ss-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: #FFFDF7;
+               border: 1px solid #D4B896; border-radius: 12px; overflow: hidden; z-index: 40;
+               box-shadow: 0 8px 26px rgba(40,25,10,0.14); display: none; }
+    #ss-list.show { display: block; }
+    .ss-item { display: flex; align-items: flex-start; gap: 11px; padding: 11px 15px;
+               cursor: pointer; border-bottom: 1px solid #F0E3C8; min-height: 46px;
+               -webkit-tap-highlight-color: transparent; }
+    .ss-item:last-child { border-bottom: none; }
+    .ss-item:hover, .ss-item.active { background: #FFF0CC; }
+    .ss-ico { color: #B09070; font-size: 13px; margin-top: 3px; width: 15px; text-align: center; flex-shrink: 0; }
+    .ss-body { min-width: 0; flex: 1; }
+    .ss-main { font-size: 15px; color: #3B2410; line-height: 1.35; word-break: break-word; }
+    .ss-sub  { font-size: 11.5px; color: #9A7A55; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .ss-state { padding: 13px 15px; font-size: 13px; color: #9A7A55; text-align: center; }
+
+    .ss-hint { font-size: 12.5px; color: #B09070; text-align: center; max-width: 480px; line-height: 1.6; }
+
+    .ss-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 480px; }
+    .ss-chips-label { width: 100%; text-align: center; font-size: 11px; color: #B09070;
+                      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1px; }
+    .ss-chip { font-size: 12.5px; padding: 6px 14px; border-radius: 20px; border: 1px solid #D4B896;
+               background: #FFF8ED; color: #7A5C3A; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .ss-chip:hover { border-color: #4A3728; color: #4A3728; background: #FFF0CC; }
+
+    @media (max-width: 420px) {
+      #search-stage { padding: 20px 14px 50px; }
+      .ss-title h1 { font-size: 17px; }
+      #ss-input { font-size: 16px; }   /* keeps iOS from zooming on focus */
+    }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+
+  <div id="sp-bar"></div>
+
+  <main id="search-stage">
+    <div class="ss-title">
+      <h1>நாலாயிர திவ்யப்பிரபந்தம்</h1>
+      <p>Search — type a few letters</p>
+    </div>
+
+    <div class="ss-boxwrap">
+      <div class="ss-inputrow">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="ss-input" type="search" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false"
+               aria-label="Search" aria-autocomplete="list" aria-controls="ss-list" />
+        <button id="ss-clear" aria-label="Clear">&times;</button>
+      </div>
+      <div id="ss-list" role="listbox"></div>
+    </div>
+
+    <div class="ss-hint" id="ss-hint"></div>
+
+    <div class="ss-chips">
+      <div class="ss-chips-label">Try</div>
+      <div class="ss-chip" data-q="thiruppavai">thiruppavai</div>
+      <div class="ss-chip" data-q="nammazhwar">nammazhwar</div>
+      <div class="ss-chip" data-q="srirangam">srirangam</div>
+      <div class="ss-chip" data-q="koil">koil</div>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+<script type="module">
+/* =====================================================================
+   search.html — predictive search
+   ---------------------------------------------------------------------
+   Talks only to the i18n duplicate worker, which is the one carrying
+   /api/suggest. Production is never called from this page.
+
+   Tapping a result hands off through the same sessionStorage "voiceNav"
+   contract that voice search already uses, so tree.html needs no change.
+   ===================================================================== */
+
+const SUGGEST_URL = "https://workeri18n.kanchitrust.workers.dev/api/suggest";
+
+const SCRIPTS = [
+  { code: "ta",   label: "தமிழ்",     name: "Tamil"      },
+  { code: "te",   label: "తెలుగు",    name: "Telugu"     },
+  { code: "kn",   label: "ಕನ್ನಡ",      name: "Kannada"    },
+  { code: "ml",   label: "മലയാളം",    name: "Malayalam"  },
+  { code: "deva", label: "देवनागरी",   name: "Devanagari" },
+  { code: "iast", label: "Roman",     name: "Roman"      }
+];
+
+const MIN_CHARS = 3;
+const DEBOUNCE  = 180;
+
+/* Same storage key api.js uses, so the choice carries across the site. */
+function activeScript() {
+  try { return (localStorage.getItem("script") || "ta").toLowerCase(); }
+  catch (e) { return "ta"; }
+}
+function setActiveScript(code) {
+  try {
+    if (code && code !== "ta") localStorage.setItem("script", code);
+    else localStorage.removeItem("script");
+  } catch (e) {}
+}
+
+/* ── script picker ──────────────────────────────────────────── */
+
+(function buildPicker() {
+  const bar = document.getElementById("sp-bar");
+  const cur = activeScript();
+
+  const lab = document.createElement("span");
+  lab.className = "sp-label";
+  lab.textContent = "Read in:";
+  bar.appendChild(lab);
+
+  for (const s of SCRIPTS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = s.label;
+    b.title = s.name;
+    if (s.code === cur) b.className = "on";
+    b.addEventListener("click", function () {
+      if (s.code === cur) return;
+      setActiveScript(s.code);
+      location.reload();
+    });
+    bar.appendChild(b);
+  }
+})();
+
+/* ── where a chosen suggestion goes ─────────────────────────── */
+
+/* Types whose destination follows straight from the id. Everything else
+   is passed to the existing voiceSearch resolver, which already knows
+   how to route an azhwar, a pathu, a thirumozhi and the rest. */
+const DIRECT_ROUTE = {
+  section:    function (r) { return { fn: "_selectSection",      args: [Number(r.eid), r.ta] }; },
+  divyadesam: function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
+  perumal:    function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
+  thayar:     function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
+  pasuram:    function (r) { return { fn: "_openGlobalPasuram",  args: [Number(r.eid)] }; }
+};
+
+const TYPE_LABEL = {
+  section:    "Section",
+  divyadesam: "Divyadesam",
+  perumal:    "Perumal",
+  thayar:     "Thayar",
+  pasuram:    "Pasuram",
+  pathu:      "Pathu",
+  thirumozhi: "Thirumozhi",
+  thaniyan:   "Thaniyan",
+  azhwar:     "Azhwar",
+  author:     "Author",
+  region:     "Region",
+  thousand:   "Thousand"
+};
+
+const TYPE_ICON = {
+  section:    "fa-book",
+  divyadesam: "fa-place-of-worship",
+  perumal:    "fa-place-of-worship",
+  thayar:     "fa-place-of-worship",
+  pasuram:    "fa-feather",
+  pathu:      "fa-layer-group",
+  thirumozhi: "fa-layer-group",
+  thaniyan:   "fa-scroll",
+  azhwar:     "fa-user",
+  author:     "fa-user",
+  region:     "fa-map",
+  thousand:   "fa-books"
+};
+
+function subLabel(r) {
+  if (r.kind === "line") return "Pasuram " + r.gno;
+  return TYPE_LABEL[r.etype] || "Result";
+}
+function iconFor(r) {
+  if (r.kind === "line") return "fa-feather";
+  return TYPE_ICON[r.etype] || "fa-magnifying-glass";
+}
+
+/* ── fetching ───────────────────────────────────────────────── */
+
+let inflight = null;
+let timer    = null;
+let rows     = [];
+let active   = -1;
+
+const input = document.getElementById("ss-input");
+const list  = document.getElementById("ss-list");
+const clear = document.getElementById("ss-clear");
+const hint  = document.getElementById("ss-hint");
+
+input.placeholder = "Search pasurams, sections, temples…";
+hint.textContent  = "Three letters is enough. You can type in the script above, or in English letters.";
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function showState(html) {
+  list.innerHTML = '<div class="ss-state">' + html + "</div>";
+  list.classList.add("show");
+}
+function hideList() {
+  list.classList.remove("show");
+  list.innerHTML = "";
+  rows = [];
+  active = -1;
+}
+
+function render() {
+  if (!rows.length) {
+    showState("Nothing found");
+    return;
+  }
+  let html = "";
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    html += '<div class="ss-item' + (i === active ? " active" : "") + '" role="option" data-i="' + i + '">' +
+              '<i class="ss-ico fa-solid ' + iconFor(r) + '"></i>' +
+              '<div class="ss-body">' +
+                '<div class="ss-main">' + esc(r.txt) + "</div>" +
+                '<div class="ss-sub">' + esc(subLabel(r)) + "</div>" +
+              "</div>" +
+            "</div>";
+  }
+  list.innerHTML = html;
+  list.classList.add("show");
+}
+
+async function run(q) {
+  if (inflight) { try { inflight.abort(); } catch (e) {} }
+  const ctrl = new AbortController();
+  inflight = ctrl;
+
+  const url = SUGGEST_URL +
+              "?q="      + encodeURIComponent(q) +
+              "&script=" + encodeURIComponent(activeScript()) +
+              "&limit=8";
+  try {
+    const res  = await fetch(url, { signal: ctrl.signal });
+    const data = await res.json();
+    if (ctrl !== inflight) return;            // a later keystroke won
+    rows   = (data && data.results) || [];
+    active = -1;
+    render();
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+    showState("Could not reach the search service");
+  }
+}
+
+function onType() {
+  const q = input.value.trim();
+  clear.classList.toggle("show", q.length > 0);
+
+  if (timer) clearTimeout(timer);
+  if (q.length < MIN_CHARS) { hideList(); return; }
+  timer = setTimeout(function () { run(q); }, DEBOUNCE);
+}
+
+/* ── choosing a result ──────────────────────────────────────── */
+
+function go(nav, label) {
+  try {
+    sessionStorage.setItem("voiceNav", JSON.stringify({
+      fn:    nav.fn,
+      args:  nav.args,
+      label: label || ""
+    }));
+  } catch (e) {}
+  window.location.href = "tree.html";
+}
+
+async function choose(i) {
+  const r = rows[i];
+  if (!r) return;
+
+  // A pasuram line goes straight to its verse.
+  if (r.kind === "line") { go({ fn: "_openGlobalPasuram", args: [Number(r.gno)] }, r.txt); return; }
+
+  const direct = DIRECT_ROUTE[r.etype];
+  if (direct) { go(direct(r), r.txt); return; }
+
+  // Everything else: let the resolver voice search already uses decide.
+  // Loaded only at this moment, so it costs nothing while typing.
+  showState("Opening…");
+  try {
+    const mod = await import("./js/voiceSearch.js?v=6");
+    const fn  = mod.resolveVoiceQueryExtended || mod.resolveVoiceQuery;
+    const out = await fn(r.ta || r.txt);
+    const best = Array.isArray(out) ? out[0] : out;
+    if (best && best.fn) { go({ fn: best.fn, args: best.args || [] }, r.txt); return; }
+  } catch (e) {}
+
+  showState("Could not open that one — tell Seechu which screen it should go to");
+}
+
+/* ── wiring ─────────────────────────────────────────────────── */
+
+input.addEventListener("input", onType);
+
+input.addEventListener("keydown", function (e) {
+  if (!list.classList.contains("show") || !rows.length) return;
+  if (e.key === "ArrowDown")      { e.preventDefault(); active = (active + 1) % rows.length; render(); }
+  else if (e.key === "ArrowUp")   { e.preventDefault(); active = (active - 1 + rows.length) % rows.length; render(); }
+  else if (e.key === "Enter")     { e.preventDefault(); choose(active >= 0 ? active : 0); }
+  else if (e.key === "Escape")    { hideList(); }
+});
+
+list.addEventListener("click", function (e) {
+  const item = e.target.closest(".ss-item");
+  if (!item) return;
+  choose(Number(item.getAttribute("data-i")));
+});
+
+clear.addEventListener("click", function () {
+  input.value = "";
+  clear.classList.remove("show");
+  hideList();
+  input.focus();
+});
+
+document.addEventListener("click", function (e) {
+  if (!e.target.closest(".ss-boxwrap")) hideList();
+});
+
+document.querySelectorAll(".ss-chip").forEach(function (c) {
+  c.addEventListener("click", function () {
+    input.value = c.getAttribute("data-q") || "";
+    clear.classList.add("show");
+    input.focus();
+    onType();
+  });
+});
+
+// Desktop lands with the cursor in the box; phones are left alone so the
+// keyboard does not jump up over the page the moment it opens.
+if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) input.focus();
+</script>
+</body>
+</html>
