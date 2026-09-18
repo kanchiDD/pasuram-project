@@ -261,6 +261,65 @@ window.runDemo = async function (transcript) {
 };
 
 // ═══════════════════════════════════════════════════════
+// SCRIPT PICKER
+// ═══════════════════════════════════════════════════════
+// voice.html is a standalone page and does not load scriptBanner.js (which
+// pulls in api.js). The picker is built here instead, in the module the page
+// already imports. Choosing a script only changes what is DISPLAYED — the
+// recogniser stays ta-IN, because the words being spoken are Tamil whatever
+// script they are read in.
+
+function injectScriptBanner() {
+  if (document.getElementById("script-banner")) return;
+  const LIST = [
+    { code: "ta",   label: "\u0ba4\u0bae\u0bbf\u0bb4\u0bcd",                     name: "Tamil" },
+    { code: "te",   label: "\u0c24\u0c46\u0c32\u0c41\u0c17\u0c41",              name: "Telugu" },
+    { code: "kn",   label: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1",                     name: "Kannada" },
+    { code: "ml",   label: "\u0d2e\u0d32\u0d2f\u0d3e\u0d33\u0d02",              name: "Malayalam" },
+    { code: "deva", label: "\u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940", name: "Devanagari" },
+    { code: "iast", label: "Roman",                                                  name: "Roman (IAST)" },
+  ];
+  const current = activeScript() || "ta";
+  const bar = document.createElement("div");
+  bar.id = "script-banner";
+  bar.style.cssText = "background:#fff8e6;border-bottom:1px solid #e8d8a0;padding:7px 10px;"
+    + "text-align:center;font-family:Arial,sans-serif;display:flex;align-items:center;"
+    + "justify-content:center;gap:6px;flex-wrap:wrap;";
+  const lbl = document.createElement("span");
+  lbl.textContent = "Read in:";
+  lbl.style.cssText = "font-size:12px;color:#8a7a5a;margin-right:2px";
+  bar.appendChild(lbl);
+  for (const s of LIST) {
+    const b = document.createElement("button");
+    b.textContent = s.label; b.title = s.name;
+    const on = s.code === current;
+    b.style.cssText = "border:1px solid " + (on ? "#2f7d32" : "#d8c48a")
+      + ";background:" + (on ? "#2f7d32" : "#fff")
+      + ";color:" + (on ? "#fff" : "#4a3728")
+      + ";border-radius:14px;padding:4px 12px;font-size:13px;cursor:pointer;font-weight:"
+      + (on ? "700" : "500") + ";";
+    b.addEventListener("click", () => {
+      if (s.code === current) return;
+      try {
+        if (s.code === "ta") localStorage.removeItem("script");
+        else localStorage.setItem("script", s.code);
+      } catch (e) {}
+      location.reload();
+    });
+    bar.appendChild(b);
+  }
+  const stage = document.getElementById("voice-stage");
+  if (stage && stage.parentNode) stage.parentNode.insertBefore(bar, stage);
+  else document.body.insertBefore(bar, document.body.firstChild);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", injectScriptBanner);
+} else {
+  injectScriptBanner();
+}
+
+// ═══════════════════════════════════════════════════════
 // MIC BUTTON STATE
 // ═══════════════════════════════════════════════════════
 
