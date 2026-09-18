@@ -193,9 +193,15 @@ export async function fetchEntitySearch() {
 // through this file; cdnaalayiram-api is called directly by a few renderers
 // (test_fullThousand.js fetches the anchor map from it), and without it in
 // this list the book index and section headings stayed Tamil.
-const OVERLAY_HOST = "overlay-worker.kanchitrust.workers.dev";
-const API_HOST     = "cdnaalayiram-api.kanchitrust.workers.dev";
-const I18N_HOST    = "workeri18n.kanchitrust.workers.dev";
+// Each production host and the duplicate that serves its ?script= traffic.
+// The recital worker is a SEPARATE worker with a separate duplicate, which is
+// why this is a map rather than one I18N_HOST: without its entry every
+// /recital/* call on every screen went to production and came back Tamil.
+const HOST_MAP = {
+  "overlay-worker.kanchitrust.workers.dev":   "workeri18n.kanchitrust.workers.dev",
+  "cdnaalayiram-api.kanchitrust.workers.dev": "workeri18n.kanchitrust.workers.dev",
+  "recitalworker.kanchitrust.workers.dev":    "recitalworkeri18n.kanchitrust.workers.dev",
+};
 const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
 
 export function getScript() {
@@ -217,12 +223,11 @@ if (typeof window !== "undefined" && !window.__scriptFetchPatched) {
       if (sc !== "ta") {
         const url = typeof input === "string" ? input
                   : (input && input.url) ? input.url : null;
+        // Longest host first, so recitalworker is not shadowed by a prefix.
         const srcHost = !url ? null
-                      : url.includes(OVERLAY_HOST) ? OVERLAY_HOST
-                      : url.includes(API_HOST)     ? API_HOST
-                      : null;
+                      : Object.keys(HOST_MAP).find(h => url.includes(h)) || null;
         if (srcHost && !url.includes("script=")) {
-          const joined = url.replace(srcHost, I18N_HOST)
+          const joined = url.replace(srcHost, HOST_MAP[srcHost])
                        + (url.includes("?") ? "&" : "?") + "script=" + sc;
           if (typeof input === "string") input = joined;
           else input = new Request(joined, input);
