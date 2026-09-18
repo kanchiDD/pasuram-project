@@ -168,7 +168,7 @@
     /* Madal sattrumurai grey-out (ghoshti recital): only the closing sattrumurai stretch */
     .r-madal-line.r-sattru-grey { opacity: 0.30; color:#9a9a9a; }
     .r-madal-line.r-sattru-grey-first::before {
-      content: "சாற்று பாசுரங்கள்"; display:block; text-align:center;
+      content: var(--r-sattru-label, "சாற்று பாசுரங்கள்"); display:block; text-align:center;
       font-size:12px; font-style:italic; color:#a98b4a; opacity:0.85; margin:6px 0 4px;
     }
     .r-global-no {
@@ -386,7 +386,103 @@
   <div id="footer"></div>
 
   <script>
-    const WORKER    = "https://recitalworker.kanchitrust.workers.dev";
+    // ── Script (language) plumbing ─────────────────────────────────────────
+    // Production recitalworker is never touched. Everything carrying a
+    // ?script= goes to the permanent duplicate, which is bound to the same D1.
+    // If your duplicate is named differently, this ONE line is what to change.
+    const WORKER_PROD = "https://recitalworker.kanchitrust.workers.dev";
+    const WORKER_I18N = "https://recitalworkeri18n.kanchitrust.workers.dev";
+
+    // The kootrirukkai / madal bodies come from the main API worker, whose
+    // duplicate is the same one the rest of the site already uses.
+    const API_PROD = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+    const API_I18N = "https://workeri18n.kanchitrust.workers.dev/api";
+
+    const R_SCRIPTS = ["te", "kn", "ml", "deva", "iast"];
+    function _activeScript() {
+      try {
+        const s = (localStorage.getItem("script") || "ta").toLowerCase();
+        return R_SCRIPTS.includes(s) ? s : "";
+      } catch (e) { return ""; }
+    }
+    // "" on the Tamil path — and every branch below keys off that, so Tamil
+    // sends the same URLs to the same hosts it always did.
+    const SCRIPT  = _activeScript();
+    const WORKER  = SCRIPT ? WORKER_I18N : WORKER_PROD;
+
+    // Appends &script= only when one is chosen.
+    function sq(url) {
+      return SCRIPT ? url + (url.includes("?") ? "&" : "?") + "script=" + SCRIPT : url;
+    }
+
+    // ── Content strings ───────────────────────────────────────────────────
+    // This page loads no modules of its own, so contentStrings.js cannot be
+    // imported here — the same overlay is fetched inline instead. On the Tamil
+    // path nothing is fetched and cs() always returns "", which is what makes
+    // every call site below fall back to the literal it used before.
+    let _CS = null;
+    async function ensureContentStrings() {
+      if (!SCRIPT || _CS) return;
+      try {
+        const m = await fetch(API_I18N + "/ui-text?script=" + SCRIPT).then(r => r.json());
+        _CS = (m && typeof m === "object") ? m : null;
+      } catch (e) { _CS = null; }   // fall back to Tamil, never break the page
+    }
+    function cs(key) { return (_CS && _CS[key]) || ""; }
+
+    // Ceremonial section title. Keyed on section_id — never on the Tamil
+    // name, which is not Tamil any more once a script is on.
+    function secTitle(sectionId, sname) {
+      return cs("sec.title." + sectionId) || SECTION_HEADER_MAP[sname] || sname || "";
+    }
+
+    // Slim script picker, same look as the banner on the tree. Inline rather
+    // than imported: scriptBanner.js pulls in api.js, whose fetch interceptor
+    // would then start rewriting this page's requests behind our back.
+    function injectScriptBanner() {
+      if (document.getElementById("script-banner")) return;
+      const LIST = [
+        { code: "ta",   label: "தமிழ்",   name: "Tamil"        },
+        { code: "te",   label: "తెలుగు",   name: "Telugu"       },
+        { code: "kn",   label: "ಕನ್ನಡ",    name: "Kannada"      },
+        { code: "ml",   label: "മലയാളം",  name: "Malayalam"    },
+        { code: "deva", label: "देवनागरी", name: "Devanagari"   },
+        { code: "iast", label: "Roman",  name: "Roman (IAST)" },
+      ];
+      const current = SCRIPT || "ta";
+      const bar = document.createElement("div");
+      bar.id = "script-banner";
+      bar.style.cssText = "background:#fff8e6;border-bottom:1px solid #e8d8a0;padding:7px 10px;"
+        + "text-align:center;font-family:Arial,sans-serif;display:flex;align-items:center;"
+        + "justify-content:center;gap:6px;flex-wrap:wrap;";
+      const lbl = document.createElement("span");
+      lbl.textContent = "Read in:";
+      lbl.style.cssText = "font-size:12px;color:#8a7a5a;margin-right:2px";
+      bar.appendChild(lbl);
+      for (const s of LIST) {
+        const b = document.createElement("button");
+        b.textContent = s.label; b.title = s.name;
+        const on = s.code === current;
+        b.style.cssText = "border:1px solid " + (on ? "#2f7d32" : "#d8c48a")
+          + ";background:" + (on ? "#2f7d32" : "#fff")
+          + ";color:" + (on ? "#fff" : "#4a3728")
+          + ";border-radius:14px;padding:4px 12px;font-size:13px;cursor:pointer;font-weight:"
+          + (on ? "700" : "500") + ";";
+        b.addEventListener("click", () => {
+          if (s.code === current) return;
+          try {
+            if (s.code === "ta") localStorage.removeItem("script");
+            else localStorage.setItem("script", s.code);
+          } catch (e) {}
+          location.reload();
+        });
+        bar.appendChild(b);
+      }
+      const stage = document.getElementById("recital-stage");
+      if (stage && stage.parentNode) stage.parentNode.insertBefore(bar, stage);
+      else document.body.insertBefore(bar, document.body.firstChild);
+    }
+
     const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
     // ── Anadhyayana Kalam (viewer-side enforcement) ──
@@ -583,7 +679,7 @@
       // with a subtle one-time note above a consecutive greyed pair.
       const _greyed = _greySet.has(Number(p.global_no)) && Number(p.section_id) !== 10;
       if (_greyed) {
-        if (!_greyRun.active) html += `<div class="r-sattru-note">சாற்று பாசுரங்கள்</div>`;
+        if (!_greyRun.active) html += `<div class="r-sattru-note">${cs("rec.sattru.note") || "சாற்று பாசுரங்கள்"}</div>`;
         _greyRun.active = true;
       } else {
         _greyRun.active = false;
@@ -618,7 +714,7 @@
     }
 
     // ── Build full page ──
-    const API_CDN = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+    const API_CDN = SCRIPT ? API_I18N : API_PROD;
 
     // Special sections need prosody scope from blocks — stored here after buildAll
     let _specialProsodyScope  = [];
@@ -631,26 +727,26 @@
       for (const el of document.querySelectorAll("[data-kootri]")) {
         const sectionId = el.dataset.kootri;
         try {
-          const data = await fetch(`${API_CDN}/kootrirukkai?section_id=${sectionId}`).then(r => r.json());
+          const data = await fetch(sq(`${API_CDN}/kootrirukkai?section_id=${sectionId}`)).then(r => r.json());
           const blockMeta = JSON.parse(el.dataset.block || "{}");
           el.outerHTML = renderKootrirukkai(data, blockMeta);
-        } catch(e) { el.textContent = "Error loading கூற்றிருக்கை"; }
+        } catch(e) { el.textContent = "Error loading Kootrirukkai"; }
       }
       // Madal (sections 22/23)
       for (const el of document.querySelectorAll("[data-madal]")) {
         const sectionId = Number(el.dataset.madal);
         const isRettai  = el.dataset.rettai === "1";
         try {
-          const data = await fetch(`${API_CDN}/madal?section_id=${sectionId}`).then(r => r.json());
+          const data = await fetch(sq(`${API_CDN}/madal?section_id=${sectionId}`)).then(r => r.json());
           const blockMeta = JSON.parse(el.dataset.block || "{}");
           el.outerHTML = renderMadal(data, sectionId, isRettai, blockMeta);
-        } catch(e) { el.textContent = "Error loading திருமடல்"; }
+        } catch(e) { el.textContent = "Error loading Thirumadal"; }
       }
     }
 
     function renderKootrirukkai(data, block) {
       if (!data?.lines?.length) return "<div>No data</div>";
-      const heading = "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை";
+      const heading = secTitle(21, "திருவெழுகூற்றிருக்கை");
       const closing = block?.section_closing || "";
       let html = `<div class="r-madal-outer">
         <div class="r-madal-title">${heading}</div>
@@ -673,9 +769,8 @@
       const rules      = data.rules || [];
       const sectionGno = sectionId === 22 ? 2673 : 2674;
       const maxCouplet = sectionId === 23 ? 148 : 77;
-      const heading    = sectionId === 22
-        ? "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்"
-        : "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்";
+      const heading    = secTitle(sectionId,
+        sectionId === 22 ? "சிறியதிருமடல்" : "பெரியதிருமடல்");
       const closing = block?.section_closing || "";
 
       function getBlockRule(c, l) {
@@ -850,16 +945,18 @@
       }
 
       if (data.muktaka_lines && data.muktaka_lines.length) {
-        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">முக்தக மங்களம்</div>';
+        const mkHead = cs("gsat.mangalam.muktaka") || "முக்தக மங்களம்";
+        html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mkHead) + '</div>';
         html += _renderMangalamLines(data.muktaka_lines);
-        html += '<div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">முக்தக மங்களம் முற்றிற்று</div></div>';
+        html += '<div style="text-align:center;font-size:12px;color:#7a5a20;padding:8px 0;font-style:italic">' + escH(mkHead + " " + (cs("common.muttrittru") || "முற்றிற்று")) + '</div></div>';
       }
       // ── தேஶிக மங்களம் + ஆதிவண்ஶடகோப மங்களம் ──
       // Same markup/fonts as Muktaka; ruled order: muktaka → desika → adivan
+      const _mutt = cs("common.muttrittru") || "முற்றிற்று";
       const _mangalams = [
-        [data.desika_lines, "ஸ்ரீதேஶிக மங்களம்", "ஸ்ரீதேஶிக மங்களம் முற்றிற்று"],
-        [data.adivan_lines, "ஆதிவண்ஶடகோப மங்களம்", "ஆதிவண்ஶடகோப மங்களம் முற்றிற்று"],
-      ];
+        [data.desika_lines, cs("gsat.mangalam.desika") || "ஸ்ரீதேஶிக மங்களம்"],
+        [data.adivan_lines, cs("gsat.mangalam.adivan") || "ஆதிவண்ஶடகோப மங்களம்"],
+      ].map(([l, h]) => [l, h, h + " " + _mutt]);
       for (const [mLines, mHead, mClose] of _mangalams) {
         if (!mLines || !mLines.length) continue;
         html += '<div class="gsat-section-r"><div class="gsat-section-head-r" style="text-align:center">' + escH(mHead) + '</div>';
@@ -926,11 +1023,11 @@
       let blockIdx = 0;
       for (const block of blocks) {
         if (block.block_type === "kootrirukkai") {
-          indexEntries.push({ type: "simple", label: "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த திருவெழுகூற்றிருக்கை", anchorId: `rec-block-${blockIdx}` });
+          indexEntries.push({ type: "simple", label: secTitle(21, "திருவெழுகூற்றிருக்கை"), anchorId: `rec-block-${blockIdx}` });
           blockIdx++; continue;
         }
         if (block.block_type === "madal") {
-          const mLabel = block.section_id === 22 ? "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த சிறியதிருமடல்" : "ஸ்ரீ திருமங்கையாழ்வார்‌ அருளிச்செய்த பெரியதிருமடல்";
+          const mLabel = secTitle(block.section_id, block.section_id === 22 ? "சிறியதிருமடல்" : "பெரியதிருமடல்");
           const mSuffix = block.is_rettai ? " (Rettai)" : "";
           indexEntries.push({ type: "simple", label: mLabel + mSuffix, anchorId: `rec-block-${blockIdx}` });
           blockIdx++; continue;
@@ -944,7 +1041,9 @@
         const first    = pasurams[0];
 
         if (etype === "koil") {
-          const label = eid === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+          const label = eid === 1
+            ? (cs("nnc.koil.thirumozhi")    || "கோயில் திருமொழி")
+            : (cs("nnc.koil.thiruvaimozhi") || "கோயில் திருவாய்மொழி");
           // Hardcoded koil children — guaranteed complete list
           const KOIL_THIRU_CHILDREN = [
             { label: "முதற்பத்து — முதல் திருமொழி — வாடினேன்",                  pathuId: 44  },
@@ -990,10 +1089,10 @@
           }
           // Show ALL hardcoded children; anchor to rendered content if available,
           // else anchor to section box top (anchorId)
-          const children = koilList.map(c => ({
-            label:  c.label,
-            anchor: pathuFirstGno.has(c.pathuId)
-              ? `thiru-gno-${pathuFirstGno.get(c.pathuId)}`
+          const children = koilList.map(k => ({
+            label:  cs("koil.label." + k.pathuId) || k.label,
+            anchor: pathuFirstGno.has(k.pathuId)
+              ? `thiru-gno-${pathuFirstGno.get(k.pathuId)}`
               : anchorId
           }));
           indexEntries.push({ type: "group", label, anchorId, children });
@@ -1014,10 +1113,11 @@
               secChildren.push({ label: childLabel, anchor: `thiru-gno-${p.global_no}` });
             }
           }
+          const secLabel = secTitle(block.section_id, sname);
           if (secChildren.length > 1)
-            indexEntries.push({ type: "group", label: SECTION_HEADER_MAP[sname] || sname, anchorId, children: secChildren });
+            indexEntries.push({ type: "group", label: secLabel, anchorId, children: secChildren });
           else
-            indexEntries.push({ type: "simple", label: SECTION_HEADER_MAP[sname] || sname, anchorId });
+            indexEntries.push({ type: "simple", label: secLabel, anchorId });
         } else if (etype === "pathu") {
           const isRettai  = block.is_rettai;
           const pathuName = first?.pathu_name || "";
@@ -1059,7 +1159,7 @@
           const thiruNo   = first?.thirumozhi_no ? `${first.thirumozhi_no}. ` : "";
           let   childLabel = `${thiruNo}${h}`;
           if (isRettai && childLabel) childLabel += " (Rettai)";
-          const parentLabel = SECTION_HEADER_MAP[sname] || sname;
+          const parentLabel = secTitle(block.section_id, sname);
           // Group consecutive thirumozhi blocks from same section under one parent
           const lastEntry = indexEntries[indexEntries.length - 1];
           if (lastEntry && lastEntry.type === "group" && lastEntry.label === parentLabel && lastEntry._isThirumozhi) {
@@ -1133,7 +1233,7 @@
           const pasurams     = groupPasurams(block.pasurams);
           const sid          = pasurams[0]?.section_id;
 
-          const heading      = SECTION_HEADER_MAP[sname] || sname;
+          const heading      = secTitle(sid || block.section_id, sname);
 
           const first = pasurams[0];
 
@@ -1250,7 +1350,7 @@
             contentHTML += `<div class="r-section-close">${sclosing}</div>`;
           // முற்றிற்று — only for full section
           if (isFullSection && sname)
-            contentHTML += `<div class="r-section-final">${heading} முற்றிற்று</div>`;
+            contentHTML += `<div class="r-section-final">${heading} ${cs("common.muttrittru") || "முற்றிற்று"}</div>`;
 
           contentHTML += `</div></div>`; // close body + section-box
 
@@ -1260,7 +1360,7 @@
             <div class="r-special-loading"
               data-kootri="${block.section_id}"
               data-block='${kBlockData.replace(/'/g,"&#39;")}'>
-              Loading திருவெழுகூற்றிருக்கை...
+              Loading Kootrirukkai...
             </div>
           </div>`;
 
@@ -1271,14 +1371,14 @@
               data-madal="${block.section_id}"
               data-rettai="${block.is_rettai || 0}"
               data-block='${mBlockData.replace(/'/g,"&#39;")}'>
-              Loading ${block.section_id === 22 ? "சிறியதிருமடல்" : "பெரியதிருமடல்"}...
+              Loading Thirumadal...
             </div>
           </div>`;
 
         } else if (block.block_type === "sattrumurai_heading") {
           contentHTML += `<div class="r-sattrumurai-heading" id="${anchorId}">
             <div style="background:#7a4d00;color:#fef0c0;text-align:center;font-size:15px;font-weight:700;padding:14px;margin:10px 0;border-radius:8px">
-              🙏 ${block.section_name || "சாற்றுமுறை பாசுரங்கள்"}
+              🙏 ${block.section_name || cs("rec.sattru.heading") || "சாற்றுமுறை பாசுரங்கள்"}
             </div>
           </div>`;
           blockIdx++; continue;
@@ -1287,16 +1387,16 @@
           contentHTML += `<div class="r-section-box" id="${anchorId}">
             <div class="r-section-box-header">${block.label || block.text_type}</div>
             <div class="r-section-box-body" style="padding:12px 14px;color:#7a5a20;font-style:italic">
-              (${block.label || block.text_type} — உரை இங்கே சேர்க்கப்படும்)
+              (${block.label || block.text_type} — text to be added)
             </div>
           </div>`;
           blockIdx++; continue;
 
         } else if (block.block_type === "vazhi") {
           contentHTML += `<div class="r-section-box" id="${anchorId}">
-            <div class="r-section-box-header">வாழி திருநாமம்</div>
+            <div class="r-section-box-header">${cs("sat.vazhi.heading") || "வாழி திருநாமம்"}</div>
             <div class="r-section-box-body" style="padding:12px 14px;color:#7a5a20">
-              ${(block.vazhi_ids || []).map(id => `<div>வாழி ${id}</div>`).join("")}
+              ${(block.vazhi_ids || []).map(id => `<div>${cs("vazhi.name." + id) || ("வாழி " + id)}</div>`).join("")}
             </div>
           </div>`;
           blockIdx++; continue;
@@ -1314,6 +1414,14 @@
 
     // ── Main ──
     async function init() {
+      injectScriptBanner();
+      // Nothing that calls cs() may run before this resolves.
+      await ensureContentStrings();
+      const _satLabel = cs("rec.sattru.note");
+      if (_satLabel) {
+        document.documentElement.style.setProperty(
+          "--r-sattru-label", JSON.stringify(_satLabel));
+      }
       const mobile    = localStorage.getItem("mobile");
       const stage     = document.getElementById("recital-stage");
       const today     = new Date().getDay();
@@ -1360,7 +1468,7 @@
         if (isGhoshtiView) {
           planId = urlPlanId;
         } else {
-          const planRes  = await fetch(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${today}`);
+          const planRes  = await fetch(sq(`${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${today}`));
           const planData = await planRes.json();
           if (!planData.plan || !planData.items?.length) {
             stage.innerHTML = `
@@ -1375,7 +1483,7 @@
           planId = planData.plan.plan_id;
         }
 
-        const renderRes  = await fetch(`${WORKER}/recital/render?plan_id=${planId}`);
+        const renderRes  = await fetch(sq(`${WORKER}/recital/render?plan_id=${planId}`));
         const renderData = await renderRes.json();
         if (renderData.error) throw new Error(renderData.error);
 
@@ -1407,7 +1515,7 @@
         let _satData = null;
         if (urlGhoshtiId) {
           try {
-            const gsRes = await fetch(`${WORKER}/recital/ghoshti?id=${urlGhoshtiId}`, { cache: "no-store" });
+            const gsRes = await fetch(sq(`${WORKER}/recital/ghoshti?id=${urlGhoshtiId}`), { cache: "no-store" });
             const gsData = await gsRes.json();
             if (gsData && gsData.sattrumurai_data) _satData = gsData.sattrumurai_data;
           } catch(e) {}
