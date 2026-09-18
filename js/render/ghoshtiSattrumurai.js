@@ -303,6 +303,10 @@ let gsatState = {
   fixedTextLines: {},
   selectedVaazhis: new Set(),
   vazhiLines: {},
+  // vazhi_id -> Set of vazhi_group numbers to recite. A vazhi with no
+  // entry here recites every group it has, so nothing changes for the
+  // 34 vazhis that only have one.
+  vazhiGroupSel: {},
   allVaazhis: [],
   fixedOrder: [2, 1],
   ana: { active: false, margazhi: false },  // Anadhyayana state for this ghoshti's date
@@ -331,6 +335,7 @@ export async function renderGhoshtiSattrumurai(container, ghoshtiId, ghoshtiMeta
   }
   gsatState.fixedTextLines = {};
   gsatState.vazhiLines = {};
+  gsatState.vazhiGroupSel = {};
   // Fixed saatru order by segment (fixed_id 2=iyal, 1=Thenkalai pothu, 5=Vadakalai pothu).
   // Iyal saatru is recited only in Thenkalai (and Both); Vadakalai/Madam omit it.
   gsatState.fixedOrder = gsatState.segment === "T"  ? [2, 1]
@@ -862,6 +867,52 @@ function _vazhiAllowedBySegment(v) {
   return _vazhiIsAndal(v) || _vazhiIsDesikaNaalpaattu(v);   // V or VM
 }
 
+// ── Vazhi groups ──────────────────────────────────────────────────────────
+// A single vazhi_id can hold several vazhi thirunamam, separated by
+// vazhi_group in vazhi_thirunamam_line_master — Nammazhwar has 3,
+// Ramanuja 4, Nampillai and Thirumangai Azhwar 2 each. Only some are
+// recited on a given occasion, so each one gets its own checkbox.
+function _vazhiGroups(vazhiId) {
+  const d = gsatState.vazhiLines[vazhiId];
+  if (!d || !Array.isArray(d.lines)) return [];
+  return [...new Set(d.lines.map(l => Number(l.vazhi_group) || 1))]
+           .sort((a, b) => a - b);
+}
+
+// No entry means every group is on — so a vazhi behaves exactly as it
+// did before this feature until the host actually deselects something.
+function _vazhiGroupOn(vazhiId, g) {
+  const sel = gsatState.vazhiGroupSel[vazhiId];
+  return !sel || sel.has(g);
+}
+
+// The lines actually recited for one vazhi, in line order.
+function _vazhiSelectedLines(vazhiId) {
+  const d = gsatState.vazhiLines[vazhiId];
+  if (!d || !Array.isArray(d.lines)) return [];
+  const sel = gsatState.vazhiGroupSel[vazhiId];
+  if (!sel) return d.lines;
+  return d.lines.filter(l => sel.has(Number(l.vazhi_group) || 1));
+}
+
+window.gsatToggleVazhiGroup = function(vazhiId, g, checked) {
+  const groups = _vazhiGroups(vazhiId);
+  if (!gsatState.vazhiGroupSel[vazhiId]) {
+    gsatState.vazhiGroupSel[vazhiId] = new Set(groups);
+  }
+  const sel = gsatState.vazhiGroupSel[vazhiId];
+  if (checked) sel.add(Number(g)); else sel.delete(Number(g));
+
+  // Clearing the last group means the vazhi is not being recited at all,
+  // so drop the vazhi itself rather than leaving an empty block behind.
+  if (!sel.size) {
+    gsatState.selectedVaazhis.delete(vazhiId);
+    delete gsatState.vazhiGroupSel[vazhiId];
+  }
+  const container = document.querySelector(".gsat-wrap")?.parentElement;
+  if (container) render(container);
+};
+
 function renderVazhiSection() {
   if (!gsatState.allVaazhis.length) {
     return `<div class="gsat-section"><div class="gsat-section-head">\uD83C\uDF1F \u0bb5\u0bbe\u0bb4\u0bbf \u0ba4\u0bbf\u0bb0\u0bc1\u0ba8\u0bbe\u0bae\u0bae\u0bcd</div><div class="gsat-empty-note">\u0bb5\u0bbe\u0bb4\u0bbf \u0baa\u0b9f\u0bcd\u0b9f\u0bbf\u0baf\u0bb2\u0bcd \u0b8f\u0bb1\u0bcd\u0bb1 \u0bae\u0bc1\u0b9f\u0bbf\u0baf\u0bb5\u0bbf\u0bb2\u0bcd\u0bb2\u0bc8</div></div>`;
@@ -897,13 +948,30 @@ function renderVazhiSection() {
       // Group lines by vazhi_group, add blank line between groups
       const groups = {};
       vData.lines.forEach(l => {
-        const g = l.vazhi_group || 1;
+        const g = Number(l.vazhi_group) || 1;
         if (!groups[g]) groups[g] = [];
         groups[g].push(l);
       });
+      const gKeys = Object.keys(groups).sort((a,b) => Number(a)-Number(b));
+      // More than one vazhi thirunamam under this author — each gets its
+      // own checkbox so only the ones being recited are saved. With a
+      // single group there is nothing to choose, so no checkbox is shown.
+      const multi = gKeys.length > 1;
       linesHtml = `<div style="width:100%;padding:6px 0 0 27px;display:flex;flex-direction:column;gap:6px">`;
-      Object.keys(groups).sort((a,b) => Number(a)-Number(b)).forEach(g => {
-        linesHtml += `<div style="border:1px solid #e0c98a;border-radius:8px;padding:8px 12px;background:#fffdf6;font-size:14px;color:#4a2c00;line-height:1.9">`
+      gKeys.forEach((gk, gi) => {
+        const g   = Number(gk);
+        const on  = !multi || _vazhiGroupOn(v.vazhi_id, g);
+        const box = multi
+          ? `<label style="display:flex;align-items:center;gap:7px;margin-bottom:5px;cursor:pointer">
+               <input type="checkbox" ${on ? "checked" : ""}
+                 onchange="gsatToggleVazhiGroup(${v.vazhi_id},${g},this.checked)">
+               <span style="font-size:11px;font-weight:700;color:#b38b2e">${gi + 1}</span>
+             </label>`
+          : "";
+        linesHtml += `<div style="border:1px solid #e0c98a;border-radius:8px;padding:8px 12px;`
+          + `background:${on ? "#fffdf6" : "#f6f4ef"};font-size:14px;`
+          + `color:${on ? "#4a2c00" : "#a89c86"};line-height:1.9">`
+          + box
           + groups[g].map(l => `<div>${escHtml(l.line_text)}</div>`).join("")
           + `</div>`;
       });
@@ -1247,7 +1315,11 @@ window.gsatSave = async function() {
     if (!gsatState.selectedVaazhis.has(v.vazhi_id)) return;
     const vData = gsatState.vazhiLines[v.vazhi_id];
     if (!vData) return;
-    vazhi_blocks.push({ vazhi_id: v.vazhi_id, author_name: vData.author_name, lines: vData.lines });
+    // Only the groups the host kept ticked. Same block shape as before —
+    // just fewer lines — so the worker and saved ghoshtis are unaffected.
+    const lines = _vazhiSelectedLines(v.vazhi_id);
+    if (!lines.length) return;
+    vazhi_blocks.push({ vazhi_id: v.vazhi_id, author_name: vData.author_name, lines });
   });
 
   // Fixed_id 4 (surnikai) — after vazhi_id 37
