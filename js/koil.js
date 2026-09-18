@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import { t as uiText } from "./utils/uiStrings.js";
+import { c, ensureContentStrings } from "./utils/contentStrings.js";
 import { getKoilThirumozhi, getKoilThiruvaimozhi } from "./utils/sectUtils.js";
 import { fetchThaniyan, fetchPasuram } from "./api.js";
 import { render } from "./render/layout.js";
@@ -10,6 +11,9 @@ import { playUrls, sectionAudioUrls, globalThaniyanUrls } from "./render/globalA
 let koilRendered = false; // 🔒 prevents loop
 
 export async function renderKoil(type) {
+
+  // the converted overlay must be loaded before any c() call below
+  await ensureContentStrings();
 
   koilRendered = false;
 
@@ -25,11 +29,12 @@ export async function renderKoil(type) {
   const sectionId = type === "THIRUMOZHI" ? 11 : 26;
   state.selectedSectionId = sectionId;
 
-  // ✅ TITLE
+  // ✅ TITLE — shares the keys Nithyanusandhanam already uses, so the two
+  // views can never drift apart. The Tamil stays the built-in fallback.
   state.koilTitle =
     sectionId === 11
-      ? "கோயில் திருமொழி"
-      : "கோயில் திருவாய்மொழி";
+      ? (c("nnc.koil.thirumozhi")    || "கோயில் திருமொழி")
+      : (c("nnc.koil.thiruvaimozhi") || "கோயில் திருவாய்மொழி");
 
   state.isKoilMode = true;
   // 🔥 LOAD DATA
@@ -68,10 +73,9 @@ state.level = "PASURAM";
 
 const { thaniyanHtml, bodyHtml } = renderPasuramSplit();
 
-const closing =
-  state.selectedSectionId === 11
-    ? "கோயில் திருமொழி முற்றிற்று"
-    : "கோயில் திருவாய்மொழி முற்றிற்று";
+// Built from the (already converted) title, so it follows the script
+// without needing a closing string of its own.
+const closing = `${state.koilTitle} ${c("common.muttrittru") || "முற்றிற்று"}`;
 
 // Show site floating nav (from css.js)
 document.body.classList.add("show-nav");
@@ -105,7 +109,9 @@ document.getElementById("app").innerHTML = `
        NOTE: .ga-numline must stay visible — it wraps the pasuram NUMBER
        (the play button sits inside it), so hiding it would blank out the
        global_no of every pasuram. */
+    #koil-view .ga-wrap,
     #koil-view .ga-btn,
+    #koil-view .ga-sub,
     #koil-view .ga-center { display:none !important; }
   </style>
 
