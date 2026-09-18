@@ -135,7 +135,9 @@ function injectCSS() {
        .ga-numline must stay visible: it wraps the pasuram NUMBER (the play
        button merely sits inside it), so hiding it would blank out every
        global_no on the page. */
+    .fstar-page .ga-wrap,
     .fstar-page .ga-btn,
+    .fstar-page .ga-sub,
     .fstar-page .ga-center { display:none !important; }
   `;
   document.head.appendChild(s);
