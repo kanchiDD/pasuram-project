@@ -31,7 +31,7 @@ const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
 // ── 27 Stars in traditional order ────────────────────────────
 export const STARS = [
   "அஸ்வினி","பரணி","கார்த்திகை","ரோகினி","மிருகசீர்ஷம்",
-  "திருவாதிரை","புனர்பூசம்","புனர்வஸு","பூசம்","ஆயில்யம்",
+  "திருவாதிரை","புனர்பூசம்","பூசம்","ஆயில்யம்",
   "மகம்","பூரம்","உத்திரம்","ஹஸ்தம்","சித்திரை",
   "ஸ்வாதி","விசாகம்","அனுஷம்","கேட்டை","மூலம்",
   "பூராடம்","உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்",
@@ -44,7 +44,18 @@ export const STARS = [
 // label the reader sees is converted, keyed by the star's position (1-28).
 export function starLabel(tamilName) {
   const i = STARS.indexOf(tamilName);
-  return (i >= 0 && c("star.name." + (i + 1))) || tamilName || "";
+  if (i < 0) return tamilName || "";
+  const n = i + 1;
+  let sc = "";
+  try { sc = (localStorage.getItem("script") || "").toLowerCase(); } catch (e) {}
+  // Nakshatra names are not the same word in every language — Malayalam in
+  // particular uses its own set, not a transliteration of the Tamil. So look
+  // for a native name first (star.name.<script>.<n>); fall back to the
+  // transliterated Tamil (star.name.<n>) when no native name is on file,
+  // and to the Tamil itself on the Tamil path.
+  return (sc && sc !== "ta" && c("star.name." + sc + "." + n))
+      || c("star.name." + n)
+      || tamilName;
 }
 
 function starPageTitle() {
