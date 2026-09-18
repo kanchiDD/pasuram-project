@@ -21,7 +21,7 @@ import { t as uiText } from "../utils/uiStrings.js";
 import { c, ensureContentStrings } from "../utils/contentStrings.js";
 import { fetchThaniyan, fetchPasuram } from "../api.js";
 import { renderPasuram }               from "./pasuram_full.js";
-import { sectionPlayAll, sectionAudioUrls, playUrls, globalThaniyanUrls }
+import { sectionAudioUrls, playUrls, globalThaniyanUrls }
                                        from "./globalAudio.js";
 import { getThaniyanHTML }             from "../thaniyanController.js";
 import { renderMadal, renderKootrirukkai } from "./special.js";
@@ -126,6 +126,17 @@ function injectCSS() {
       display:flex;align-items:center;justify-content:center;
       box-shadow:0 2px 6px rgba(0,0,0,.15);
     }
+
+    /* ── Whole-star Play All only ─────────────────────────────────────
+       pasuram_full.js and getThaniyanHTML() inject their own per-pasuram
+       and per-thaniyan play buttons. This view plays the whole star as one
+       queue, so those are hidden — scoped to .fstar-page so every other
+       view keeps its individual buttons.
+       .ga-numline must stay visible: it wraps the pasuram NUMBER (the play
+       button merely sits inside it), so hiding it would blank out every
+       global_no on the page. */
+    .fstar-page .ga-btn,
+    .fstar-page .ga-center { display:none !important; }
   `;
   document.head.appendChild(s);
 }
@@ -329,11 +340,8 @@ export async function renderFullStarPasuram(starName) {
       }
     }
 
-    // Section Play All (audio-only, data-driven) — uses the section's
-    // thaniyan + the pasurams actually shown for this star.
-    html += sectionPlayAll(secId, state.thaniyanData, state.pasuramData);
-    // Accumulate this section's audio (thaniyan + the pasurams actually
-    // shown for this star) into the whole-star queue.
+    // No per-section Play All button — this view is whole-star only.
+    // The section's audio still goes into the queue; only the button is gone.
     starQueue.push(...sectionAudioUrls(secId, state.thaniyanData, state.pasuramData));
 
 
