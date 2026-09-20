@@ -45,13 +45,15 @@
                    border: 1.5px solid #C9A84C; border-radius: 26px; padding: 11px 16px;
                    box-shadow: 0 2px 10px rgba(74,55,40,0.08); transition: box-shadow 0.15s, border-color 0.15s; }
     .ss-inputrow:focus-within { border-color: #4A3728; box-shadow: 0 4px 18px rgba(74,55,40,0.16); }
-    .ss-inputrow i { color: #B09070; font-size: 15px; flex-shrink: 0; }
+    .ss-inputrow > i { color: #B09070; font-size: 15px; flex-shrink: 0; }
     #ss-input { flex: 1; border: none; outline: none; background: transparent;
                 font-size: 17px; color: #3B2410; font-family: inherit; min-width: 0; }
     #ss-input::placeholder { color: #C0A88A; font-size: 15px; }
     #ss-clear { border: none; background: transparent; color: #B09070; font-size: 17px;
                 cursor: pointer; display: none; padding: 0 2px; line-height: 1; }
     #ss-clear.show { display: block; }
+    #ss-spin { color: #C9A84C; font-size: 13px; display: none; }
+    #ss-spin.show { display: block; }
 
     /* ── suggestions ── */
     #ss-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: #FFFDF7;
@@ -66,13 +68,14 @@
     .ss-ico { color: #B09070; font-size: 13px; margin-top: 3px; width: 15px; text-align: center; flex-shrink: 0; }
     .ss-body { min-width: 0; flex: 1; }
     .ss-main { font-size: 15px; color: #3B2410; line-height: 1.35; word-break: break-word; }
-    .ss-sub  { font-size: 11.5px; color: #9A7A55; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ss-sub  { font-size: 11.5px; color: #9A7A55; margin-top: 2px; }
+    .ss-sep  { padding: 6px 15px; background: #FBF3E2; font-size: 10.5px; color: #B09070;
+               text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid #F0E3C8; }
 
     .ss-state { padding: 13px 15px; font-size: 13px; color: #9A7A55; text-align: center; }
+    .ss-hint  { font-size: 12.5px; color: #B09070; text-align: center; max-width: 480px; line-height: 1.6; }
 
-    .ss-hint { font-size: 12.5px; color: #B09070; text-align: center; max-width: 480px; line-height: 1.6; }
-
-    .ss-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 480px; }
+    .ss-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 520px; }
     .ss-chips-label { width: 100%; text-align: center; font-size: 11px; color: #B09070;
                       text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1px; }
     .ss-chip { font-size: 12.5px; padding: 6px 14px; border-radius: 20px; border: 1px solid #D4B896;
@@ -103,6 +106,7 @@
         <input id="ss-input" type="search" autocomplete="off" autocorrect="off"
                autocapitalize="off" spellcheck="false"
                aria-label="Search" aria-autocomplete="list" aria-controls="ss-list" />
+        <i id="ss-spin" class="fa-solid fa-circle-notch fa-spin"></i>
         <button id="ss-clear" aria-label="Clear">&times;</button>
       </div>
       <div id="ss-list" role="listbox"></div>
@@ -114,6 +118,7 @@
       <div class="ss-chips-label">Try</div>
       <div class="ss-chip" data-q="thiruppavai">thiruppavai</div>
       <div class="ss-chip" data-q="nammazhwar">nammazhwar</div>
+      <div class="ss-chip" data-q="periyazhwar thirumozhi mudhal pathu">periyazhwar thirumozhi mudhal pathu</div>
       <div class="ss-chip" data-q="srirangam">srirangam</div>
       <div class="ss-chip" data-q="koil">koil</div>
     </div>
@@ -125,11 +130,22 @@
 /* =====================================================================
    search.html — predictive search
    ---------------------------------------------------------------------
-   Talks only to the i18n duplicate worker, which is the one carrying
-   /api/suggest. Production is never called from this page.
+   Two sources run on every keystroke and are merged:
 
-   Tapping a result hands off through the same sessionStorage "voiceNav"
-   contract that voice search already uses, so tree.html needs no change.
+     1. voiceSearch.js — the resolver voice search already uses. It
+        understands intent: ordinals ("mudhal pathu", "7th thirumozhi"),
+        an azhwar expanding to their works, thousands, the special
+        destinations, a bare pasuram number. Its results are already
+        destinations, so they need no routing.
+
+     2. /api/suggest — the FTS index over names, aliases and all 34,000
+        pasuram lines in six scripts. This finds text; it cannot reason
+        about phrases, which is why it alone could not answer
+        "periyazhwar thirumozhi mudhal pathu".
+
+   Destinations come first, matched text after. Tapping either hands off
+   through the same sessionStorage "voiceNav" contract voice already
+   uses, so tree.html needs no change.
    ===================================================================== */
 
 const SUGGEST_URL = "https://workeri18n.kanchitrust.workers.dev/api/suggest";
@@ -145,8 +161,8 @@ const SCRIPTS = [
 
 const MIN_CHARS = 3;
 const DEBOUNCE  = 180;
+const MAX_ROWS  = 9;
 
-/* Same storage key api.js uses, so the choice carries across the site. */
 function activeScript() {
   try { return (localStorage.getItem("script") || "ta").toLowerCase(); }
   catch (e) { return "ta"; }
@@ -158,11 +174,69 @@ function setActiveScript(code) {
   } catch (e) {}
 }
 
+const SCRIPT = activeScript();
+
+/* ─────────────────────────────────────────────────────────────
+   Script conversion
+
+   The Indic blocks sit in parallel in Unicode, so Tamil to any of
+   the others is a fixed offset — and back again is the same offset
+   the other way. Only characters inside the relevant block move, so
+   digits, spaces and English are untouched.
+
+   Needed in both directions: the resolver speaks Tamil and Roman
+   only, so a Telugu reader's typing is turned into Tamil before it
+   is handed over, and the Tamil labels it returns are turned back.
+   ───────────────────────────────────────────────────────────── */
+
+const BLOCK = {
+  te:   { lo: 0x0C00, hi: 0x0C7F, off:  0x080 },
+  kn:   { lo: 0x0C80, hi: 0x0CFF, off:  0x100 },
+  ml:   { lo: 0x0D00, hi: 0x0D7F, off:  0x180 },
+  deva: { lo: 0x0900, hi: 0x097F, off: -0x280 }
+};
+const TAMIL_LO = 0x0B80, TAMIL_HI = 0x0BFF;
+
+function fromTamil(text, script) {
+  const b = BLOCK[script];
+  if (!b || !text) return text || "";
+  let out = "";
+  for (const ch of String(text)) {
+    const c = ch.codePointAt(0);
+    out += (c >= TAMIL_LO && c <= TAMIL_HI) ? String.fromCodePoint(c + b.off) : ch;
+  }
+  return out;
+}
+
+function toTamil(text, script) {
+  const b = BLOCK[script];
+  if (!b || !text) return text || "";
+  let out = "";
+  for (const ch of String(text)) {
+    const c = ch.codePointAt(0);
+    out += (c >= b.lo && c <= b.hi) ? String.fromCodePoint(c - b.off) : ch;
+  }
+  return out;
+}
+
+/* Tamil text coming back from the resolver, shown in the reader's script.
+   Roman readers keep the Tamil as-is — the resolver's own labels are the
+   canonical names and there is no reverse transliteration for IAST here. */
+function disp(text) {
+  if (SCRIPT === "ta" || SCRIPT === "iast") return String(text == null ? "" : text);
+  return fromTamil(String(text == null ? "" : text), SCRIPT);
+}
+
+/* What the reader typed, in the form the resolver can understand. */
+function forResolver(q) {
+  if (SCRIPT === "ta" || SCRIPT === "iast") return q;
+  return toTamil(q, SCRIPT);
+}
+
 /* ── script picker ──────────────────────────────────────────── */
 
 (function buildPicker() {
   const bar = document.getElementById("sp-bar");
-  const cur = activeScript();
 
   const lab = document.createElement("span");
   lab.className = "sp-label";
@@ -174,9 +248,9 @@ function setActiveScript(code) {
     b.type = "button";
     b.textContent = s.label;
     b.title = s.name;
-    if (s.code === cur) b.className = "on";
+    if (s.code === SCRIPT) b.className = "on";
     b.addEventListener("click", function () {
-      if (s.code === cur) return;
+      if (s.code === SCRIPT) return;
       setActiveScript(s.code);
       location.reload();
     });
@@ -184,11 +258,32 @@ function setActiveScript(code) {
   }
 })();
 
-/* ── where a chosen suggestion goes ─────────────────────────── */
+/* ── the resolver, loaded lazily and warmed early ───────────── */
 
-/* Types whose destination follows straight from the id. Everything else
-   is passed to the existing voiceSearch resolver, which already knows
-   how to route an azhwar, a pathu, a thirumozhi and the rest. */
+let vsMod = null, vsPending = null;
+
+function warmResolver() {
+  if (vsMod)     return Promise.resolve(vsMod);
+  if (vsPending) return vsPending;
+  vsPending = import("./js/voiceSearch.js?v=6")
+    .then(function (m) { vsMod = m; return m; })
+    .catch(function () { return null; });
+  return vsPending;
+}
+
+async function askResolver(q) {
+  const m = await warmResolver();
+  if (!m) return [];
+  const fn = m.resolveVoiceQueryExtended || m.resolveVoiceQuery;
+  if (typeof fn !== "function") return [];
+  try {
+    const out = await fn(forResolver(q));
+    return Array.isArray(out) ? out : (out ? [out] : []);
+  } catch (e) { return []; }
+}
+
+/* ── routing for index results ──────────────────────────────── */
+
 const DIRECT_ROUTE = {
   section:    function (r) { return { fn: "_selectSection",      args: [Number(r.eid), r.ta] }; },
   divyadesam: function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
@@ -198,65 +293,35 @@ const DIRECT_ROUTE = {
 };
 
 const TYPE_LABEL = {
-  section:    "Section",
-  divyadesam: "Divyadesam",
-  perumal:    "Perumal",
-  thayar:     "Thayar",
-  pasuram:    "Pasuram",
-  pathu:      "Pathu",
-  thirumozhi: "Thirumozhi",
-  thaniyan:   "Thaniyan",
-  azhwar:     "Azhwar",
-  author:     "Author",
-  region:     "Region",
-  thousand:   "Thousand"
+  section: "Section", divyadesam: "Divyadesam", perumal: "Perumal", thayar: "Thayar",
+  pasuram: "Pasuram", pathu: "Pathu", thirumozhi: "Thirumozhi", thaniyan: "Thaniyan",
+  azhwar: "Azhwar", author: "Author", region: "Region", thousand: "Thousand"
 };
-
 const TYPE_ICON = {
-  section:    "fa-book",
-  divyadesam: "fa-place-of-worship",
-  perumal:    "fa-place-of-worship",
-  thayar:     "fa-place-of-worship",
-  pasuram:    "fa-feather",
-  pathu:      "fa-layer-group",
-  thirumozhi: "fa-layer-group",
-  thaniyan:   "fa-scroll",
-  azhwar:     "fa-user",
-  author:     "fa-user",
-  region:     "fa-map",
-  thousand:   "fa-books"
+  section: "fa-book", divyadesam: "fa-place-of-worship", perumal: "fa-place-of-worship",
+  thayar: "fa-place-of-worship", pasuram: "fa-feather", pathu: "fa-layer-group",
+  thirumozhi: "fa-layer-group", thaniyan: "fa-scroll", azhwar: "fa-user",
+  author: "fa-user", region: "fa-map", thousand: "fa-book-open"
 };
 
-function subLabel(r) {
-  if (r.kind === "line") return "Pasuram " + r.gno;
-  return TYPE_LABEL[r.etype] || "Result";
-}
-function iconFor(r) {
-  if (r.kind === "line") return "fa-feather";
-  return TYPE_ICON[r.etype] || "fa-magnifying-glass";
-}
-
-/* ── fetching ───────────────────────────────────────────────── */
-
-let inflight = null;
-let timer    = null;
-let rows     = [];
-let active   = -1;
+/* ── dom ────────────────────────────────────────────────────── */
 
 const input = document.getElementById("ss-input");
 const list  = document.getElementById("ss-list");
 const clear = document.getElementById("ss-clear");
+const spin  = document.getElementById("ss-spin");
 const hint  = document.getElementById("ss-hint");
 
 input.placeholder = "Search pasurams, sections, temples…";
-hint.textContent  = "Three letters is enough. You can type in the script above, or in English letters.";
+hint.textContent  = "Three letters is enough. Whole phrases work too — try naming a pathu or a thirumozhi.";
+
+let rows = [], active = -1, timer = null, seq = 0;
 
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
 function showState(html) {
   list.innerHTML = '<div class="ss-state">' + html + "</div>";
   list.classList.add("show");
@@ -264,23 +329,28 @@ function showState(html) {
 function hideList() {
   list.classList.remove("show");
   list.innerHTML = "";
-  rows = [];
-  active = -1;
+  rows = []; active = -1;
 }
 
 function render() {
-  if (!rows.length) {
-    showState("Nothing found");
-    return;
-  }
+  if (!rows.length) { showState("Nothing found"); return; }
+
   let html = "";
+  let lastGroup = null;
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
+    const group = (r.kind === "dest") ? "go" : (r.kind === "line" ? "line" : "name");
+    if (group !== lastGroup) {
+      html += '<div class="ss-sep">' +
+              (group === "go" ? "Go to" : group === "name" ? "Matching names" : "In the pasurams") +
+              "</div>";
+      lastGroup = group;
+    }
     html += '<div class="ss-item' + (i === active ? " active" : "") + '" role="option" data-i="' + i + '">' +
-              '<i class="ss-ico fa-solid ' + iconFor(r) + '"></i>' +
+              '<i class="ss-ico fa-solid ' + r.icon + '"></i>' +
               '<div class="ss-body">' +
                 '<div class="ss-main">' + esc(r.txt) + "</div>" +
-                '<div class="ss-sub">' + esc(subLabel(r)) + "</div>" +
+                (r.sub ? '<div class="ss-sub">' + esc(r.sub) + "</div>" : "") +
               "</div>" +
             "</div>";
   }
@@ -288,46 +358,116 @@ function render() {
   list.classList.add("show");
 }
 
-async function run(q) {
-  if (inflight) { try { inflight.abort(); } catch (e) {} }
-  const ctrl = new AbortController();
-  inflight = ctrl;
+/* ── the two sources ────────────────────────────────────────── */
 
+async function askIndex(q, signal) {
   const url = SUGGEST_URL +
               "?q="      + encodeURIComponent(q) +
-              "&script=" + encodeURIComponent(activeScript()) +
+              "&script=" + encodeURIComponent(SCRIPT) +
               "&limit=8";
-  try {
-    const res  = await fetch(url, { signal: ctrl.signal });
-    const data = await res.json();
-    if (ctrl !== inflight) return;            // a later keystroke won
-    rows   = (data && data.results) || [];
-    active = -1;
-    render();
-  } catch (e) {
-    if (e && e.name === "AbortError") return;
-    showState("Could not reach the search service");
-  }
+  const res  = await fetch(url, { signal: signal });
+  const data = await res.json();
+  return (data && data.results) || [];
 }
+
+let ctrl = null;
+
+async function run(q) {
+  const mine = ++seq;
+  if (ctrl) { try { ctrl.abort(); } catch (e) {} }
+  ctrl = new AbortController();
+  const myCtrl = ctrl;
+
+  spin.classList.add("show");
+
+  const settled = await Promise.allSettled([
+    askIndex(q, myCtrl.signal),
+    askResolver(q)
+  ]);
+
+  if (mine !== seq) return;              // a later keystroke already won
+  spin.classList.remove("show");
+
+  const idxRows = settled[0].status === "fulfilled" ? settled[0].value : [];
+  const resRows = settled[1].status === "fulfilled" ? settled[1].value : [];
+
+  if (settled[0].status === "rejected" && settled[0].reason &&
+      settled[0].reason.name === "AbortError") return;
+
+  rows   = merge(resRows, idxRows);
+  active = -1;
+  render();
+}
+
+/* Destinations first, then matched names, then pasuram lines.
+   A destination and an index row can be the same thing under two
+   names, so anything already shown is not shown again. */
+function merge(resRows, idxRows) {
+  const out  = [];
+  const seen = new Set();
+
+  function key(s) { return String(s || "").replace(/\s+/g, "").toLowerCase(); }
+  function take(row) {
+    const k = key(row.txt);
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    out.push(row);
+  }
+
+  resRows
+    .slice()
+    .sort(function (a, b) { return (b.score || 0) - (a.score || 0); })
+    .forEach(function (r) {
+      if (!r || !r.fn) return;
+      take({
+        kind: "dest",
+        txt:  disp(r.label),
+        sub:  disp(r.sublabel),
+        icon: "fa-arrow-right-to-bracket",
+        fn:   r.fn,
+        args: r.args || []
+      });
+    });
+
+  idxRows.filter(function (r) { return r.kind === "entity"; }).forEach(function (r) {
+    take({
+      kind:  "entity",
+      txt:   r.txt,
+      sub:   TYPE_LABEL[r.etype] || "Result",
+      icon:  TYPE_ICON[r.etype] || "fa-magnifying-glass",
+      etype: r.etype, eid: r.eid, ta: r.ta
+    });
+  });
+
+  idxRows.filter(function (r) { return r.kind === "line"; }).forEach(function (r) {
+    take({
+      kind: "line",
+      txt:  r.txt,
+      sub:  "Pasuram " + r.gno,
+      icon: "fa-feather",
+      gno:  r.gno
+    });
+  });
+
+  return out.slice(0, MAX_ROWS);
+}
+
+/* ── typing ─────────────────────────────────────────────────── */
 
 function onType() {
   const q = input.value.trim();
   clear.classList.toggle("show", q.length > 0);
 
   if (timer) clearTimeout(timer);
-  if (q.length < MIN_CHARS) { hideList(); return; }
+  if (q.length < MIN_CHARS) { hideList(); spin.classList.remove("show"); return; }
   timer = setTimeout(function () { run(q); }, DEBOUNCE);
 }
 
-/* ── choosing a result ──────────────────────────────────────── */
+/* ── choosing ───────────────────────────────────────────────── */
 
-function go(nav, label) {
+function go(fn, args, label) {
   try {
-    sessionStorage.setItem("voiceNav", JSON.stringify({
-      fn:    nav.fn,
-      args:  nav.args,
-      label: label || ""
-    }));
+    sessionStorage.setItem("voiceNav", JSON.stringify({ fn: fn, args: args, label: label || "" }));
   } catch (e) {}
   window.location.href = "tree.html";
 }
@@ -336,36 +476,33 @@ async function choose(i) {
   const r = rows[i];
   if (!r) return;
 
-  // A pasuram line goes straight to its verse.
-  if (r.kind === "line") { go({ fn: "_openGlobalPasuram", args: [Number(r.gno)] }, r.txt); return; }
+  if (r.fn) { go(r.fn, r.args, r.txt); return; }
+  if (r.kind === "line") { go("_openGlobalPasuram", [Number(r.gno)], r.txt); return; }
 
   const direct = DIRECT_ROUTE[r.etype];
-  if (direct) { go(direct(r), r.txt); return; }
+  if (direct) { const d = direct(r); go(d.fn, d.args, r.txt); return; }
 
-  // Everything else: let the resolver voice search already uses decide.
-  // Loaded only at this moment, so it costs nothing while typing.
+  // Types the index carries but cannot route on its own — hand the Tamil
+  // name to the resolver and take its best destination.
   showState("Opening…");
-  try {
-    const mod = await import("./js/voiceSearch.js?v=6");
-    const fn  = mod.resolveVoiceQueryExtended || mod.resolveVoiceQuery;
-    const out = await fn(r.ta || r.txt);
-    const best = Array.isArray(out) ? out[0] : out;
-    if (best && best.fn) { go({ fn: best.fn, args: best.args || [] }, r.txt); return; }
-  } catch (e) {}
+  const out  = await askResolver(r.ta || r.txt);
+  const best = out && out[0];
+  if (best && best.fn) { go(best.fn, best.args || [], r.txt); return; }
 
-  showState("Could not open that one — tell Seechu which screen it should go to");
+  showState("Could not open that one");
 }
 
 /* ── wiring ─────────────────────────────────────────────────── */
 
 input.addEventListener("input", onType);
+input.addEventListener("focus", warmResolver);
 
 input.addEventListener("keydown", function (e) {
   if (!list.classList.contains("show") || !rows.length) return;
-  if (e.key === "ArrowDown")      { e.preventDefault(); active = (active + 1) % rows.length; render(); }
-  else if (e.key === "ArrowUp")   { e.preventDefault(); active = (active - 1 + rows.length) % rows.length; render(); }
-  else if (e.key === "Enter")     { e.preventDefault(); choose(active >= 0 ? active : 0); }
-  else if (e.key === "Escape")    { hideList(); }
+  if (e.key === "ArrowDown")    { e.preventDefault(); active = (active + 1) % rows.length; render(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); active = (active - 1 + rows.length) % rows.length; render(); }
+  else if (e.key === "Enter")   { e.preventDefault(); choose(active >= 0 ? active : 0); }
+  else if (e.key === "Escape")  { hideList(); }
 });
 
 list.addEventListener("click", function (e) {
@@ -394,8 +531,11 @@ document.querySelectorAll(".ss-chip").forEach(function (c) {
   });
 });
 
-// Desktop lands with the cursor in the box; phones are left alone so the
-// keyboard does not jump up over the page the moment it opens.
+// Warm the resolver's data in the background so the first search is not
+// the one that pays for loading it.
+if (window.requestIdleCallback) requestIdleCallback(warmResolver, { timeout: 2500 });
+else setTimeout(warmResolver, 1200);
+
 if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) input.focus();
 </script>
 </body>
