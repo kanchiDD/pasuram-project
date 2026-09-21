@@ -63,6 +63,7 @@ function loadLayout() {
 
         // attach menu AFTER header is injected
         attachMenuHandlers();
+        initPuzzleFab();
       } else {
         console.error("❌ #header element missing in HTML");
       }
@@ -123,4 +124,54 @@ function attachMenuHandlers() {
     }
   };
 
+}
+
+
+/* ========================= */
+/* DAILY PUZZLE FLOATING BUTTON */
+/* ========================= */
+/* The markup and CSS live in components/header.html, but the logic has
+   to sit here: a <script> inserted through innerHTML is parsed and never
+   executed, which is the same reason toggleMenu is attached out here
+   rather than inline. Called once the header has landed. */
+
+function initPuzzleFab() {
+
+  const fab = document.getElementById("pzFab");
+  if (!fab) return;
+
+  /* The reader's own date, not UTC \u2014 the puzzle should turn over at
+     their midnight. */
+  const d = new Date();
+  const today = d.getFullYear() + "-" +
+                String(d.getMonth() + 1).padStart(2, "0") + "-" +
+                String(d.getDate()).padStart(2, "0");
+
+  const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  /* Never on the puzzle page itself. */
+  if (/\/puzzle\.html/i.test(location.pathname)) return;
+
+  /* Dismissed comes back tomorrow rather than never: one tap should
+     quiet it for the day, not remove it for good. */
+  if (get("pzFabHidden") === today) return;
+
+  if (get("pzDone:" + today)) {
+    const pip = document.getElementById("pzPip");
+    const lab = document.getElementById("pzLabel");
+    if (pip) pip.className = "pz-pip done";
+    if (lab) lab.textContent = "Today\u2019s puzzle \u2014 done";
+  }
+
+  fab.classList.add("show");
+
+  const hide = document.getElementById("pzHide");
+  if (hide) {
+    hide.addEventListener("click", e => {
+      e.preventDefault();
+      set("pzFabHidden", today);
+      fab.classList.remove("show");
+    });
+  }
 }
