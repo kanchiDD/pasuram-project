@@ -34,7 +34,8 @@
   <a href="/ghoshti.html">Ghoshti</a>
   <a href="/vazhi-thaniyan.html">Thaniyan & Vazhi</a>  
   <a href="/ratham/">Ratham</a>
-  <a href="/search.html">Search</a>
+  <a href="/audio.html">Audio</a>
+  <a href="/search.html">🔍 Search</a>
   <a href="/faq.html">FAQ</a>
   <a href="/contact.html">Contact</a>
 </div>
@@ -51,6 +52,7 @@
   <a href="/ghoshti.html" onclick="toggleMenu()">🧩 Ghoshti</a>
   <a href="/vazhi-thaniyan.html" onclick="toggleMenu()">📜 Thaniyan & Vazhi</a>
   <a href="/ratham/" onclick="toggleMenu()">🚩 Ratham</a>
+  <a href="/audio.html" onclick="toggleMenu()">🎧 Audio</a>
   <a href="/search.html" onclick="toggleMenu()">🔍 Search</a>
   <a href="/faq.html" onclick="toggleMenu()">❓ FAQ</a>
   <a href="/contact.html" onclick="toggleMenu()">📞 Contact</a>
@@ -88,3 +90,77 @@
 }
 </style>
 <a class="global-mic-btn" href="/voice.html" title="Voice Search">🎤</a>
+
+<!-- Daily Puzzle — floating button, every page, no menu tab -->
+<style>
+.pz-fab { position: fixed; right: 12px; bottom: 14px; z-index: 9050;
+          display: none; align-items: stretch; gap: 0;
+          background: #4A3728; border: 2px solid #C9A84C; border-radius: 24px;
+          box-shadow: 0 5px 18px rgba(40,25,10,.32); overflow: hidden;
+          font-family: "Segoe UI", Arial, sans-serif; }
+.pz-fab.show { display: flex; }
+.pz-fab a, .pz-fab button { background: transparent; border: none; color: #F5E6C8;
+          font-family: inherit; cursor: pointer; text-decoration: none; display: flex;
+          align-items: center; }
+.pz-fab-main { gap: 8px; padding: 11px 14px; font-size: 13.5px; font-weight: 600; }
+.pz-fab-main:hover { background: rgba(255,255,255,.08); }
+.pz-pip { width: 8px; height: 8px; border-radius: 50%; background: #E8C97A;
+          animation: pz-pulse 1.8s infinite; flex-shrink: 0; }
+.pz-pip.done { background: #7FB069; animation: none; }
+@keyframes pz-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.pz-fab-past { padding: 11px 12px; font-size: 12px; color: #C9A84C;
+               border-left: 1px solid rgba(201,168,76,.4); }
+.pz-fab-past:hover { background: rgba(255,255,255,.08); color: #F5E6C8; }
+.pz-fab-x { padding: 11px 12px 11px 10px; font-size: 16px; line-height: 1;
+            color: #B49A6A; border-left: 1px solid rgba(201,168,76,.4); }
+.pz-fab-x:hover { background: rgba(255,255,255,.08); color: #F5E6C8; }
+@media (max-width: 420px) {
+  .pz-fab-main { padding: 10px 12px; font-size: 12.5px; }
+  .pz-fab-past { padding: 10px; font-size: 11.5px; }
+}
+</style>
+
+<div class="pz-fab" id="pzFab">
+  <a class="pz-fab-main" href="/puzzle.html">
+    <span class="pz-pip" id="pzPip"></span>
+    <span id="pzLabel">Solve today&rsquo;s puzzle</span>
+  </a>
+  <a class="pz-fab-past" href="/puzzle.html?archive=1">Past</a>
+  <button class="pz-fab-x" id="pzHide" aria-label="Hide for today">&times;</button>
+</div>
+
+<script>
+(function () {
+  var fab = document.getElementById("pzFab");
+  if (!fab) return;
+
+  // Local date, not UTC — the puzzle should turn over at the reader's midnight.
+  var d = new Date();
+  var today = d.getFullYear() + "-" +
+              String(d.getMonth() + 1).padStart(2, "0") + "-" +
+              String(d.getDate()).padStart(2, "0");
+
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  // Never on the puzzle page itself.
+  if (/\/puzzle\.html/i.test(location.pathname)) return;
+
+  // Dismissed returns tomorrow rather than never: one tap should quiet it
+  // for the day, not remove it for good.
+  if (get("pzFabHidden") === today) return;
+
+  if (get("pzDone:" + today)) {
+    document.getElementById("pzPip").className = "pz-pip done";
+    document.getElementById("pzLabel").textContent = "Today\u2019s puzzle \u2014 done";
+  }
+
+  fab.classList.add("show");
+
+  document.getElementById("pzHide").addEventListener("click", function (e) {
+    e.preventDefault();
+    set("pzFabHidden", today);
+    fab.classList.remove("show");
+  });
+})();
+</script>

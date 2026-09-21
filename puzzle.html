@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+  <title>Daily Puzzle — நாலாயிர திவ்யப்பிரபந்தம்</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/main.css?v=861">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #FFFFF8; color: #3B2410;
+           min-height: 100vh; display: flex; flex-direction: column; }
+    #header { width: 100%; }
+    #footer { width: 100%; margin-top: auto; }
+
+    #sp-bar { background: #FFF8E6; border-bottom: 1px solid #E8D8A0; padding: 7px 10px;
+              display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+    #sp-bar .sp-label { font-size: 12px; color: #8A7A5A; margin-right: 2px; }
+    #sp-bar button { border: 1px solid #D8C48A; background: #FFF; color: #4A3728;
+                     border-radius: 14px; padding: 5px 13px; font-size: 13px; cursor: pointer; }
+    #sp-bar button.on { border-color: #2F7D32; background: #2F7D32; color: #FFF; font-weight: 700; }
+
+    main { flex: 1; width: 100%; max-width: 620px; margin: 0 auto; padding: 18px 12px 48px; }
+
+    .pz-head { text-align: center; margin-bottom: 16px; }
+    .pz-head h1 { font-size: 18px; font-weight: 600; }
+    .pz-head .date { font-size: 12.5px; color: #8B6A45; margin-top: 4px; }
+    .pz-head .lead { font-size: 12.5px; color: #8B6A45; margin-top: 8px; line-height: 1.55; }
+
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    @media (min-width: 560px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+    .tile { background: #FFF8ED; border: 1.5px solid #D4B896; border-radius: 9px;
+            padding: 10px 8px; min-height: 80px; display: flex; align-items: center;
+            justify-content: center; text-align: center; cursor: pointer;
+            font-size: 12.5px; line-height: 1.4; word-break: break-word;
+            transition: background .12s, border-color .12s, transform .08s; }
+    .tile.sel  { background: #4A3728; border-color: #4A3728; color: #F5E6C8; transform: scale(.97); }
+    .tile.gone { display: none; }
+    .shake { animation: sh .35s; }
+    @keyframes sh { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+    .solved { border-radius: 9px; padding: 11px 12px; margin-bottom: 7px; text-align: center; }
+    .solved .sname    { font-size: 12.5px; font-weight: 700; }
+    .solved .smembers { font-size: 11.5px; margin-top: 4px; line-height: 1.5; opacity: .85; }
+    .lv0 { background: #F5D96B; color: #4A3728; }
+    .lv1 { background: #A8C96B; color: #2C3A16; }
+    .lv2 { background: #8FB8D8; color: #1E3448; }
+    .lv3 { background: #C09BD8; color: #341E44; }
+
+    .bar { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 10px; }
+    .lives { font-size: 12px; color: #8B6A45; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #C9A84C; margin-left: 4px; }
+    .dot.out { background: #E3D6BC; }
+    .btn { border: none; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 600;
+           cursor: pointer; background: #4A3728; color: #F5E6C8; }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .btn.ghost { background: transparent; color: #4A3728; border: 1.5px solid #C9A84C; }
+
+    .msg { text-align: center; font-size: 13px; margin-top: 14px; min-height: 20px; line-height: 1.6; }
+    .msg.good { color: #2F7D32; font-weight: 600; }
+    .msg.bad  { color: #C0392B; }
+
+    .done-box { margin-top: 20px; border: 1px solid #E8D8A0; background: #FFF8ED;
+                border-radius: 10px; padding: 16px; text-align: center; }
+    .done-box h2 { font-size: 15px; margin-bottom: 8px; }
+    .share-grid { font-size: 19px; line-height: 1.35; letter-spacing: 2px; margin: 12px 0; }
+    .done-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+
+    .arch { margin-top: 8px; }
+    .arch h2 { font-size: 15px; text-align: center; margin-bottom: 12px; }
+    .arch-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .arch-item { border: 1.5px solid #D4B896; background: #FFFDF7; border-radius: 9px;
+                 padding: 11px 12px; cursor: pointer; font-size: 13px; display: flex;
+                 align-items: center; justify-content: space-between; gap: 8px; }
+    .arch-item:hover { border-color: #C9A84C; background: #FFF4DC; }
+    .arch-item .tick { color: #2F7D32; font-size: 12px; }
+
+    .foot-links { text-align: center; margin-top: 22px; font-size: 12.5px; }
+    .foot-links a { color: #8B6A45; text-decoration: none; border-bottom: 1px dotted #C9A84C; }
+    .foot-links a:hover { color: #4A3728; }
+
+    .load { text-align: center; padding: 40px 10px; color: #9A7A55; font-size: 13.5px; }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+  <div id="sp-bar"></div>
+  <main id="stage"><div class="load">…</div></main>
+  <div id="footer"></div>
+
+<script>
+/* =====================================================================
+   puzzle.html — the daily board
+   ---------------------------------------------------------------------
+   The puzzle for a date is whatever the generator produces for that
+   date as its seed, so every reader gets the same board without
+   anything being stored yet. When the puzzle table exists, only the
+   fetch below changes.
+   ===================================================================== */
+
+var API = "https://workeri18n.kanchitrust.workers.dev/api/puzzle/try";
+
+var SCRIPTS = [
+  { code: "ta",   label: "தமிழ்",   name: "Tamil" },
+  { code: "te",   label: "తెలుగు",  name: "Telugu" },
+  { code: "kn",   label: "ಕನ್ನಡ",    name: "Kannada" },
+  { code: "ml",   label: "മലയാളം",  name: "Malayalam" },
+  { code: "deva", label: "देवनागरी", name: "Devanagari" },
+  { code: "iast", label: "Roman",   name: "Roman" }
+];
+
+function getScript() {
+  try { return (localStorage.getItem("script") || "ta").toLowerCase(); } catch (e) { return "ta"; }
+}
+function setScript(c) {
+  try { if (c && c !== "ta") localStorage.setItem("script", c); else localStorage.removeItem("script"); }
+  catch (e) {}
+}
+var SCRIPT = getScript();
+
+/* The Indic blocks run in parallel in Unicode, so Tamil to any of the
+   others is one fixed offset. Roman has no offset, so a Roman reader
+   sees the Tamil for now — until the server renders from text_script. */
+var BLOCK = { te: 0x080, kn: 0x100, ml: 0x180, deva: -0x280 };
+function disp(t) {
+  var off = BLOCK[SCRIPT];
+  if (!off || !t) return t || "";
+  var out = "";
+  for (var i = 0; i < t.length; i++) {
+    var c = t.charCodeAt(i);
+    out += (c >= 0x0B80 && c <= 0x0BFF) ? String.fromCharCode(c + off) : t.charAt(i);
+  }
+  return out;
+}
+
+function localDate(d) {
+  d = d || new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
+         "-" + String(d.getDate()).padStart(2, "0");
+}
+function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function esc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* The tile order must be the same for every reader, so the shuffle is
+   seeded from the date rather than left to chance. */
+function seeded(seed) {
+  var h = 2166136261 >>> 0, s = String(seed);
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  var x = h || 123456789;
+  return function () { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+}
+function shuffleWith(rnd, arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+/* ── picker ──────────────────────────────────────────────────────── */
+(function () {
+  var bar = document.getElementById("sp-bar");
+  var lab = document.createElement("span");
+  lab.className = "sp-label"; lab.textContent = "Read in:";
+  bar.appendChild(lab);
+  SCRIPTS.forEach(function (s) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = s.label; b.title = s.name;
+    if (s.code === SCRIPT) b.className = "on";
+    b.addEventListener("click", function () {
+      if (s.code === SCRIPT) return;
+      setScript(s.code); location.reload();
+    });
+    bar.appendChild(b);
+  });
+})();
+
+/* ── labels ──────────────────────────────────────────────────────── */
+var REGION_NAME = {
+  chola_nadu_divyadesam:   "Chola Nadu",
+  thondai_nadu_divyadesam: "Thondai Nadu",
+  pandiya_nadu_divyadesam: "Pandiya Nadu",
+  malai_nadu_divyadesam:   "Malai Nadu",
+  vada_nadu_divyadesam:    "Vada Nadu",
+  vinnulaga_divyadesam:    "Vinnulagam",
+  nadu_nadu_divyadesam:    "Nadu Nadu"
+};
+
+/* Colour by how approachable the group is, not by the order it arrived. */
+var LEVEL_OF = { region: 0, pasuram: 1, author: 2, section: 3 };
+
+function groupTitle(label) {
+  if (!label) return "";
+  if (label.kind === "region")  return REGION_NAME[label.region] || label.region;
+  if (label.kind === "author")  return disp(label.name);
+  if (label.kind === "section") return disp(label.name);
+  if (label.kind === "pasuram") return "Lines of one pasuram";
+  return "";
+}
+
+/* ── state ───────────────────────────────────────────────────────── */
+var stage = document.getElementById("stage");
+var params = new URLSearchParams(location.search);
+var viewDate = params.get("d") || localDate();
+var isToday = viewDate === localDate();
+
+var G = { groups: [], tiles: [], selected: [], solved: [], lives: 4, guesses: [], over: false };
+
+function stateKey() { return "pzState:" + viewDate; }
+
+function saveState() {
+  set(stateKey(), JSON.stringify({
+    solved: G.solved, lives: G.lives, guesses: G.guesses, over: G.over
+  }));
+  if (G.over) set("pzDone:" + viewDate, "1");
+}
+function loadState() {
+  var raw = get(stateKey());
+  if (!raw) return;
+  try {
+    var s = JSON.parse(raw);
+    G.solved  = s.solved  || [];
+    G.lives   = typeof s.lives === "number" ? s.lives : 4;
+    G.guesses = s.guesses || [];
+    G.over    = !!s.over;
+  } catch (e) {}
+}
+
+/* ── archive ─────────────────────────────────────────────────────── */
+function renderArchive() {
+  var days = [];
+  for (var i = 0; i < 30; i++) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(localDate(d));
+  }
+  var html =
+    '<div class="pz-head"><h1>Past puzzles</h1>' +
+    '<div class="lead">Every day since the game began. Nothing expires.</div></div>' +
+    '<div class="arch"><div class="arch-list">' +
+    days.map(function (d) {
+      var done = get("pzDone:" + d);
+      return '<div class="arch-item" data-d="' + d + '"><span>' + d +
+             (d === localDate() ? " &middot; today" : "") + '</span>' +
+             (done ? '<span class="tick"><i class="fa-solid fa-check"></i></span>' : "") + "</div>";
+    }).join("") +
+    '</div></div>' +
+    '<div class="foot-links"><a href="/puzzle.html">Back to today</a></div>';
+  stage.innerHTML = html;
+  stage.addEventListener("click", function (e) {
+    var it = e.target.closest(".arch-item");
+    if (it) location.href = "/puzzle.html?d=" + it.getAttribute("data-d");
+  });
+}
+
+/* ── board ───────────────────────────────────────────────────────── */
+function renderBoard() {
+  var solvedHtml = G.solved.map(function (gi) {
+    var g = G.groups[gi];
+    return '<div class="solved lv' + g.level + '">' +
+             '<div class="sname">' + esc(groupTitle(g.label)) + '</div>' +
+             '<div class="smembers">' + g.members.map(function (m) { return esc(disp(m)); }).join("  &middot;  ") + '</div>' +
+           '</div>';
+  }).join("");
+
+  var dots = "";
+  for (var i = 0; i < 4; i++) dots += '<span class="dot' + (i < G.lives ? "" : " out") + '"></span>';
+
+  var tilesHtml = G.tiles.map(function (t, i) {
+    if (G.solved.indexOf(t.group) !== -1) return "";
+    return '<div class="tile' + (G.selected.indexOf(i) !== -1 ? " sel" : "") + '" data-i="' + i + '">' +
+           esc(disp(t.text)) + "</div>";
+  }).join("");
+
+  stage.innerHTML =
+    '<div class="pz-head"><h1>Daily Puzzle</h1>' +
+      '<div class="date">' + viewDate + (isToday ? "" : " &middot; from the archive") + '</div>' +
+      (G.over ? "" : '<div class="lead">Sixteen tiles, four groups of four.<br>Find a group and tap Submit.</div>') +
+    '</div>' +
+    '<div id="solvedBox">' + solvedHtml + '</div>' +
+    (G.over ? "" :
+      '<div class="grid" id="grid">' + tilesHtml + '</div>' +
+      '<div class="bar"><div class="lives">Mistakes left <span id="dots">' + dots + '</span></div>' +
+      '<button class="btn" id="submit"' + (G.selected.length === 4 ? "" : " disabled") + '>Submit</button></div>') +
+    '<div class="msg" id="msg"></div>' +
+    (G.over ? doneHtml() : "") +
+    '<div class="foot-links">' +
+      (isToday ? '<a href="/puzzle.html?archive=1">Past puzzles</a>'
+               : '<a href="/puzzle.html">Today&rsquo;s puzzle</a> &nbsp;&middot;&nbsp; <a href="/puzzle.html?archive=1">Past puzzles</a>') +
+    '</div>';
+
+  var grid = document.getElementById("grid");
+  if (grid) grid.addEventListener("click", onTile);
+  var sub = document.getElementById("submit");
+  if (sub) sub.addEventListener("click", onSubmit);
+  var sh = document.getElementById("shareBtn");
+  if (sh) sh.addEventListener("click", doShare);
+}
+
+var SQUARE = ["🟨", "🟩", "🟦", "🟪"];
+
+function shareText() {
+  var head = "நாலாயிரம் Daily Puzzle " + viewDate;
+  var body = G.guesses.map(function (row) {
+    return row.map(function (lv) { return SQUARE[lv]; }).join("");
+  }).join("\n");
+  var won = G.solved.length === 4 && G.lives > 0;
+  return head + "\n" + (won ? (4 - G.lives) + "/4 mistakes" : "not today") + "\n" + body +
+         "\narulicheyal.org/puzzle.html";
+}
+
+function doneHtml() {
+  var won = G.solved.length === 4 && G.lives > 0;
+  return '<div class="done-box">' +
+    '<h2>' + (won ? "Solved" : "Out of guesses") + '</h2>' +
+    '<div class="share-grid">' +
+      G.guesses.map(function (row) { return row.map(function (lv) { return SQUARE[lv]; }).join(""); }).join("<br>") +
+    '</div>' +
+    '<div class="done-actions">' +
+      '<button class="btn" id="shareBtn">Share result</button>' +
+      '<a class="btn ghost" href="/puzzle.html?archive=1">Past puzzles</a>' +
+    '</div></div>';
+}
+
+function doShare() {
+  var txt = shareText();
+  if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function () {
+      var m = document.getElementById("msg");
+      m.className = "msg good"; m.textContent = "Copied.";
+    }).catch(function () {});
+  }
+}
+
+function onTile(e) {
+  var el = e.target.closest(".tile");
+  if (!el) return;
+  var i = Number(el.getAttribute("data-i"));
+  var at = G.selected.indexOf(i);
+  if (at !== -1) G.selected.splice(at, 1);
+  else if (G.selected.length < 4) G.selected.push(i);
+  renderBoard();
+}
+
+function onSubmit() {
+  var keys = G.selected.map(function (i) { return G.tiles[i].group; });
+  G.guesses.push(G.selected.map(function (i) { return G.groups[G.tiles[i].group].level; }));
+
+  var same = keys.every(function (k) { return k === keys[0]; });
+  var msg;
+
+  if (same) {
+    G.solved.push(keys[0]);
+    G.selected = [];
+    if (G.solved.length === 4) G.over = true;
+    saveState();
+    renderBoard();
+    msg = document.getElementById("msg");
+    msg.className = "msg good";
+    msg.textContent = G.over ? "" : "Correct — " + (4 - G.solved.length) + " to go.";
+    return;
+  }
+
+  var near = keys.filter(function (k) { return k === keys[0]; }).length === 3;
+  G.lives--;
+  if (G.lives <= 0) {
+    for (var gi = 0; gi < G.groups.length; gi++) if (G.solved.indexOf(gi) === -1) G.solved.push(gi);
+    G.over = true;
+  }
+  G.selected = [];
+  saveState();
+  renderBoard();
+  msg = document.getElementById("msg");
+  msg.className = "msg bad";
+  msg.textContent = G.over ? "" : (near ? "One away." : "Not a group.");
+}
+
+/* ── load ────────────────────────────────────────────────────────── */
+function start(data) {
+  if (!data || !data.groups || data.groups.length !== 4) {
+    stage.innerHTML = '<div class="load">No puzzle for this day yet.<br><br>' +
+      '<a class="btn ghost" href="/puzzle.html?archive=1">Past puzzles</a></div>';
+    return;
+  }
+
+  G.groups = data.groups.map(function (g) {
+    return {
+      label: g.label,
+      level: LEVEL_OF[g.label && g.label.kind] != null ? LEVEL_OF[g.label.kind] : 1,
+      members: g.tiles.map(function (t) { return t.text; })
+    };
+  });
+
+  var flat = [];
+  data.groups.forEach(function (g, gi) {
+    g.tiles.forEach(function (t) { flat.push({ text: t.text, group: gi }); });
+  });
+  G.tiles = shuffleWith(seeded(viewDate), flat);
+
+  loadState();
+  renderBoard();
+}
+
+if (params.get("archive")) {
+  renderArchive();
+} else {
+  fetch(API + "?seed=" + encodeURIComponent(viewDate) + "&tries=40")
+    .then(function (r) { return r.json(); })
+    .then(start)
+    .catch(function () {
+      stage.innerHTML = '<div class="load">Could not reach the puzzle service.<br><br>' +
+        '<a class="btn ghost" href="/puzzle.html">Try again</a></div>';
+    });
+}
+</script>
+</body>
+</html>
