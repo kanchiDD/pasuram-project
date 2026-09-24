@@ -197,11 +197,25 @@ const BLOCK = {
 };
 const TAMIL_LO = 0x0B80, TAMIL_HI = 0x0BFF;
 
+/* Tamil to the other Indic blocks is one fixed codepoint offset — but not
+   for every letter. Tamil distinguishes ன from ந and carries ழ, and at the
+   shifted position those land on codepoints Telugu and Kannada never
+   assigned, so they render as empty boxes. These are the substitutions a
+   proper transliterator makes. */
+const SCRIPT_EXC = {
+  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
+  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
+  ml:   {},
+  deva: {}
+};
+
 function fromTamil(text, script) {
   const b = BLOCK[script];
   if (!b || !text) return text || "";
+  const exc = SCRIPT_EXC[script] || {};
   let out = "";
   for (const ch of String(text)) {
+    if (exc[ch]) { out += exc[ch]; continue; }
     const c = ch.codePointAt(0);
     out += (c >= TAMIL_LO && c <= TAMIL_HI) ? String.fromCodePoint(c + b.off) : ch;
   }

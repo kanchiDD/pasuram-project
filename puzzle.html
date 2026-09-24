@@ -133,14 +133,29 @@ var SCRIPT = getScript();
 /* The Indic blocks run in parallel in Unicode, so Tamil to any of the
    others is one fixed offset. Roman has no offset, so a Roman reader
    sees the Tamil for now — until the server renders from text_script. */
+/* Tamil to the other Indic blocks is one fixed codepoint offset — but not
+   for every letter. Tamil distinguishes ன from ந and carries ழ, and at the
+   shifted position those land on codepoints Telugu and Kannada never
+   assigned, so they render as empty boxes. These are the substitutions a
+   proper transliterator makes. */
+var SCRIPT_EXC = {
+  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
+  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
+  ml:   {},
+  deva: {}
+};
+
 var BLOCK = { te: 0x080, kn: 0x100, ml: 0x180, deva: -0x280 };
 function disp(t) {
   var off = BLOCK[SCRIPT];
   if (!off || !t) return t || "";
+  var exc = SCRIPT_EXC[SCRIPT] || {};
   var out = "";
   for (var i = 0; i < t.length; i++) {
-    var c = t.charCodeAt(i);
-    out += (c >= 0x0B80 && c <= 0x0BFF) ? String.fromCharCode(c + off) : t.charAt(i);
+    var ch = t.charAt(i);
+    if (exc[ch]) { out += exc[ch]; continue; }
+    var c = ch.charCodeAt(0);
+    out += (c >= 0x0B80 && c <= 0x0BFF) ? String.fromCharCode(c + off) : ch;
   }
   return out;
 }
