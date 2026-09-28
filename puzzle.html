@@ -54,7 +54,6 @@
     .solved { border-radius: 9px; padding: 11px 12px; margin-bottom: 7px; text-align: center; }
     .solved .sname    { font-size: 12.5px; font-weight: 700; }
     .solved .snote    { font-size: 11px; margin-top: 3px; opacity: .8; }
-    .solved .snote a  { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
     .solved .smembers { font-size: 11.5px; margin-top: 4px; line-height: 1.5; opacity: .85; }
     .lv0 { background: #F5D96B; color: #4A3728; }
     .lv1 { background: #A8C96B; color: #2C3A16; }
@@ -258,8 +257,11 @@ function groupNote(label) {
   if (!label || label.kind !== "pasuram" || !label.gno) return "";
   var n = "no. " + label.gno;
   if (label.lno) n += "  \u00b7  pasuram " + label.lno + " of the section";
-  return '<div class="snote"><a href="/pasuram.html?gno=' + label.gno + '">' +
-         esc(n) + " \u2014 read it</a></div>";
+  /* Plain text, not a link. The site navigates by state inside tree.html,
+     so a single verse has no address of its own to point at. The number is
+     still what a reader needs: it is how the verse is cited, and how they
+     would find it in a printed edition or by searching here. */
+  return '<div class="snote">' + esc(n) + '</div>';
 }
 
 /* ── state ───────────────────────────────────────────────────────── */
