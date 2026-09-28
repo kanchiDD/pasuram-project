@@ -53,6 +53,8 @@
 
     .solved { border-radius: 9px; padding: 11px 12px; margin-bottom: 7px; text-align: center; }
     .solved .sname    { font-size: 12.5px; font-weight: 700; }
+    .solved .snote    { font-size: 11px; margin-top: 3px; opacity: .8; }
+    .solved .snote a  { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
     .solved .smembers { font-size: 11.5px; margin-top: 4px; line-height: 1.5; opacity: .85; }
     .lv0 { background: #F5D96B; color: #4A3728; }
     .lv1 { background: #A8C96B; color: #2C3A16; }
@@ -222,8 +224,42 @@ function groupTitle(label) {
   if (label.kind === "region")  return REGION_NAME[label.region] || label.region;
   if (label.kind === "author")  return disp(label.name);
   if (label.kind === "section") return disp(label.name);
-  if (label.kind === "pasuram") return "Lines of one pasuram";
+  if (label.kind === "pasuram") return pasuramTitle(label);
   return "";
+}
+
+/* Which sections are subdivided, and how deep. A verse of Periyazhwar
+   Thirumozhi lives inside a pathu and a thirumozhi within it; Nachiar and
+   Perumal Thirumozhi have thirumozhis but no pathu; the shorter works have
+   neither and the section name is the whole address. Naming the section
+   alone for a work of four hundred verses tells the reader almost nothing,
+   which is the complaint this answers. */
+var PATHU_SECTIONS = { 2: 1, 11: 1, 26: 1 };   /* pathu AND thirumozhi */
+var THIRU_SECTIONS = { 4: 1, 5: 1 };           /* thirumozhi only      */
+
+function pasuramTitle(label) {
+  var bits = [];
+  if (label.sname) bits.push(disp(label.sname));
+
+  var sid = label.sid;
+  if (sid != null && PATHU_SECTIONS[sid] && label.pathu && label.pathu.name)
+    bits.push(disp(label.pathu.name));
+  if (sid != null && (PATHU_SECTIONS[sid] || THIRU_SECTIONS[sid]) && label.thiru) {
+    var t = label.thiru.heading || label.thiru.name;
+    if (t) bits.push(disp(t));
+  }
+
+  if (!bits.length) return "Pasuram " + (label.gno || "");
+  return bits.join("  \u00b7  ");
+}
+
+/* The line under the title: the number a reader can look up, and a way in. */
+function groupNote(label) {
+  if (!label || label.kind !== "pasuram" || !label.gno) return "";
+  var n = "no. " + label.gno;
+  if (label.lno) n += "  \u00b7  pasuram " + label.lno + " of the section";
+  return '<div class="snote"><a href="/pasuram.html?gno=' + label.gno + '">' +
+         esc(n) + " \u2014 read it</a></div>";
 }
 
 /* ── state ───────────────────────────────────────────────────────── */
@@ -287,6 +323,7 @@ function renderBoard() {
     var g = G.groups[gi];
     return '<div class="solved lv' + g.level + '">' +
              '<div class="sname">' + esc(groupTitle(g.label)) + '</div>' +
+             groupNote(g.label) +
              '<div class="smembers">' + g.members.map(function (m) { return esc(disp(m)); }).join("  &middot;  ") + '</div>' +
            '</div>';
   }).join("");
