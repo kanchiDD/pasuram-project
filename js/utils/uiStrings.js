@@ -67,6 +67,19 @@ const STRINGS = {
     selectOf:         "Select {name}:",
     orSelectAnyOne:   "— OR (select any one) —",
     orSelectThirumozhi: "— OR select specific Thirumozhi —",
+
+    // ── multi-select selector ─────────────────────────────────
+    // Sections 2/11/26 and 4/5 let a reader tick several pathus or
+    // thirumozhis at once, so ticking a box can no longer mean "and
+    // go" — hence a Read button, and a running count beside it.
+    // orSelectAnyOne is left exactly as it was: it is still true
+    // wherever a single-choice selector remains.
+    orSelectOneOrMore:  "— OR (tick one or more) —",
+    readSelection:      "Read",
+    partOfWhole:        "{n} of {total}",
+    selPathuCount:      "{n} pathu{s}",
+    selThirumozhiCount: "{n} thirumozhi{s}",
+    selPasuramCount:    "{n} pasuram{s}",
     recitalMode:      "Recital Mode",
     sectionFallback:  "Section",
 
