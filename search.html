@@ -331,6 +331,11 @@ hint.textContent  = "Three letters is enough. Whole phrases work too — try nam
 
 let rows = [], active = -1, timer = null, seq = 0;
 
+/* Set when the list is showing the choices behind ONE result rather than
+   search results — e.g. வண்ண மாடங்கள், which is both the opening of
+   முதற்பத்து and a thirumozhi in its own right. */
+let askingAbout = null;
+
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -341,6 +346,7 @@ function showState(html) {
   list.classList.add("show");
 }
 function hideList() {
+  askingAbout = null;
   list.classList.remove("show");
   list.innerHTML = "";
   rows = []; active = -1;
@@ -356,7 +362,9 @@ function render() {
     const group = (r.kind === "dest") ? "go" : (r.kind === "line" ? "line" : "name");
     if (group !== lastGroup) {
       html += '<div class="ss-sep">' +
-              (group === "go" ? "Go to" : group === "name" ? "Matching names" : "In the pasurams") +
+              (askingAbout ? esc(askingAbout) + " — do you mean"
+                 : group === "go" ? "Go to"
+                 : group === "name" ? "Matching names" : "In the pasurams") +
               "</div>";
       lastGroup = group;
     }
@@ -408,8 +416,9 @@ async function run(q) {
   if (settled[0].status === "rejected" && settled[0].reason &&
       settled[0].reason.name === "AbortError") return;
 
-  rows   = merge(resRows, idxRows);
-  active = -1;
+  rows       = merge(resRows, idxRows);
+  askingAbout = null;
+  active     = -1;
   render();
 }
 
@@ -497,10 +506,35 @@ async function choose(i) {
   if (direct) { const d = direct(r); go(d.fn, d.args, r.txt); return; }
 
   // Types the index carries but cannot route on its own — hand the Tamil
-  // name to the resolver and take its best destination.
+  // name to the resolver.
   showState("Opening…");
-  const out  = await askResolver(r.ta || r.txt);
-  const best = out && out[0];
+  const out  = (await askResolver(r.ta || r.txt)).filter(function (o) { return o && o.fn; });
+
+  /* More than one destination means the name is genuinely ambiguous, and the
+     reader is the only one who can settle it. The first line of a pathu is
+     also that pathu's first thirumozhi, and also a pasuram on its own — so
+     வண்ண மாடங்கள் resolves to three different readings. Taking out[0] and
+     going silently always chose the whole pathu and the other two were never
+     offered. Voice already asks this question; this is the same question,
+     asked in the same words, for someone typing instead of speaking. */
+  if (out.length > 1) {
+    askingAbout = r.txt;
+    rows = out.map(function (o) {
+      return {
+        kind: "dest",
+        txt:  disp(o.label),
+        sub:  disp(o.sublabel),
+        icon: "fa-arrow-right-to-bracket",
+        fn:   o.fn,
+        args: o.args || []
+      };
+    });
+    active = -1;
+    render();
+    return;
+  }
+
+  const best = out[0];
   if (best && best.fn) { go(best.fn, best.args || [], r.txt); return; }
 
   showState("Could not open that one");

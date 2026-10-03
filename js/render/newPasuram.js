@@ -73,6 +73,24 @@ if (state.kootrirukkaiData) {
     !!state.selectedThirumozhiId &&
     !_STANDALONE_SECTIONS.includes(Number(state.selectedSectionId));
 
+  /* அடிவரவு and the closing line mark the END OF A UNIT: the அடிவரவு names
+     the opening of the song that follows, and the closing line is what is
+     said when the work is finished. Neither means anything above a single
+     pasuram a reader looked up — there is no next song in view, and nothing
+     has been completed.
+
+     They were printed anyway, because the end of a unit was detected as
+     "there is no next row". With one pasuram on screen there never is one, so
+     every single-pasuram view looked like the end of its pathu.
+
+     Counting the rows settles it without a flag to set and clear: no pathu or
+     thirumozhi in the whole 4000 is a single pasuram — the smallest is nine —
+     so one row can only be a single-pasuram selection. Being derived from the
+     data each render, it also cannot go stale the way a flag on state would
+     when the reader navigates on afterwards. */
+  const _singlePasuram =
+    Array.isArray(state.pasuramData) && state.pasuramData.length === 1;
+
   if (!state.isFullRender && state.thaniyanData && !_suppressThaniyan) {
     const allRows = state.thaniyanData?.data || state.thaniyanData?.rows || state.thaniyanData;
     if (Array.isArray(allRows) && allRows.length > 0) {
@@ -328,10 +346,12 @@ html += '</div>';
       const next = state.pasuramData[index + 1];
 
       const isLastOfPathu =
+        !_singlePasuram &&
         p.pathu_id &&
         (!next || next.pathu_id !== p.pathu_id);
 
       const isLastOfThirumozhi =
+        !_singlePasuram &&
         p.thirumozhi_id &&
         (!next || next.thirumozhi_id !== p.thirumozhi_id);
 
@@ -377,6 +397,7 @@ html += '</div>';
         Object.keys(state.displayMap.thirumozhi).length > 0;
 
       const isLastStandalone =
+        !_singlePasuram &&
         !hasPathuData &&
         !hasThiruData &&
         (!next || next.section_id !== p.section_id);
