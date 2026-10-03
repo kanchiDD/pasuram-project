@@ -73,10 +73,10 @@ if (state.kootrirukkaiData) {
     !!state.selectedThirumozhiId &&
     !_STANDALONE_SECTIONS.includes(Number(state.selectedSectionId));
 
-  /* அடிவரவு and the closing line mark the END OF A UNIT: the அடிவரவு names
-     the opening of the song that follows, and the closing line is what is
-     said when the work is finished. Neither means anything above a single
-     pasuram a reader looked up — there is no next song in view, and nothing
+  /* அடிவரவு and the closing line mark the END OF A UNIT: the அடிவரவு
+     names the opening of the song that follows, and the closing line is what
+     is said when the work is finished. Neither means anything above a single
+     pasuram a reader looked up - there is no next song in view, and nothing
      has been completed.
 
      They were printed anyway, because the end of a unit was detected as
@@ -84,7 +84,7 @@ if (state.kootrirukkaiData) {
      every single-pasuram view looked like the end of its pathu.
 
      Counting the rows settles it without a flag to set and clear: no pathu or
-     thirumozhi in the whole 4000 is a single pasuram — the smallest is nine —
+     thirumozhi in the whole 4000 is a single pasuram - the smallest is nine -
      so one row can only be a single-pasuram selection. Being derived from the
      data each render, it also cannot go stale the way a flag on state would
      when the reader navigates on afterwards. */

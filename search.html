@@ -331,9 +331,8 @@ hint.textContent  = "Three letters is enough. Whole phrases work too — try nam
 
 let rows = [], active = -1, timer = null, seq = 0;
 
-/* Set when the list is showing the choices behind ONE result rather than
-   search results — e.g. வண்ண மாடங்கள், which is both the opening of
-   முதற்பத்து and a thirumozhi in its own right. */
+/* Set while the list is showing the readings behind ONE tapped result,
+   rather than search results. */
 let askingAbout = null;
 
 function esc(s) {
@@ -362,7 +361,7 @@ function render() {
     const group = (r.kind === "dest") ? "go" : (r.kind === "line" ? "line" : "name");
     if (group !== lastGroup) {
       html += '<div class="ss-sep">' +
-              (askingAbout ? esc(askingAbout) + " — do you mean"
+              (askingAbout ? esc(askingAbout) + " \u2014 do you mean"
                  : group === "go" ? "Go to"
                  : group === "name" ? "Matching names" : "In the pasurams") +
               "</div>";
@@ -416,9 +415,9 @@ async function run(q) {
   if (settled[0].status === "rejected" && settled[0].reason &&
       settled[0].reason.name === "AbortError") return;
 
-  rows       = merge(resRows, idxRows);
+  rows        = merge(resRows, idxRows);
   askingAbout = null;
-  active     = -1;
+  active      = -1;
   render();
 }
 
@@ -510,13 +509,11 @@ async function choose(i) {
   showState("Opening…");
   const out  = (await askResolver(r.ta || r.txt)).filter(function (o) { return o && o.fn; });
 
-  /* More than one destination means the name is genuinely ambiguous, and the
-     reader is the only one who can settle it. The first line of a pathu is
-     also that pathu's first thirumozhi, and also a pasuram on its own — so
-     வண்ண மாடங்கள் resolves to three different readings. Taking out[0] and
-     going silently always chose the whole pathu and the other two were never
-     offered. Voice already asks this question; this is the same question,
-     asked in the same words, for someone typing instead of speaking. */
+  /* More than one destination means the name is genuinely ambiguous, and only
+     the reader can settle it: the first line of a pathu is also that pathu's
+     first thirumozhi, and also a pasuram on its own. Taking out[0] and going
+     silently always chose the whole pathu, so the other two readings were
+     never offered. Voice already asks this; this asks it for typing too. */
   if (out.length > 1) {
     askingAbout = r.txt;
     rows = out.map(function (o) {
