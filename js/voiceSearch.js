@@ -581,8 +581,13 @@ async function searchAnchorMap(transcript) {
   const results = [];
 
   for (const row of anchors) {
-    const heading = normTamil(row.thirumozhi_heading || "");
-    const canon   = normTamil(row.canonical_text     || "");
+    // normTamil strips the pulli so matching is forgiving. That form must never
+    // reach the screen: it was turning the option labels into வணண மாடஙகள.
+    // rawHeading/rawCanon are what is shown; heading/canon are what is compared.
+    const rawHeading = row.thirumozhi_heading || "";
+    const rawCanon   = row.canonical_text     || "";
+    const heading = normTamil(rawHeading);
+    const canon   = normTamil(rawCanon);
     const target  = heading || canon;
     if (!target) continue;
 
@@ -615,30 +620,12 @@ async function searchAnchorMap(transcript) {
     if (!sec) continue;
 
     const pathuNum = extractPathuNumFromText(row.canonical_text, row.pathu_name);
-
-    // The first thirumozhi of a pathu is two things at once: the opening of
-    // the whole pathu, and a thirumozhi in its own right. Saying its first
-    // words — வண்ணமாடங்கள், the opening of முதற்பத்து — is therefore ambiguous,
-    // and the reader must be asked which they meant. pathu_master settles who
-    // qualifies: sub_unit_no = 1, nothing else in the pathu.
-    //
-    // That number is what the test leads with now, for two reasons. The name
-    // field is not reliably present on these rows — the inline tree menu
-    // already had to be changed to read pathu_subunit_name instead of
-    // subunit_name — and a name test cannot survive transliteration anyway:
-    // "முதல்" is not "మొదల్", so the moment a reader switches script the
-    // match silently stops and the choice disappears. A number is a number in
-    // every script. The old tests are kept after it as a fallback, so this can
-    // only ever recognise MORE first-of-pathu rows than before, never fewer.
-    const subName = row.pathu_subunit_name || row.subunit_name || "";
-    const subNo   = Number(row.sub_unit_no != null ? row.sub_unit_no : row.subunit_no);
     const isFirstOfPathu =
       row.type === "pathu" &&
       row.pathu_name &&
-      (subNo === 1 ||
-       row.thousand_anchor_no === 1 ||
-       normTamil(subName).includes("முதல") ||
-       normTamil(subName).includes("first"));
+      (row.thousand_anchor_no === 1 ||
+       normTamil(row.subunit_name || "").includes("முதல") ||
+       normTamil(row.subunit_name || "").includes("first"));
 
     if (isFirstOfPathu && pathuNum) {
       results.push({
@@ -649,14 +636,14 @@ async function searchAnchorMap(transcript) {
         score:    score + 5
       });
       results.push({
-        label:    heading || row.canonical_text,
+        label:    rawHeading || rawCanon,
         sublabel: `${sec.name} — ${row.pathu_name} · முதல் திருமொழி மட்டும்`,
         fn:       "_selectSectionWithThirumozhi",
         args:     [row.section_id, sec.name, pathuNum, heading],
         score
       });
       if (row.pasuram_no) results.push({
-        label:    heading || row.canonical_text,
+        label:    rawHeading || rawCanon,
         sublabel: `${sec.name} — இந்த பாசுரம் மட்டும்`,
         fn:       "_openGlobalPasuram",
         args:     [row.pasuram_no],
@@ -666,7 +653,7 @@ async function searchAnchorMap(transcript) {
     }
 
     results.push({
-      label:    heading || row.canonical_text,
+      label:    rawHeading || rawCanon,
       sublabel: sec.name + (row.pathu_name ? ` — ${row.pathu_name}` : ""),
       fn:       pathuNum ? "_selectSectionWithThirumozhi" : "_selectSection",
       args:     pathuNum
@@ -675,7 +662,7 @@ async function searchAnchorMap(transcript) {
       score
     });
     if (pathuNum && row.pasuram_no) results.push({
-      label:    heading || row.canonical_text,
+      label:    rawHeading || rawCanon,
       sublabel: `${sec.name} — இந்த பாசுரம் மட்டும்`,
       fn:       "_openGlobalPasuram",
       args:     [row.pasuram_no],

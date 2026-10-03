@@ -553,6 +553,21 @@ input.addEventListener("keydown", function (e) {
 list.addEventListener("click", function (e) {
   const item = e.target.closest(".ss-item");
   if (!item) return;
+
+  /* A click on a result is not a click outside the box, and the handler at the
+     bottom of this file must not treat it as one.
+
+     It otherwise does. choose() replaces the list's contents the moment it is
+     called ("Opening..."), which detaches the very element that was clicked.
+     The click then carries on up to document, where closest(".ss-boxwrap")
+     searches the ancestors of a node that is no longer in the page and finds
+     nothing — so the click reads as outside, and hideList() wipes the list.
+
+     That was harmless while choosing always ended in a page navigation. Now
+     that an ambiguous name stays here to show its readings, the wipe erases
+     them, and the tap appears to do nothing at all. */
+  e.stopPropagation();
+
   choose(Number(item.getAttribute("data-i")));
 });
 
