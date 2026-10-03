@@ -16,6 +16,7 @@ import {
   renderSectionClosing
 } from "./displayHelper.js";
 import { c, sectionTitle, ensureContentStrings } from "../utils/contentStrings.js";
+import { sectionAllowedForSect } from "../utils/sectUtils.js";
 
 // This view lists ONLY the ★★ dual-recital pasurams extracted from a section,
 // so it deliberately shows no display items from entity_master (adivaravu,
@@ -24,6 +25,21 @@ import { c, sectionTitle, ensureContentStrings } from "../utils/contentStrings.j
 // Tamil included.
 
 const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
+
+// Which sections this reader may see. The anchor map returns every section of
+// a thousand regardless of sect, so without this a Thenkalai reader was shown
+// the Vadakalai Ithara Prabandham and the other way round.
+//
+// sectionAllowedForSect is the SAME helper the tree's own section list uses
+// (render/section.js), so the two can never disagree about what belongs to a
+// sect — including the Ahobila Madam works, 52 and 53, which are Vadakalai but
+// only for VM. Writing a fourth copy of that rule here (recitalSetup.js and
+// voicePlay.js already carry their own) is how they start to drift.
+function visibleSectionIds(anchorRows) {
+  return [...new Set(anchorRows.map(r => r.section_id))]
+    .filter(id => sectionAllowedForSect(id))
+    .sort((a, b) => a - b);
+}
 
 // Ceremonial titles come from ui_text_master (sec.title.<id>) via sectionTitle().
 
@@ -285,7 +301,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
   const allSectionIds = [];
   const seenSections = new Set();
   for (const anchorRows of allAnchorRows) {
-    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
+    const sectionIds = visibleSectionIds(anchorRows);
     for (const secId of sectionIds) {
       if (!seenSections.has(secId)) {
         seenSections.add(secId);
@@ -332,12 +348,12 @@ export async function renderFullDualRecital(selectedThousandId = null) {
     const t = filtered[ti];
     const anchorRows = allAnchorRows[ti];
 
-    if (isFullMode) {
-      const tName = t.name === c("common.naalayiram") ? "" : t.name;
-      if (tName) html += `<div class="fdr-thousand-heading">${tName}</div>`;
-    }
+    const sectionIds = visibleSectionIds(anchorRows);
 
-    const sectionIds = [...new Set(anchorRows.map(r => r.section_id))].sort((a, b) => a - b);
+    // Built first, then kept only if it has something in it. A thousand whose
+    // sections all belong to the other sect would otherwise print its heading
+    // over an empty space.
+    let sectionsHtml = "";
 
     for (const secId of sectionIds) {
       const sectionRow = anchorRows.find(r => r.section_id === secId && r.type === "section");
@@ -485,7 +501,7 @@ export async function renderFullDualRecital(selectedThousandId = null) {
 
         const spClosing = (displayData.sectionClosing || [])[0]?.closing_text || "";
 
-        html += `
+        sectionsHtml += `
           <div class="fdr-section-box">
             <div class="fdr-section-heading">${heading}</div>
             ${spThaniyanHtml}
@@ -497,7 +513,15 @@ export async function renderFullDualRecital(selectedThousandId = null) {
       }
 
       // ── normal sections ────────────────────────────────────────────────────
-      html += buildSectionBlock(heading, thaniyanRows, contentData, displayData);
+      sectionsHtml += buildSectionBlock(heading, thaniyanRows, contentData, displayData);
+    }
+
+    if (sectionsHtml.trim()) {
+      if (isFullMode) {
+        const tName = t.name === c("common.naalayiram") ? "" : t.name;
+        if (tName) html += `<div class="fdr-thousand-heading">${tName}</div>`;
+      }
+      html += sectionsHtml;
     }
   }
 
