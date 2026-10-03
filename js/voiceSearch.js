@@ -615,12 +615,30 @@ async function searchAnchorMap(transcript) {
     if (!sec) continue;
 
     const pathuNum = extractPathuNumFromText(row.canonical_text, row.pathu_name);
+
+    // The first thirumozhi of a pathu is two things at once: the opening of
+    // the whole pathu, and a thirumozhi in its own right. Saying its first
+    // words — வண்ணமாடங்கள், the opening of முதற்பத்து — is therefore ambiguous,
+    // and the reader must be asked which they meant. pathu_master settles who
+    // qualifies: sub_unit_no = 1, nothing else in the pathu.
+    //
+    // That number is what the test leads with now, for two reasons. The name
+    // field is not reliably present on these rows — the inline tree menu
+    // already had to be changed to read pathu_subunit_name instead of
+    // subunit_name — and a name test cannot survive transliteration anyway:
+    // "முதல்" is not "మొదల్", so the moment a reader switches script the
+    // match silently stops and the choice disappears. A number is a number in
+    // every script. The old tests are kept after it as a fallback, so this can
+    // only ever recognise MORE first-of-pathu rows than before, never fewer.
+    const subName = row.pathu_subunit_name || row.subunit_name || "";
+    const subNo   = Number(row.sub_unit_no != null ? row.sub_unit_no : row.subunit_no);
     const isFirstOfPathu =
       row.type === "pathu" &&
       row.pathu_name &&
-      (row.thousand_anchor_no === 1 ||
-       normTamil(row.subunit_name || "").includes("முதல") ||
-       normTamil(row.subunit_name || "").includes("first"));
+      (subNo === 1 ||
+       row.thousand_anchor_no === 1 ||
+       normTamil(subName).includes("முதல") ||
+       normTamil(subName).includes("first"));
 
     if (isFirstOfPathu && pathuNum) {
       results.push({

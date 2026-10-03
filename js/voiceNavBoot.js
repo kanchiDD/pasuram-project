@@ -151,6 +151,33 @@ function hasValidPathu(data) {
   return data?.some(p => p.pathu_name && String(p.pathu_name).trim());
 }
 
+
+// ═══════════════════════════════════════════════════════
+// WHEN A THANIYAN IS SHOWN
+// ═══════════════════════════════════════════════════════
+// A thaniyan is recited before a SECTION or a PATHU — never before a single
+// pasuram. Printing one above a pasuram a reader searched for is not a
+// cosmetic slip: it shows a recital that would be wrong to perform.
+//
+// These are exactly the rules voicePlay.js already applies to AUDIO, copied
+// here so what is shown and what is played never disagree:
+//
+//   whole section                    pothu + section thaniyan     YES
+//   whole pathu                      pothu + section thaniyan     YES
+//   thirumozhi in 4 / 5              section thaniyan             YES
+//        (their thirumozhis are the primary recital units)
+//   thirumozhi in 2 / 11 / 26                                     NO
+//   one pasuram, or a line of one                                 NO
+//   a curated set across sections                                 NO
+//
+// fetchThaniyan() both loads AND renders, so these two helpers are the only
+// places that decide. Clearing is explicit rather than assumed: the field
+// survives within a page, so a thirumozhi opened after a section would
+// otherwise inherit the section's thaniyan and look correct by accident.
+const STANDALONE_SECTIONS = [4, 5];   // mirrors voicePlay.js
+function useThaniyan() { return fetchThaniyan(); }
+function noThaniyan()  { state.thaniyanData = null; }
+
 // ═══════════════════════════════════════════════════════
 // SECTION NAVIGATORS
 // ═══════════════════════════════════════════════════════
@@ -175,7 +202,7 @@ function voiceSelectSection(sectionId, sectionName) {
     return;
   }
 
-  fetchThaniyan();
+  useThaniyan();                      // whole section
   fetchPasuram().then(() => {
     // Text/voice search that resolved to the SECTION itself means the
     // user wants the whole section — go straight to full content, no
@@ -195,7 +222,10 @@ function voiceSelectStandalone(sectionId, sectionName, pathuNum) {
   state.filteredPasuram       = null;
   state.isStandaloneSelection = true;
 
-  fetchThaniyan();
+  // Sections 4 and 5 only. Their thirumozhis are primary recital units and
+  // carry the section thaniyan, whole section or not — so this one is right
+  // either way. (Same rule as playThirumozhiAudio's STANDALONE_SECTIONS.)
+  useThaniyan();
   fetchPasuram().then(() => {
     if (pathuNum && state.pasuramData) {
       const ordinal  = PATHU_ORDINALS.find(o => o.num === pathuNum);
@@ -237,7 +267,7 @@ function voiceSelectWithPathu(sectionId, sectionName, pathuNum) {
   state.filteredPasuram        = null;
   state.isPathuSelectionActive = false;
 
-  fetchThaniyan();
+  useThaniyan();                      // whole pathu
   fetchPasuram().then(() => {
     if (!state.pasuramData) return;
 
@@ -272,11 +302,16 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
   state.filteredPasuram        = null;
   state.isPathuSelectionActive = false;
 
-  fetchThaniyan();
+  // In 2/11/26 a bare thirumozhi carries no thaniyan; in 4/5 it carries the
+  // section's. Decided by section, exactly as voicePlay.js decides it.
+  if (STANDALONE_SECTIONS.includes(Number(sectionId))) useThaniyan();
+  else noThaniyan();
+
   fetchPasuram().then(() => {
     if (!state.pasuramData) return;
 
     let filtered = state.pasuramData;
+    let narrowed = false;
 
     // Narrow to pathu first
     if (pathuNum) {
@@ -284,7 +319,7 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
       const byPathu = filtered.filter(p =>
         ordinal?.keys.some(k => norm(p.pathu_name || "").includes(norm(k)))
       );
-      if (byPathu.length) filtered = byPathu;
+      if (byPathu.length) { filtered = byPathu; narrowed = true; }
     }
 
     // Narrow to thirumozhi — sections 2/11/26 carry the subunit in
@@ -298,8 +333,12 @@ function voiceSelectWithThirumozhi(sectionId, sectionName, pathuNum, heading) {
         return (th && (th.includes(h) || h.includes(th))) ||
                (su && (su.includes(h) || h.includes(su)));
       });
-      if (byHead.length) filtered = byHead;
+      if (byHead.length) { filtered = byHead; narrowed = true; }
     }
+
+    // Both narrowings missed, so the whole section is what is on screen —
+    // and then the thaniyan is correct after all.
+    if (!narrowed) useThaniyan();
 
     state.pasuramData = state.filteredPasuram = filtered;
     state.level = "PASURAM";
@@ -363,7 +402,8 @@ async function voiceOpenGlobalPasuram(globalNo) {
       state.selectedSectionName = row.section_name || `Section ${row.section_id}`;
       state.pasuramData = state.filteredPasuram = null;
 
-      fetchThaniyan();
+      // One pasuram, reached by number or by a line of its text. Never.
+      noThaniyan();
       fetchPasuram().then(() => {
         if (!state.pasuramData) return;
         // Numeric-coerce both sides — global_no can arrive as a string, which
@@ -426,7 +466,9 @@ async function voiceOpenNeeratam() {
   state.filteredPasuram        = null;
   state.isPathuSelectionActive = false;
 
-  fetchThaniyan();
+  // Pasurams drawn from three different sections — no single section's
+  // thaniyan would be the right one to print in front of them.
+  noThaniyan();
   await fetchPasuram();
 
   if (!state.pasuramData || !state.pasuramData.length) return;
