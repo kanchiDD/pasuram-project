@@ -211,11 +211,16 @@ const TAMIL_LO = 0x0B80, TAMIL_HI = 0x0BFF;
    short e or o, ன ற ழ (and in Bengali ள) have no seat, and Bengali
    writes va as ব and has no om sign. Their entries are what aksharamukha
    writes for each letter, checked one by one against its output, so this
-   matches the converted text in text_script. */
+   matches the converted text in text_script.
+
+   ௐ has no seat in Telugu, Kannada or Malayalam either, so it is spelt
+   out (ఓం ಓಂ ഓം). A lone ௗ becomes the au-sign: Telugu has no length
+   mark at the shifted position, so the old entry for it was itself a
+   box. The text is composed first, so ௌ normally arrives whole. */
 const SCRIPT_EXC = {
-  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
-  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
-  ml:   {},
+  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c4c", "\u0bd0": "\u0c13\u0c02" },
+  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc", "\u0bd0": "\u0c93\u0c82" },
+  ml:   { "\u0bd0": "\u0d13\u0d02" },
   deva: {},
   gu:   { "\u0b8e": "\u0a8f", "\u0b92": "\u0a93", "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",
           "\u0ba9": "\u0aa8\u0abc", "\u0bb1": "\u0ab0\u0abc", "\u0bb4": "\u0ab3\u0abc", "\u0bd7": "\u0acc" },
@@ -234,8 +239,10 @@ function bnContext(s) {
 
 /* Gujarati and Bengali typing on its way back to Tamil: the letters above
    that are written with a nukta, or as another letter, are turned back
-   before the offset is applied to everything else. */
+   before the offset is applied to everything else. Kannada needs the same
+   for ೞ, which otherwise shifts onto an empty Tamil codepoint. */
 const REV_SEQ = {
+  kn: [["\u0cde", "\u0bb4"], ["\u0ca8\u0cbc", "\u0ba9"]],
   gu: [["\u0aa8\u0abc", "\u0ba9"], ["\u0ab0\u0abc", "\u0bb1"], ["\u0ab3\u0abc", "\u0bb4"]],
   bn: [["\u09a8\u09bc", "\u0ba9"], ["\u09b0\u09bc", "\u0bb1"], ["\u09b2\u09bc", "\u0bb3"],
        ["\u09b7\u09bc", "\u0bb4"], ["\u09af\u09bc", "\u0baf"], ["\u09ce", "\u0ba4\u0bcd"],
@@ -246,13 +253,15 @@ function fromTamil(text, script) {
   const b = BLOCK[script];
   if (!b || !text) return text || "";
   const exc = SCRIPT_EXC[script] || {};
-  // Gujarati and Bengali look their o-signs up as single characters.
-  const src = REV_SEQ[script] ? String(text).normalize("NFC") : String(text);
+  // The o- and au-signs are looked up as single characters.
+  const src = String(text).normalize("NFC");
   let out = "";
   for (const ch of src) {
     if (exc[ch]) { out += exc[ch]; continue; }
     const c = ch.codePointAt(0);
-    out += (c >= TAMIL_LO && c <= TAMIL_HI) ? String.fromCodePoint(c + b.off) : ch;
+    // ௰ … ௺ (Tamil number and calendar signs) have no seat elsewhere.
+    const sign = c >= 0x0BF0 && c <= 0x0BFA;
+    out += (c >= TAMIL_LO && c <= TAMIL_HI && !sign) ? String.fromCodePoint(c + b.off) : ch;
   }
   return script === "bn" ? bnContext(out) : out;
 }

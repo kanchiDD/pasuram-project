@@ -10,8 +10,9 @@
 // the Indic Unicode blocks are laid out in parallel, position for
 // position, so Tamil → Telugu / Kannada / Malayalam / Devanagari is
 // a fixed codepoint offset. Tamil is a subset of what those blocks
-// hold, so every Tamil character has a seat. Gujarati and Bengali are
-// the exception — see EXC below for the letters that need a substitute.
+// hold, so almost every Tamil character has a seat. The few that do
+// not — and Gujarati and Bengali, where many do not — are listed in
+// EXC below.
 //
 //   Tamil க U+0B95 → Telugu క U+0C15 → Kannada ಕ U+0C95
 //                  → Malayalam ക U+0D15 → Devanagari क U+0915
@@ -50,7 +51,26 @@ const OFFSET = {
 //   ன ற ழ (ள)     the nearest letter plus the nukta dot
 //   Bengali வ     Bengali writes va as ব
 //   Bengali ௐ     Bengali has no om sign; spelt ওঁ
+//
+// The same check over Telugu, Kannada and Malayalam finds a handful
+// more: Telugu and Kannada have no seat for ன (Kannada none for ழ
+// either), and none of the three has an om sign. Devanagari has a
+// seat for everything.
 const EXC = {
+  te: {
+    "\u0ba9": "\u0c28",                       // ன -> న
+    "\u0bd0": "\u0c13\u0c02",                 // ௐ -> ఓం
+    "\u0bd7": "\u0c4c",                       // a stray ௗ -> ౌ
+  },
+  kn: {
+    "\u0ba9": "\u0ca8\u0cbc",                 // ன -> ನ಼
+    "\u0bb4": "\u0cde",                       // ழ -> ೞ
+    "\u0bd0": "\u0c93\u0c82",                 // ௐ -> ಓಂ
+    "\u0bd7": "\u0ccc",                       // a stray ௗ -> ೌ
+  },
+  ml: {
+    "\u0bd0": "\u0d13\u0d02",                 // ௐ -> ഓം
+  },
   gu: {
     "\u0b8e": "\u0a8f", "\u0b92": "\u0a93",   // எ ஒ -> એ ઓ
     "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",   // ெ ொ -> ે ો
@@ -138,21 +158,26 @@ export function activeScript() {
 export function translitLive(text, script) {
   const src = String(text == null ? "" : text);
   if (!src || !script || script === "ta") return src;
-  if (script === "iast") return toIast(src);
+  if (script === "iast") return toIast(src.normalize("NFC"));
 
   const off = OFFSET[script];
   if (off === undefined) return src;
 
-  // Gujarati and Bengali need the exceptions above. Their o-signs are
-  // looked up as single characters, so the text is composed first.
+  // The o- and au-signs are looked up as single characters, so the
+  // text is composed first. (Decomposed, ௌ arrived as two signs and
+  // came out as two in every script.)
   const exc = EXC[script];
-  const s = exc ? src.normalize("NFC") : src;
+  const s = src.normalize("NFC");
 
   let out = "";
   for (const ch of s) {
     if (exc && exc[ch]) { out += exc[ch]; continue; }
     const cp = ch.codePointAt(0);
-    out += (cp >= TA_START && cp <= TA_END) ? String.fromCodePoint(cp + off) : ch;
+    // ௰ … ௺ are Tamil number and calendar signs. No other script has
+    // them at the shifted position, and aksharamukha leaves them as
+    // they are, so they are left as they are here too.
+    const sign = cp >= 0x0BF0 && cp <= 0x0BFA;
+    out += (cp >= TA_START && cp <= TA_END && !sign) ? String.fromCodePoint(cp + off) : ch;
   }
   return script === "bn" ? bnContext(out) : out;
 }

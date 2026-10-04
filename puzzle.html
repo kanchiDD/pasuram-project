@@ -146,11 +146,16 @@ var SCRIPT = getScript();
    short e or o, ன ற ழ (and in Bengali ள) have no seat, and Bengali
    writes va as ব and has no om sign. Their entries are what aksharamukha
    writes for each letter, checked one by one against its output, so this
-   matches the converted text in text_script. */
+   matches the converted text in text_script.
+
+   ௐ has no seat in Telugu, Kannada or Malayalam either, so it is spelt
+   out (ఓం ಓಂ ഓം). A lone ௗ becomes the au-sign: Telugu has no length
+   mark at the shifted position, so the old entry for it was itself a
+   box. The text is composed first, so ௌ normally arrives whole. */
 var SCRIPT_EXC = {
-  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
-  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
-  ml:   {},
+  te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c4c", "\u0bd0": "\u0c13\u0c02" },
+  kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc", "\u0bd0": "\u0c93\u0c82" },
+  ml:   { "\u0bd0": "\u0d13\u0d02" },
   deva: {},
   gu:   { "\u0b8e": "\u0a8f", "\u0b92": "\u0a93", "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",
           "\u0ba9": "\u0aa8\u0abc", "\u0bb1": "\u0ab0\u0abc", "\u0bb4": "\u0ab3\u0abc", "\u0bd7": "\u0acc" },
@@ -172,14 +177,16 @@ function disp(t) {
   var off = BLOCK[SCRIPT];
   if (!off || !t) return t || "";
   var exc = SCRIPT_EXC[SCRIPT] || {};
-  // Gujarati and Bengali look their o-signs up as single characters.
-  if (SCRIPT === "gu" || SCRIPT === "bn") t = String(t).normalize("NFC");
+  // The o- and au-signs are looked up as single characters.
+  t = String(t).normalize("NFC");
   var out = "";
   for (var i = 0; i < t.length; i++) {
     var ch = t.charAt(i);
     if (exc[ch]) { out += exc[ch]; continue; }
     var c = ch.charCodeAt(0);
-    out += (c >= 0x0B80 && c <= 0x0BFF) ? String.fromCharCode(c + off) : ch;
+    // ௰ … ௺ (Tamil number and calendar signs) have no seat elsewhere.
+    var sign = c >= 0x0BF0 && c <= 0x0BFA;
+    out += (c >= 0x0B80 && c <= 0x0BFF && !sign) ? String.fromCharCode(c + off) : ch;
   }
   return SCRIPT === "bn" ? bnContext(out) : out;
 }
