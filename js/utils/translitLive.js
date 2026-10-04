@@ -10,7 +10,8 @@
 // the Indic Unicode blocks are laid out in parallel, position for
 // position, so Tamil → Telugu / Kannada / Malayalam / Devanagari is
 // a fixed codepoint offset. Tamil is a subset of what those blocks
-// hold, so every Tamil character has a seat.
+// hold, so every Tamil character has a seat. Gujarati and Bengali are
+// the exception — see EXC below for the letters that need a substitute.
 //
 //   Tamil க U+0B95 → Telugu క U+0C15 → Kannada ಕ U+0C95
 //                  → Malayalam ക U+0D15 → Devanagari क U+0915
@@ -34,7 +35,49 @@ const OFFSET = {
   te:   +0x080,   // U+0C00
   kn:   +0x100,   // U+0C80
   ml:   +0x180,   // U+0D00
+  gu:   -0x100,   // U+0A80
+  bn:   -0x200,   // U+0980
 };
+
+// ── Gujarati and Bengali: where the parallel breaks ─────────
+// Tamil is NOT a subset of these two blocks. Shifted by the offset,
+// these letters land on codepoints Unicode never assigned and render
+// as empty boxes. Each entry is what aksharamukha writes for that
+// letter, checked letter by letter against its output, so the live
+// echo matches the converted verses in text_script.
+//
+//   short e / o   neither script has them; written long, as aksharamukha does
+//   ன ற ழ (ள)     the nearest letter plus the nukta dot
+//   Bengali வ     Bengali writes va as ব
+//   Bengali ௐ     Bengali has no om sign; spelt ওঁ
+const EXC = {
+  gu: {
+    "\u0b8e": "\u0a8f", "\u0b92": "\u0a93",   // எ ஒ -> એ ઓ
+    "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",   // ெ ொ -> ે ો
+    "\u0ba9": "\u0aa8\u0abc",                 // ன -> ન઼
+    "\u0bb1": "\u0ab0\u0abc",                 // ற -> ર઼
+    "\u0bb4": "\u0ab3\u0abc",                 // ழ -> ળ઼
+    "\u0bd7": "\u0acc",                       // a stray ௗ -> ૌ
+  },
+  bn: {
+    "\u0b8e": "\u098f", "\u0b92": "\u0993",   // எ ஒ -> এ ও
+    "\u0bc6": "\u09c7", "\u0bca": "\u09cb",   // ெ ொ -> ে ো
+    "\u0ba9": "\u09a8\u09bc",                 // ன -> ন়
+    "\u0bb1": "\u09b0\u09bc",                 // ற -> র়
+    "\u0bb3": "\u09b2\u09bc",                 // ள -> ল়
+    "\u0bb4": "\u09b7\u09bc",                 // ழ -> ষ়
+    "\u0bb5": "\u09ac",                       // வ -> ব
+    "\u0bd0": "\u0993\u0981",                 // ௐ -> ওঁ
+  },
+};
+
+// Bengali also spells two letters by their surroundings, as
+// aksharamukha does: ய after a vowel is য়, and த் ending a word is ৎ.
+function bnContext(s) {
+  return s
+    .replace(/([\u0985-\u09b9\u09bc-\u09cc\u09d7\u09df])\u09af/g, "$1\u09df")
+    .replace(/\u09a4\u09cd(?![\u0980-\u09ff])/g, "\u09ce");
+}
 
 // ── IAST ────────────────────────────────────────────────────
 const IAST_VOWEL = {
@@ -78,7 +121,7 @@ function toIast(src) {
 }
 
 // ── Public ──────────────────────────────────────────────────
-const VALID = ["te", "kn", "ml", "deva", "iast"];
+const VALID = ["te", "kn", "ml", "deva", "iast", "gu", "bn"];
 
 // The script the reader has chosen, or "" for Tamil. Same key every
 // other screen reads, so the voice UI follows the banner.
@@ -100,12 +143,18 @@ export function translitLive(text, script) {
   const off = OFFSET[script];
   if (off === undefined) return src;
 
+  // Gujarati and Bengali need the exceptions above. Their o-signs are
+  // looked up as single characters, so the text is composed first.
+  const exc = EXC[script];
+  const s = exc ? src.normalize("NFC") : src;
+
   let out = "";
-  for (const ch of src) {
+  for (const ch of s) {
+    if (exc && exc[ch]) { out += exc[ch]; continue; }
     const cp = ch.codePointAt(0);
     out += (cp >= TA_START && cp <= TA_END) ? String.fromCodePoint(cp + off) : ch;
   }
-  return out;
+  return script === "bn" ? bnContext(out) : out;
 }
 
 // True when the string contains at least one Tamil letter — used to

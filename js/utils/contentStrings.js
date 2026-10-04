@@ -75,7 +75,7 @@ const TAMIL = {
 };
 
 const I18N_HOST = "https://workeri18n.kanchitrust.workers.dev";
-const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
+const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast", "gu", "bn"];
 
 function activeScript() {
   try {

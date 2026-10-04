@@ -398,7 +398,7 @@
     const API_PROD = "https://cdnaalayiram-api.kanchitrust.workers.dev/api";
     const API_I18N = "https://workeri18n.kanchitrust.workers.dev/api";
 
-    const R_SCRIPTS = ["te", "kn", "ml", "deva", "iast"];
+    const R_SCRIPTS = ["te", "kn", "ml", "deva", "iast", "gu", "bn"];
     function _activeScript() {
       try {
         const s = (localStorage.getItem("script") || "ta").toLowerCase();
@@ -447,6 +447,8 @@
         { code: "kn",   label: "ಕನ್ನಡ",    name: "Kannada"      },
         { code: "ml",   label: "മലയാളം",  name: "Malayalam"    },
         { code: "deva", label: "देवनागरी", name: "Devanagari"   },
+        { code: "gu",   label: "ગુજરાતી",  name: "Gujarati"     },
+        { code: "bn",   label: "বাংলা",    name: "Bengali"      },
         { code: "iast", label: "Roman",  name: "Roman (IAST)" },
       ];
       const current = SCRIPT || "ta";

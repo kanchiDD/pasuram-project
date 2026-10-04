@@ -202,7 +202,7 @@ const HOST_MAP = {
   "cdnaalayiram-api.kanchitrust.workers.dev": "workeri18n.kanchitrust.workers.dev",
   "recitalworker.kanchitrust.workers.dev":    "recitalworkeri18n.kanchitrust.workers.dev",
 };
-const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast"];
+const VALID_SCRIPTS = ["te", "ml", "kn", "deva", "iast", "gu", "bn"];
 
 export function getScript() {
   const s = (localStorage.getItem("script") || "ta").toLowerCase();

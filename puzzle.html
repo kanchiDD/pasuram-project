@@ -119,6 +119,8 @@ var SCRIPTS = [
   { code: "kn",   label: "ಕನ್ನಡ",    name: "Kannada" },
   { code: "ml",   label: "മലയാളം",  name: "Malayalam" },
   { code: "deva", label: "देवनागरी", name: "Devanagari" },
+  { code: "gu",   label: "ગુજરાતી",  name: "Gujarati" },
+  { code: "bn",   label: "বাংলা",    name: "Bengali" },
   { code: "iast", label: "Roman",   name: "Roman" }
 ];
 
@@ -138,19 +140,40 @@ var SCRIPT = getScript();
    for every letter. Tamil distinguishes ன from ந and carries ழ, and at the
    shifted position those land on codepoints Telugu and Kannada never
    assigned, so they render as empty boxes. These are the substitutions a
-   proper transliterator makes. */
+   proper transliterator makes.
+
+   Gujarati and Bengali break the parallel far more often: neither has a
+   short e or o, ன ற ழ (and in Bengali ள) have no seat, and Bengali
+   writes va as ব and has no om sign. Their entries are what aksharamukha
+   writes for each letter, checked one by one against its output, so this
+   matches the converted text in text_script. */
 var SCRIPT_EXC = {
   te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
   kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
   ml:   {},
-  deva: {}
+  deva: {},
+  gu:   { "\u0b8e": "\u0a8f", "\u0b92": "\u0a93", "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",
+          "\u0ba9": "\u0aa8\u0abc", "\u0bb1": "\u0ab0\u0abc", "\u0bb4": "\u0ab3\u0abc", "\u0bd7": "\u0acc" },
+  bn:   { "\u0b8e": "\u098f", "\u0b92": "\u0993", "\u0bc6": "\u09c7", "\u0bca": "\u09cb",
+          "\u0ba9": "\u09a8\u09bc", "\u0bb1": "\u09b0\u09bc", "\u0bb3": "\u09b2\u09bc", "\u0bb4": "\u09b7\u09bc",
+          "\u0bb5": "\u09ac", "\u0bd0": "\u0993\u0981" }
 };
 
-var BLOCK = { te: 0x080, kn: 0x100, ml: 0x180, deva: -0x280 };
+/* Bengali also spells two letters by their surroundings, as aksharamukha
+   does: ய after a vowel is য়, and த் ending a word is ৎ. */
+function bnContext(s) {
+  return s
+    .replace(/([\u0985-\u09b9\u09bc-\u09cc\u09d7\u09df])\u09af/g, "$1\u09df")
+    .replace(/\u09a4\u09cd(?![\u0980-\u09ff])/g, "\u09ce");
+}
+
+var BLOCK = { te: 0x080, kn: 0x100, ml: 0x180, deva: -0x280, gu: -0x100, bn: -0x200 };
 function disp(t) {
   var off = BLOCK[SCRIPT];
   if (!off || !t) return t || "";
   var exc = SCRIPT_EXC[SCRIPT] || {};
+  // Gujarati and Bengali look their o-signs up as single characters.
+  if (SCRIPT === "gu" || SCRIPT === "bn") t = String(t).normalize("NFC");
   var out = "";
   for (var i = 0; i < t.length; i++) {
     var ch = t.charAt(i);
@@ -158,7 +181,7 @@ function disp(t) {
     var c = ch.charCodeAt(0);
     out += (c >= 0x0B80 && c <= 0x0BFF) ? String.fromCharCode(c + off) : ch;
   }
-  return out;
+  return SCRIPT === "bn" ? bnContext(out) : out;
 }
 
 function localDate(d) {

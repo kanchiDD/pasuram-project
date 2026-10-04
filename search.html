@@ -156,6 +156,8 @@ const SCRIPTS = [
   { code: "kn",   label: "ಕನ್ನಡ",      name: "Kannada"    },
   { code: "ml",   label: "മലയാളം",    name: "Malayalam"  },
   { code: "deva", label: "देवनागरी",   name: "Devanagari" },
+  { code: "gu",   label: "ગુજરાતી",    name: "Gujarati"   },
+  { code: "bn",   label: "বাংলা",      name: "Bengali"    },
   { code: "iast", label: "Roman",     name: "Roman"      }
 ];
 
@@ -193,7 +195,9 @@ const BLOCK = {
   te:   { lo: 0x0C00, hi: 0x0C7F, off:  0x080 },
   kn:   { lo: 0x0C80, hi: 0x0CFF, off:  0x100 },
   ml:   { lo: 0x0D00, hi: 0x0D7F, off:  0x180 },
-  deva: { lo: 0x0900, hi: 0x097F, off: -0x280 }
+  deva: { lo: 0x0900, hi: 0x097F, off: -0x280 },
+  gu:   { lo: 0x0A80, hi: 0x0AFF, off: -0x100 },
+  bn:   { lo: 0x0980, hi: 0x09FF, off: -0x200 }
 };
 const TAMIL_LO = 0x0B80, TAMIL_HI = 0x0BFF;
 
@@ -201,32 +205,68 @@ const TAMIL_LO = 0x0B80, TAMIL_HI = 0x0BFF;
    for every letter. Tamil distinguishes ன from ந and carries ழ, and at the
    shifted position those land on codepoints Telugu and Kannada never
    assigned, so they render as empty boxes. These are the substitutions a
-   proper transliterator makes. */
+   proper transliterator makes.
+
+   Gujarati and Bengali break the parallel far more often: neither has a
+   short e or o, ன ற ழ (and in Bengali ள) have no seat, and Bengali
+   writes va as ব and has no om sign. Their entries are what aksharamukha
+   writes for each letter, checked one by one against its output, so this
+   matches the converted text in text_script. */
 const SCRIPT_EXC = {
   te:   { "\u0ba9": "\u0c28", "\u0bd7": "\u0c57" },
   kn:   { "\u0ba9": "\u0ca8", "\u0bb4": "\u0cde", "\u0bd7": "\u0ccc" },
   ml:   {},
-  deva: {}
+  deva: {},
+  gu:   { "\u0b8e": "\u0a8f", "\u0b92": "\u0a93", "\u0bc6": "\u0ac7", "\u0bca": "\u0acb",
+          "\u0ba9": "\u0aa8\u0abc", "\u0bb1": "\u0ab0\u0abc", "\u0bb4": "\u0ab3\u0abc", "\u0bd7": "\u0acc" },
+  bn:   { "\u0b8e": "\u098f", "\u0b92": "\u0993", "\u0bc6": "\u09c7", "\u0bca": "\u09cb",
+          "\u0ba9": "\u09a8\u09bc", "\u0bb1": "\u09b0\u09bc", "\u0bb3": "\u09b2\u09bc", "\u0bb4": "\u09b7\u09bc",
+          "\u0bb5": "\u09ac", "\u0bd0": "\u0993\u0981" }
+};
+
+/* Bengali also spells two letters by their surroundings, as aksharamukha
+   does: ய after a vowel is য়, and த் ending a word is ৎ. */
+function bnContext(s) {
+  return s
+    .replace(/([\u0985-\u09b9\u09bc-\u09cc\u09d7\u09df])\u09af/g, "$1\u09df")
+    .replace(/\u09a4\u09cd(?![\u0980-\u09ff])/g, "\u09ce");
+}
+
+/* Gujarati and Bengali typing on its way back to Tamil: the letters above
+   that are written with a nukta, or as another letter, are turned back
+   before the offset is applied to everything else. */
+const REV_SEQ = {
+  gu: [["\u0aa8\u0abc", "\u0ba9"], ["\u0ab0\u0abc", "\u0bb1"], ["\u0ab3\u0abc", "\u0bb4"]],
+  bn: [["\u09a8\u09bc", "\u0ba9"], ["\u09b0\u09bc", "\u0bb1"], ["\u09b2\u09bc", "\u0bb3"],
+       ["\u09b7\u09bc", "\u0bb4"], ["\u09af\u09bc", "\u0baf"], ["\u09ce", "\u0ba4\u0bcd"],
+       ["\u09ac", "\u0bb5"], ["\u0993\u0981", "\u0bd0"]]
 };
 
 function fromTamil(text, script) {
   const b = BLOCK[script];
   if (!b || !text) return text || "";
   const exc = SCRIPT_EXC[script] || {};
+  // Gujarati and Bengali look their o-signs up as single characters.
+  const src = REV_SEQ[script] ? String(text).normalize("NFC") : String(text);
   let out = "";
-  for (const ch of String(text)) {
+  for (const ch of src) {
     if (exc[ch]) { out += exc[ch]; continue; }
     const c = ch.codePointAt(0);
     out += (c >= TAMIL_LO && c <= TAMIL_HI) ? String.fromCodePoint(c + b.off) : ch;
   }
-  return out;
+  return script === "bn" ? bnContext(out) : out;
 }
 
 function toTamil(text, script) {
   const b = BLOCK[script];
   if (!b || !text) return text || "";
+  let src = String(text);
+  if (REV_SEQ[script]) {
+    src = src.normalize("NFC");     // also splits য় into য + nukta
+    for (const pair of REV_SEQ[script]) src = src.split(pair[0]).join(pair[1]);
+  }
   let out = "";
-  for (const ch of String(text)) {
+  for (const ch of src) {
     const c = ch.codePointAt(0);
     out += (c >= b.lo && c <= b.hi) ? String.fromCodePoint(c - b.off) : ch;
   }

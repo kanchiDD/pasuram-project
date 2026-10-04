@@ -59,7 +59,7 @@ const AZHWARS = [
 function _sc() {
   try {
     const s = (localStorage.getItem("script") || "").toLowerCase();
-    return ["te", "kn", "ml", "deva", "iast"].includes(s) ? s : "";
+    return ["te", "kn", "ml", "deva", "iast", "gu", "bn"].includes(s) ? s : "";
   } catch (e) { return ""; }
 }
 const athName  = a => c("ath.author." + a.author_id) || a.name;

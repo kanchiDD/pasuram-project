@@ -17,7 +17,7 @@
 
 import { getScript, setScript } from "../api.js";
 
-// All five conversions are loaded in text_script. Tamil ("ta") is the
+// All seven conversions are loaded in text_script. Tamil ("ta") is the
 // default: it should reach the worker as NO script param at all, so the
 // untouched Tamil path runs. (If api.js sends script=ta instead, the
 // output is still correct Tamil — every row simply falls back — but it
@@ -28,6 +28,8 @@ const SCRIPTS = [
   { code: "kn",   label: "ಕನ್ನಡ",      name: "Kannada"    },
   { code: "ml",   label: "മലയാളം",    name: "Malayalam"  },
   { code: "deva", label: "देवनागरी",   name: "Devanagari" },
+  { code: "gu",   label: "ગુજરાતી",    name: "Gujarati"   },
+  { code: "bn",   label: "বাংলা",      name: "Bengali"    },
   { code: "iast", label: "Roman",    name: "Roman (IAST)" },
 ];
 
