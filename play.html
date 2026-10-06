@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f5c242">
 <title>Play — நாலாயிர திவ்யப்பிரபந்தம்</title>
 <!--
-  play.html — where every ▶ in the PDF editions leads.
+  play.html — where every Play All in the PDF editions leads.
 
-      play.html?a=pasurams/pasuram_474.mp3
-      play.html?a=thaniyans/thaniyan_3.mp3
+      play.html?q=t2.13-24&n=<section name>   a queue: thaniyan 2, pasurams 13-24
+      play.html?a=pasurams/pasuram_474.mp3    a single recording
 
   A PDF cannot run the site's player, and it cannot know the date it is
   read on. So the ▶ links come here, and playback goes through the site's
@@ -68,18 +68,42 @@
   const btn = document.getElementById("play");
   const status = document.getElementById("status");
 
-  // Only the site's own recordings are accepted.
-  const a = new URLSearchParams(location.search).get("a") || "";
-  const m = a.match(/^(pasurams\/pasuram_(\d+)|thaniyans\/thaniyan_([a-z0-9]+))\.mp3$/i);
+  // Only the site's own recordings are accepted, in one of two forms:
+  //   ?a=pasurams/pasuram_474.mp3      one recording
+  //   ?q=t2.13-24.30&n=<name>           a queue (a Play All in the PDF):
+  //        t2 = thaniyans/thaniyan_2.mp3, 13-24 = pasurams 13 to 24, 30 = one
+  const qs = new URLSearchParams(location.search);
+  const a = qs.get("a") || "";
+  const q = qs.get("q") || "";
+  const nm = (qs.get("n") || "").replace(/\s+/g, " ").trim().slice(0, 120);
 
-  if (!m) {
+  let urls = null, label = "", firstNo = 0;
+  const one = a.match(/^(pasurams\/pasuram_(\d+)|thaniyans\/thaniyan_([a-z0-9]+))\.mp3$/i);
+  if (one) {
+    urls = [AUDIO + a];
+    firstNo = one[2] ? Number(one[2]) : 0;
+    label = one[2] ? `பாசுரம் ${one[2]} · Pasuram ${one[2]}` : "தனியன் · Thaniyan";
+  } else if (/^(t[a-z0-9]+|\d+(-\d+)?)(\.(t[a-z0-9]+|\d+(-\d+)?))*$/i.test(q)) {
+    urls = [];
+    for (const part of q.split(".")) {
+      if (/^t/i.test(part)) { urls.push(AUDIO + "thaniyans/thaniyan_" + part.slice(1).toLowerCase() + ".mp3"); continue; }
+      const [x, y] = part.split("-").map(Number);
+      const to = y === undefined ? x : y;
+      if (to < x || to - x > 5000) { urls = null; break; }
+      for (let n = x; n <= to; n++) urls.push(AUDIO + "pasurams/pasuram_" + n + ".mp3");
+      if (!firstNo) firstNo = x;
+      if (urls.length > 6000) { urls = null; break; }
+    }
+    if (urls && urls.length) label = (nm ? nm + " · " : "") + urls.length + " recordings";
+    else urls = null;
+  }
+
+  if (!urls) {
     what.innerHTML = '<span class="bad">This link does not name a recording.</span>';
     btn.style.display = "none";
     status.textContent = "";
   } else {
-    const label = m[2] ? `பாசுரம் ${m[2]} · Pasuram ${m[2]}` : "தனியன் · Thaniyan";
     what.textContent = label;
-    const url = AUDIO + a;
     let playing = false;
 
     const show = on => {
@@ -104,11 +128,11 @@
     // Vadakalai (madam). So for this one check the sect is taken from the
     // number, and the reader's own setting is put back straight after —
     // nothing they chose on the site is changed.
-    const no = m[2] ? Number(m[2]) : 0;
+    const no = firstNo;
     const pdfSect = no >= 25001 ? (no < 32000 ? ["T", ""] : no < 52000 ? ["V", ""] : ["V", "madam"]) : null;
 
     function playChecked() {
-      if (!pdfSect) return playUrls([url], label);
+      if (!pdfSect) return playUrls(urls, label);
       const keep = {};
       try { keep.sect = localStorage.getItem("sect"); keep.subsect = localStorage.getItem("subsect"); } catch (e) {}
       try {
@@ -116,7 +140,7 @@
         if (pdfSect[1]) localStorage.setItem("subsect", pdfSect[1]); else localStorage.removeItem("subsect");
       } catch (e) {}
       try {
-        return playUrls([url], label);          // the rule is checked synchronously, in here
+        return playUrls(urls, label);           // the rule is checked synchronously, in here
       } finally {
         try {
           for (const k of ["sect", "subsect"]) {

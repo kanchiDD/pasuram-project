@@ -529,6 +529,13 @@ export function playUrls(urls, label) {
 }
 export function stopPlayback() { stopAll(); }
 
+// The queue a play button was built with (Play All / Play full), so the PDF
+// edition can hand the same list to play.html. Nothing on the site needs it.
+export function queueUrls(id) {
+  const d = _registry.get(id);
+  return d ? d.urls.slice() : null;
+}
+
 // Global pothu thaniyan audio queue for a sect. Madam recites Kesavarya
 // (thaniyan_k.mp3) before the Vadakalai pothu (thaniyan_v.mp3).
 //   Thenkalai      → [t]

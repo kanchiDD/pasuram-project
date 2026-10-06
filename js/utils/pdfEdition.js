@@ -17,36 +17,42 @@
 //   contents), and the contents page and each section's end have
 //   "↑ Index". The PDF's bookmark sidebar gives the whole tree as well.
 //
-// Play buttons: a PDF cannot run the site's player, so each pasuram's and
-// thaniyan's ▶ becomes a link to arulicheyal.org/play.html, which applies
-// the Anadhyayana Kalam rule on the day it is tapped. "Play All" queues
-// cannot be a single link and stay hidden, as does the floating nav.
+// Play buttons: only the "Play All" ones are kept (each section's, and each
+// thousand's "Play full"). A PDF cannot run the site's player, so each
+// becomes a link to arulicheyal.org/play.html carrying its queue; that page
+// plays it with the site's own player and applies the Anadhyayana Kalam
+// rule on the day it is tapped. The single ▶ of every pasuram and thaniyan
+// is left out, as is the floating nav.
 // =============================================================
 
-import { PASURAM_URL, THANIYAN_URL, thaniyanFileUrl } from "../render/globalAudio.js";
+import { queueUrls } from "../render/globalAudio.js";
 
 const PLAY_PAGE = "https://arulicheyal.org/play.html";
 
-// Only the site's own recordings, passed as their path on the audio host.
-function playHref(url) {
-  const m = String(url || "").match(/^https:\/\/audio\.arulicheyal\.org\/((?:pasurams|thaniyans)\/[a-z0-9_]+\.mp3)$/i);
-  return m ? PLAY_PAGE + "?a=" + encodeURIComponent(m[1]) : null;
-}
-
-// The recording behind a site play button, from its id:
-//   ga-p-<global_no>              a pasuram
-//   ga-th-<section>-<thaniyan>    a section thaniyan
-//   ga-th-g-<0|1|33>              the pothu thaniyan (Madam / T / V)
-function audioFor(id) {
-  let m = id.match(/^ga-p-(\d+)$/);
-  if (m) return PASURAM_URL(m[1]);
-  m = id.match(/^ga-th-([^-]+)-(.+)$/);
-  if (!m) return null;
-  if (m[1] === "g") {
-    const t = Number(m[2]);
-    return t === 0 ? THANIYAN_URL("k") : t === 1 ? THANIYAN_URL("t") : t === 33 ? THANIYAN_URL("v") : null;
+// A queue of the site's recordings, written short enough for a link:
+//   thaniyans/thaniyan_2.mp3   -> t2
+//   pasurams/pasuram_13..24    -> 13-24   (consecutive numbers run together)
+// joined with dots: q=t2.13-24.30  — play.html reads it back in order.
+function queueParam(urls) {
+  const parts = [];
+  let runA = null, runB = null;
+  const flush = () => {
+    if (runA !== null) parts.push(runA === runB ? String(runA) : runA + "-" + runB);
+    runA = runB = null;
+  };
+  for (const u of urls || []) {
+    let m = String(u).match(/^https:\/\/audio\.arulicheyal\.org\/pasurams\/pasuram_(\d+)\.mp3$/);
+    if (m) {
+      const n = Number(m[1]);
+      if (runA !== null && n === runB + 1) { runB = n; continue; }
+      flush(); runA = runB = n; continue;
+    }
+    m = String(u).match(/^https:\/\/audio\.arulicheyal\.org\/thaniyans\/thaniyan_([a-z0-9]+)\.mp3$/i);
+    if (!m) return null;                  // not one of ours: no link at all
+    flush(); parts.push("t" + m[1].toLowerCase());
   }
-  return thaniyanFileUrl(m[1], m[2]);
+  flush();
+  return parts.length ? parts.join(".") : null;
 }
 
 // The same id the renderer gives a thirumozhi heading (pasuram_full.js).
@@ -102,24 +108,35 @@ function upLink(href, label, arrow = "↑") {
 export function preparePdf(app, indexLabel) {
   const stats = { sections: 0, thirumozhi: 0, pathu: 0, play: 0, unresolved: [] };
 
-  // ── 0. ▶ buttons become links to the play page ─────────────────────────
-  app.querySelectorAll("button.ga-btn[id]").forEach(btn => {
-    const href = playHref(audioFor(btn.id));
+  // ── 0. Play All buttons become links to the play page ──────────────────
+  //  ga-sec-<section>     a section's Play All
+  //  ga-thousand-<id>     a thousand's Play full
+  //  Every other ▶ (one pasuram, one thaniyan) is hidden by the print rules.
+  app.querySelectorAll("button.ga-btn[id^='ga-sec-'], button.ga-btn[id^='ga-thousand-']").forEach(btn => {
+    const q = queueParam(queueUrls(btn.id));
     const wrap = btn.closest(".ga-wrap");
-    if (!href || !wrap) return;
+    if (!q || !wrap) return;
+
+    // What it plays, shown on the play page: the section's heading, or the
+    // thousand's name printed under its button.
+    const box = btn.closest(".content-border");
+    const head = box && box.querySelector(".section-heading");
+    const subs = Array.from(wrap.querySelectorAll(".ga-sub, span:not(.ga-wrap)"))
+                      .map(x => x.textContent.trim()).filter(Boolean);
+    const name = (head ? head.textContent : subs[subs.length - 1] || "").replace(/\s+/g, " ").trim();
+    const label = (wrap.querySelector(".ga-sub") || {}).textContent || "";
+
     const a = document.createElement("a");
-    a.className = "pdf-play";
-    a.href = href;
-    a.innerHTML = '<span class="pdf-play-tri"></span>';
-    const center = wrap.closest(".ga-center");
-    if (center) {                       // a thaniyan's centred button
-      const row = document.createElement("div");
-      row.className = "pdf-play-row";
-      row.appendChild(a);
-      center.replaceWith(row);
-    } else {                            // a pasuram's, beside its number
-      wrap.replaceWith(a);
-    }
+    a.className = "pdf-play-all";
+    a.href = PLAY_PAGE + "?q=" + q + (name ? "&n=" + encodeURIComponent(name) : "");
+    a.innerHTML = '<span class="pdf-play"><span class="pdf-play-tri"></span></span>' +
+                  '<span class="pdf-play-label"></span>';
+    a.querySelector(".pdf-play-label").textContent = label.trim() || "Play All";
+
+    const row = document.createElement("div");
+    row.className = "pdf-play-row";
+    row.appendChild(a);
+    (wrap.closest(".ga-center, .ga-thousand") || wrap).replaceWith(row);
     stats.play++;
   });
 

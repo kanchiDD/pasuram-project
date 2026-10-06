@@ -47,11 +47,14 @@
   .pdf-up a.pdf-link { color: #8B5E1A; border: 1px solid #D9C79A; border-radius: 12px;
                        padding: 2px 10px; background: #FFF8E6; }
 
-  /* ▶ — a link to arulicheyal.org/play.html, drawn as the site's green
-     button (a CSS triangle, so no symbol font is needed) */
-  a.pdf-play { display: inline-flex; align-items: center; justify-content: center;
-               width: 18px; height: 18px; border-radius: 50%; background: #2e7d32;
-               vertical-align: middle; margin: 0 4px; text-decoration: none; }
+  /* Play All — a link to arulicheyal.org/play.html, drawn as the site's
+     green button (a CSS triangle, so no symbol font is needed) with its
+     label underneath */
+  a.pdf-play-all { display: inline-flex; flex-direction: column; align-items: center;
+                   text-decoration: none; }
+  .pdf-play { display: inline-flex; align-items: center; justify-content: center;
+              width: 20px; height: 20px; border-radius: 50%; background: #2e7d32; }
+  .pdf-play-label { font-size: 9px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
   .pdf-play-tri { display: block; width: 0; height: 0; margin-left: 2px;
                   border-left: 7px solid #fff; border-top: 4.5px solid transparent;
                   border-bottom: 4.5px solid transparent; }
