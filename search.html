@@ -352,7 +352,8 @@ const DIRECT_ROUTE = {
   divyadesam: function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
   perumal:    function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
   thayar:     function (r) { return { fn: "_openDivyadesamById", args: [Number(r.eid), r.ta] }; },
-  pasuram:    function (r) { return { fn: "_openGlobalPasuram",  args: [Number(r.eid)] }; }
+  pasuram:    function (r) { return { fn: "_openGlobalPasuram",  args: [Number(r.eid)] }; },
+  region:     function (r) { return { fn: "_openRegion",         args: [r.ta] }; }
 };
 
 const TYPE_LABEL = {
