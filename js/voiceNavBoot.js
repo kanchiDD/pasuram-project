@@ -111,6 +111,10 @@ function executeVoiceNav(nav) {
     voiceOpenSpecialGroup(args[0]);
     return;
   }
+  if (fn === "_openRegion") {
+    voiceOpenRegion(args[0]);
+    return;
+  }
 
   // All window.* functions from options.js (openDivyadesam, openAzhwars etc.)
   setTimeout(() => {
@@ -449,6 +453,29 @@ function voiceOpenSpecialGroup(groupKey) {
     } else if (attempts >= 60) {
       clearInterval(poll);
       console.warn("voiceNavBoot: ddOpenSpecial not found for group", groupKey);
+    }
+  }, 100);
+}
+
+// Open one mandalam (region) — the same list "By Mandalam" shows after a
+// region is picked: Divyadesam index, then ddPickFilter("mandalam", key).
+// regionKey is the stored name, e.g. chola_nadu_divyadesam.
+function voiceOpenRegion(regionKey) {
+  state.divyadesamThousandId = null;
+  state.level = "FULL_DIVYADESAM";
+  render();
+
+  let attempts = 0;
+  const poll = setInterval(() => {
+    attempts++;
+    const ready = typeof window.ddPickFilter === "function"
+                  && document.getElementById("fdd-content");
+    if (ready) {
+      clearInterval(poll);
+      window.ddPickFilter("mandalam", regionKey);
+    } else if (attempts >= 60) {
+      clearInterval(poll);
+      console.warn("voiceNavBoot: ddPickFilter not found for region", regionKey);
     }
   }, 100);
 }
