@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Naalayiram — PDF edition</title>
+<!--
+  pdf-book.html — the PDF edition of a thousand, or of the full 4000.
+
+  Opened ONLY by make_pdfs.py (in the translit folder), never linked from
+  the site. It builds the book with the site's own renderer
+  (test_fullThousand.js), so the look, the recital-group gaps and the
+  converted text are exactly what readers see, and then pdfEdition.js
+  turns the index into links for the PDF.
+
+      pdf-book.html?book=1&script=gu&sect=T      first thousand, Gujarati, Thenkalai
+      pdf-book.html?book=4000&script=ta&sect=V   full 4000, Tamil, Vadakalai
+
+  The script and sect are written to localStorage, which is how every
+  renderer on the site reads them. make_pdfs.py serves this page from your
+  own computer (http://localhost), so that storage belongs to the generator
+  and never touches a reader's settings on arulicheyal.org.
+-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="/css/main.css?v=861">
+<style id="pdf-fonts"></style>
+<style>
+  /* One Noto Sans family per script, so the PDF looks the same on every
+     computer — the site itself uses Noto Sans Tamil. */
+  body, body *:not(i):not([class*="fa-"]) { font-family: "PDFScript", "PDFTamil", "PDFLatin", sans-serif !important; }
+
+  .pdf-wm { display: none; }
+  a.pdf-link { color: inherit; text-decoration: none; }
+
+  /* landing points sit a little above their place, so a reader lands
+     with the header lines in view */
+  .pdf-anchor { display: block; position: relative; top: -14pt; height: 0; }
+  .pdf-anchor.pdf-sec-start { position: static; }
+  /* a pathu's own page stands alone, like a chapter opening, so its first
+     thirumozhi starts at the top of the next page and its link lands
+     exactly there */
+  .pdf-pathu-page { break-after: page; }
+
+  /* "↑ …" links: clearly visible, right-aligned */
+  .pdf-up { text-align: right; margin: 8px 2px 4px; font-size: 13px; font-weight: 700; }
+  .pdf-up a.pdf-link { color: #8B5E1A; border: 1px solid #D9C79A; border-radius: 12px;
+                       padding: 2px 10px; background: #FFF8E6; }
+
+  /* ▶ — a link to arulicheyal.org/play.html, drawn as the site's green
+     button (a CSS triangle, so no symbol font is needed) */
+  a.pdf-play { display: inline-flex; align-items: center; justify-content: center;
+               width: 18px; height: 18px; border-radius: 50%; background: #2e7d32;
+               vertical-align: middle; margin: 0 4px; text-decoration: none; }
+  .pdf-play-tri { display: block; width: 0; height: 0; margin-left: 2px;
+                  border-left: 7px solid #fff; border-top: 4.5px solid transparent;
+                  border-bottom: 4.5px solid transparent; }
+  .pdf-play-row { display: flex; justify-content: center; margin: 3px 0 5px; }
+
+  /* a section's own contents page */
+  .pdf-contents { margin-bottom: 14px; }
+  .pdf-contents-title { text-align: center; font-weight: 700; font-size: 17px;
+                        margin: 4px 0 10px; color: #3B2410; }
+
+  @page {
+    size: A4;
+    margin: 16mm 14mm 18mm;
+    @bottom-center {
+      content: "arulicheyal.org  ·  " counter(page) " / " counter(pages);
+      font-family: "PDFLatin", sans-serif; font-size: 9pt; color: #8B6A45;
+    }
+  }
+
+  @media print {
+    /* nothing interactive on paper */
+    .naal-float-nav, #naal-float-nav, #floating-nav, .recital-float,
+    .ga-wrap, .ga-center, .ga-thousand, .ga-btn, #app button,
+    .inline-menu, #modalRoot, #topbar { display: none !important; }
+
+    body { background: #fff; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Shadows and filters are printed by Chrome as a page-sized picture —
+       they were what made the first PDF 23 MB. */
+    * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+
+    /* faint arulicheyal.org on every page, over the cards so it shows,
+       light enough not to disturb reading — print only */
+    .pdf-wm {
+      display: block; position: fixed; top: 44%; left: 0; right: 0;
+      text-align: center; transform: rotate(-30deg);
+      font: 700 54pt "PDFLatin", sans-serif !important; color: #8B6A45; opacity: .07;
+      z-index: 9999; pointer-events: none;
+    }
+
+    /* each section starts a new page (so the index ends its own page);
+       the site's spacer after the index would only add a blank page */
+    .page-spacer   { display: none !important; }
+    .pdf-sec-start { break-before: page; }
+
+    /* a pasuram — both recital halves — never splits across pages,
+       and a heading never sits alone at the bottom of a page */
+    .pasuram-item, .tree-item, .pdf-tgroup,
+    .prabandham-header, .pdf-keep, .pdf-tail { break-inside: avoid; }
+    .thaniyan-title, .thaniyan-subhead { break-after: avoid; }
+    /* the full 4000's short இதர பிரபந்தங்கள் list moves to the next page
+       whole rather than leave one entry behind */
+    #pdf-index-2 { break-inside: avoid; }
+
+    /* A box that runs over several pages is closed on every page: its
+       border, rounded corners and padding are drawn again on each page
+       instead of being left open at the cut. */
+    #app * { box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+    .prabandham-header, .line3-bold, .section-heading, .prosody,
+    .display-block { break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="pdf-wm">arulicheyal.org</div>
+<div id="topbar" style="display:none"></div>
+<div class="container" id="app">Preparing the PDF edition…</div>
+<div id="modalRoot"></div>
+
+<script>
+  // Any failure is reported to make_pdfs.py at once, instead of it waiting
+  // for a "ready" that will never come.
+  window.addEventListener("error", function (e) {
+    window.__pdfError = window.__pdfError ||
+      ("Script error: " + e.message + " (" + (e.filename || "?") + ":" + (e.lineno || "?") + ")");
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    window.__pdfError = window.__pdfError ||
+      ("Unhandled: " + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+  });
+  window.__pdfStage = "loading modules";
+</script>
+<script>
+  // Runs BEFORE any module loads: every renderer reads these from storage.
+  (function () {
+    var q      = new URLSearchParams(location.search);
+    var script = (q.get("script") || "ta").toLowerCase();
+    var sect   = (q.get("sect") || "T").toUpperCase();
+    try {
+      if (script === "ta") localStorage.removeItem("script");
+      else localStorage.setItem("script", script);
+      localStorage.setItem("sect", sect);
+    } catch (e) {}
+
+    // Static font files, one per weight. (Google's variable fonts get
+    // embedded as "Type 3" fonts, which some PDF readers draw less sharply.)
+    var PKG = { ta: "tamil", te: "telugu", kn: "kannada", ml: "malayalam",
+                deva: "devanagari", gu: "gujarati", bn: "bengali" };
+    var CDN = "https://cdn.jsdelivr.net/npm/@fontsource/";
+    function faces(family, pkg, subset) {
+      return [400, 700, 900].map(function (w) {
+        return '@font-face { font-family: "' + family + '"; font-weight: ' + w +
+               '; font-display: block; src: url("' + CDN + pkg + '@5/files/' + pkg + '-' +
+               subset + '-' + w + '-normal.woff2") format("woff2"); }';
+      }).join("\n");
+    }
+    var css = faces("PDFTamil", "noto-sans-tamil", "tamil") + "\n" +
+              faces("PDFLatin", "noto-sans", "latin") + "\n" +
+              faces("PDFLatin", "noto-sans", "latin-ext").replace(/format\("woff2"\); }/g,
+                'format("woff2"); unicode-range: U+0100-024F, U+1E00-1EFF; }');
+    if (PKG[script] && script !== "ta")
+      css += "\n" + faces("PDFScript", "noto-sans-" + PKG[script], PKG[script]);
+    document.getElementById("pdf-fonts").textContent = css;
+  })();
+</script>
+
+<script type="module" onerror="window.__pdfError = window.__pdfError || 'A page module failed to load (see the failed requests listed)'">
+  import "./js/render/css.js";
+  import { state } from "./js/state.js";
+  import { testFullThousand } from "./js/test_fullThousand.js";
+  import { t as uiText } from "./js/utils/uiStrings.js";
+  import { preparePdf } from "./js/utils/pdfEdition.js";
+
+  const q    = new URLSearchParams(location.search);
+  const book = q.get("book") || "1";
+  const app  = document.getElementById("app");
+
+  window.__pdfStage = "building the book";
+  try {
+    // A level no screen uses, so the shared render() never draws a
+    // screen of its own into #app while the book is being built.
+    state.level = "PDF";
+
+    const html = await testFullThousand(book === "4000" ? null : Number(book));
+    app.innerHTML = html;
+
+    window.__pdfStage = "preparing index and links";
+    window.__pdfStats = preparePdf(app, uiText("index"));
+
+    // The PDF's title (shown by PDF readers) — the book's own heading.
+    const head = app.querySelector("#main-4000-heading div, div[style*='font-size:20px']");
+    if (head && head.textContent.trim()) document.title = head.textContent.trim();
+
+    window.__pdfStage = "waiting for fonts";
+    // Make sure every weight that is used has actually arrived.
+    await Promise.all(["PDFScript", "PDFTamil", "PDFLatin"].flatMap(f =>
+      ["400", "700", "900"].map(w => document.fonts.load(`${w} 16px "${f}"`, "அaક").catch(() => null))));
+    await document.fonts.ready;
+    window.__pdfReady = true;
+  } catch (e) {
+    window.__pdfError = String(e && e.stack || e);
+    app.textContent = "PDF edition failed: " + window.__pdfError;
+  }
+</script>
+</body>
+</html>

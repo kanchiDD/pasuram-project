@@ -47,7 +47,7 @@ const _registry = new Map();
 // ═══════════════════════════════════════════════════════════════
 const _RECITAL_WORKER = "https://recitalworker.kanchitrust.workers.dev";
 let _gAudioAna = null;   // { active, margazhi } — loaded once on module init
-(function _loadGAudioAna() {
+const _gAudioAnaReady = (function _loadGAudioAna() {
   let date = null;
   try { date = new URLSearchParams(location.search).get("anadhi_test"); } catch (e) {}
   if (!date) { try { date = localStorage.getItem("anadhi_test"); } catch (e) {} }
@@ -55,11 +55,16 @@ let _gAudioAna = null;   // { active, margazhi } — loaded once on module init
     const d = new Date();
     date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   }
-  fetch(`${_RECITAL_WORKER}/recital/panchangam?date=${date}`)
+  return fetch(`${_RECITAL_WORKER}/recital/panchangam?date=${date}`)
     .then(r => r.ok ? r.json() : null)
     .then(p => { _gAudioAna = p ? { active: p.is_anadhyayana === 1, margazhi: p.is_margazhi === 1 } : { active:false, margazhi:false }; })
     .catch(() => { _gAudioAna = { active:false, margazhi:false }; });
 })();
+
+// Resolves once today's Anadhyayana status is known. play.html (opened from
+// the PDF ▶ links) waits for this before enabling its button, so a tap can
+// never get in before the rule is loaded. Nothing else needs it.
+export function audioRulesReady() { return _gAudioAnaReady; }
 
 function _pasuramQualified(no, ana, uSect, madam) {
   if (!ana || !ana.active) return true;

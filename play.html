@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f5c242">
+<title>Play — நாலாயிர திவ்யப்பிரபந்தம்</title>
+<!--
+  play.html — where every ▶ in the PDF editions leads.
+
+      play.html?a=pasurams/pasuram_474.mp3
+      play.html?a=thaniyans/thaniyan_3.mp3
+
+  A PDF cannot run the site's player, and it cannot know the date it is
+  read on. So the ▶ links come here, and playback goes through the site's
+  own globalAudio.js — which applies the Anadhyayana Kalam rule for the
+  day the link is opened, and shows the same notice when a recording may
+  not be played. The button is enabled only once that day's status is in.
+
+  Phones do not let a page start sound by itself, hence the one tap.
+-->
+<style>
+  :root { --bg:#FFFFF8; --ink:#3B2410; --muted:#8B6A45; --gold:#C9A84C; --line:#E8D8A0; --green:#2e7d32; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); min-height: 100vh;
+         font-family: "Noto Sans Tamil", "Segoe UI", Arial, sans-serif;
+         display: flex; flex-direction: column; align-items: center; }
+  main { width: 100%; max-width: 440px; padding: 40px 16px 120px; text-align: center; }
+  .site  { font-size: 13px; color: var(--muted); letter-spacing: .02em; }
+  .title { font-size: 20px; font-weight: 700; margin: 6px 0 2px; }
+  .what  { font-size: 15px; color: var(--muted); margin-bottom: 30px; }
+  #play  { width: 112px; height: 112px; border-radius: 50%; border: none; cursor: pointer;
+           background: var(--green); box-shadow: 0 6px 22px rgba(46,125,50,.35);
+           display: inline-flex; align-items: center; justify-content: center;
+           -webkit-tap-highlight-color: transparent; transition: transform .1s, opacity .2s; }
+  #play:active { transform: scale(.96); }
+  #play:disabled { opacity: .45; cursor: default; }
+  #play .tri { width: 0; height: 0; margin-left: 9px; border-left: 38px solid #fff;
+               border-top: 24px solid transparent; border-bottom: 24px solid transparent; }
+  #play .sq  { width: 34px; height: 34px; background: #fff; border-radius: 4px; }
+  #play.stop { background: #c62828; box-shadow: 0 6px 22px rgba(198,40,40,.35); }
+  #status { min-height: 22px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .home { display: inline-block; margin-top: 34px; font-size: 14px; color: var(--muted);
+          text-decoration: none; border: 1px solid var(--line); border-radius: 16px; padding: 6px 14px; }
+  .bad  { color: #8a3b12; font-size: 15px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<main>
+  <div class="site">arulicheyal.org</div>
+  <div class="title">நாலாயிர திவ்யப்பிரபந்தம்</div>
+  <div class="what" id="what"></div>
+  <button id="play" type="button" disabled aria-label="Play"><span class="tri"></span></button>
+  <div id="status">Loading…</div>
+  <a class="home" href="https://arulicheyal.org/">Open arulicheyal.org</a>
+</main>
+
+<script type="module">
+  import * as GA from "./js/render/globalAudio.js";
+  const { playUrls, stopPlayback } = GA;
+  // audioRulesReady arrives with this update of globalAudio.js; while a
+  // browser or cache still holds the older file, wait a moment instead.
+  const audioRulesReady = GA.audioRulesReady || (() => new Promise(r => setTimeout(r, 2500)));
+
+  const AUDIO = "https://audio.arulicheyal.org/";
+  const what = document.getElementById("what");
+  const btn = document.getElementById("play");
+  const status = document.getElementById("status");
+
+  // Only the site's own recordings are accepted.
+  const a = new URLSearchParams(location.search).get("a") || "";
+  const m = a.match(/^(pasurams\/pasuram_(\d+)|thaniyans\/thaniyan_([a-z0-9]+))\.mp3$/i);
+
+  if (!m) {
+    what.innerHTML = '<span class="bad">This link does not name a recording.</span>';
+    btn.style.display = "none";
+    status.textContent = "";
+  } else {
+    const label = m[2] ? `பாசுரம் ${m[2]} · Pasuram ${m[2]}` : "தனியன் · Thaniyan";
+    what.textContent = label;
+    const url = AUDIO + a;
+    let playing = false;
+
+    const show = on => {
+      playing = on;
+      btn.classList.toggle("stop", on);
+      btn.innerHTML = on ? '<span class="sq"></span>' : '<span class="tri"></span>';
+      btn.setAttribute("aria-label", on ? "Stop" : "Play");
+    };
+
+    // The site's player announces what is playing; null means it stopped.
+    window.addEventListener("ga-now-playing", e => {
+      const now = e.detail && e.detail.url;
+      show(!!now);
+      status.textContent = now ? "Playing" : "";
+    });
+
+    // During Anadhyayana Kalam the site allows the Ithara Prabandham of the
+    // reader's own sect, read from the site's saved sect setting. A reader
+    // coming from a PDF may never have set it (or set another sect), but the
+    // PDF they hold is of one sect, and an Ithara pasuram's number already
+    // says which: below 32000 Thenkalai, below 52000 Vadakalai, above that
+    // Vadakalai (madam). So for this one check the sect is taken from the
+    // number, and the reader's own setting is put back straight after —
+    // nothing they chose on the site is changed.
+    const no = m[2] ? Number(m[2]) : 0;
+    const pdfSect = no >= 25001 ? (no < 32000 ? ["T", ""] : no < 52000 ? ["V", ""] : ["V", "madam"]) : null;
+
+    function playChecked() {
+      if (!pdfSect) return playUrls([url], label);
+      const keep = {};
+      try { keep.sect = localStorage.getItem("sect"); keep.subsect = localStorage.getItem("subsect"); } catch (e) {}
+      try {
+        localStorage.setItem("sect", pdfSect[0]);
+        if (pdfSect[1]) localStorage.setItem("subsect", pdfSect[1]); else localStorage.removeItem("subsect");
+      } catch (e) {}
+      try {
+        return playUrls([url], label);          // the rule is checked synchronously, in here
+      } finally {
+        try {
+          for (const k of ["sect", "subsect"]) {
+            if (keep[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, keep[k]);
+          }
+        } catch (e) {}
+      }
+    }
+
+    btn.addEventListener("click", () => {
+      if (playing) { stopPlayback(); show(false); status.textContent = ""; return; }
+      // false = the Anadhyayana Kalam rule did not allow it; the site's own
+      // notice has already been shown.
+      const ok = playChecked();
+      if (ok) { show(true); status.textContent = "Playing"; }
+      else status.textContent = "";
+    });
+
+    // Enable only once today's Anadhyayana status is known.
+    audioRulesReady().finally(() => {
+      btn.disabled = false;
+      status.textContent = "Tap to play";
+    });
+  }
+</script>
+</body>
+</html>
