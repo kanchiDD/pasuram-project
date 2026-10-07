@@ -1,0 +1,2 @@
+# pasuram global_no ranges where the pronunciation rules apply
+474-503   Thiruppavai
