@@ -1,3 +1,4 @@
 # pasuram global_no ranges where the pronunciation rules apply
 474-503   Thiruppavai
 1-473     Thiruppallandu, Periyazhwar Thirumozhi
+2675-3776 Thiruvaimozhi

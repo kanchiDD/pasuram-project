@@ -4,6 +4,10 @@
 #   h = hard (क च ट त प)   v = voiced (ग ड द ब, ச → ज)   s = ஶ (श)   j = ஜ (ज)
 # The Devanagari after # is what the reader approved. Add or change entries only with Claude.
 
+# Names — * = everywhere, also inside a longer word. A doubled ச் written just before
+# the name is dropped in the other scripts (Tamil keeps it): குருகூர்ச் சடகோபன் → कुरुगूर् शडगोबन्
+*       சடகோபன்                   svvv  # शडगोबन्  (Seechu, 2026-10-07)
+
 # Periyazhwar Thirumozhi (1-473) — reviewed 2026-10-07 against the Prapatti Devanagari edition
 7.5     பொருபடைவாணனை              hhv   # पॊरुपडैवाणनै
 8.2     நியதமும்                  h     # नियतमुम्
@@ -59,3 +63,42 @@
 422.7   எம்பெருமான்               v     # ऎम्बॆरुमान्
 424.3   அனேகதண்டம்                vvv   # अनेगदण्डम्
 470.1   கருடன்பாலும்              vvh   # गरुडन्पालुम्
+
+# Periyazhwar Thirumozhi — kept exactly as approved when the Thiruvaimozhi junctions were added
+# (these words got a junction in Thiruvaimozhi; here Prapatti joins them and you approved that)
+1.2     திண்தோள்                  hv    # तिण्दोळ्
+5.4     இருடீகேசன்                vvs   # इरुडीगेशन्
+7.4     குடிகுடி                  hvvv  # कुडिगुडि
+10.2    உன்தனக்கு                 vh    # उन्दनक्कु
+87.4    வெண்பல்                   v     # वॆण्बल्
+88.7    இருடீகேசன்                vvs   # इरुडीगेशन्
+92.3    இடங்கொண்ட                 vvv   # इडङ्गॊण्ड
+125.7   அங்கண்ணன்                 v     # अङ्गण्णन्
+233.8   இருடீகேசன்                vvs   # इरुडीगेशन्
+260.5   செந்தாமரைக்கண்            hvh   # चॆन्दामरैक्कण्
+262.4   தீங்குழல்                 hv    # तीङ्गुऴल्
+267.1   வெங்கண்                   v     # वॆङ्गण्
+280.1   தடங்கண்ணன்                hvv   # तडङ्गण्णन्
+375.8   இருடீகேசன்                vvs   # इरुडीगेशन्
+392.2   வெங்கதிர்                 vv    # वॆङ्गदिर्
+
+# Thiruvaimozhi (2675-3776) — reviewed 2026-10-08 against the Prapatti Devanagari edition
+2779.3  சார்கொடான்                shv   # शार्कॊडान्
+2933.8  அச்சுதன்                  hh    # अच्चुतन्
+2934.1  அச்சுதன்                  hh    # अच्चुतन्
+2938.3  அச்சுதனை                  hh    # अच्चुतनै
+3041.7  சிறுமான்                  s     # शिऱुमान्
+3042.2  அச்சுதனென்னும்            hh    # अच्चुतनॆन्नुम्
+3053.2  நம்மச்சுதன்               hh    # नम्मच्चुतन्
+3136.3  அச்சுதன்தன்னை             hhh   # अच्चुतन्तन्नै
+3350.8  இவள்திறத்தென்             hh    # इवळ्तिऱत्तॆन्
+3361.3  சங்கொடுசக்கரம்            svvhh # शङ्गॊडुचक्करम्
+3402.3  சக்கரச்                   hh    # चक्करच्
+3415.8  விசித்திரமே               hh    # विचित्तिरमे
+3416.1  சித்திரத்                 hh    # चित्तिरत्
+3417.8  உபாயங்களே                 hv    # उपायङ्गळे
+3456.1  சிறப்பத்தந்த              hhhv  # चिऱप्पत्तन्द
+3461.7  ஆடல்பறவை                  vh    # आडल्पऱवै
+3469.7  சங்குசக்கரக்கையவன்        svhhh # शङ्गुचक्करक्कैयवन्
+3587.2  தூபம்கொண்டு               hhhv  # तूपम्कॊण्डु
+3687.5  விளக்கம்தூபம்             hhh   # विळक्कम्तूपम्

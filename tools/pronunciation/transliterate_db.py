@@ -438,6 +438,10 @@ def post_notation(out, sc):
 #   8.2   நியதமும்   h   # नियतमुम्
 #   pasuram.line, the word, then one letter for each க ச ட த ப of the word
 #   that is not followed by ் : h hard, v voiced, s ஶ, j ஜ.
+# A name with * in place of pasuram.line applies wherever it occurs (also
+# inside a longer word), and a doubled ச் written just before it is dropped:
+#   *   சடகோபன்   svvv   # குருகூர்ச் சடகோபன் → कुरुगूर् शडगोबन्
+# After ஃ the next k/c/ṭ/t/p is always hard: அஃதே → अःते (Roman aḥte).
 # Applied only to the lines named in the scope file (rolled out prabandham
 # by prabandham); everything else converts exactly as before.
 
@@ -466,7 +470,7 @@ def load_sound_words(path):
         if not body:
             continue
         parts = body.split()
-        if len(parts) != 3 or not re.fullmatch(r"\d+\.\d+", parts[0]):
+        if len(parts) != 3 or not re.fullmatch(r"\d+\.\d+|\*", parts[0]):
             bad.append(f"line {n}: {line.strip()}")
             continue
         place, word, codes = parts
@@ -491,7 +495,7 @@ def load_scope(path):
     return ranges
 
 
-def phonetic_tamil(text, junctions, sound_words=()):
+def phonetic_tamil(text, junctions, sound_words=(), names=()):
     """(Tamil with the sounds marked for the engine, junctions and sound
     words that applied). A junction or sound word applies only where it is a
     whole word of the line, never inside a longer word."""
@@ -519,8 +523,29 @@ def phonetic_tamil(text, junctions, sound_words=()):
             if len(stops) == len(codes):
                 forced.update(zip(stops, codes))
                 used.append(w + "=" + codes)
+    # names: everywhere; a doubled ச் just before the name is dropped
+    drop = set()
+    for w, codes in names:
+        k = t.find(w)
+        hit = False
+        while k >= 0:
+            stops = [k + i for i, ch in enumerate(w)
+                     if ch in PH_STOPS and w[i + 1:i + 2] != PH_V]
+            if len(stops) == len(codes):
+                forced.update(zip(stops, codes))
+                hit = True
+                j = k
+                while j > 0 and t[j - 1] == " ":
+                    j -= 1
+                if w[0] == "ச" and t[j - 2:j] == "ச" + PH_V:
+                    drop.update((j - 2, j - 1))
+            k = t.find(w, k + 1)
+        if hit:
+            used.append("*" + w + "=" + codes)
     out = []
     for i, ch in enumerate(t):
+        if i in drop:
+            continue
         if ch not in PH_STOPS:
             out.append(ch); continue
         nxt = t[i + 1] if i + 1 < len(t) else ""
@@ -528,6 +553,8 @@ def phonetic_tamil(text, junctions, sound_words=()):
         prev2 = t[i - 2] if i > 1 else " "
         if i in forced:
             d = forced[i]
+        elif prev == "ஃ":
+            d = "h"                       # அஃதே: ஃ is a breath, the next letter is hard
         elif nxt == PH_V:
             d = "h"
         elif i in starts or not prev.strip() or prev in "(\"'‘“-":
@@ -700,9 +727,10 @@ def main():
                                   "WHERE global_no BETWEEN ? AND ?", (a, b)):
                 phon_ids.add(str(r[0]))
                 place_of[str(r[0])] = f"{r[1]}.{r[2]}"
-        n_sw = sum(len(v) for v in sound_words.values())
+        n_sw = sum(len(v) for p_, v in sound_words.items() if p_ != "*")
+        n_names = len(sound_words.get("*", ()))
         print(f"Pronunciation: ON — {len(phon_ids):,} pasuram lines in scope, "
-              f"{len(junctions)} junctions, {n_sw} sound words\n"
+              f"{len(junctions)} junctions, {n_sw} sound words, {n_names} name(s)\n"
               f"  ({scope_path}, {junc_path}, {sw_path})\n")
     n_phon = 0
     sw_used = set()
@@ -745,7 +773,8 @@ def main():
                 engine_src = src
                 if phon_ids and table == "pasuram_line_master" and key in phon_ids:
                     place = place_of[key]
-                    engine_src, used = phonetic_tamil(src, junctions, sound_words.get(place, ()))
+                    engine_src, used = phonetic_tamil(src, junctions, sound_words.get(place, ()),
+                                                      sound_words.get("*", ()))
                     sw_used.update((place, u) for u in used if "=" in u)
                     # the rules and the junctions that apply are part of what was
                     # converted, so a change to either re-converts this line
@@ -784,6 +813,8 @@ def main():
                         out = post_notation(
                             convert_keeping_danda(
                                 prepped, args.source, SCRIPTS[sc], sc), sc)
+                        if sc == "iast" and engine_src is not src:
+                            out = out.replace("ḵ", "ḥ")      # ஃ: aḥte, not aḵte
                     except Exception as e:
                         print(f"  !! convert failed {table}/{key}/{col}/{sc}: {e}")
                         continue
@@ -830,7 +861,7 @@ def main():
                     )
 
     if phon_ids and args.only in (None, "pasuram_line_master") and not args.limit:
-        unused = [f"{p}  {w}  {c}" for p, lst in sorted(sound_words.items())
+        unused = [f"{p}  {w}  {c}" for p, lst in sorted(sound_words.items()) if p != "*"
                   for w, c in lst if (p, w + "=" + c) not in sw_used]
         if unused:
             sys.exit("STOPPED (nothing written): these sound words were not found in their line,\n"
