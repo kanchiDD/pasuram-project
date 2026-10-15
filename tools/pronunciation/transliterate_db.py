@@ -542,10 +542,11 @@ def phonetic_tamil(text, junctions, sound_words=(), names=()):
             k = t.find(w, k + 1)
         if hit:
             used.append("*" + w + "=" + codes)
-    out = []
+    out, pos = [], {}
     for i, ch in enumerate(t):
         if i in drop:
             continue
+        pos[i] = len(out)
         if ch not in PH_STOPS:
             out.append(ch); continue
         nxt = t[i + 1] if i + 1 < len(t) else ""
@@ -579,10 +580,15 @@ def phonetic_tamil(text, junctions, sound_words=(), names=()):
         else:
             d = "s" if ch == "ச" else "v"
         out.append(PH_VOICED[ch] if d in ("v", "j") else "ஶ" if d == "s" else ch)
+        # a reader's voiced decision on a doubled letter voices both halves:
+        # மார்க்கம் → मार्ग्गम् (only where a sound word or name decided it)
+        if i in forced and d in ("v", "j") and t[i - 2:i] == ch + PH_V and (i - 2) in pos:
+            out[pos[i - 2]] = PH_VOICED[ch]
     s = "".join(out).replace("ற்ற", "ட்ர").replace("ன", "ந")
     # the voicing mark goes after the vowel sign, the way the thaniyan text
     # writes it (பி₃ not ப₃ி) and the engine writes it back
     s = re.sub("([₁₂₃₄])([\u0bbe-\u0bcc])", "\\2\\1", s)
+    s = re.sub("([₁₂₃₄])(\u0bcd)", "\\2\\1", s)      # and after the virama: க்₃
     return s, used
 
 
