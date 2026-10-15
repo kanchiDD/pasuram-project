@@ -3,6 +3,14 @@ const API = "https://cdnaalayiram-api.kanchitrust.workers.dev/api/pasuram-line-e
 let currentGlobal = 0;
 let dirty = false;
 
+// "pasuram" = normal pasuram (pasuram_line_master: add / split / merge / delete)
+// "kootrirukkai" (2672) / "madal" (2673, 2674) = special sections: text edits only
+let currentKind = "pasuram";
+
+function isSpecial() {
+    return currentKind !== "pasuram";
+}
+
 const txtGlobal = document.getElementById("global_no");
 const btnLoad = document.getElementById("loadBtn");
 const btnSave = document.getElementById("saveBtn");
@@ -28,6 +36,39 @@ function markDirty() {
 
 function getCards() {
     return Array.from(lineContainer.querySelectorAll(".line-card"));
+}
+
+function escapeHtml(t) {
+    return String(t ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+// Special sections (2672 / 2673 / 2674): label + text only.
+// The row id and column are kept on the card so Save updates that exact line.
+function createSpecialCard(line) {
+
+    const card = document.createElement("div");
+    card.className = "line-card special";
+    card.dataset.refId = line.ref_id;
+    card.dataset.col = line.col;
+
+    card.innerHTML = `
+        <div class="line-header">
+            <div class="line-title">${escapeHtml(line.label)}</div>
+        </div>
+
+        <textarea
+            class="line-text"
+            spellcheck="false">${escapeHtml(line.line_text)}</textarea>
+    `;
+
+    // what the line had when loaded - Save sends only lines that differ
+    card.querySelector(".line-text").dataset.original = line.line_text ?? "";
+
+    return card;
+
 }
 
 function createLineCard(line) {
@@ -124,6 +165,7 @@ function renumberLines() {
 // ---------------------------------------------------------------
 
 function addLineBelow(card) {
+
 
     const groupInput = card.querySelector(".recital-group");
     const groupValue = groupInput ? groupInput.value : 1;
@@ -361,13 +403,19 @@ async function loadRecord(globalNo) {
 
         lineContainer.innerHTML = "";
 
+        currentKind = data.kind || "pasuram";
+
         data.lines.forEach(line => {
 
-            const card = createLineCard(line);
+            const card = isSpecial() ? createSpecialCard(line) : createLineCard(line);
 
             lineContainer.appendChild(card);
 
         });
+
+        // Add Line only for normal pasurams
+        if (btnAddLine)
+            btnAddLine.style.display = isSpecial() ? "none" : "";
 
         getCards().forEach(card => {
 
@@ -382,7 +430,10 @@ async function loadRecord(globalNo) {
 
         dirty = false;
 
-        setStatus("✓ Record Loaded");
+        if (isSpecial())
+            setStatus(`✓ ${escapeHtml(data.title || "")} — ${data.lines.length} lines · text edits only`);
+        else
+            setStatus("✓ Record Loaded");
 
         const first = document.querySelector(".line-text");
 
@@ -409,6 +460,11 @@ async function saveRecord() {
         return;
     }
 
+    if (isSpecial()) {
+        await saveSpecial();
+        return;
+    }
+
     setStatus("Saving...", "orange");
 
     try {
@@ -431,6 +487,9 @@ async function saveRecord() {
             });
 
         });
+
+console.log("Lines to save:", lines.length);
+console.table(lines);
 
         const response = await fetch(API, {
 
@@ -461,6 +520,84 @@ async function saveRecord() {
         dirty = false;
 
         setStatus("✓ Saved Successfully");
+
+    }
+    catch (err) {
+
+        console.error(err);
+
+        setStatus(err.message, "red");
+
+        alert(err.message);
+
+    }
+
+}
+
+// Special sections: send only the lines whose text changed, by row id + column.
+async function saveSpecial() {
+
+    const lines = [];
+
+    getCards().forEach(card => {
+
+        const txt = card.querySelector(".line-text");
+
+        if (!txt || txt.value === txt.dataset.original)
+            return;
+
+        lines.push({
+            ref_id: parseInt(card.dataset.refId),
+            col: card.dataset.col,
+            line_text: txt.value.trim()
+        });
+
+    });
+
+    if (!lines.length) {
+        dirty = false;
+        setStatus("No changes to save");
+        return;
+    }
+
+    if (lines.some(l => !l.line_text)) {
+        alert("A line cannot be left empty here.");
+        return;
+    }
+
+    setStatus("Saving...", "orange");
+
+    try {
+
+        console.table(lines);
+
+        const response = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                global_no: currentGlobal,
+                kind: currentKind,
+                lines: lines
+            })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.success)
+            throw new Error(result.error || ("HTTP " + response.status));
+
+        // the saved text is now the original
+        getCards().forEach(card => {
+            const txt = card.querySelector(".line-text");
+            if (txt) {
+                txt.value = txt.value === txt.dataset.original ? txt.value : txt.value.trim();
+                txt.dataset.original = txt.value;
+            }
+        });
+
+        dirty = false;
+
+        setStatus(`✓ Saved ${result.updated} line(s)`);
 
     }
     catch (err) {
