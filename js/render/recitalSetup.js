@@ -646,22 +646,65 @@ function isSelected(entity_type, entity_id) {
 // ─────────────────────────────────────────────
 // PRIORITY ORDER
 // ─────────────────────────────────────────────
-function applyPriorityOrder(items) {
-  // Priority: sec1 → sec8 → sec3 → everything else sorted by global_no_start
-  // This applies to both direct section items AND rettai_group items from those sections
-  const isPrioritySec = (item, secId) => {
-    if (item.entity_type === "section" && Number(item.entity_id) === secId) return true;
-    if (item.entity_type === "rettai_group" && Number(item.section_id) === secId) return true;
-    return false;
-  };
-  const sec1   = items.filter(i => isPrioritySec(i, 1));
-  const sec8   = items.filter(i => isPrioritySec(i, 8));
-  const sec3   = items.filter(i => isPrioritySec(i, 3));
-  const others = items.filter(i =>
-    !isPrioritySec(i, 1) && !isPrioritySec(i, 8) && !isPrioritySec(i, 3)
-  );
-  others.sort((a, b) => (a.global_no_start || 9999) - (b.global_no_start || 9999));
-  return [...sec1, ...sec8, ...sec3, ...others];
+// ── Recital order rules (all sects, Vadakalai included) ──
+// 1 / 8 / 3 (and their Rettai) ALWAYS come first, in that order, and can
+// never be moved — not by Reorder, drag, or All Days. Everything else is
+// chronological (global_no_start) unless the user reordered it, in which
+// case the user's order is kept for those items.
+const PINNED_SECTIONS = [1, 8, 3];
+function pinnedRank(item) {
+  const sid = item.entity_type === "section"      ? Number(item.entity_id)
+            : item.entity_type === "rettai_group" ? Number(item.section_id)
+            : null;
+  return PINNED_SECTIONS.indexOf(sid);       // -1 = not pinned
+}
+function isPinned(item) { return pinnedRank(item) >= 0; }
+function byChrono(a, b) { return (a.global_no_start || 9999) - (b.global_no_start || 9999); }
+function finalOrder(items, keepUserOrder) {
+  const pinned = items.filter(isPinned).sort((a, b) => pinnedRank(a) - pinnedRank(b));
+  const rest   = items.filter(i => !isPinned(i));
+  if (!keepUserOrder) rest.sort(byChrono);
+  return [...pinned, ...rest];
+}
+function applyPriorityOrder(items) { return finalOrder(items, false); }
+
+// Same rule for worker-format items (rettai items keep entity_type "section")
+function pinnedRankW(w) {
+  return w.entity_type === "section" ? PINNED_SECTIONS.indexOf(Number(w.entity_id)) : -1;
+}
+
+// "How should All Days be applied?" — Add / Replace / Cancel.
+// Resolves "add", "replace" or null (Cancel: nothing is saved or changed).
+function askApplyAllDays() {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+    ov.innerHTML = `
+      <div style="background:#fff9ed;border:2px solid #c8a84b;border-radius:12px;max-width:380px;width:100%;padding:16px;font-family:inherit">
+        <div style="font-weight:700;color:#7a4d00;font-size:15px;margin-bottom:6px">${uiText("adiyen")}</div>
+        <div style="font-size:13px;color:#2a1a00;margin-bottom:14px">
+          How should this All Days selection be applied to every day (Sun – Sat)?
+        </div>
+        <button class="recital-btn-primary" data-c="add" style="width:100%;margin-bottom:8px">
+          Add to every day<br>
+          <span style="font-size:11px;font-weight:400">each day keeps its own items, these are added</span>
+        </button>
+        <button class="recital-btn-primary" data-c="replace" style="width:100%;margin-bottom:8px">
+          Replace every day<br>
+          <span style="font-size:11px;font-weight:400">every day gets exactly this list</span>
+        </button>
+        <button class="recital-btn-secondary" data-c="" style="width:100%">Cancel</button>
+      </div>`;
+    ov.addEventListener("click", e => {
+      const b = e.target.closest("button[data-c]");
+      if (!b) return;
+      if (ov.parentNode) document.body.removeChild(ov);
+      document.body.style.overflow = "";
+      resolve(b.dataset.c || null);
+    });
+    document.body.appendChild(ov);
+    document.body.style.overflow = "hidden";
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -787,8 +830,10 @@ function renderCatalogIntoDOM() {
 // order differs from canonical.
 // ─────────────────────────────────────────────
 function showReorderScreen(onDone) {
-  let order = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
-  const canonicalKey = applyPriorityOrder(selectedItems)
+  // 1 / 8 / 3 are fixed at the top; only the other items can be moved
+  const pinned = finalOrder(selectedItems, false).filter(isPinned);
+  let order = finalOrder(selectedItems, userOrdered).filter(i => !isPinned(i));
+  const canonicalKey = applyPriorityOrder(selectedItems).filter(i => !isPinned(i))
     .map(i => `${i.entity_type}_${i.entity_id}`).join("|");
 
   const overlay = document.createElement("div");
@@ -805,6 +850,11 @@ function showReorderScreen(onDone) {
         </div>
         <div style="padding:0 16px 6px;font-size:12px;color:#b38b2e">${uiText("recitalOrderNote")}</div>
         <div style="overflow-y:auto;padding:6px 16px;flex:1">
+          ${pinned.map(it => `
+            <div style="display:flex;align-items:center;gap:8px;background:#f5ecd2;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <span style="flex:1;font-size:13px;color:#2a1a00">${it.label}</span>
+              <span style="font-size:11px;color:#b38b2e;flex-shrink:0">🔒 always first</span>
+            </div>`).join("")}
           ${order.map((it, i) => `
             <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8d9b0;border-radius:8px;padding:8px 10px;margin-bottom:6px">
               <span style="flex:1;font-size:13px;color:#2a1a00">${it.label}</span>
@@ -829,7 +879,7 @@ function showReorderScreen(onDone) {
     [order[i], order[j]] = [order[j], order[i]];
     draw();
   };
-  window._rReorderReset = () => { order = applyPriorityOrder(selectedItems); draw(); };
+  window._rReorderReset = () => { order = applyPriorityOrder(selectedItems).filter(i => !isPinned(i)); draw(); };
   // Exit without applying the order or saving (used when neither option is done)
   window._rReorderExit = () => {
     if (overlay.parentNode) document.body.removeChild(overlay);
@@ -838,7 +888,7 @@ function showReorderScreen(onDone) {
   window._rReorderDone  = () => {
     const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
     userOrdered   = (newKey !== canonicalKey);
-    selectedItems = order;
+    selectedItems = [...pinned, ...order];
     isDirty       = true;
     document.body.removeChild(overlay);
     document.body.style.overflow = "";
@@ -861,7 +911,8 @@ function renderSelected() {
   // Canonical priority order (sec1 → sec8 → sec3 → others by global_no_start)
   // unless the user set a custom order via Reorder ⇅ (Vadagalai sub-sect
   // traditions carry their own recital orders — is_user_ordered flag).
-  const displayItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
+  selectedItems = finalOrder(selectedItems, userOrdered);
+  const displayItems = selectedItems;
   let html = "";
   displayItems.forEach((item, i) => {
     // Find original index for drag-drop (drag operates on selectedItems array)
@@ -1213,10 +1264,13 @@ export function registerRecitalBindings() {
         `Adiyen, do you want to save your changes for ${current} before switching?`
       );
       if (confirmed) {
-        // Special: moving FROM "All Days" (7) to a specific day
-        if (selectedDay === 7 && day !== 7 && selectedItems.length > 0) {
-          await _applyAllDaysToOtherDays();
-          return; // _applyAllDaysToOtherDays handles the day switch
+        // Leaving "All Days" (7): save it AND apply it to every day
+        if (selectedDay === 7 && selectedItems.length > 0) {
+          const mode = await askApplyAllDays();
+          if (!mode) return;                       // Cancel: stay on All Days, nothing saved
+          await window._recitalSavePlan(true);     // All Days list stays saved
+          await _applyAllDaysToDays(mode, day);    // then go to the day tapped
+          return;
         }
         await window._recitalSavePlan(true); // silent save
       }
@@ -1248,101 +1302,98 @@ export function registerRecitalBindings() {
     await loadExistingPlan();
   }
 
-  // When leaving "All Days" with a selection: ask add-on vs replace
-  async function _applyAllDaysToOtherDays() {
-    const mobile       = localStorage.getItem("mobile");
-    // BUG FIX: this branch previously used raw add-order — the per-day
-    // plans got sequence_no in the order items were TAPPED, while the
-    // display showed canonical order (the "Pallandu renders last" bug).
-    // Order exactly like the main save path before building worker items.
-    const allDaysItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
-    const workerItems  = _buildWorkerItems(allDaysItems);
+  // Apply the saved "All Days" list to Sun–Sat.
+  //   mode "replace": every day = exactly the All Days list, in its order.
+  //   mode "add":     each day keeps its own items; All Days items are added.
+  // Order everywhere: 1 / 8 / 3 first (fixed), then chronological — or, if
+  // All Days was reordered, the All Days order followed by the day's own
+  // extra items; if only the day was reordered, the day's order followed by
+  // the new All Days items (chronological).
+  // targetDay: day to open afterwards; null = stay on All Days.
+  async function _applyAllDaysToDays(mode, targetDay) {
+    const mobile    = localStorage.getItem("mobile");
+    const adOrdered = userOrdered;
+    const adItems   = _buildWorkerItems(finalOrder(selectedItems, adOrdered));
+    const key       = i => `${i.entity_type}_${i.entity_id}`;
+    const adByKey   = new Map(adItems.map(i => [key(i), i]));
+    const dayNames  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    let failed = 0;
 
-    const choice = confirm(
-      `Adiyen, how should this "All Days" selection be applied to each day?
-
-` +
-      `OK  → Add to each day's existing selections (keep what they have + add these)
-` +
-      `Cancel → Replace all days with exactly this selection`
-    );
-
-    // Save All Days plan first
-    await window._recitalSavePlan(true);
-
-    const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     for (let d = 0; d <= 6; d++) {
       try {
-        if (choice) {
-          // Add-on: fetch existing plan for day, merge, save
+        let items   = adItems;
+        let ordered = adOrdered;
+
+        if (mode === "add") {
           const res  = await fetch(
             `${WORKER}/recital/plan?mobile=${encodeURIComponent(mobile)}&day=${d}`
           );
           const data = await res.json();
-          // Preserve pathu_id / section_id / global_no_start from DB so
-          // child thirumozhi items (is_child=true) survive the merge and
-          // reload correctly — stripping these fields collapses children
-          // to parent pathus on next load.
-          const existingItems = (data.items || []).map(i => ({
+          // The worker falls back to the All Days plan when a day has none —
+          // that is not the day's own selection.
+          const own = (data.plan && Number(data.plan.day_of_week) === d) ? (data.items || []) : [];
+          const dayOrdered = own.length > 0 && Number(data.plan.is_user_ordered) === 1;
+
+          // Keep every stored field (is_rettai, from_koil, pathu/section ids)
+          const ownW = own.map(i => ({
             entity_type:     i.entity_type,
             entity_id:       i.entity_id,
-            section_id:      i.section_id      || null,
-            pathu_id:        i.pathu_id        ?? null,
-            global_no_start: i.global_no_start || 0
+            ...(i.is_rettai ? { is_rettai: true } : {}),
+            section_id:      i.section_id || null,
+            pathu_id:        i.pathu_id ?? null,
+            global_no_start: i.entity_type === "pasuram" ? Number(i.entity_id) : (i.global_no_start || 0),
+            from_koil:       i.from_koil ? 1 : 0
           }));
-          // Merge: existing first, then allDays items not already in existing
-          // Then apply priority order (sec1/sec8/sec3 first)
-          const existingKeys = new Set(existingItems.map(i => `${i.entity_type}_${i.entity_id}`));
-          const rawMerged = [
-            ...existingItems,
-            ...workerItems.filter(i => !existingKeys.has(`${i.entity_type}_${i.entity_id}`))
-          ];
-          // Priority-order the merged set: reconstruct pseudo-items with global_no_start
-          // For existing DB items we don't have global_no_start, so sort sec1/8/3 first,
-          // then keep the rest in their original order
-          const sec1Items = rawMerged.filter(i => i.entity_type === "section" && i.entity_id === 1);
-          const sec8Items = rawMerged.filter(i => i.entity_type === "section" && i.entity_id === 8);
-          const sec3Items = rawMerged.filter(i => i.entity_type === "section" && i.entity_id === 3);
-          const otherItems = rawMerged.filter(i =>
-            !(i.entity_type === "section" && [1, 8, 3].includes(i.entity_id))
-          );
-          const merged = [...sec1Items, ...sec8Items, ...sec3Items, ...otherItems];
-          await fetch(`${WORKER}/recital/plan`, {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mobile,
-              day_of_week: d,
-              plan_name:   `My Recital — Day ${d}`,
-              items:       merged
-            })
-          });
-        } else {
-          // Replace: overwrite each day with allDays items
-          await fetch(`${WORKER}/recital/plan`, {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              mobile,
-              day_of_week: d,
-              plan_name:   `My Recital — Day ${d}`,
-              items:       workerItems,
-              is_user_ordered: userOrdered ? 1 : 0
-            })
-          });
+
+          // Same item in both: the All Days version is used
+          const ownSwapped = ownW.map(i => adByKey.get(key(i)) || i);
+          const ownKeys    = new Set(ownW.map(key));
+          const newFromAD  = adItems.filter(i => !ownKeys.has(key(i)));
+          const all        = [...ownSwapped, ...newFromAD];
+
+          const pinned = all.filter(i => pinnedRankW(i) >= 0)
+                            .sort((a, b) => pinnedRankW(a) - pinnedRankW(b));
+          const notPin = i => pinnedRankW(i) < 0;
+          let rest;
+          if (adOrdered) {
+            rest = [...adItems.filter(notPin),
+                    ...ownW.filter(i => notPin(i) && !adByKey.has(key(i)))];
+          } else if (dayOrdered) {
+            rest = [...ownSwapped.filter(notPin),
+                    ...newFromAD.filter(notPin).sort(byChrono)];
+          } else {
+            rest = all.filter(notPin).sort(byChrono);
+          }
+          items   = [...pinned, ...rest];
+          ordered = adOrdered || dayOrdered;
         }
-      } catch(e) {
+
+        const r = await fetch(`${WORKER}/recital/plan`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mobile,
+            day_of_week:     d,
+            plan_name:       `My Recital — Day ${d}`,
+            items,
+            is_user_ordered: ordered ? 1 : 0
+          })
+        });
+        const out = await r.json().catch(() => ({}));
+        if (!r.ok || out.success === false) throw new Error(out.error || ("HTTP " + r.status));
+      } catch (e) {
+        failed++;
         console.error(`Failed to apply All Days to ${dayNames[d]}:`, e);
       }
     }
 
-    showToast(choice
-      ? `Added to all 7 days 🙏`
-      : `Replaced all 7 days with this selection 🙏`
-    );
-    // Now switch to the day the user was clicking
-    // (we lost target day — switch to Sunday by default after All Days)
-    await _switchToDay(0);
+    showToast(failed
+      ? `Adiyen, ${7 - failed} of 7 days updated — please try again for the rest`
+      : (mode === "add" ? "Added to all 7 days 🙏" : "Replaced all 7 days with this selection 🙏"));
+
+    if (targetDay !== null && targetDay !== undefined) {
+      await _switchToDay(targetDay);
+    }
   }
 
   // Build worker-ready items array from selectedItems (expands rettai_group)
@@ -1494,7 +1545,17 @@ export function registerRecitalBindings() {
 
   window._recitalReorder = () => {
     if (!selectedItems.length) { showToast("Nothing selected yet."); return; }
-    showReorderScreen(() => { window._recitalSavePlan(true); });
+    showReorderScreen(async () => {
+      if (selectedDay === 7) {
+        // All Days: the new order is applied to every day too
+        const mode = await askApplyAllDays();
+        if (!mode) return;          // Cancel: order shown but not saved (asked again on leaving)
+        await window._recitalSavePlan(true);
+        await _applyAllDaysToDays(mode, null);
+        return;
+      }
+      window._recitalSavePlan(true);
+    });
   };
 
   window._recitalOpenSection = openSectionModal;
@@ -1760,8 +1821,14 @@ export function registerRecitalBindings() {
   window._recitalDragOver  = (e)      => { e.preventDefault(); };
   window._recitalDragDrop  = (target) => {
     if (dragSrcIndex === null || dragSrcIndex === target) return;
+    if (!selectedItems[dragSrcIndex] || !selectedItems[target]) return;
+    if (isPinned(selectedItems[dragSrcIndex]) || isPinned(selectedItems[target])) {
+      showToast("Adiyen, 1 / 8 / 3 always stay first and cannot be moved");
+      return;
+    }
     const moved = selectedItems.splice(dragSrcIndex, 1)[0];
     selectedItems.splice(target, 0, moved);
+    userOrdered = true;
     isDirty = true;
     renderSelected();
   };
@@ -1888,6 +1955,15 @@ export function registerRecitalBindings() {
     const mobile  = localStorage.getItem("mobile");
     const saveMsg = document.getElementById("r-save-msg");
 
+    // Save Plan on "All Days": ask how to apply it to every day first.
+    // Cancel = nothing is saved. (Silent saves come from the day switch /
+    // reorder paths, which ask themselves.)
+    let applyMode = null;
+    if (!silent && selectedDay === 7 && selectedItems.length > 0) {
+      applyMode = await askApplyAllDays();
+      if (!applyMode) return;
+    }
+
     // ── Anadhyayana Kalam: block non-qualified selections (explicit save only) ──
     // The recital plan is treated as standing, so a plan built earlier may hold
     // items not recited in this period. We tell the user and drop them from what's
@@ -1908,7 +1984,7 @@ export function registerRecitalBindings() {
       }
     }
 
-    const orderedItems = userOrdered ? [...selectedItems] : applyPriorityOrder(selectedItems);
+    const orderedItems = finalOrder(selectedItems, userOrdered);
 
     // Expand rettai_group items into worker-ready format
     const workerItems = _buildWorkerItems(orderedItems);
@@ -1970,6 +2046,7 @@ export function registerRecitalBindings() {
           saveMsg.style.display = "block";
           setTimeout(() => { saveMsg.style.display = "none"; }, 3000);
         }
+        if (applyMode) await _applyAllDaysToDays(applyMode, null);
       } else {
         throw new Error(data.error || "Save failed");
       }
