@@ -615,7 +615,7 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
     showToast(`Adiyen, previous selection "${removedLabels}" replaced with "${label}"`);
   }
 
-  selectedItems.push({
+  placeNew({
     entity_type, entity_id, label,
     global_no_start: global_no_start || 0,
     global_no_end:   global_no_end   || 0,
@@ -667,6 +667,23 @@ function finalOrder(items, keepUserOrder) {
   return [...pinned, ...rest];
 }
 function applyPriorityOrder(items) { return finalOrder(items, false); }
+
+// In a list with the user's own order, a NEW item goes to its chronological
+// place: just before the first item (top to bottom) that comes later in the
+// 4000; items the user moved stay where they are. No later item → at the end.
+function insertChrono(list, item) {
+  const g   = item.global_no_start || 9999;
+  const idx = list.findIndex(x => (x.global_no_start || 9999) > g);
+  return idx < 0 ? [...list, item] : [...list.slice(0, idx), item, ...list.slice(idx)];
+}
+// Add one item to selectedItems. Without a custom order the list is simply
+// chronological (finalOrder sorts it); with one, place it chronologically.
+function placeNew(item) {
+  if (!userOrdered || isPinned(item)) { selectedItems.push(item); return; }
+  const ordered = finalOrder(selectedItems, true);
+  selectedItems = [...ordered.filter(isPinned),
+                   ...insertChrono(ordered.filter(i => !isPinned(i)), item)];
+}
 
 // Same rule for worker-format items (rettai items keep entity_type "section")
 function pinnedRankW(w) {
@@ -1306,9 +1323,9 @@ export function registerRecitalBindings() {
   //   mode "replace": every day = exactly the All Days list, in its order.
   //   mode "add":     each day keeps its own items; All Days items are added.
   // Order everywhere: 1 / 8 / 3 first (fixed), then chronological — or, if
-  // All Days was reordered, the All Days order followed by the day's own
-  // extra items; if only the day was reordered, the day's order followed by
-  // the new All Days items (chronological).
+  // All Days was reordered, the All Days order with the day's own extra items
+  // placed chronologically inside it; if only the day was reordered, the
+  // day's order with the new All Days items placed chronologically inside it.
   // targetDay: day to open afterwards; null = stay on All Days.
   async function _applyAllDaysToDays(mode, targetDay) {
     const mobile    = localStorage.getItem("mobile");
@@ -1356,11 +1373,15 @@ export function registerRecitalBindings() {
           const notPin = i => pinnedRankW(i) < 0;
           let rest;
           if (adOrdered) {
-            rest = [...adItems.filter(notPin),
-                    ...ownW.filter(i => notPin(i) && !adByKey.has(key(i)))];
+            // All Days order kept; the day's own extra items go to their
+            // chronological places within it
+            rest = adItems.filter(notPin);
+            for (const x of ownW.filter(i => notPin(i) && !adByKey.has(key(i)))) rest = insertChrono(rest, x);
           } else if (dayOrdered) {
-            rest = [...ownSwapped.filter(notPin),
-                    ...newFromAD.filter(notPin).sort(byChrono)];
+            // The day's order kept; new All Days items go to their
+            // chronological places within it
+            rest = ownSwapped.filter(notPin);
+            for (const x of newFromAD.filter(notPin).sort(byChrono)) rest = insertChrono(rest, x);
           } else {
             rest = all.filter(notPin).sort(byChrono);
           }
@@ -1756,7 +1777,7 @@ export function registerRecitalBindings() {
         );
       }
 
-      selectedItems.push({
+      placeNew({
         entity_type:     "rettai_group",
         entity_id:       data.pasurams[0].global_no, // first pasuram no as numeric id
         rettai_key:      rettaiId,                   // unique key for duplicate check
