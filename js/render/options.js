@@ -37,7 +37,7 @@ export function renderOptions() {
         <div class="tree-item" onclick="openKoil('THIRUVAIMOZHI')">Koil Thiruvaimozhi</div>
         <div class="tree-item" onclick="openSattrumurai(null)">Sattrumurai</div>
         <div class="tree-item" onclick="openStarPasuram()">${uiText("menuStarPasuram")}</div>
-        <div class="tree-item" onclick="openDivyadesamArchanai()">108 Divyadesa Archanai</div>
+        <div class="tree-item" onclick="openDivyadesamArchanai()">${uiText("menuArchanai")}</div>
         <div class="tree-item" onclick="openAzhwarThirunatchathra()">Azhwar Thirunatcharam Goshti</div>
         <div class="tree-item" onclick="openRegister()">${uiText("menuRegister")}</div>
         <div class="tree-item" onclick="openRecitalPlan()">${uiText("menuMyRecitalPlan")}</div>

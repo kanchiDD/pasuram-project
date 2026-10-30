@@ -59,6 +59,7 @@ const STRINGS = {
     menuMyRecitalPlan:    "My Recital Plan",
     menuStarPasuram:      "Star & Pasuram",
     menuSpinner:          "Divyadesam Spinner",
+    menuArchanai:         "Archanai",
 
     // ── section / pathu selector ──────────────────────────────
     selectASection:   "Select a Section",
@@ -143,7 +144,14 @@ const STRINGS = {
     goTo:             "🔢 Go To",
 
     // ── archanai ──────────────────────────────────────────────
+    // Index of all archanais (108 Divyadesa + every deity namavali),
+    // then a slideshow. archTitle / archSubtitle / archGoToPrompt are
+    // from the old 108-only screen and are no longer used.
     archLoading:      "Loading Archanai...",
+    archIndexTitle:   "Archanai",
+    archIndexSubtitle:"Choose an archanai — it plays one name at a time",
+    archBackToList:   "All archanais",
+    archNames:        "names",
     archTitle:        "108 Divyadesa Archanai",
     archSubtitle:     "108 Divyadesams — Namavalli",
     archNoData:       "Archanai data not available.",
