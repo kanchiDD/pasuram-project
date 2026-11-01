@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ta">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f5c242">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arulicheyal">
+<link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+<title>Sthothram — Arulicheyal</title>
+
+<link rel="stylesheet" href="/css/main.css?v=861">
+
+<style>
+/* ── Sthothram page ─────────────────────────────────────────────
+   Card values are the Thirumadal ones from js/render/css.js
+   (.sp-madal-*), repeated here because that file is injected only
+   on the tree page. Mobile first. */
+:root { --sth-font: 18px; }   /* A+ / A− in sthothram.js overrides this */
+#sthRoot .content-border { padding: 16px 12px; }
+
+.sth-scripts { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; align-items:center;
+  margin: 0 0 14px; font-family: Arial, sans-serif; }
+.sth-read { font-size:12px; color:#8a7a5a; margin-right:2px; }
+.sth-sc { border:1px solid #d8c48a; background:#fff; color:#4a3728; border-radius:14px;
+  padding:4px 11px; font-size:13px !important; cursor:pointer; }
+.sth-sc.on { border-color:#2f7d32; background:#2f7d32; color:#fff; font-weight:700; }
+
+.sth-intro, .sth-msg { text-align:center; color:#8a6a45; font-family: Arial, sans-serif; font-size:14px !important; margin: 6px 0 12px; }
+
+/* index */
+.sth-group { border:1px solid #e8d8a0; border-radius:8px; margin-bottom:8px; background:#fffdfa; overflow:hidden; }
+.sth-group-head { width:100%; display:flex; justify-content:space-between; align-items:center;
+  background:#fff8e6; border:none; padding:12px 14px; cursor:pointer; color:#4a2c00;
+  font-family: Arial, sans-serif; font-size:16px !important; font-weight:700; text-align:left; }
+.sth-group-head::before { content:"▶"; font-size:11px !important; margin-right:8px; color:#b08d3a; transition: transform .15s; }
+.sth-group.open .sth-group-head::before { transform: rotate(90deg); }
+.sth-group-head span:first-child { flex:1; }
+.sth-group-n { font-size:12px !important; background:#d4a843; color:#fff; border-radius:999px; padding:1px 9px; }
+.sth-list { display:none; padding: 4px 8px 8px; }
+.sth-group.open .sth-list { display:block; }
+.sth-item { display:block; text-decoration:none; padding:9px 8px; border-bottom:1px solid #f0e4c4; color:#2a1a00; }
+.sth-item:last-child { border-bottom:none; }
+.sth-item:hover { background:#fff8e6; }
+.sth-item-title { display:block; font-size: 17px !important; font-weight:600; line-height:1.6; }
+.sth-item-en { display:block; font-family: Arial, sans-serif; font-size:12px !important; color:#8a6a45; }
+
+/* stotra */
+.sth-nav, .sth-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+.sth-foot { margin-top:14px; justify-content:center; }
+.sth-back { font-family: Arial, sans-serif; font-size:14px !important; color:#4a2c00; text-decoration:none;
+  border:1px solid #d4a843; border-radius:999px; padding:5px 13px; background:#fff; }
+.sth-size button { font-family: Arial, sans-serif; font-size:14px !important; border:1px solid #d4a843;
+  background:#fff; color:#4a2c00; border-radius:6px; padding:4px 10px; margin-left:4px; cursor:pointer; }
+.sth-title { text-align:center; font-weight:800; color:#4a2c00; font-size: calc(var(--sth-font) + 3px) !important;
+  border-bottom:1.5px solid #d4a843; padding-bottom:7px; margin-bottom:4px; line-height:1.5; }
+.sth-sub { text-align:center; font-family: Arial, sans-serif; font-size:12px !important; color:#8a6a45; margin-bottom:12px; }
+
+.sth-body { display:flex; flex-direction:column; gap:6px; }
+.sp-madal-couplet-card { background:#fffdfa; border:1px solid #e8d8a0; border-radius:6px; padding:6px 10px; }
+.sp-madal-line { font-size: var(--sth-font) !important; line-height:1.7; color:#2a1a00; display:block; text-align:left; }
+.sp-line-with-no { display:block; position:relative; }
+.sp-line-with-no .sp-couplet-no { float:right; }
+.sp-couplet-no { font-size:11px !important; color:#999; margin-left:8px; font-family: Arial, sans-serif; }
+.sth-prose .sp-madal-line { line-height:1.9; }
+
+.sth-part { text-align:center; font-weight:800; color:#4a2c00; font-size: calc(var(--sth-font) + 1px) !important;
+  margin: 14px 0 4px; padding-bottom:5px; border-bottom:1px solid #e8d8a0; }
+.sth-heading { text-align:center; font-weight:700; color:#4a2c00; font-size: var(--sth-font) !important; margin: 10px 0 2px; }
+.sth-speaker { font-weight:700; color:#8a5a1e; font-size: calc(var(--sth-font) - 2px) !important; margin: 8px 0 0 2px; }
+.sth-invoc { text-align:center; font-size: var(--sth-font) !important; color:#4a2c00; }
+.sth-close { font-size: var(--sth-font) !important; }
+
+@media (min-width: 700px) {
+  #sthRoot .content-border { padding: 22px 25px; }
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="header"></div>
+
+<div id="sthRoot">
+  <div class="content-border">
+
+    <div class="section-heading">Sthothram</div>
+
+    <div class="sth-scripts" id="sthScripts"></div>
+
+    <div id="sthBody">Loading...</div>
+
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="js/layout.js"></script>
+<script src="js/sthothram.js"></script>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+
+    if (typeof loadLayout === "function") {
+        loadLayout();
+    }
+
+    loadSthothram();
+
+});
+</script>
+
+</body>
+</html>
