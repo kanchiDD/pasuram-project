@@ -1550,10 +1550,6 @@
 
         const { indexHTML, contentHTML } = buildAll(renderData.blocks);
 
-        const satBtn = _satData
-          ? `<div style="text-align:center;margin:32px 0 16px"><button onclick="window._showSattrumurai()" style="background:#7a4d00;color:#fef0c0;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">View Sattrumurai</button></div>`
-          : "";
-
         const satTopBox = _satData
           ? `<div class="r-sat-top"><button type="button" onclick="window._showSattrumurai()">🙏 Click Here for Sattrumurai</button></div>`
           : "";
@@ -1564,8 +1560,7 @@
           ${anaNote}
           ${indexHTML}
           ${satTopBox}
-          ${contentHTML}
-          ${satBtn}`;
+          ${contentHTML}`;
 
         // ── Play All ────────────────────────────────────────────────
         // Scans the rendered page IN DOCUMENT ORDER at click time, so
