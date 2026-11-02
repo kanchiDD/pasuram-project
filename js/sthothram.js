@@ -120,31 +120,58 @@
   var openGroups = {};
   try { openGroups = JSON.parse(store("sthOpen") || "{}") || {}; } catch (e) { openGroups = {}; }
 
+  function itemHtml(s) {
+    return '<a class="sth-item" href="#s' + s.stotra_id + '">' +
+      '<span class="sth-item-title">' + esc(s.title) + "</span>" +
+      '<span class="sth-item-en">' + esc(s.name_en) +
+        (s.item_count ? " · " + s.item_count + " slokas" : "") + "</span>" +
+    "</a>";
+  }
+
+  // A stotra with sub_group_id (e.g. Desika Stotras inside Acharya Srisuktis)
+  // goes into a tap-to-open box of its own, below the group's plain items.
   function renderIndex(rows) {
     var groups = [], byId = {};
     rows.forEach(function (r) {
-      if (!byId[r.group_id]) {
-        byId[r.group_id] = { id: r.group_id, name: r.group_name || "", order: r.group_order || 999, items: [] };
-        groups.push(byId[r.group_id]);
+      var g = byId[r.group_id];
+      if (!g) {
+        g = byId[r.group_id] = { id: r.group_id, name: r.group_name || "", order: r.group_order || 999,
+                                 items: [], subs: [], subById: {}, total: 0 };
+        groups.push(g);
       }
-      byId[r.group_id].items.push(r);
+      g.total++;
+      if (r.sub_group_id) {
+        var sg = g.subById[r.sub_group_id];
+        if (!sg) {
+          sg = g.subById[r.sub_group_id] = { id: r.sub_group_id, name: r.sub_group_name || "",
+                                             order: r.sub_group_order || 999, items: [] };
+          g.subs.push(sg);
+        }
+        sg.items.push(r);
+      } else {
+        g.items.push(r);
+      }
     });
     groups.sort(function (a, b) { return a.order - b.order; });
 
     var html = '<p class="sth-intro">' + rows.length + " stotras. Tap a group, then a stotra.</p>";
     groups.forEach(function (g) {
       var open = !!openGroups[g.id];
+      g.subs.sort(function (a, b) { return a.order - b.order; });
       html += '<div class="sth-group' + (open ? " open" : "") + '" data-g="' + g.id + '">' +
         '<button type="button" class="sth-group-head" aria-expanded="' + open + '">' +
-          '<span>' + esc(g.name) + '</span><span class="sth-group-n">' + g.items.length + "</span>" +
+          '<span>' + esc(g.name) + '</span><span class="sth-group-n">' + g.total + "</span>" +
         "</button>" +
         '<div class="sth-list">' +
-          g.items.map(function (s) {
-            return '<a class="sth-item" href="#s' + s.stotra_id + '">' +
-              '<span class="sth-item-title">' + esc(s.title) + "</span>" +
-              '<span class="sth-item-en">' + esc(s.name_en) +
-                (s.item_count ? " · " + s.item_count + " slokas" : "") + "</span>" +
-            "</a>";
+          g.items.map(itemHtml).join("") +
+          g.subs.map(function (sg) {
+            var sopen = !!openGroups["sg" + sg.id];
+            return '<div class="sth-subgroup' + (sopen ? " open" : "") + '" data-sg="' + sg.id + '">' +
+              '<button type="button" class="sth-subgroup-head" aria-expanded="' + sopen + '">' +
+                '<span>' + esc(sg.name) + '</span><span class="sth-group-n">' + sg.items.length + "</span>" +
+              "</button>" +
+              '<div class="sth-sublist">' + sg.items.map(itemHtml).join("") + "</div>" +
+            "</div>";
           }).join("") +
         "</div></div>";
     });
@@ -253,6 +280,15 @@
     });
 
     $("sthBody").addEventListener("click", function (e) {
+      var shead = e.target.closest(".sth-subgroup-head");
+      if (shead) {
+        var sg = shead.parentNode, skey = "sg" + sg.getAttribute("data-sg");
+        var sopen = !sg.classList.contains("open");
+        sg.classList.toggle("open", sopen); shead.setAttribute("aria-expanded", sopen);
+        if (sopen) openGroups[skey] = 1; else delete openGroups[skey];
+        store("sthOpen", JSON.stringify(openGroups));
+        return;
+      }
       var head = e.target.closest(".sth-group-head");
       if (head) {
         var g = head.parentNode, id = g.getAttribute("data-g");

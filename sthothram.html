@@ -48,6 +48,17 @@
 .sth-item-title { display:block; font-size: 17px !important; font-weight:600; line-height:1.6; }
 .sth-item-en { display:block; font-family: Arial, sans-serif; font-size:12px !important; color:#8a6a45; }
 
+/* sub-group inside a group (e.g. Desika Stotras in Acharya Srisuktis) */
+.sth-subgroup { border:1px solid #ecdcae; border-radius:6px; margin: 8px 0 2px; background:#fff; overflow:hidden; }
+.sth-subgroup-head { width:100%; display:flex; justify-content:space-between; align-items:center;
+  background:#fdf3d8; border:none; padding:10px 12px; cursor:pointer; color:#6a4200;
+  font-family: Arial, sans-serif; font-size:15px !important; font-weight:700; text-align:left; }
+.sth-subgroup-head::before { content:"▶"; font-size:10px !important; margin-right:8px; color:#b08d3a; transition: transform .15s; }
+.sth-subgroup.open .sth-subgroup-head::before { transform: rotate(90deg); }
+.sth-subgroup-head span:first-child { flex:1; }
+.sth-sublist { display:none; padding: 2px 6px 6px; }
+.sth-subgroup.open .sth-sublist { display:block; }
+
 /* stotra */
 .sth-nav, .sth-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
 .sth-foot { margin-top:14px; justify-content:center; }
