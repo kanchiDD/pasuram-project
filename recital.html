@@ -209,6 +209,12 @@
     }
 
     /* Sattrumurai */
+    /* Ghoshti: Sattrumurai link right after the index, so nobody has to scroll to the end for it */
+    .r-sat-top { margin:0 auto 18px; max-width:680px; padding:12px; background:#fff6e0;
+                 border:2px solid #C9A84C; border-radius:12px; text-align:center; }
+    .r-sat-top button { background:#7a4d00; color:#fef0c0; border:none; border-radius:10px;
+                 padding:13px 22px; font-size:16px; font-weight:900; cursor:pointer; font-family:inherit;
+                 width:100%; max-width:420px; }
     .r-sattrumurai-main-heading { text-align:center;font-size:20px;font-weight:900;color:#4a2c00;margin:0 0 20px;padding:12px;border-top:2px solid #C9A84C;border-bottom:2px solid #C9A84C; }
     .gsat-wrap-r { max-width:720px;margin:0 auto;padding:20px 16px 90px; }
     .gsat-section-r { background:#FFFDF7;border:1.5px solid #E8D5A8;border-radius:10px;margin-bottom:14px;overflow:hidden; }
@@ -1548,11 +1554,16 @@
           ? `<div style="text-align:center;margin:32px 0 16px"><button onclick="window._showSattrumurai()" style="background:#7a4d00;color:#fef0c0;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">View Sattrumurai</button></div>`
           : "";
 
+        const satTopBox = _satData
+          ? `<div class="r-sat-top"><button type="button" onclick="window._showSattrumurai()">🙏 Click Here for Sattrumurai</button></div>`
+          : "";
+
         const _fullHTML = `
           <div class="r-page-title">${pageTitle}</div>
           <div class="r-day-label">${pageSubtitle}</div>
           ${anaNote}
           ${indexHTML}
+          ${satTopBox}
           ${contentHTML}
           ${satBtn}`;
 
@@ -1637,7 +1648,11 @@
 
         stage.innerHTML = _fullHTMLWithPlay;
 
-        window._showSattrumurai = function() { if (_satData) stage.innerHTML = renderSattrumurai(_satData); };
+        window._showSattrumurai = function() {
+          if (!_satData) return;
+          stage.innerHTML = renderSattrumurai(_satData);
+          window.scrollTo(0, 0);   // open the Sattrumurai at its top, whichever button was used
+        };
         window.showRecital = function() { stage.innerHTML = _fullHTMLWithPlay; };
 
         // Show floating nav
