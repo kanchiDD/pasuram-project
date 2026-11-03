@@ -163,6 +163,26 @@ function injectCSS() {
     }
     .farch-msg { color:#c9a84c;text-align:center;padding:40px 10px;font-family:Arial,sans-serif; }
 
+    /* ── Full namavali (all names on one page) ── */
+    .farch-full-link {
+      align-self:center;background:#c9a84c;color:#1a0a00;border:none;border-radius:999px;
+      padding:9px 18px;font-family:Arial,sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+    }
+    .farch-full-link:focus-visible { outline:2px solid #f0d080;outline-offset:2px; }
+    .farch-list { display:flex;flex-direction:column;gap:6px; }
+    .farch-li {
+      display:flex;gap:10px;align-items:baseline;background:#241100;border:1px solid #5a3a14;
+      border-radius:8px;padding:8px 12px;
+    }
+    .farch-li-no {
+      font-family:Arial,sans-serif;font-size:12px;color:#c9a84c;min-width:2.6em;text-align:right;
+      font-variant-numeric:tabular-nums;flex-shrink:0;
+    }
+    .farch-li-text {
+      flex:1;min-width:0;color:#ffeebb;font-size:var(--base-font,19px);line-height:1.7;overflow-wrap:anywhere;
+    }
+    .farch-li-cap { display:block;font-size:13px;color:#f0d080;font-weight:700;line-height:1.5; }
+
     /* ── Floating nav (same as before) ── */
     .fstar-float-nav {
       position:fixed;bottom:20px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:9999;
@@ -297,6 +317,7 @@ function slideHTML(a) {
     <div class="farch-wrap">
       <button type="button" class="farch-back" onclick="farchShowIndex()">← ${esc(tx("archBackToList", "All archanais"))}</button>
       <div class="farch-title">${esc(a.title)}</div>
+      <button type="button" class="farch-full-link" onclick="farchFullList()">📜 ${esc(tx("archFullList", "Click for Full Archanai Namavali"))}</button>
 
       <div class="farch-stage" id="farch-stage">
         <div class="farch-no" id="farch-no">1 / ${total}</div>
@@ -331,6 +352,29 @@ function slideHTML(a) {
           <button type="button" class="farch-btn" onclick="farchGoTo()">${uiText("goTo")}</button>
         </span>
       </div>
+    </div>`;
+}
+
+// ── Full namavali view: every name of the archanai on one page ───
+function fullListHTML(a) {
+  const back = `<button type="button" class="farch-back" onclick="farchBackToSlides()">◀ ${esc(tx("archBackToSlides", "Back to slideshow"))}</button>`;
+  return `
+    <div class="farch-wrap">
+      ${back}
+      <div class="farch-title">${esc(a.title)}</div>
+      <div class="farch-subtitle">${countLabel(a.names.length)}</div>
+      <div class="farch-controls">
+        <button type="button" class="farch-btn" onclick="farchFont(2)">A+</button>
+        <button type="button" class="farch-btn" onclick="farchFont(-2)">A-</button>
+      </div>
+      <div class="farch-list">
+        ${a.names.map((n, i) => `
+          <div class="farch-li">
+            <span class="farch-li-no">${i + 1}</span>
+            <span class="farch-li-text">${n.caption ? `<span class="farch-li-cap">${esc(n.caption)}</span>` : ""}${esc(n.text)}</span>
+          </div>`).join("")}
+      </div>
+      ${back}
     </div>`;
 }
 
@@ -414,6 +458,32 @@ window.farchOpen = async function (id) {
   play(true);
 };
 
+// Pause the slideshow and show every name; the place in the slideshow is kept.
+window.farchFullList = function () {
+  if (!_cur) return;
+  play(false);
+  const root = rootEl();
+  if (!root) return;
+  root.innerHTML = fullListHTML(_cur);
+  window.scrollTo({ top: 0 });
+};
+
+// Back to the slideshow at the name it was on, paused; Play continues from there.
+window.farchBackToSlides = function () {
+  if (!_cur) return;
+  const root = rootEl();
+  if (!root) return;
+  const at = _idx;
+  root.innerHTML = slideHTML(_cur);
+  const sp = document.getElementById("farch-speed");
+  const lbl = document.getElementById("farch-speed-label");
+  if (sp) sp.value = 21 - Math.round(_speed / 1000);
+  if (lbl) lbl.textContent = Math.round(_speed / 1000) + "s";
+  show(at);
+  setPlayButton();
+  window.scrollTo({ top: 0 });
+};
+
 window.farchShowIndex = function () {
   play(false);
   _cur = null;
@@ -472,7 +542,7 @@ window.farchGoTo = function () {
 if (!window.__farchKeys) {
   window.__farchKeys = true;
   document.addEventListener("keydown", e => {
-    if (!_cur || !rootEl()) return;
+    if (!_cur || !rootEl() || !document.getElementById("farch-nv")) return;   // slideshow screen only
     const tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA") return;
     if (e.key === " ") { e.preventDefault(); window.farchToggle(); }
