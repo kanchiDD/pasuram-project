@@ -65,6 +65,18 @@
 /* stotra */
 .sth-nav, .sth-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
 .sth-foot { margin-top:14px; justify-content:center; }
+
+/* long works: list of sargas / dasakams, and previous / next inside one */
+.sth-partlist { display:flex; flex-direction:column; gap:5px; }
+.sth-partitem { display:flex; gap:10px; align-items:baseline; text-decoration:none; color:#2a1a00;
+  background:#fffdfa; border:1px solid #e8d8a0; border-radius:6px; padding:9px 10px; }
+.sth-partitem:hover { background:#fff8e6; }
+.sth-partno { font-family: Arial, sans-serif; font-size:12px !important; color:#8a6a45; min-width:2.2em; text-align:right; flex-shrink:0; }
+.sth-parttitle { flex:1; min-width:0; font-size:16px !important; font-weight:600; line-height:1.6; }
+.sth-section { text-align:center; font-weight:800; color:#4a2c00; font-size:16px !important; margin:12px 0 2px;
+  padding-bottom:4px; border-bottom:1px solid #e8d8a0; }
+.sth-pager { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:6px 0 10px; }
+.sth-pos { font-family: Arial, sans-serif; font-size:13px !important; color:#8a6a45; }
 .sth-back { font-family: Arial, sans-serif; font-size:14px !important; color:#4a2c00; text-decoration:none;
   border:1px solid #d4a843; border-radius:999px; padding:5px 13px; background:#fff; }
 .sth-size button { font-family: Arial, sans-serif; font-size:14px !important; border:1px solid #d4a843;

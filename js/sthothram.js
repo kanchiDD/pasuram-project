@@ -115,6 +115,17 @@
       return r.json();
     }).then(function (j) { stotraCache[key] = j; return j; });
   }
+  // one sarga / dasakam of a long work
+  function fetchPart(id, part, sc) {
+    var key = sc + "|" + id + "|" + part;
+    if (stotraCache[key]) return Promise.resolve(stotraCache[key]);
+    return fetch(API + "?id=" + id + "&part=" + part + "&script=" + sc).then(function (r) {
+      if (!r.ok) throw new Error("API " + r.status);
+      return r.json();
+    }).then(function (j) { stotraCache[key] = j; return j; });
+  }
+  // what the parts of a long work are called
+  function partWord(s) { return /Kandam/i.test(s.name_en || "") ? "sargas" : "dasakams"; }
 
   // ── index view ────────────────────────────────────────────
   var openGroups = {};
@@ -124,7 +135,8 @@
     return '<a class="sth-item" href="#s' + s.stotra_id + '">' +
       '<span class="sth-item-title">' + esc(s.title) + "</span>" +
       '<span class="sth-item-en">' + esc(s.name_en) +
-        (s.item_count ? " · " + s.item_count + " slokas" : "") + "</span>" +
+        (s.by_part ? " · " + s.part_count + " " + partWord(s)
+                   : (s.item_count ? " · " + s.item_count + " slokas" : "")) + "</span>" +
     "</a>";
   }
 
@@ -183,7 +195,15 @@
   // box: verse lines become a card (number on the last line), a speaker sits
   // as a small label above its card, headings / part titles / closing stand
   // on their own outside the cards.
-  function renderStotra(s) {
+  //   nav (only for one part of a long work): { listHref, listLabel, prevHref, nextHref, pos }
+  function renderStotra(s, nav) {
+    var backHref = nav ? nav.listHref : "#";
+    var backLabel = nav ? nav.listLabel : "← All stotras";
+    var pager = !nav ? "" : '<div class="sth-pager">' +
+      (nav.prevHref ? '<a class="sth-back" href="' + nav.prevHref + '">◀ Previous</a>' : '<span></span>') +
+      '<span class="sth-pos">' + esc(nav.pos) + "</span>" +
+      (nav.nextHref ? '<a class="sth-back" href="' + nav.nextHref + '">Next ▶</a>' : '<span></span>') +
+      "</div>";
     var blocks = [], cur = null;
     (s.lines || []).forEach(function (l) {
       var key = l.part_no + "|" + l.block_no;
@@ -192,12 +212,13 @@
     });
 
     var html = '<div class="sth-nav">' +
-        '<a class="sth-back" href="#">← All stotras</a>' +
+        '<a class="sth-back" href="' + backHref + '">' + esc(backLabel) + "</a>" +
         '<span class="sth-size"><button type="button" data-size="2" aria-label="Larger text">A+</button>' +
         '<button type="button" data-size="-2" aria-label="Smaller text">A−</button></span>' +
       "</div>" +
       '<div class="content-heading sth-title">' + esc(s.title) + "</div>" +
       '<div class="sth-sub">' + esc(s.name_en) + (s.group_name ? " · " + esc(s.group_name) : "") + "</div>" +
+      pager +
       '<div class="sth-body">';
 
     blocks.forEach(function (b) {
@@ -236,8 +257,25 @@
       }
     });
 
-    html += "</div>" +
-      '<div class="sth-foot"><a class="sth-back" href="#">← All stotras</a></div>';
+    html += "</div>" + pager +
+      '<div class="sth-foot"><a class="sth-back" href="' + backHref + '">' + esc(backLabel) + "</a></div>";
+    $("sthBody").innerHTML = html;
+  }
+
+  // ── list of parts: a kanda's sargas, Narayaneeyam's dasakams ──
+  function renderParts(s) {
+    var back = '<a class="sth-back" href="#">← All stotras</a>';
+    var html = '<div class="sth-nav">' + back + "</div>" +
+      '<div class="content-heading sth-title">' + esc(s.title) + "</div>" +
+      '<div class="sth-sub">' + esc(s.name_en) + " · " + (s.parts || []).length + " " + partWord(s) + "</div>" +
+      '<div class="sth-partlist">';
+    (s.parts || []).forEach(function (p) {
+      if (p.section) html += '<div class="sth-section">' + esc(p.section) + "</div>";
+      html += '<a class="sth-partitem" href="#s' + s.stotra_id + "p" + p.part_no + '">' +
+        '<span class="sth-partno">' + p.part_no + "</span>" +
+        '<span class="sth-parttitle">' + esc(p.title) + "</span></a>";
+    });
+    html += "</div>" + '<div class="sth-foot">' + back + "</div>";
     $("sthBody").innerHTML = html;
   }
 
@@ -246,11 +284,36 @@
     var sc = getScript();
     loadFont(sc);
     $("sthRoot").style.fontFamily = FONT[sc];
-    var m = /^#s(\d+)$/.exec(location.hash || "");
+    var m = /^#s(\d+)(?:p(\d+))?$/.exec(location.hash || "");
     $("sthBody").innerHTML = '<div class="sth-msg">Loading…</div>';
 
-    if (m) {
+    if (m && m[2]) {
+      // one sarga / dasakam
+      var id = +m[1], part = +m[2];
+      fetchPart(id, part, sc).then(function (s) {
+        if (!s || !s.lines) throw new Error("no data");
+        var total = s.part_count || 1;
+        renderStotra(s, {
+          listHref: "#s" + id, listLabel: "← All " + partWord(s),
+          prevHref: part > 1 ? "#s" + id + "p" + (part - 1) : "",
+          nextHref: part < total ? "#s" + id + "p" + (part + 1) : "",
+          pos: part + " / " + total
+        });
+        window.scrollTo(0, 0);
+        document.title = (s.name_en || "Sthothram") + " " + part + " — Arulicheyal";
+      }).catch(function () {
+        $("sthBody").innerHTML = '<div class="sth-msg">This part could not be loaded. ' +
+          '<a class="sth-back" href="#s' + id + '">Back to the list</a></div>';
+      });
+    } else if (m) {
       fetchStotra(+m[1], sc).then(function (s) {
+        if (s && s.parts) {                       // a long work: show its list of parts
+          renderParts(s);
+          document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
+          var py = parseInt(store("sthPartScroll" + s.stotra_id) || "0", 10);
+          window.scrollTo(0, py > 0 ? py : 0);
+          return;
+        }
         if (!s || !s.lines) throw new Error("no data");
         renderStotra(s); window.scrollTo(0, 0);
         document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
@@ -296,6 +359,12 @@
         g.classList.toggle("open", open); head.setAttribute("aria-expanded", open);
         if (open) openGroups[id] = 1; else delete openGroups[id];
         store("sthOpen", JSON.stringify(openGroups));
+        return;
+      }
+      var pitem = e.target.closest(".sth-partitem");
+      if (pitem) {                                  // remember the place in the sarga list
+        var pm = /^#s(\d+)p/.exec(pitem.getAttribute("href") || "");
+        if (pm) store("sthPartScroll" + pm[1], String(window.scrollY || 0));
         return;
       }
       var item = e.target.closest(".sth-item");
