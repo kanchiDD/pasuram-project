@@ -145,9 +145,10 @@
   // not decide the order. Long works read part by part (the Ramayanam
   // kandas, Narayaneeyam) keep the order the server gives and stand first.
   var LOCALE = { ta: "ta", deva: "hi", te: "te", kn: "kn", ml: "ml", bn: "bn", gu: "gu", iast: "en" };
-  var SRI = /^\s*(ஸ்ரீ|श्री|శ్రీ|ಶ್ರೀ|ശ്രീ|শ্রী|શ્રી|śrī|sri|shri)\s*/i;
+  // Converted text writes Sri with ஶ (ஶ்ரீ); typed text often with ஸ (ஸ்ரீ).
+  var SRI = /^\s*(ஶ்ரீ|ஸ்ரீ|श्री|శ్రీ|ಶ್ರೀ|ശ്രീ|শ্রী|શ્રી|śrī|sri|shri)\s*/i;
   function sortKey(s) {
-    return String(s.title || s.name_en || "")
+    return String(s.title || s.name_en || "").normalize("NFC")
       .replace(/[\u2070-\u209F\u00B2\u00B3\u00B9]/g, "")
       .replace(SRI, "").trim();
   }
