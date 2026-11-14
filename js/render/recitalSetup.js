@@ -9,6 +9,14 @@ const PATHU_SECTIONS      = new Set([2, 11, 26]);
 const THIRUMOZHI_SECTIONS = new Set([4, 5]);
 const SPECIAL_DIRECT      = new Set([21]); // no popup, no modal, add directly
 const NO_RETTAI           = new Set([21]); // no rettai option
+// Munnadi Pinnadi exists for the 4000 only, and not for the sections the
+// Munnadi Pinnadi page itself leaves out (19, 21, 22, 23).
+const MP_NOT_FOR          = new Set([19, 21, 22, 23]);
+const MP_SUFFIX           = " — முன்னடி பின்னடி";
+function mpAllowed(section_id) {
+  const sid = Number(section_id);
+  return sid > 0 && sid <= 26 && !MP_NOT_FOR.has(sid);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  ANADHYAYANA KALAM  (panchangam-driven, sect-aware)
@@ -211,6 +219,10 @@ function buildSetupHTML() {
               onclick="window._recitalPickRettai()">
         Rettai — இரட்டை Pasurams only
       </button>
+      <button class="recital-btn-secondary" id="r-popup-mp" style="width:100%;margin-top:8px"
+              onclick="window._recitalPickMunnadi()">
+        Munnadi Pinnadi — முன்னடி பின்னடி
+      </button>
       <div style="text-align:center;margin-top:10px">
         <span style="font-size:12px;color:#b38b2e;cursor:pointer;text-decoration:underline"
               onclick="window._recitalCancelPopup()">${uiText("cancel")}</span>
@@ -338,6 +350,16 @@ function buildRecitalDisplayHTML(blocks, plan) {
         <div class="r-block-badge">தனியன்</div>`;
       html += renderLines(block.lines);
       html += `</div>`;
+    } else if (block.block_type === "pasurams" && block.is_munnadi && block.munnadi) {
+      // Munnadi Pinnadi: number, munnadi, then pinnadi under it
+      for (const m of block.munnadi) {
+        html += `<div class="r-block r-block-pasuram" data-global-no="${m.global_no}">
+          <div class="r-pasuram-no">${m.merged ? "1&amp;2" : m.local_pasuram_no}</div>
+          <div class="r-pasuram-lines">
+            <div class="r-line">${m.line_1 || ""}</div>
+            <div class="r-line" style="padding-left:14px;color:#7a5a20">${m.line_2 || ""}</div>
+          </div></div>`;
+      }
     } else if (block.block_type === "pasurams") {
       const grouped = groupPasurams(block.pasurams);
       for (const pasuram of grouped) {
@@ -576,7 +598,7 @@ function removeCoexisting(items) {
 // ─────────────────────────────────────────────
 // ADD / REMOVE
 // ─────────────────────────────────────────────
-function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no, from_koil) {
+function addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no, from_koil, item_opt) {
   // Ahobila Madam Arulicheyals: inform before adding — their selection
   // switches the sattrumurai to the Madam order.
   if (entity_type === "section" && (Number(entity_id) === 52 || Number(entity_id) === 53)) {
@@ -623,7 +645,8 @@ function addItem(entity_type, entity_id, label, global_no_start, section_id, pat
     pathu_id:        storedPathuId,
     is_child:        !!(is_child),
     pathu_no:        pathu_no        || null,
-    from_koil:       from_koil ? 1 : 0
+    from_koil:       from_koil ? 1 : 0,
+    item_opt:        item_opt        || null
   });
   isDirty = true;
   renderSelected();
@@ -744,6 +767,8 @@ function showFullRettaiPopup(entity_type, entity_id, label, global_no_start, sec
                   pathu_no: pathu_no || null };
   const sub   = document.getElementById("r-popup-sub");
   if (sub) sub.textContent = `What would you like to add for "${label}"?`;
+  const mpBtn = document.getElementById("r-popup-mp");
+  if (mpBtn) mpBtn.style.display = mpAllowed(section_id) ? "" : "none";
   const overlay = document.getElementById("r-popup-overlay");
   if (overlay) overlay.classList.add("open");
 }
@@ -1208,7 +1233,10 @@ async function loadExistingPlan() {
         section_id:      item.section_id  || dbItem.section_id  || null,
         pathu_id:        finalPathuId,
         is_child:        item.entity_type === "pathu" ? (finalPathuId !== null) : false,
-        from_koil:       (dbItem.from_koil || item.from_koil) ? 1 : 0
+        from_koil:       (dbItem.from_koil || item.from_koil) ? 1 : 0,
+        item_opt:        dbItem.item_opt || item.item_opt || null,
+        label:           (dbItem.item_opt === "mp" && !item.label.includes(MP_SUFFIX))
+                           ? item.label + MP_SUFFIX : item.label
       };
     });
 
@@ -1359,7 +1387,8 @@ export function registerRecitalBindings() {
             section_id:      i.section_id || null,
             pathu_id:        i.pathu_id ?? null,
             global_no_start: i.entity_type === "pasuram" ? Number(i.entity_id) : (i.global_no_start || 0),
-            from_koil:       i.from_koil ? 1 : 0
+            from_koil:       i.from_koil ? 1 : 0,
+            ...(i.item_opt ? { item_opt: i.item_opt } : {})
           }));
 
           // Same item in both: the All Days version is used
@@ -1438,7 +1467,8 @@ export function registerRecitalBindings() {
           section_id:      item.section_id || null,
           pathu_id:        item.pathu_id   || null,
           global_no_start: item.global_no_start || 0,
-          from_koil:       item.from_koil ? 1 : 0
+          from_koil:       item.from_koil ? 1 : 0,
+          ...(item.item_opt ? { item_opt: item.item_opt } : {})
         });
       }
     }
@@ -1638,6 +1668,17 @@ export function registerRecitalBindings() {
     if (!pendingItem) return;
     const { entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no } = pendingItem;
     addItem(entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no);
+    document.getElementById("r-popup-overlay").classList.remove("open");
+    pendingItem = null;
+  };
+
+  // Munnadi Pinnadi: the same item as Full (it covers what Full covers and
+  // counts as a full recital for sattrumurai), saved with item_opt = 'mp'.
+  window._recitalPickMunnadi = () => {
+    if (!pendingItem) return;
+    const { entity_type, entity_id, label, global_no_start, section_id, pathu_id, is_child, global_no_end, pathu_no } = pendingItem;
+    addItem(entity_type, entity_id, label + MP_SUFFIX, global_no_start, section_id, pathu_id, is_child,
+            global_no_end, pathu_no, 0, "mp");
     document.getElementById("r-popup-overlay").classList.remove("open");
     pendingItem = null;
   };

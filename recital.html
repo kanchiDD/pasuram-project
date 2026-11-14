@@ -350,6 +350,34 @@
       margin-top: 12px;
       font-size: 13px;
     }
+
+    /* ── Munnadi Pinnadi inside a recital ──
+       A landscape grid, as on the Munnadi Pinnadi page. On a phone held
+       upright only this box asks to be turned sideways; the rest of the
+       recital reads normally. */
+    .r-mp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: #7a4d00;
+      border-radius: 999px; padding: 1px 10px; margin-top: 4px; }
+    .r-mp-turn { display: none; text-align: center; padding: 18px 10px; color: #7a4d00; font-size: 14px; line-height: 1.7; }
+    .r-mp-icon { font-size: 34px; display: block; animation: r-mp-rot 2s ease-in-out infinite; }
+    @keyframes r-mp-rot { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } }
+    @media (prefers-reduced-motion: reduce) { .r-mp-icon { animation: none; } }
+    .r-mp-rotate { margin-top: 10px; background: #7a4d00; color: #fef0c0; border: none; border-radius: 8px;
+      padding: 8px 18px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .r-mp-cols, .r-mp-row { display: grid; grid-template-columns: 40px 1fr 1px 1fr 30px; align-items: start; }
+    .r-mp-cols { font-size: 10px; font-weight: 700; color: #b38b2e; text-transform: uppercase; letter-spacing: .06em;
+      background: #fef3d0; border-bottom: 2px solid #e8c060; padding: 3px 0; }
+    .r-mp-cols span:first-child, .r-mp-gno { text-align: right; padding-right: 6px; }
+    .r-mp-c { text-align: center; }
+    .r-mp-row { font-size: calc(var(--pf) - 2px); line-height: 1.75; color: #2a1a00; border-bottom: 1px solid #f0e4b8; }
+    .r-mp-gno { font-size: 11px; color: #b38b2e; padding-top: 3px; }
+    .r-mp-l1, .r-mp-l2 { padding: 2px 6px; overflow-wrap: anywhere; min-width: 0; }
+    .r-mp-v { background: #d4a843; align-self: stretch; }
+    .r-mp-no { font-size: 11px; color: #bbb; text-align: right; padding-top: 3px; }
+    .r-mp-dual { font-size: 10px; color: #b38b2e; font-weight: 700; }
+    @media (orientation: portrait) and (max-width: 640px) {
+      .r-mp-grid { display: none; }
+      .r-mp-turn { display: block; }
+    }
   </style>
   <script type="module">
     import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML }
@@ -574,7 +602,9 @@
 
     // ── Index scroll ──
     function idxGo(id) {
-      const el = document.getElementById(id);
+      let el = document.getElementById(id);
+      // inside a Munnadi Pinnadi grid hidden on an upright phone: go to its box
+      if (el && el.offsetParent === null && el.closest) el = el.closest(".r-mp-box") || el;
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     function idxToggle(key) {
@@ -1015,6 +1045,108 @@
       return set;
     }
 
+    // ── Munnadi Pinnadi ───────────────────────────────────────────────
+    function mpTitle()        { return cs("mp.title") || "முன்னடி பின்னடி"; }
+    function mpSuffix(block)  { return block && block.is_munnadi ? " — " + mpTitle() : ""; }
+    // Thiruppallandu 1 & 2 share one row. As on the Munnadi Pinnadi page, the
+    // Tamil of that row is set by hand, not taken from the table.
+    const MP_TA_MERGED = ["பல்லாண்டு பல்லாண்டு", "அடியோமோடும் நின்னோடும்"];
+
+    function mpCanRotate() {
+      try { return !!(screen.orientation && screen.orientation.lock && document.documentElement.requestFullscreen); }
+      catch (e) { return false; }
+    }
+
+    function renderMunnadiBox(block, anchorId) {
+      const pas   = groupPasurams(block.pasurams);
+      const info  = new Map(pas.map(p => [p.global_no, p]));
+      const first = pas[0] || {};
+      const sid   = first.section_id || block.section_id;
+      const heading = secTitle(sid, block.section_name || "");
+      let sub = "";
+      if (block.entity_type === "pathu" && first.pathu_name) sub = first.pathu_name;
+      else if (block.entity_type === "thirumozhi" && first.thirumozhi_heading) sub = first.thirumozhi_heading;
+
+      let h = `<div class="r-section-box r-mp-box" id="${anchorId}">
+        <div class="r-section-box-header">${heading}${sub ? `<br><span style="font-size:12px;font-weight:600;color:#7a4d00">${sub}</span>` : ""}<br><span class="r-mp-tag">${mpTitle()}</span></div>
+        <div class="r-section-box-body">
+          <div class="r-mp-turn"><span class="r-mp-icon">🔄</span>Turn your phone sideways to read ${mpTitle()}
+            ${mpCanRotate() ? `<br><button type="button" class="r-mp-rotate" onclick="window._mpRotate('${anchorId}')">Rotate</button>` : ""}</div>
+          <div class="r-mp-grid">
+            <div class="r-mp-cols"><span>No.</span><span class="r-mp-c">Munnadi</span><span></span><span class="r-mp-c">Pinnadi</span><span></span></div>`;
+
+      let lastPathu = null, lastThiru = null;
+      for (const m of block.munnadi) {
+        const p = info.get(m.global_no) || {};
+        const pathuName = p.pathu_name || "";
+        if (p.pathu_id && pathuName && pathuName !== lastPathu) {
+          lastPathu = pathuName; lastThiru = null;
+          h += `<div class="r-pathu-heading">${pathuName}</div>`;
+        }
+        const bestH = p.pathu_thirumozhi_heading || p.thirumozhi_heading || "";
+        const bestO = p.pathu_subunit_name || p.thirumozhi_name || "";
+        const thiruDisplay = bestO && bestH ? `${bestO} — ${bestH}` : (bestO || bestH);
+        const key = p.pathu_subunit_name || String(p.thirumozhi_id || "") || p.thirumozhi_name || "";
+        if (key !== lastThiru) {
+          lastThiru = key;
+          h += thiruDisplay
+            ? `<div class="r-thiru-heading" id="thiru-gno-${m.global_no}">${thiruDisplay}</div>`
+            : `<div id="thiru-gno-${m.global_no}"></div>`;
+        }
+        let l1 = m.line_1 || "", l2 = m.line_2 || "";
+        if (m.merged) {
+          l1 = SCRIPT ? (cs("mp.merged.line1") || l1) : MP_TA_MERGED[0];
+          l2 = SCRIPT ? (cs("mp.merged.line2") || l2) : MP_TA_MERGED[1];
+        }
+        const dual = (m.double_recital || m.merged) ? `<span class="r-mp-dual">** </span>` : "";
+        const no   = m.merged ? "1&amp;2" : m.global_no;
+        h += `<div class="r-mp-row"><span class="r-mp-gno">${no}</span><span class="r-mp-l1">${dual}${l1}</span>`
+           + `<span class="r-mp-v"></span><span class="r-mp-l2">${l2}</span>`
+           + `<span class="r-mp-no">${m.merged ? "1&amp;2" : (m.local_pasuram_no ?? "")}</span></div>`;
+      }
+      h += `</div>`;
+      if (block.section_closing) h += `<div class="r-section-close">${block.section_closing}</div>`;
+      h += `</div></div>`;
+      return h;
+    }
+
+    // Turning sideways. Android can do it from a button (full screen first,
+    // then lock to landscape); elsewhere the reader turns the phone. Either
+    // way, the Munnadi Pinnadi box that was on screen is brought back into
+    // view once the phone is sideways, so nobody has to hunt for their place.
+    let _mpTarget = null;
+    window._mpRotate = async (id) => {
+      _mpTarget = id;
+      try {
+        await document.documentElement.requestFullscreen();
+        await screen.orientation.lock("landscape");
+      } catch (e) { /* refused: the reader turns the phone by hand */ }
+    };
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) { try { screen.orientation.unlock(); } catch (e) {} }
+    });
+    (function () {
+      const upright = window.matchMedia("(orientation: portrait) and (max-width: 640px)");
+      let lastSeen = null;      // the box asking to be turned that was on screen
+      window.addEventListener("scroll", () => {
+        if (!upright.matches) return;
+        lastSeen = null;
+        for (const box of document.querySelectorAll(".r-mp-box")) {
+          const r = box.getBoundingClientRect();
+          if (r.top < window.innerHeight && r.bottom > 0) { lastSeen = box.id; break; }
+        }
+      }, { passive: true });
+      const onTurn = () => {
+        if (upright.matches) return;
+        const id = _mpTarget || lastSeen;
+        _mpTarget = null;
+        const el = id && document.getElementById(id);
+        if (el) setTimeout(() => el.scrollIntoView({ block: "start" }), 350);
+      };
+      if (upright.addEventListener) upright.addEventListener("change", onTurn);
+      else if (upright.addListener) upright.addListener(onTurn);
+    })();
+
     function buildAll(rawBlocks) {
       _greyRun.active = false;
       if (!rawBlocks?.length) return { indexHTML: "", contentHTML: `<div class="r-no-plan">No content.</div>` };
@@ -1027,15 +1159,18 @@
         const b = rawBlocks[i];
         if (b.block_type === "pasurams" && b.is_child_thiru === 1 && b.parent_pathu_id != null) {
           const merged = { ...b, entity_type: "pathu", entity_id: b.parent_pathu_id,
-                           is_child_thiru: 0, parent_pathu_id: null, pasurams: [...b.pasurams] };
+                           is_child_thiru: 0, parent_pathu_id: null, pasurams: [...b.pasurams],
+                           munnadi: b.munnadi ? [...b.munnadi] : undefined };
           while (i + 1 < rawBlocks.length &&
                  rawBlocks[i+1].block_type      === "pasurams" &&
                  rawBlocks[i+1].is_child_thiru  === 1 &&
                  rawBlocks[i+1].parent_pathu_id === b.parent_pathu_id &&
                  rawBlocks[i+1].section_id      === b.section_id &&
-                 rawBlocks[i+1].is_rettai       === b.is_rettai) {
+                 rawBlocks[i+1].is_rettai       === b.is_rettai &&
+                 (rawBlocks[i+1].is_munnadi || 0) === (b.is_munnadi || 0)) {
             i++;
             merged.pasurams = merged.pasurams.concat(rawBlocks[i].pasurams);
+            if (merged.munnadi && rawBlocks[i].munnadi) merged.munnadi = merged.munnadi.concat(rawBlocks[i].munnadi);
           }
           blocks.push(merged);
         } else {
@@ -1138,7 +1273,7 @@
               secChildren.push({ label: childLabel, anchor: `thiru-gno-${p.global_no}` });
             }
           }
-          const secLabel = secTitle(block.section_id, sname);
+          const secLabel = secTitle(block.section_id, sname) + mpSuffix(block);
           if (secChildren.length > 1)
             indexEntries.push({ type: "group", label: secLabel, anchorId, children: secChildren });
           else
@@ -1146,7 +1281,7 @@
         } else if (etype === "pathu") {
           const isRettai  = block.is_rettai;
           const pathuName = first?.pathu_name || "";
-          const pathuLabel = `${sname} — ${pathuName}`;
+          const pathuLabel = `${sname} — ${pathuName}` + mpSuffix(block);
           // Build children — one per unique pathu_subunit_name (thirumozhi),
           // with (Rettai) suffix if this block is rettai
           const children = [];
@@ -1184,6 +1319,7 @@
           const thiruNo   = first?.thirumozhi_no ? `${first.thirumozhi_no}. ` : "";
           let   childLabel = `${thiruNo}${h}`;
           if (isRettai && childLabel) childLabel += " (Rettai)";
+          if (childLabel) childLabel += mpSuffix(block);
           const parentLabel = secTitle(block.section_id, sname);
           // Group consecutive thirumozhi blocks from same section under one parent
           const lastEntry = indexEntries[indexEntries.length - 1];
@@ -1246,6 +1382,9 @@
               ${thaniyanLines(block.lines, globalProsodyMaster)}
             </div>`;
           }
+
+        } else if (block.block_type === "pasurams" && block.is_munnadi && Array.isArray(block.munnadi)) {
+          contentHTML += renderMunnadiBox(block, anchorId);
 
         } else if (block.block_type === "pasurams") {
           const sname        = block.section_name   || "";
