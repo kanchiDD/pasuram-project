@@ -378,6 +378,22 @@
       .r-mp-grid { display: none; }
       .r-mp-turn { display: block; }
     }
+
+    /* ── Sthothram inside a recital — the Sthothram page's own cards:
+       one card per sloka, its number on the right of the last line ── */
+    .r-sth-box .r-section-box-body { display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+    .r-sth-card { background: #fffdfa; border: 1px solid #e8d8a0; border-radius: 6px; padding: 6px 10px; }
+    .r-sth-line { font-size: calc(var(--pf) + 1px); line-height: 1.7; color: #2a1a00; display: block; text-align: left; }
+    .r-sth-line-no { display: block; }
+    .r-sth-line-no .r-sth-no { float: right; }
+    .r-sth-no { font-size: 11px; color: #999; margin-left: 8px; font-family: Arial, sans-serif; }
+    .r-sth-prose .r-sth-line { line-height: 1.9; }
+    .r-sth-part { text-align: center; font-weight: 800; color: #4a2c00; font-size: calc(var(--pf) + 2px);
+      margin: 14px 0 4px; padding-bottom: 5px; border-bottom: 1px solid #e8d8a0; }
+    .r-sth-heading { text-align: center; font-weight: 700; color: #4a2c00; font-size: calc(var(--pf) + 1px); margin: 10px 0 2px; }
+    .r-sth-speaker { font-weight: 700; color: #8a5a1e; font-size: calc(var(--pf) - 1px); margin: 8px 0 0 2px; }
+    .r-sth-invoc { text-align: center; font-size: calc(var(--pf) + 1px); color: #4a2c00; }
+    .r-sth-close { text-align: center; font-size: calc(var(--pf) + 1px); font-weight: 600; color: #4a3b1f; margin: 10px 0 4px; }
   </style>
   <script type="module">
     import { buildMadalCoupletsHTML, buildKootrirukkaiLinesHTML }
@@ -1045,6 +1061,84 @@
       return set;
     }
 
+    // ── Sthothram ─────────────────────────────────────────────────────
+    // Drawn exactly as on the Sthothram page. Lines arrive in reading order;
+    // a run sharing part_no + block_no is one card, its sloka number on the
+    // right of the last line. Part titles, headings and the closing stand
+    // outside the cards. "Noto Sans" follows each script font so the Tamil
+    // voicing digits (₂ ₃ ₄) always render.
+    const STH_FONT = {
+      "":   '"Noto Sans Tamil","Noto Sans","Latha",sans-serif',
+      deva: '"Noto Sans Devanagari","Noto Sans","Mangal",sans-serif',
+      te:   '"Noto Sans Telugu","Noto Sans",sans-serif',
+      kn:   '"Noto Sans Kannada","Noto Sans",sans-serif',
+      ml:   '"Noto Sans Malayalam","Noto Sans",sans-serif',
+      bn:   '"Noto Sans Bengali","Noto Sans",sans-serif',
+      gu:   '"Noto Sans Gujarati","Noto Sans",sans-serif',
+      iast: '"Noto Sans",sans-serif'
+    };
+    const STH_GFONT = { "": "Noto+Sans+Tamil", deva: "Noto+Sans+Devanagari", te: "Noto+Sans+Telugu",
+      kn: "Noto+Sans+Kannada", ml: "Noto+Sans+Malayalam", bn: "Noto+Sans+Bengali", gu: "Noto+Sans+Gujarati", iast: "Noto+Sans" };
+    function sthLoadFonts() {
+      for (const fam of [STH_GFONT[SCRIPT] || STH_GFONT[""], "Noto+Sans"]) {
+        const id = "gfont-rsth-" + fam;
+        if (document.getElementById(id)) continue;
+        const lk = document.createElement("link");
+        lk.id = id; lk.rel = "stylesheet";
+        lk.href = "https://fonts.googleapis.com/css2?family=" + fam + ":wght@400;700&display=swap";
+        document.head.appendChild(lk);
+      }
+    }
+    function sthEsc(t) { return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    function renderStotraBlock(block, anchorId) {
+      sthLoadFonts();
+      const groups = [];
+      let cur = null;
+      for (const l of (block.lines || [])) {
+        const key = l.part_no + "|" + l.block_no;
+        if (!cur || cur.key !== key) { cur = { key, lines: [] }; groups.push(cur); }
+        cur.lines.push(l);
+      }
+      let body = "";
+      for (const g of groups) {
+        let card = [], num = null;
+        const flush = () => {
+          if (!card.length) return;
+          body += `<div class="r-sth-card${card[0].prose ? " r-sth-prose" : ""}">`;
+          card.forEach((c, i) => {
+            if (i === card.length - 1 && num != null)
+              body += `<div class="r-sth-line r-sth-line-no"><span>${c.t}</span><span class="r-sth-no">${num}</span></div>`;
+            else
+              body += `<div class="r-sth-line">${c.t}</div>`;
+          });
+          body += `</div>`;
+          card = []; num = null;
+        };
+        for (const l of g.lines) {
+          const t = sthEsc(l.text);
+          if (l.line_type === "part_title") {
+            flush();
+            // one sarga / dasakam alone: its title is already in the box header
+            if (!block.part_no) body += `<div class="r-sth-part">${t}</div>`;
+            continue;
+          }
+          if (l.line_type === "heading" || l.line_type === "sub_heading" || l.line_type === "item_heading") { flush(); body += `<div class="r-sth-heading">${t}</div>`; continue; }
+          if (l.line_type === "closing")    { flush(); body += `<div class="r-sth-close">${t}</div>`; continue; }
+          if (l.line_type === "speaker" || l.line_type === "attribution") { flush(); body += `<div class="r-sth-speaker">${t}</div>`; continue; }
+          if (l.line_type === "invocation") { flush(); body += `<div class="r-sth-invoc">${t}</div>`; continue; }
+          if (l.sloka_no != null) num = l.sloka_no;
+          card.push({ t, prose: l.line_type === "prose" });
+        }
+        flush();
+      }
+      const sub = block.part_title
+        ? `<br><span style="font-size:12px;font-weight:600;color:#7a4d00">${sthEsc(block.part_title)}</span>` : "";
+      return `<div class="r-section-box r-sth-box" id="${anchorId}" style="font-family:${STH_FONT[SCRIPT] || STH_FONT[""]}">
+        <div class="r-section-box-header">${sthEsc(block.title)}${sub}</div>
+        <div class="r-section-box-body">${body}</div></div>`;
+    }
+
     // ── Munnadi Pinnadi ───────────────────────────────────────────────
     function mpTitle()        { return cs("mp.title") || "முன்னடி பின்னடி"; }
     function mpSuffix(block)  { return block && block.is_munnadi ? " — " + mpTitle() : ""; }
@@ -1180,8 +1274,14 @@
 
       // ── Index entries ──
       const indexEntries = [];
+      const stotraChildren = [];          // Sthothram: one group after the pasurams
       let blockIdx = 0;
       for (const block of blocks) {
+        if (block.block_type === "stotra") {
+          stotraChildren.push({ label: block.title + (block.part_title ? " — " + block.part_title : ""),
+                                anchor: `rec-block-${blockIdx}` });
+          blockIdx++; continue;
+        }
         if (block.block_type === "kootrirukkai") {
           indexEntries.push({ type: "simple", label: secTitle(21, "திருவெழுகூற்றிருக்கை"), anchorId: `rec-block-${blockIdx}` });
           blockIdx++; continue;
@@ -1335,6 +1435,10 @@
         blockIdx++;
       }
 
+      if (stotraChildren.length)
+        indexEntries.push({ type: "group", label: cs("sth.index") || "ஸ்தோத்ரம்", anchorId: stotraChildren[0].anchor,
+                            children: stotraChildren });
+
       let indexHTML = `<div class="r-index" id="r-index-block"><div class="r-index-title">Today's Recital</div>`;
       indexEntries.forEach((entry, i) => {
         const key = `idx-${i}`;
@@ -1382,6 +1486,9 @@
               ${thaniyanLines(block.lines, globalProsodyMaster)}
             </div>`;
           }
+
+        } else if (block.block_type === "stotra") {
+          contentHTML += renderStotraBlock(block, anchorId);
 
         } else if (block.block_type === "pasurams" && block.is_munnadi && Array.isArray(block.munnadi)) {
           contentHTML += renderMunnadiBox(block, anchorId);
@@ -1658,7 +1765,7 @@
           const ana = await fetchAnadhyayana();
           if (ana.active) {
             const before = renderData.blocks.length;
-            renderData.blocks = renderData.blocks.filter(b => anaBlockQualifies(b.section_id, ana));
+            renderData.blocks = renderData.blocks.filter(b => b.block_type === "stotra" || anaBlockQualifies(b.section_id, ana));
             if (renderData.blocks.length === 0) {
               stage.innerHTML = `
                 <div class="r-page-title">${pageTitle}</div>

@@ -199,6 +199,11 @@ function buildSetupHTML() {
       <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">${uiText("loading")}</div>
     </div>
 
+    <div class="r-section-label">ஸ்தோத்ரம் · Sthothram</div>
+    <div id="r-stotra-list">
+      <div style="text-align:center;color:#bbb;font-size:13px;padding:20px">${uiText("loading")}</div>
+    </div>
+
     <button class="recital-btn-primary" style="width:100%;margin-top:8px"
             onclick="window._recitalSavePlan()">
       Save Plan 🙏
@@ -375,6 +380,14 @@ function buildRecitalDisplayHTML(blocks, plan) {
         }
         html += `</div></div>`;
       }
+    } else if (block.block_type === "stotra") {
+      html += `<div class="r-block r-block-thaniyan">
+        <div class="r-block-badge">${block.title || ""}${block.part_title ? " — " + block.part_title : ""}</div>`;
+      for (const l of (block.lines || [])) {
+        if (l.line_type === "part_title" || l.line_type === "heading") html += `<div class="r-line" style="font-weight:700;text-align:center">${l.text}</div>`;
+        else html += `<div class="r-line">${l.text}${l.sloka_no != null ? ` <span style="font-size:11px;color:#999">${l.sloka_no}</span>` : ""}</div>`;
+      }
+      html += `</div>`;
     } else if (block.block_type === "sattrumurai") {
       html += `<div class="r-block r-block-sattrumurai">
         <div class="r-block-badge">சாற்றுமுறை</div>
@@ -685,9 +698,11 @@ function isPinned(item) { return pinnedRank(item) >= 0; }
 function byChrono(a, b) { return (a.global_no_start || 9999) - (b.global_no_start || 9999); }
 function finalOrder(items, keepUserOrder) {
   const pinned = items.filter(isPinned).sort((a, b) => pinnedRank(a) - pinnedRank(b));
-  const rest   = items.filter(i => !isPinned(i));
+  const rest   = items.filter(i => !isPinned(i) && !isStotraItem(i));
   if (!keepUserOrder) rest.sort(byChrono);
-  return [...pinned, ...rest];
+  // Sthothram always after the pasurams, in the Sthothram page order
+  const stotras = items.filter(isStotraItem).sort(byChrono);
+  return [...pinned, ...rest, ...stotras];
 }
 function applyPriorityOrder(items) { return finalOrder(items, false); }
 
@@ -702,7 +717,7 @@ function insertChrono(list, item) {
 // Add one item to selectedItems. Without a custom order the list is simply
 // chronological (finalOrder sorts it); with one, place it chronologically.
 function placeNew(item) {
-  if (!userOrdered || isPinned(item)) { selectedItems.push(item); return; }
+  if (!userOrdered || isPinned(item) || isStotraItem(item)) { selectedItems.push(item); return; }
   const ordered = finalOrder(selectedItems, true);
   selectedItems = [...ordered.filter(isPinned),
                    ...insertChrono(ordered.filter(i => !isPinned(i)), item)];
@@ -784,6 +799,7 @@ async function loadCatalog() {
     catalogData = await res.json();
     renderCatalogIntoDOM();
   } catch(e) {}
+  loadStotraCatalog();
 }
 
 // Per-section sect, mirroring section_master (B=both, T=Thenkalai, V=Vadakalai).
@@ -874,8 +890,9 @@ function renderCatalogIntoDOM() {
 function showReorderScreen(onDone) {
   // 1 / 8 / 3 are fixed at the top; only the other items can be moved
   const pinned = finalOrder(selectedItems, false).filter(isPinned);
-  let order = finalOrder(selectedItems, userOrdered).filter(i => !isPinned(i));
-  const canonicalKey = applyPriorityOrder(selectedItems).filter(i => !isPinned(i))
+  let order = finalOrder(selectedItems, userOrdered).filter(i => !isPinned(i) && !isStotraItem(i));
+  const stotrasFixed = selectedItems.filter(isStotraItem);   // always last, never moved
+  const canonicalKey = applyPriorityOrder(selectedItems).filter(i => !isPinned(i) && !isStotraItem(i))
     .map(i => `${i.entity_type}_${i.entity_id}`).join("|");
 
   const overlay = document.createElement("div");
@@ -921,7 +938,7 @@ function showReorderScreen(onDone) {
     [order[i], order[j]] = [order[j], order[i]];
     draw();
   };
-  window._rReorderReset = () => { order = applyPriorityOrder(selectedItems).filter(i => !isPinned(i)); draw(); };
+  window._rReorderReset = () => { order = applyPriorityOrder(selectedItems).filter(i => !isPinned(i) && !isStotraItem(i)); draw(); };
   // Exit without applying the order or saving (used when neither option is done)
   window._rReorderExit = () => {
     if (overlay.parentNode) document.body.removeChild(overlay);
@@ -930,7 +947,7 @@ function showReorderScreen(onDone) {
   window._rReorderDone  = () => {
     const newKey = order.map(i => `${i.entity_type}_${i.entity_id}`).join("|");
     userOrdered   = (newKey !== canonicalKey);
-    selectedItems = [...pinned, ...order];
+    selectedItems = [...pinned, ...order, ...stotrasFixed];
     isDirty       = true;
     document.body.removeChild(overlay);
     document.body.style.overflow = "";
@@ -944,6 +961,7 @@ function showReorderScreen(onDone) {
 }
 
 function renderSelected() {
+  renderStotraCatalog();                 // keep the Sthothram ticks in step
   const el = document.getElementById("r-selected-list");
   if (!el) return;
   if (!selectedItems.length) {
@@ -1271,6 +1289,258 @@ async function loadExistingPlan() {
     console.error("loadExistingPlan error:", e);
   }
 }
+// ─────────────────────────────────────────────
+// STHOTHRAM
+// A whole stotra is one item: entity_type "stotra", entity_id = stotra_id.
+// One sarga / dasakam of a long work (Ramayanam kandas, Narayaneeyam) is
+// "stotra_part", entity_id = stotra_id * 1000 + part_no, so every existing
+// type + id key stays unique. Stotras always follow the pasurams, in the
+// Sthothram page order: global_no_start = 100000 + place * 1000 + part_no.
+// Full only for every other stotra (no single slokas), and they are not
+// held back in Anadhyayana Kalam.
+// ─────────────────────────────────────────────
+const STOTRA_BASE    = 100000;
+const STOTRA_LOCALE  = { ta: "ta", deva: "hi", te: "te", kn: "kn", ml: "ml", bn: "bn", gu: "gu", iast: "en" };
+// Converted text writes Sri with ஶ (ஶ்ரீ); typed text often with ஸ (ஸ்ரீ).
+const STOTRA_SRI     = /^\s*(ஶ்ரீ|ஸ்ரீ|श्री|శ్రీ|ಶ್ರೀ|ശ്രീ|শ্রী|શ્રી|śrī|sri|shri)\s*/i;
+let stotraCatalog    = null;   // groups, in Sthothram page order
+let stotraById       = {};     // stotra_id → catalog row (with .rank)
+let stotraOpen       = {};     // which groups are open
+const stotraParts    = {};     // stotra_id → [{part_no, title, section}]
+
+function isStotraItem(i) { return !!i && (i.entity_type === "stotra" || i.entity_type === "stotra_part"); }
+function stotraIdOf(i)   { return i.entity_type === "stotra" ? Number(i.entity_id) : Math.floor(Number(i.entity_id) / 1000); }
+function stotraScriptParam() {
+  try {
+    const s = (localStorage.getItem("script") || "ta").toLowerCase();
+    return ["te", "kn", "ml", "deva", "iast", "gu", "bn"].includes(s) ? s : "ta";
+  } catch (e) { return "ta"; }
+}
+function stotraPartWord(r) { return /Kandam/i.test(r.name_en || "") ? "sargas" : "dasakams"; }
+function stotraGns(stotra_id, part_no) {
+  const r = stotraById[stotra_id];
+  return STOTRA_BASE + (r ? r.rank : 999) * 1000 + (part_no || 0);
+}
+function stotraByGns(a, b) { return (a.global_no_start || 0) - (b.global_no_start || 0); }
+function stotraLast(items) {
+  return [...items.filter(i => !isStotraItem(i)), ...items.filter(isStotraItem).sort(stotraByGns)];
+}
+
+// Same order as the Sthothram page: groups in their order; inside a group the
+// sub-group of long works first (Srimad Valmiki Ramayanam), then the group's
+// stotras alphabetically in the reader's script (Sri and voicing digits set
+// aside, long works first), then other sub-groups (Desika Stotras).
+function stotraKey(s) {
+  return String(s.title || s.name_en || "").normalize("NFC")
+    .replace(/[⁰-₟²³¹]/g, "")
+    .replace(STOTRA_SRI, "").trim();
+}
+function buildStotraGroups(rows) {
+  let coll = null;
+  try { coll = new Intl.Collator(STOTRA_LOCALE[stotraScriptParam()] || "en", { sensitivity: "base" }); } catch (e) {}
+  const sortItems = arr => arr.sort((a, b) => {
+    if (a.by_part || b.by_part) return a.by_part && b.by_part ? 0 : (a.by_part ? -1 : 1);
+    const x = stotraKey(a), y = stotraKey(b);
+    return coll ? coll.compare(x, y) : (x < y ? -1 : x > y ? 1 : 0);
+  });
+  const groups = [], byId = {};
+  for (const r of rows) {
+    let g = byId[r.group_id];
+    if (!g) {
+      g = byId[r.group_id] = { id: r.group_id, name: r.group_name || "", order: r.group_order || 999,
+                               items: [], subs: [], subById: {} };
+      groups.push(g);
+    }
+    if (r.sub_group_id) {
+      let sg = g.subById[r.sub_group_id];
+      if (!sg) {
+        sg = g.subById[r.sub_group_id] = { id: r.sub_group_id, name: r.sub_group_name || "",
+                                          order: r.sub_group_order || 999, items: [] };
+        g.subs.push(sg);
+      }
+      sg.items.push(r);
+    } else {
+      g.items.push(r);
+    }
+  }
+  groups.sort((a, b) => a.order - b.order);
+  let rank = 0;
+  stotraById = {};
+  const isLong = sg => sg.items.length > 0 && sg.items.every(r => r.by_part);
+  for (const g of groups) {
+    sortItems(g.items);
+    g.subs.sort((a, b) => a.order - b.order);
+    g.subs.forEach(sg => sortItems(sg.items));
+    g.sections = [
+      ...g.subs.filter(isLong).map(sg => ({ sub: sg, items: sg.items })),
+      { sub: null, items: g.items },
+      ...g.subs.filter(sg => !isLong(sg)).map(sg => ({ sub: sg, items: sg.items }))
+    ];
+    g.total = 0;
+    for (const sec of g.sections) for (const r of sec.items) {
+      rank++; r.rank = rank; stotraById[r.stotra_id] = r; g.total++;
+    }
+  }
+  return groups;
+}
+
+async function loadStotraCatalog() {
+  if (stotraCatalog) { renderStotraCatalog(); return; }
+  try {
+    const res = await fetch(`${WORKER}/recital/stotra-catalog?script=${stotraScriptParam()}`);
+    const j   = await res.json();
+    stotraCatalog = buildStotraGroups(j.stotras || []);
+  } catch (e) { stotraCatalog = []; }
+  renderStotraCatalog();
+}
+
+const STOTRA_CSS = `<style>
+  .r-sth-group { border:1.5px solid #e8c060; border-radius:10px; margin-bottom:8px; background:#fff; overflow:hidden; }
+  .r-sth-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:11px 14px;
+    background:#fff8e6; cursor:pointer; font-weight:700; color:#4a2c00; font-size:15px; }
+  .r-sth-head::before { content:"▶"; font-size:10px; color:#b38b2e; margin-right:6px; transition:transform .15s; }
+  .r-sth-group.open .r-sth-head::before { transform:rotate(90deg); }
+  .r-sth-head span:first-child { flex:1; }
+  .r-sth-n { font-size:11px; background:#d4a843; color:#fff; border-radius:999px; padding:1px 9px; }
+  .r-sth-list { display:none; padding:4px 8px 8px; }
+  .r-sth-group.open .r-sth-list { display:block; }
+  .r-sth-sub { font-size:12px; font-weight:700; color:#7a4d00; background:#fdf3d8; border-radius:6px; padding:5px 10px; margin:6px 0 2px; }
+  .r-sth-item, .r-sth-part { display:flex; align-items:center; gap:10px; padding:9px 8px; border-bottom:1px solid #f0e4c4; cursor:pointer; }
+  .r-sth-item:last-child, .r-sth-part:last-child { border-bottom:none; }
+  .r-sth-item.on, .r-sth-part.on { background:#fff8e6; }
+  .r-sth-title { flex:1; min-width:0; font-size:15px; font-weight:600; color:#2a1a00; line-height:1.55; overflow-wrap:anywhere; }
+  .r-sth-en { display:block; font-family:Arial,sans-serif; font-size:11px; font-weight:400; color:#8a6a45; }
+  .r-sth-mark { flex-shrink:0; font-size:14px; font-weight:700; color:#b38b2e; }
+  .r-sth-item.on .r-sth-mark, .r-sth-part.on .r-sth-mark { color:#2f7d32; }
+  .r-sth-pno { flex-shrink:0; min-width:2.2em; text-align:right; font-family:Arial,sans-serif; font-size:11px; color:#8a6a45; }
+  .r-sth-section { text-align:center; font-weight:700; color:#4a2c00; font-size:13px; margin:10px 0 2px; border-bottom:1px solid #e8d8a0; padding-bottom:3px; }
+  .r-sth-note { font-size:12px; color:#8a6a45; text-align:center; margin:10px 0 4px; }
+  .r-sth-empty { font-size:13px; color:#999; text-align:center; padding:12px; }
+</style>`;
+
+function renderStotraCatalog() {
+  const el = document.getElementById("r-stotra-list");
+  if (!el || !stotraCatalog) return;
+  if (!stotraCatalog.length) {
+    el.innerHTML = `<div class="r-sth-empty">The Sthothram list could not be loaded. Please try again.</div>`;
+    return;
+  }
+  const row = r => {
+    const full  = isSelected("stotra", r.stotra_id);
+    const parts = r.by_part
+      ? selectedItems.filter(i => i.entity_type === "stotra_part" && stotraIdOf(i) === r.stotra_id).length : 0;
+    const mark  = full ? "✓" : parts ? `✓ ${parts}` : (r.by_part ? "›" : "+");
+    const sub   = escHtml(r.name_en || "") + (r.by_part ? ` · ${r.part_count} ${stotraPartWord(r)}` : "");
+    return `<div class="r-sth-item${full || parts ? " on" : ""}" onclick="window._recitalStotraTap(${r.stotra_id})">
+      <span class="r-sth-title">${r.title || ""}<span class="r-sth-en">${sub}</span></span>
+      <span class="r-sth-mark">${mark}</span></div>`;
+  };
+  let h = STOTRA_CSS;
+  for (const g of stotraCatalog) {
+    const open = !!stotraOpen[g.id];
+    h += `<div class="r-sth-group${open ? " open" : ""}">
+      <div class="r-sth-head" onclick="window._recitalStotraGroup(${g.id})"><span>${escHtml(g.name)}</span><span class="r-sth-n">${g.total}</span></div>
+      <div class="r-sth-list">`;
+    for (const sec of g.sections) {
+      if (!sec.items.length) continue;
+      if (sec.sub) h += `<div class="r-sth-sub">${escHtml(sec.sub.name)}</div>`;
+      h += sec.items.map(row).join("");
+    }
+    h += `</div></div>`;
+  }
+  el.innerHTML = h;
+}
+
+function addStotraItem(entity_type, entity_id, label, gns) {
+  if (isSelected(entity_type, entity_id)) return;
+  const sid = entity_type === "stotra" ? Number(entity_id) : Math.floor(Number(entity_id) / 1000);
+  if (entity_type === "stotra_part" && isSelected("stotra", sid)) {
+    showToast(`Adiyen, the full "${(stotraById[sid] || {}).title || ""}" is already selected.`);
+    return;
+  }
+  if (entity_type === "stotra") {
+    // the full kanda / work replaces any single sargas / dasakams of it
+    const parts = selectedItems.filter(i => i.entity_type === "stotra_part" && stotraIdOf(i) === sid);
+    if (parts.length) {
+      selectedItems = selectedItems.filter(i => !parts.includes(i));
+      showToast(`Adiyen, ${parts.length} single ${stotraPartWord(stotraById[sid] || {})} replaced with the full one`);
+    }
+  }
+  placeNew({
+    entity_type, entity_id, label,
+    global_no_start: gns, global_no_end: 0,
+    section_id: null, pathu_id: null, is_child: false, pathu_no: null, from_koil: 0
+  });
+  isDirty = true;
+  renderSelected();
+}
+
+async function openStotraParts(r) {
+  const ov = document.getElementById("r-modal-overlay");
+  if (!ov) return;
+  document.getElementById("r-modal-title").textContent = r.title || r.name_en || "";
+  const back = document.getElementById("r-modal-back");
+  if (back) back.style.display = "none";
+  const box = document.getElementById("r-modal-content");
+  box.innerHTML = `<div class="r-sth-empty">Loading…</div>`;
+  ov.classList.add("open");
+  if (!stotraParts[r.stotra_id]) {
+    try {
+      const res = await fetch(`${WORKER}/recital/stotra-parts?id=${r.stotra_id}&script=${stotraScriptParam()}`);
+      const j   = await res.json();
+      stotraParts[r.stotra_id] = j.parts || [];
+    } catch (e) { stotraParts[r.stotra_id] = []; }
+  }
+  drawStotraParts(r);
+}
+
+function drawStotraParts(r) {
+  const box = document.getElementById("r-modal-content");
+  if (!box) return;
+  const parts = stotraParts[r.stotra_id] || [];
+  const full  = isSelected("stotra", r.stotra_id);
+  const word  = stotraPartWord(r);
+  let h = STOTRA_CSS + `<button class="recital-btn-primary" style="width:100%"
+      onclick="window._recitalStotraFull(${r.stotra_id})">${full ? "✓ Full selected — tap to remove" : "Add full — " + (r.title || "")}</button>
+    <div class="r-sth-note">or tap the ${word} you want</div>`;
+  if (!parts.length) h += `<div class="r-sth-empty">The list of ${word} could not be loaded.</div>`;
+  for (const p of parts) {
+    if (p.section) h += `<div class="r-sth-section">${p.section}</div>`;
+    const on = full || isSelected("stotra_part", r.stotra_id * 1000 + p.part_no);
+    h += `<div class="r-sth-part${on ? " on" : ""}" onclick="window._recitalStotraPart(${r.stotra_id},${p.part_no})">
+      <span class="r-sth-pno">${p.part_no}</span><span class="r-sth-title">${p.title || ""}</span>
+      <span class="r-sth-mark">${on ? "✓" : "+"}</span></div>`;
+  }
+  box.innerHTML = h;
+}
+
+window._recitalStotraGroup = (id) => { stotraOpen[id] = !stotraOpen[id]; renderStotraCatalog(); };
+window._recitalStotraTap = (id) => {
+  const r = stotraById[id];
+  if (!r) return;
+  if (r.by_part) { openStotraParts(r); return; }
+  if (isSelected("stotra", id)) { removeItem("stotra", id); return; }
+  addStotraItem("stotra", id, r.title, stotraGns(id, 0));
+};
+window._recitalStotraFull = (id) => {
+  const r = stotraById[id];
+  if (!r) return;
+  if (isSelected("stotra", id)) removeItem("stotra", id);
+  else addStotraItem("stotra", id, r.title, stotraGns(id, 0));
+  drawStotraParts(r);
+};
+window._recitalStotraPart = (id, part_no) => {
+  const r = stotraById[id];
+  if (!r) return;
+  const eid = id * 1000 + part_no;
+  if (isSelected("stotra_part", eid)) removeItem("stotra_part", eid);
+  else {
+    const p = (stotraParts[id] || []).find(x => x.part_no === part_no) || {};
+    addStotraItem("stotra_part", eid, `${r.title} — ${p.title || part_no}`, stotraGns(id, part_no));
+  }
+  drawStotraParts(r);
+};
+
 // ─────────────────────────────────────────────
 // WINDOW BINDINGS
 // ─────────────────────────────────────────────
@@ -2033,7 +2303,7 @@ export function registerRecitalBindings() {
     if (!silent) {
       if (!_anaState) await loadAnadhyayana();
       if (_anaState && _anaState.active) {
-        const nonQualified = selectedItems.filter(it => !anaSectionQualifies({ section_id: it.section_id }));
+        const nonQualified = selectedItems.filter(it => !isStotraItem(it) && !anaSectionQualifies({ section_id: it.section_id }));
         if (nonQualified.length) {
           const names = nonQualified.map(i => i.label).filter(Boolean).join(", ");
           alert("🙏 Adiyen — during Anadhyayana Kalam only the qualified Prabandhams are recited. "

@@ -593,7 +593,7 @@
       const app = document.getElementById("ghoshti-app");
       app.innerHTML = `<div class="g-spinner"><span class="lotus">🪷</span>Loading selection...</div>`;
       try {
-        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js?v=3");
+        const { renderGhoshtiSetup } = await import("./js/render/ghoshtiSetup.js?v=4");
         renderGhoshtiSetup(meta, app, function(result) {
           if (!result) {
             renderMyGhoshtiList();
