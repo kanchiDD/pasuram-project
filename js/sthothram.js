@@ -164,6 +164,20 @@
 
   // A stotra with sub_group_id (e.g. Desika Stotras inside Acharya Srisuktis)
   // goes into a tap-to-open box of its own, below the group's plain items.
+  // A sub-group of long works (Srimad Valmiki Ramayanam) opens its group,
+  // like the long works themselves; other sub-groups (Desika Stotras) follow
+  // the group's own stotras.
+  function isLongSub(sg) { return sg.items.length > 0 && sg.items.every(function (r) { return r.by_part; }); }
+  function subHtml(sg) {
+    var sopen = !!openGroups["sg" + sg.id];
+    return '<div class="sth-subgroup' + (sopen ? " open" : "") + '" data-sg="' + sg.id + '">' +
+      '<button type="button" class="sth-subgroup-head" aria-expanded="' + sopen + '">' +
+        '<span>' + esc(sg.name) + '</span><span class="sth-group-n">' + sg.items.length + "</span>" +
+      "</button>" +
+      '<div class="sth-sublist">' + sg.items.map(itemHtml).join("") + "</div>" +
+    "</div>";
+  }
+
   function renderIndex(rows) {
     var groups = [], byId = {};
     rows.forEach(function (r) {
@@ -201,16 +215,9 @@
           '<span>' + esc(g.name) + '</span><span class="sth-group-n">' + g.total + "</span>" +
         "</button>" +
         '<div class="sth-list">' +
+          g.subs.filter(isLongSub).map(subHtml).join("") +
           g.items.map(itemHtml).join("") +
-          g.subs.map(function (sg) {
-            var sopen = !!openGroups["sg" + sg.id];
-            return '<div class="sth-subgroup' + (sopen ? " open" : "") + '" data-sg="' + sg.id + '">' +
-              '<button type="button" class="sth-subgroup-head" aria-expanded="' + sopen + '">' +
-                '<span>' + esc(sg.name) + '</span><span class="sth-group-n">' + sg.items.length + "</span>" +
-              "</button>" +
-              '<div class="sth-sublist">' + sg.items.map(itemHtml).join("") + "</div>" +
-            "</div>";
-          }).join("") +
+          g.subs.filter(function (sg) { return !isLongSub(sg); }).map(subHtml).join("") +
         "</div></div>";
     });
     $("sthBody").innerHTML = html;
