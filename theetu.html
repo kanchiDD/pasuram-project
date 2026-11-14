@@ -40,8 +40,20 @@
     #thRoot .seg { display: flex; gap: 6px; }
     #thRoot .seg button { flex: 1; border: 1px solid #C9A84C; background: #fff; color: #3B2410; border-radius: 999px; padding: 7px 8px;
       font-size: 13.5px !important; cursor: pointer; font-family: inherit; }
-    #thRoot select { width: 100%; font-size: 13.5px !important; padding: 8px; border: 1px solid #C9A84C; border-radius: 8px;
-      background: #fff; color: #3B2410; font-family: inherit; }
+    /* our own dropdown: Android draws a native list in the phone's large system font */
+    #thRoot .pick { position: relative; }
+    #thRoot .pick-btn { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left;
+      font-size: 13.5px !important; padding: 8px 10px; border: 1px solid #C9A84C; border-radius: 8px; background: #fff; color: #3B2410;
+      cursor: pointer; font-family: inherit; line-height: 1.45; -webkit-tap-highlight-color: transparent; }
+    #thRoot .pick-btn::after { content: "▾"; color: #8B6A45; flex-shrink: 0; }
+    #thRoot .pick-btn[aria-expanded="true"] { border-color: #7B3F00; }
+    #thRoot .pick-btn.empty span { color: #8B6A45; }
+    #thRoot .pick-list { margin-top: 4px; border: 1px solid #C9A84C; border-radius: 8px; background: #fff; max-height: 55vh; overflow-y: auto; }
+    #thRoot .pick-grp { position: sticky; top: 0; font-size: 11.5px !important; font-weight: 700; color: #6a4200; background: #F5E6C8; padding: 5px 10px; }
+    #thRoot .pick-opt { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #F0E0B8; background: transparent;
+      color: #3B2410; font-size: 13px !important; padding: 8px 10px; line-height: 1.45; cursor: pointer; font-family: inherit; }
+    #thRoot .pick-opt:last-child { border-bottom: 0; }
+    #thRoot .pick-opt.on { background: #FFF8E8; font-weight: 700; }
     #thRoot .result { margin-top: 14px; border: 1.5px solid #C9A84C; border-radius: 10px; background: #fff; padding: 12px; }
     #thRoot .days { text-align: center; font-size: 22px !important; font-weight: 700; color: #3B2410; line-height: 1.35; }
     #thRoot .ns .days { color: #9a6a1a; font-size: 17px !important; }
@@ -70,10 +82,10 @@
     #thRoot .doc li { margin: 2px 0; }
     #thRoot .doc .doc-note { background: #FFF8E8; border-radius: 6px; padding: 7px 10px; font-size: 12.5px !important; }
     #thRoot .doc table { margin: 6px 0; }
-    #thRoot button:focus-visible, #thRoot select:focus-visible, #thRoot summary:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
+    #thRoot button:focus-visible, #thRoot summary:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
     @media (min-width: 700px) {
       #thRoot h1 { font-size: 21px !important; } #thRoot .days { font-size: 26px !important; }
-      #thRoot .lab, #thRoot select, #thRoot .seg button, #thRoot .doc, #thRoot .doc p, #thRoot .doc li { font-size: 14.5px !important; }
+      #thRoot .lab, #thRoot .pick-btn, #thRoot .seg button, #thRoot .doc, #thRoot .doc p, #thRoot .doc li { font-size: 14.5px !important; }
     }
   </style>
 </head>
@@ -93,12 +105,12 @@
   <div class="step"><span class="lab" id="t_ev"></span>
     <div class="seg" id="ev"><button data-v="D" id="b_D"></button><button data-v="B" id="b_B"></button></div></div>
 
-  <div class="step"><label class="lab" for="obs" id="t_obs"></label><select id="obs"></select></div>
+  <div class="step"><span class="lab" id="t_obs"></span><div class="pick" id="obsPick"><button type="button" class="pick-btn empty" aria-expanded="false"><span></span></button><div class="pick-list" hidden></div></div></div>
 
   <div class="step" id="sexStep" hidden><span class="lab" id="t_nb"></span>
     <div class="seg" id="sex"><button data-v="b" id="b_boy"></button><button data-v="g" id="b_girl"></button></div></div>
 
-  <div class="step" id="relStep" hidden><label class="lab" for="rel" id="t_rel"></label><select id="rel"></select></div>
+  <div class="step" id="relStep" hidden><span class="lab" id="t_rel"></span><div class="pick" id="relPick"><button type="button" class="pick-btn empty" aria-expanded="false"><span></span></button><div class="pick-list" hidden></div></div></div>
 
   <div class="result" id="res" hidden></div>
 
@@ -606,6 +618,6 @@
 <p class="doc-note">There can be small differences between Vadakalai and Thenkalai practice, and between acharya lineages. In complicated cases, ask your family vadhyar.</p>
 </template>
 
-<script src="js/theetu.js?v=1"></script>
+<script src="js/theetu.js?v=2"></script>
 </body>
 </html>

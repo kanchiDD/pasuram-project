@@ -191,8 +191,7 @@ function setLang(l) {
   $("t_ev").textContent = t.ev; $("b_D").textContent = t.D; $("b_B").textContent = t.B;
   $("t_obs").textContent = t.obs; $("t_nb").textContent = t.nb; $("b_boy").textContent = t.b; $("b_girl").textContent = t.g;
   $("t_tbl").textContent = t.tbl; $("t_doc").textContent = t.doc;
-  $("obs").innerHTML = `<option value="">${t.choose}</option>` + OBS.map(o => `<option value="${o}">${esc(t.O[o])}</option>`).join("");
-  $("obs").value = st.obs;
+  obsPick.set(OBS.map(o => ({v:o, label:t.O[o]})), st.obs);
   $("doc").innerHTML = $("doc_" + L).innerHTML;
   table(); refresh();
 }
@@ -207,8 +206,37 @@ function segClick(id, key) {
 function mark(id, v) { [...$(id).children].forEach(x => x.classList.toggle("on", x.dataset.v === v)); }
 segClick("ev", "ev"); segClick("sex", "nb");
 $("langs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setLang(b.dataset.l); });
-$("obs").addEventListener("change", e => { st.obs = e.target.value; st.rel = ""; refresh(); });
-$("rel").addEventListener("change", e => { st.rel = e.target.value; show(); });
+
+// picker: a button that opens a list drawn by the page (items: {g:"group"} or {v, label})
+function closePickers() {
+  document.querySelectorAll(".pick-list").forEach(l => { l.hidden = true; });
+  document.querySelectorAll(".pick-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
+}
+document.addEventListener("click", e => { if (!e.target.closest(".pick")) closePickers(); });
+function makePicker(id, onPick) {
+  const root = $(id), btn = root.querySelector(".pick-btn"), list = root.querySelector(".pick-list");
+  let items = [], value = "";
+  function draw() {
+    const it = items.find(x => x.v === value);
+    btn.querySelector("span").textContent = it ? it.label : T[L].choose;
+    btn.classList.toggle("empty", !it);
+    list.innerHTML = items.map(x => x.g ? `<div class="pick-grp">${esc(x.g)}</div>`
+      : `<button type="button" class="pick-opt${x.v === value ? " on" : ""}" data-v="${esc(x.v)}">${esc(x.label)}</button>`).join("");
+  }
+  btn.addEventListener("click", () => {
+    const open = list.hidden; closePickers();
+    list.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+    if (open) { const cur = list.querySelector(".on"); if (cur) cur.scrollIntoView({block:"nearest"}); }
+  });
+  list.addEventListener("click", e => {
+    const o = e.target.closest(".pick-opt"); if (!o) return;
+    value = o.dataset.v; closePickers(); draw(); onPick(value);
+    btn.scrollIntoView({block:"nearest"});
+  });
+  return { set(its, v) { items = its; value = its.some(x => x.v === v) ? v : ""; draw(); return value; } };
+}
+const obsPick = makePicker("obsPick", v => { st.obs = v; st.rel = ""; refresh(); });
+const relPick = makePicker("relPick", v => { st.rel = v; show(); });
 
 const rowsFor = () => R.filter(r => r.obs.includes(st.obs) && r.ev === st.ev && (r.nb === "" || r.nb === st.nb));
 const isFixed = () => FIXED[st.obs] && FIXED[st.obs][st.ev];
@@ -222,13 +250,12 @@ function refresh() {
   $("relStep").hidden = !ready || !!isFixed();
   $("t_rel").textContent = (needSex ? "4. " : "3. ") + (birth ? t.relB : t.relD);
   if (ready && !isFixed()) {
-    const rows = rowsFor(); let h = `<option value="">${t.choose}</option>`;
+    const rows = rowsFor(), items = [];
     for (const g of GORDER) {
       const gr = rows.filter(r => r.grp === g); if (!gr.length) continue;
-      h += `<optgroup label="${esc(t.G[g])}">` + gr.map(r => `<option value="${r.i}">${esc(lbl(r))}</option>`).join("") + "</optgroup>";
+      items.push({g:t.G[g]}); gr.forEach(r => items.push({v:String(r.i), label:lbl(r)}));
     }
-    $("rel").innerHTML = h;
-    if (st.rel !== "" && rows.some(r => r.i === +st.rel)) $("rel").value = st.rel; else st.rel = "";
+    st.rel = relPick.set(items, st.rel);
   }
   show();
 }
