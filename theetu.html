@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+  <title>Theetu (Āśaucam) — Arulicheyal</title>
+  <link rel="stylesheet" href="/css/main.css?v=861">
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    /* Theetu page — site colours (faq.html), mobile first */
+    #thRoot { max-width: 680px; margin: 0 auto; padding: 18px 16px 50px; box-sizing: border-box; color: #3B2410;
+      font-family: "Noto Sans Tamil", "Latha", "Segoe UI", Arial, sans-serif; }
+    body.en #thRoot { font-family: "Segoe UI", Arial, sans-serif; }
+    #thRoot * { box-sizing: border-box; }
+    #thRoot .th-back { display: inline-block; font-family: "Segoe UI", Arial, sans-serif; font-size: 13px !important; color: #7B3F00;
+      text-decoration: none; border: 1px solid #C9A84C; border-radius: 999px; padding: 4px 12px; background: #fff; margin-bottom: 10px; }
+    #thRoot .box { background: #FFFDF7; border: 1.5px solid #E8D5A8; border-radius: 10px; padding: 14px 12px; }
+    #thRoot .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    #thRoot h1 { color: #3B2410; font-size: 18px !important; font-weight: 700; margin: 0; line-height: 1.35; }
+    #thRoot .langs { display: flex; gap: 4px; flex-shrink: 0; }
+    #thRoot .langs button { border: 1px solid #C9A84C; background: #fff; color: #3B2410; border-radius: 999px; padding: 3px 10px;
+      font-size: 12px !important; cursor: pointer; font-family: inherit; }
+    #thRoot .langs button.on, #thRoot .seg button.on { background: #2f7d32; border-color: #2f7d32; color: #fff; font-weight: 700; }
+    #thRoot .sub { color: #8B6A45; font-size: 12px !important; margin-bottom: 10px; }
+    #thRoot .disc { background: #FFF8E8; border-left: 3px solid #C9A84C; border-radius: 4px; padding: 7px 10px; font-size: 12.5px !important;
+      color: #5a4a30; margin-bottom: 12px; line-height: 1.6; }
+    #thRoot .step { margin: 0 0 10px; }
+    #thRoot .lab { display: block; font-weight: 700; color: #3B2410; font-size: 13.5px !important; margin-bottom: 4px; }
+    #thRoot .seg { display: flex; gap: 6px; }
+    #thRoot .seg button { flex: 1; border: 1px solid #C9A84C; background: #fff; color: #3B2410; border-radius: 999px; padding: 7px 8px;
+      font-size: 13.5px !important; cursor: pointer; font-family: inherit; }
+    #thRoot select { width: 100%; font-size: 13.5px !important; padding: 8px; border: 1px solid #C9A84C; border-radius: 8px;
+      background: #fff; color: #3B2410; font-family: inherit; }
+    #thRoot .result { margin-top: 14px; border: 1.5px solid #C9A84C; border-radius: 10px; background: #fff; padding: 12px; }
+    #thRoot .days { text-align: center; font-size: 22px !important; font-weight: 700; color: #3B2410; line-height: 1.35; }
+    #thRoot .ns .days { color: #9a6a1a; font-size: 17px !important; }
+    #thRoot .r-rel { text-align: center; font-size: 12.5px !important; color: #8B6A45; border-bottom: 1px solid #F0E0B8; padding-bottom: 7px; margin: 2px 0 7px; }
+    #thRoot .r-note { font-size: 13px !important; line-height: 1.65; margin: 5px 0; }
+    #thRoot .r-late { font-size: 12.5px !important; line-height: 1.65; background: #FFF8E8; border-radius: 6px; padding: 7px 9px; margin-top: 8px; color: #5a4a30; }
+    #thRoot .r-disc { font-size: 11.5px !important; color: #8B6A45; margin-top: 9px; border-top: 1px dashed #E8D5A8; padding-top: 7px; }
+    #thRoot details { margin-top: 14px; border: 1.5px solid #E8D5A8; border-radius: 10px; background: #fff; }
+    #thRoot details[open] { border-color: #C9A84C; }
+    #thRoot summary { cursor: pointer; font-weight: 700; color: #3B2410; font-size: 14px !important; padding: 10px 12px; }
+    #thRoot .dbody { padding: 0 12px 12px; }
+    #thRoot .tbl { overflow-x: auto; }
+    #thRoot table { width: 100%; border-collapse: collapse; font-size: 12px !important; }
+    #thRoot th, #thRoot td { border-bottom: 1px solid #F0E0B8; padding: 5px 4px; text-align: left; vertical-align: top; font-size: 12px !important; }
+    #thRoot th { background: #FFF8E8; color: #3B2410; }
+    #thRoot td.d { font-weight: 700; white-space: nowrap; }
+    #thRoot td i { color: #8B6A45; font-style: normal; font-size: 11.5px !important; }
+    #thRoot .grp td { background: #F5E6C8; font-weight: 700; color: #6a4200; }
+    #thRoot .doc { font-size: 13.5px !important; line-height: 1.75; }
+    #thRoot .doc p, #thRoot .doc li { font-size: 13.5px !important; }
+    #thRoot .doc h2.doc-part { font-size: 15px !important; color: #3B2410; margin: 22px 0 4px; padding-top: 12px; border-top: 2px solid #C9A84C; }
+    #thRoot .doc h3 { font-size: 14px !important; color: #3B2410; margin: 16px 0 4px; }
+    #thRoot .doc h3 small { font-weight: 400; color: #8B6A45; font-size: 12px !important; }
+    #thRoot .doc p { margin: 6px 0; }
+    #thRoot .doc ol, #thRoot .doc ul { margin: 4px 0; padding-left: 22px; }
+    #thRoot .doc li { margin: 2px 0; }
+    #thRoot .doc .doc-note { background: #FFF8E8; border-radius: 6px; padding: 7px 10px; font-size: 12.5px !important; }
+    #thRoot .doc table { margin: 6px 0; }
+    #thRoot button:focus-visible, #thRoot select:focus-visible, #thRoot summary:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
+    @media (min-width: 700px) {
+      #thRoot h1 { font-size: 21px !important; } #thRoot .days { font-size: 26px !important; }
+      #thRoot .lab, #thRoot select, #thRoot .seg button, #thRoot .doc, #thRoot .doc p, #thRoot .doc li { font-size: 14.5px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+
+<div class="th-wrap" id="thRoot">
+  <a class="th-back" href="faq.html">← FAQ</a>
+  <div class="box">
+  <div class="top">
+    <h1 id="t_title"></h1>
+    <div class="langs" id="langs"><button data-l="ta">தமிழ்</button><button data-l="en">English</button></div>
+  </div>
+  <div class="sub" id="t_sub"></div>
+  <div class="disc" id="t_disc"></div>
+
+  <div class="step"><span class="lab" id="t_ev"></span>
+    <div class="seg" id="ev"><button data-v="D" id="b_D"></button><button data-v="B" id="b_B"></button></div></div>
+
+  <div class="step"><label class="lab" for="obs" id="t_obs"></label><select id="obs"></select></div>
+
+  <div class="step" id="sexStep" hidden><span class="lab" id="t_nb"></span>
+    <div class="seg" id="sex"><button data-v="b" id="b_boy"></button><button data-v="g" id="b_girl"></button></div></div>
+
+  <div class="step" id="relStep" hidden><label class="lab" for="rel" id="t_rel"></label><select id="rel"></select></div>
+
+  <div class="result" id="res" hidden></div>
+
+  <details id="tblBox"><summary id="t_tbl"></summary><div class="dbody tbl"><table id="tbl"></table></div></details>
+  <details id="docBox"><summary id="t_doc"></summary><div class="dbody doc" id="doc"></div></details>
+</div>
+</div>
+
+  <div id="footer"></div>
+
+<template id="doc_ta"><h3>ஸூதக ஆசௌச விளக்கம்</h3>
+<p>ஒரு மூலபுருஷனிடமிருந்து பிரிந்துவந்த ஏழு தலைமுறைவரையில் உள்ளோர் பங்காளிகள் எனப்படுவர். தாயாதி, ஸபிண்டர் எனவும் கூறப்படுவர். அவர்களுக்குள் பிரஸவத்தினால் உண்டாகும் தீட்டு ஸூதகம் எனப்படும். ஒருவன் இறந்ததினால் உண்டாகும் தீட்டு ஆசௌசம் எனப்படும். ஸூதக காலத்திலும் ஆசௌச காலத்திலும் ஸ்நானம், ஸந்த்யாவந்தனம் தவிர பஞ்சாக்ஷரீ, ஸூர்ய நமஸ்காரம், ஔபாஸனம், ப்ரம்மயக்ஞம், தேவ பூஜை, தானம், ப்ரதிக்ரஹம் முதலிய ஒரு காரியமும் செய்யலாகாது.</p>
+<p>ஒருவர்க்கொருவர் ரத்த ஸம்பந்தமிருப்பதால் ஒருவருக்கேற்பட்ட தீட்டு மற்ற எல்லோருக்கும் பொதுவாகும். தாய் வகைகளிலும், தந்தையின் ஸகோதரி வகையிலும் மரண காலத்தில் சில தீட்டுகளுண்டு. இதுபற்றி தர்ம சாஸ்திரங்கள் விசேஷமாகக் கூறுகின்றன. ஸம்ப்ரதாய பேதத்தினாலும் இரண்டொரு இடங்களில் சிற்சில மாறுதல்களுமிருக்கும். இது ஸஹஜமேயாம். சாஸ்திரம் அறிந்த பெரியோர்களை கேட்டு உணர்க.</p>
+<p>இச்சமயம் சிலர் ஜீவனத்திற்காகத் தூரதேசம் சென்றதால் தீட்டைப்பற்றித் தெரிவதில்லை. கவனிப்பதும் இல்லை. ஸூதகம் அங்ஙனம் தெரியாவிடில் அதனால் யாதொரு குற்றமுமில்லை. இறந்த தீட்டு சிலகாலம்வரை தொடர்ந்து இருக்கும். அத்தகைய தீட்டு பித்ரு மாத்ரு ச்ராத்தம் முதலியவைகள் நேரும்போது அப்படி இறந்த விஷயம் காதில் விழுந்தால் அதற்காக ஏற்பட்ட நாட்கள் வரை ஆசௌசம் காத்து, பிறகே ச்ராத்தம் செய்ய வேண்டும். இல்லையேல் செய்யும் ச்ராத்தம் வீணாகும்.</p>
+
+<h3>ஸூதகம்</h3>
+<p>க்ஞாதிகளில் ஒருவருக்குப் பிள்ளை பிறந்தால் பங்காளிகள் அனைவருக்கும் பத்து நாள் தீட்டுண்டு. அதனிடையில் செய்யவேண்டிய ச்ராத்தம் வந்தால் பதினோராவது நாளிலே அந்தத் தீட்டுப் போனபிறகு ச்ராத்தம் செய்யவேண்டும். பெண்குழந்தை பிறந்தால் க்ஞாதிகளுக்குத் தீட்டில்லை. பெண் குழந்தை பிறந்தாலும் கீழ்க்கண்டவர்களுக்கு மாத்திரம் 10 நாள் தீட்டுண்டு.</p>
+<ol>
+<li>சிசுவின் ஸஹோதரர்கள்.</li>
+<li>மூத்தாள் அல்லது இளையாள் வயிற்றில் பிறந்த ஸஹோதரர்கள்.</li>
+<li>ஸஹோதரர்களுடைய மனைவிகள்.</li>
+<li>தந்தை, சிறிய தந்தை, பெரிய தகப்பன்.</li>
+<li>பின்னோதர பெரிய தகப்பன், சிறிய தகப்பன், பெரிய தகப்பன் பிள்ளை.</li>
+<li>தாத்தா (பிதாமஹர்)</li>
+<li>பிதாமஹரது ஸஹோதரர்கள்.</li>
+<li>பிதாமஹருடைய பின்னோதர ஸஹோதரர்கள்.</li>
+<li>அவர்களது மனைவிகள் ஆகிய அனைவர்க்கும் 10 நாள் தீட்டுண்டு.</li>
+</ol>
+<p>பிரஸவித்தவளின் தாய் தந்தைக்கு மூன்றுநாள் தீட்டு. பெண்கள் தனது பெற்றோர் வீட்டில் பிரஸவித்தாலும் பெற்றோரது பொருள் செலவினால் பிரஸவித்தாலும் பெற்றோருக்கு மூன்றுநாள் தீட்டு உண்டு.</p>
+
+<h3>பிரஸவத்தில் ஒரு நாள் தீட்டு</h3>
+<p>ஸஹோதரன், சிறிய தகப்பன், பெரிய தகப்பன், அம்மான் முதலிய உறவினர் வீட்டில் பிரஸவித்தாலும், அவர்களது பொருள் செலவினால் வேறு எங்கு பிரஸவித்தாலும் அவர்களுக்கு ஒருநாள் தீட்டுண்டு.</p>
+<p>ப்ரம்மசாரிக்கும் (உபநயனமாகாதவனுக்கும்) கன்யா பெண்களுக்கும் எந்தத் தீட்டுமில்லை.</p>
+<p>பிரஸவித்த தீட்டைப் பத்துநாட்களுக்குப் பின் எவரும் காக்கவேண்டியது இல்லை.</p>
+<p>பிரஸவித்தவளுக்கு ஆண் குழந்தையானால் முப்பது நாட்களும், பெண் குழந்தையானால் நாற்பது நாட்களும் தீட்டுண்டு. அந்நாட்கள் சென்றபின் புதிதாக மாங்கல்யக் கயிறு தரித்து பஞ்சகவ்யம் சாப்பிட்ட அதன் பின்பே பாத்ரங்களையும் பிறரையும் தொடுவதற்குத் தக்கவள் ஆவாள். பாண்ட ஸ்பர்ஸம் எனப்படுமது.</p>
+<p>பஹிஷ்டையானவள் (தூரமானவள்) வீட்டுக்கு வெளியே விலகி இருந்து, நாலாவது நாள் ஸங்கவ காலத்தைத் தாண்டி (சுமார் 8.30 மணிக்கு மேல்) குளத்தில் அமிழ்ந்து ஒரே மூச்சில் இருபத்து மூன்று முறை ஸ்நானம் செய்யவேண்டும். ஸூர்யோதய காலத்திற்கு முந்தியோ ஸூர்யோதயமான உடனேயோ ஸ்நானம் செய்தால் தீட்டுப்போவதில்லை. லௌகிக ஸௌகர்யத்தை உத்தேசித்து அங்ஙனம் காலையில் ஸ்நானம் செய்ய நேர்ந்தால் எட்டரை மணிக்குமேல் அன்றைக்கே மற்றோர்முறை ஸ்நானம் செய்தால்தான் சுத்தி ஏற்படும். நான்காவது தினத்திலும் சிறிது தீட்டு இருக்கும். ஆதலால் தேவபித்ரு காரியங்களில் ஸம்பந்தப்படக் கூடாது. ஐந்தாவது நாள் ஸ்நானம் செய்த பின்பே ஸகல கர்மாக்களையும் செய்ய யோக்யதை உண்டு. பஞ்சாக்ஷரீ, ஸூர்ய நமஸ்காரம் முதலியவைகளையும் ஐந்தாவது நாள் முதலே செய்யவேண்டும்.</p>
+
+<h3>பத்து நாள் ஆசௌசம்</h3>
+<p>ஒரு க்ஞாதி இறந்தால் ஏழு தலைமுறையில் உள்ள அனைவர்க்கும் பத்துநாள் தீட்டு உண்டு. அவர்கள் ஸபிண்டர் எனப்படுவார்கள். பிறந்த பத்துநாட்களுக்குப் பிறகு புருஷ குழந்தை இறந்தாலும் அதேபோல் விவாஹமாகும் வரை பெண்குழந்தை இறந்தாலும், கீழ்க்கண்டவர்களுக்கு மாத்ரம் பத்துநாள் தீட்டு உண்டு.</p>
+<ol>
+<li>இறந்தவர் தந்தை</li>
+<li>இறந்தவர் தாய்</li>
+<li>இறந்தவர் ஸஹோதரர்</li>
+<li>இறந்தவரது பின்னோதர ஸஹோதரர்</li>
+</ol>
+<p>ஏழு வயதிற்குள் உபநயனமாகி தாயாதிகளின் புத்ரர் இறந்தால் எல்லோருக்கும் பத்துநாட்கள் தீட்டு உண்டு. ஏழு வயதுமுதல் உபநயனம் ஆனாலும், ஆகாவிட்டாலும் புருஷக் குழந்தை இறந்தால் க்ஞாதிகளுக்குப் பத்துநாள் தீட்டு உண்டு.</p>
+
+<h3>புருஷரில் மூன்றுநாள் தீட்டுள்ளவர்</h3>
+<ol>
+<li>மாதாமஹர் = தாயின் தந்தை.</li>
+<li>மாதாமஹீ = தாயின் தாய்</li>
+<li>மாதுலன் = மாமன்</li>
+<li>மாதுலானீ = மாமன் மனைவி</li>
+<li>மாமனார்</li>
+<li>மாமியார்</li>
+<li>தாயின் ஸஹோதரிகள் = சித்தி, பெரியம்மாள்</li>
+<li>தந்தையின் ஸஹோதரிகள் = அத்தைமார்கள்</li>
+<li>ஸஹோதரியின் உபநயனமான புத்ரன் = மருமான்</li>
+<li>உபநயனமான தௌஹித்ரன் = பெண்ணின் பிள்ளையான பேரன்.</li>
+<li>ஏழு தலைமுறை தாண்டிய பங்காளிகள்</li>
+<li>கல்யாணமான பெண்</li>
+<li>கல்யாணமான ஸஹோதரி</li>
+<li>ஜனனீ = அன்ய கோத்ரத்தில் ஸ்வீகாரமாகச் சென்றவனுக்கு முன் கோத்திரத்தில் தன்னைப் பெற்றெடுத்த தாய் ஜனனீ.</li>
+<li>ஜனக பிதா = ஸ்வீகாரமானவனது பூர்வகோத்ர தந்தை</li>
+<li>தத்தபுத்ரன் = அன்யகோத்ர ஸ்வீகாரமானவன்.</li>
+<li>ஏழு வருஷம் முதல் விவாஹமாகும் வரை உள்ள பத்து நாள் தாயாதியின் பெண்.</li>
+<li>25வது மாசம் முதல் ஆறு வருஷம் வரை பூணல் போடாத க்ஞாதிகள் பிள்ளைகள்.</li>
+<li>ஏழுதலைமுறைக்கு மேற்பட்ட க்ஞாதிகளின் பிள்ளை உபநயனம் ஆனாலும் ஆகாவிட்டாலும், ஏழு வயதுக்குள்ளேயே உபநயனம் ஆகி இருந்தாலும் மூன்று நாள் தீட்டுண்டு.</li>
+</ol>
+
+<h3>தனியாகப் பெண்களுக்கு மாத்ரமுள்ள 3 நாள் தீட்டு</h3>
+<p>ஒரு பெண் விவாஹம் ஆகும் பொழுது புருஷ கோத்ரத்தில் ஈடுபடுகிறாள். புருஷனது க்ஞாதிகளைச் சார்ந்த ஸூதகமும் ஆசௌசமும் (பிறப்பு இறப்புத் தீட்டு) புருஷனைப் போலவே பத்து நாள் அல்லது மூன்று நாள் அவள் தீட்டுக் காக்கவேண்டும். தான் பிறந்த கோத்ரத்தைச் சார்ந்த க்ஞாதிகளின் தீட்டு இவளுக்குக் கிடையாது. என்றாலும் நெருங்கிய ரத்த ஸம்பந்தமுள்ள கீழ்க்கண்டவர்களை நாடி மூன்று நாள் தீட்டு காக்கவேண்டும். புருஷனுக்கு உண்டான தீட்டு மனைவிக்கு ஸஹஜமாக வரும். மனைவிக்குத் தனியாக உண்டான தீட்டு புருஷனுக்கு இல்லை.</p>
+<ol>
+<li>உபநயனமான உடன் பிறந்தான்</li>
+<li>உபநயனமான மருமான்.</li>
+<li>உபநயனமான ஸஹோதரியின் பிள்ளை.</li>
+<li>ஸபத்னீ மாதா அதாவது தனது தாயாரின் இளையாள் அல்லது மூத்தாள் ஆகிய இவர்கள் இறந்தால் மூன்று நாட்கள் பெண்களுக்குத் தனியாகத் தீட்டுண்டு.</li>
+</ol>
+
+<h3>புருஷர்களுக்கு பக்ஷிணீ தீட்டு (1½ நாள்)</h3>
+<p>பக்ஷிணீ என்பது ஒன்றரை நாள். அதாவது இரண்டு இரவும் ஒரு பகலும் அல்லது இரண்டு பகலும் ஓர் இரவுமுள்ள காலம். பகலில் உண்ணாமலிருந்தால்தான் பக்ஷிணீ தீட்டு இரவில் அகலும். பகலில் சாப்பிட்டால் மறுநாள் காலையில்தான் போகும்.</p>
+<ol>
+<li>அத்தையின் பிள்ளைகளும் பெண்களும்</li>
+<li>மாமன் பிள்ளைகளும் பெண்களும்</li>
+<li>தாயின் ஸஹோதரியான சிற்றன்னை பெரியன்னை இவர்களின் பெண்களும் பிள்ளைகளும்</li>
+<li>தன் ஸஹோதரியின் பெண்</li>
+<li>தன் ஸஹோதரனுடைய கல்யாணமான பெண்</li>
+<li>சிற்றப்பன் பெரியப்பன் பெண்</li>
+<li>தனது பிள்ளையின் பெண் — பௌத்ரீ</li>
+<li>தனது பெண்ணின் பெண் — தௌஹித்ரீ</li>
+<li>உபநயனமாகாத தௌஹித்ரன் — பெண்ணின் பிள்ளை.</li>
+<li>உபநயனமாகாத மருமான் — ஸஹோதரி புத்ரன்.</li>
+</ol>
+
+<h3>பெண்களுக்கு பக்ஷிணீ தீட்டு (1½ நாள்)</h3>
+<ol>
+<li>தந்தையுடன் பிறந்த பெரியப்பன், சிற்றப்பன்</li>
+<li>தன் தாயுடன் பிறந்த சித்தி, பெரியம்மாள்</li>
+<li>மாமன்,</li>
+<li>அத்தை</li>
+<li>மேற்கூறப்பட்ட நால்வருடைய பெண்களும் பிள்ளைகளும்</li>
+<li>தந்தையின் தந்தை — பிதாமஹன்</li>
+<li>தந்தையின் தாய் — பிதாமஹீ</li>
+<li>தாயின் தந்தை — மாதாமஹன்</li>
+<li>மாதாமஹீ — தாயின் தாய்</li>
+<li>தன்னுடன் பிறந்தவள் — ஸஹோதரீ</li>
+<li>ஸஹோதரியின் பெண்</li>
+<li>மருமாள் ஆகிய இவர்கள் இறந்தால் ஸ்த்ரீகளுக்கு ஒன்றரை நாளான பக்ஷிணீ தீட்டுண்டு.</li>
+</ol>
+
+<h3>ஒரு நாள் தீட்டு புருஷர்களுக்கு</h3>
+<ol>
+<li>ஸபத்னீ மாதாவின் ஸஹோதரன், ஸஹோதரி, பெண்</li>
+<li>மேற்கூறப்பட்ட மூவருடைய பெண், பிள்ளை</li>
+<li>தன் மனைவியின் ஸஹோதரர்கள் = மைத்துனர்</li>
+<li>தன் தாயின் மூத்தாள் அல்லது இளையாளது பெண், பின்னோதர சித்தப்பா, பெரியப்பா பெண்</li>
+<li>ஸபத்னீ மாதாவின் தாய் தந்தை</li>
+<li>இரண்டு வயதுக்குமேல் ஆறு வயதுவரை கல்யாணம் ஆகாமல் இறந்த க்ஞாதிகளின் பெண்.</li>
+<li>ஸ்வீகாரம் சென்றவனுடைய பூர்வகோத்ர ஸஹோதரர்</li>
+<li>பத்னியும் இறந்து அவள் ஸந்ததியில்லாதபொழுது அவளது தந்தையும் தாயுமான மாமனார் மாமியார் ஆகியவர் இறந்தால் 1-நாள் தீட்டு.</li>
+<li>ஆறுமாதத்திற்குமேல் இரண்டு வருஷத்திற்குட்பட்ட சௌளமாகாத பங்காளிப் பிள்ளை இறந்தால் 1 நாள்.</li>
+</ol>
+
+<h3>ஸ்திரீகளுக்குத் தனியாக 1-நாள் தீட்டு</h3>
+<ol>
+<li>ஸபத்நீ மாதா = தாயின் மூத்தாள் அல்லது இளையாள்</li>
+<li>ஸபத்நீ புத்ரீ, ஸஹோதரீ, ஸஹோதரன்.</li>
+<li>ஸபத்நீ மாதாவின் பிள்ளையினுடைய பிள்ளை, பெண்</li>
+<li>ஸபத்நீ புத்ரியின் பிள்ளை, பெண்.</li>
+<li>ஸபத்நீ ஸஹோதரியின் பிள்ளை, பெண்.</li>
+</ol>
+<p>இவர்களில் விவாஹம் ஆன பெண்களுக்கும் உபநயனமான பிள்ளைகளுக்குமே தீட்டு.</p>
+
+<h3>இரண்டு பிறப்புத் தீட்டுகள் சேர்ந்தால்</h3>
+<ol>
+<li>ஒரு பத்துநாள் தீட்டு காத்துக்கொண்டிருக்கும் போது, (4வது நாள் அல்லது மற்ற நாட்களில்) மற்றொரு பத்துநாள் தீட்டுவந்தால் முதலில் காத்துக்கொண்டிருக்கும் தீட்டுப் போகும் தினத்திலேயே இரண்டாவது தீட்டும் போய்விடும். இது க்ஞாதிகளுக்கு மட்டுந்தான். இரண்டாவது தீட்டுப் போகும்வரை காக்கவேண்டாம். பெற்றோர்களுக்கு 10 நாள் தீட்டுண்டு.</li>
+<li>ஒரு மூன்றுநாள் தீட்டு காத்துக்கொண்டிருக்கும் பொழுது இரண்டாவது மற்றொரு மூன்று நாளைய தீட்டு வந்தால் முதல் தீட்டுடன் அந்தத் தீட்டும் அகலும்.</li>
+<li>மூன்று நாள் தீட்டு காத்துக்கொண்டிருக்கும் பொழுது நடுவில் பத்துநாள் தீட்டுவந்தால் முன்சொன்னபடி மூன்றுநாள் தீட்டுப் போகும்பொழுது பத்துநாள் தீட்டுப்போகாது. அதிக நாளும் காக்கவேண்டும்.</li>
+<li>பத்துநாள் தீட்டு காத்துக்கொண்டிருக்கும்போது இடையில் மூன்றுநாள் தீட்டு வந்தால் பத்துநாள் தீட்டுப் போகும்போதுதான் சுத்தி ஏற்படும். மூன்றுநாள் தீட்டு அகலும் தினத்தில் பத்துநாள் தீட்டு அகலாது.</li>
+<li>பத்து அல்லது மூன்றுநாள் தீட்டு காத்துக் கொண்டிருக்கும்பொழுது ஒருவருக்குக் குழந்தை பிறந்தால் பெற்றோருக்குப் பத்துநாள் தீட்டுண்டு.</li>
+<li>பத்து நாள் தீட்டு காத்துக்கொண்டிருக்கும் பொழுது பத்தாவது நாள் இரவில் மற்றொரு பத்துநாள் தீட்டு வந்தால் அதிகப்படியான பத்து நாளைய தீட்டிற்காக மூன்றுநாள் தீட்டுக் காக்கவேண்டும்.</li>
+<li>ஒருவருக்குக் குழந்தை பிறந்து பத்துநாள் தீட்டு காத்துக்கொண்டிருக்கும்பொழுது பத்தாவது நாள் மற்றொரு பிறப்புத்தீட்டு எப்பொழுது வந்தாலும் பதினோராம் நாளே தீட்டுப் போய்விடும். முன் கூறியபடி மூன்றுநாள் இவர்கள் தீட்டுக் காக்கவேண்டியதில்லை.</li>
+<li>ஒரு பத்துநாளைய தீட்டு காத்துக்கொண்டிருக்கும் பொழுது இந்தத்தீட்டு ஆரம்பிப்பதற்கு முன்னமேயே ஒரு க்ஞாதி வீட்டில் பிரஸவம் ஏற்பட்டு அதுவும் பத்துநாளைய தீட்டாக இருந்து நாலு அல்லது ஐந்துநாட்கள் கழித்து நமக்குத் தெரிந்தால் அந்தப் பழைய தீட்டுப் போகும் பொழுதே புதிதாக வந்த தீட்டும் போய்விடும்.</li>
+<li>ஒருவருக்கு இரட்டைக் குழந்தை ஒரே நாளில் பிறந்தால் முன் கூறியபடியே தீட்டு. அதில் விசேஷமில்லை. ஒருவருக்கு இரட்டைக் குழந்தை பிறந்த ஆனால் ஒரு குழந்தை முதல்நாளும் மற்றொரு குழந்தை மறுநாளும் பிறந்தால் முதல் குழந்தை பிறந்த பதினோராவது நாளிலே பங்காளிக்கும் குழந்தையின் தந்தைக்கும் தீட்டுப் போகும். தந்தை பத்தாவது நாளிலே க்ஷவரம் செய்துகொண்டு தீக்ஷா நிவிருத்தி செய்ய வேண்டும். பெற்ற தாய்க்கு மாத்ரம் இரண்டாவது குழந்தை பிறந்த பதினோராவது நாளே அதாவது பன்னிரண்டாவது நாளே தீட்டு அகலும்.</li>
+</ol>
+
+<h3>மரணசௌசமும் பிறப்புத் தீட்டும்</h3>
+<ol>
+<li>மரணத்தால் ஏற்படும் தீட்டே தீட்டுகளில் பலமானது. பிறப்புத் தீட்டின் நடுவில் மரணத்தீட்டு வந்தால் பிறப்புத் தீட்டுடன் மரணத் தீட்டு போகாது.</li>
+<li>மரணத் தீட்டு காத்துக்கொண்டிருக்கும் பொழுது பிறப்புத் தீட்டு வந்தால் மரண ஆசௌசத்துடன் இதுவும் நீங்கிவிடும்.</li>
+<li>ஆனால் ஒருவருக்குக் குழந்தைபிறந்து தீட்டுக் காத்துக்கொண்டிருக்கும் பொழுது க்ஞாதியின் தாய் தந்தை இறந்த மரண ஆசௌசம் தோன்றினால் இவர்களுக்கு மாத்ரம் பிறப்புத் தீட்டுடன் அந்த மரணத் தீட்டு போய்விடும். இது விசேஷமான அம்சமாகும்.</li>
+<li>ஒரு பெற்றோருக்குக் குழந்தை பிறந்து தீட்டு காத்துக்கொண்டிருக்கும்பொழுது அந்தக் குழந்தை பத்து நாட்களுக்குள் இறந்து விட்டால் அந்த மரணத்திற்காகத் தனித்தீட்டுக் கிடையாது. பிறந்த பத்தாவது நாளிலே இரண்டுமகலும். 10வது நாளில் 2 நாள்.</li>
+<li>பத்தாவது நாள் இரவு கடைசி நேரத்தில் இறந்தால் பெற்றோருக்கும் மூன்றுநாள் அதிகத் தீட்டுண்டு.</li>
+<li>க்ஞாதிகளுக்கு இந்த அதிகப்படியான மூன்று நாள் தீட்டு கிடையாது.</li>
+<li>பங்காளி ஒருவர் இறந்ததால் உண்டான தீட்டு காத்துக்கொண்டிருக்கும் பொழுது ஒருவள் பிரஸவித்தால் க்ஞாதிகளுக்கு அந்த மரண ஆசௌசத்துடன் பிறந்த தீட்டும் போய்விடும்.</li>
+<li>பெற்றோருக்கு மாத்ரம் பிறந்த தீட்டு பதினோராவது நாளில்தான் போகும்.</li>
+<li>ஒருவரது தாய் தந்தை இறந்து மரண ஆசௌசம் காத்துக்கொண்டிருக்கையில் அவருக்கே குழந்தை பிறந்தால் பெற்றோரின் மரண ஆசௌசம் அகலும் பொழுது பிரஸவத் தீட்டும் போய்விடும்.</li>
+<li>ஆனால் பெற்ற தாய்க்கு மாத்ரம் பதினோராவது நாள்தான் ஜனனத் தீட்டு அகலும்.</li>
+<li>இரண்டு தீட்டுகளும் ஸமமாக அதாவது பத்து பத்து நாள் தீட்டாக இருந்தாலும் அல்லது சிறிது அல்பமாக இருந்தாலும் மரண ஆசௌசத்துடன் ஜனன ஆசௌசம் நீங்கிவிடும்.</li>
+<li>ஜநந ஆசௌசம் காக்கும் க்ஞாதிக்குப் பத்து நாட்களுக்குள் அந்தக் குழந்தை இறந்தால் மரணத்திற்காக அதிகப்படி தீட்டுக் கிடையாது. இந்த ஜனனத் தீட்டுடன் அந்தத் தீட்டும் போய்விடும்.</li>
+</ol>
+
+<h3>ஒரு மரண ஆசௌசத்தில் மற்றொரு மரண ஆசௌசம்</h3>
+<ol>
+<li>பத்து நாள் தீட்டில் வேறொரு பத்து நாள் தீட்டு வந்தால் முந்திய தீட்டோடு பிந்திய தீட்டும் போய்விடும்.</li>
+<li>மூன்று நாள் தீட்டில் பத்து நாள் தீட்டு வந்தால் பத்து நாள் தீட்டின் முடிவிலேயேதான் மூன்று நாள் தீட்டும் போகும். பத்து நாள் தீட்டு காத்துக்கொண்டிருக்கும் பொழுது மூன்று நாள் தீட்டு வந்தாலும் பத்து நாள் தீட்டு முடிவிலேதான் மூன்றுநாள் தீட்டு அகலும்.</li>
+<li>க்ஞாதி ஆசௌசத்தில் தாய் தந்தையர்கள் இறந்தால் பிள்ளைகளுக்கும், மனைவி இறந்தால் பர்த்தாவுக்கும், பர்த்தா இறந்தால் மனைவிக்கும், மைந்தன், பெண் இறந்தால் தாய் தகப்பன்களுக்கும் மரணம் முதல் பத்துநாள் ஆசௌசமுண்டு. க்ஞாதி ஆசௌசத்தோடு இது போவதில்லை.</li>
+<li>பத்துநாள் தீட்டில் பத்தாவது நாள் ராத்ரியில் வேறொரு பத்து நாள் தீட்டு வந்தால் 2 நாளும், அன்று ராத்ரி 4-வது யாமத்திலாவது அருணோதயத்திலாவது வந்தால் 3 நாட்களும் அதிக ஆசௌசமுண்டு.</li>
+<li>பத்துநாள் தீட்டில் மூன்றுநாள் தீட்டு எப்போது வந்தாலும் அதற்காக அதிக ஆசௌசமில்லை.</li>
+<li>பிதா இறந்து பத்து நாளைக்குள் மாதா இறந்தால் பிதாவின் தீட்டுக்காலத்திற்குமேல் பக்ஷிணீகால ஆசௌசம் அதிகம் உண்டு. அன்னையின் பத்து நாட்களின் நடுவில் பிதா இறந்தால் பிதாவின் மரண தினம் முதல் பத்து நாள் ஆசௌசம் உண்டு.</li>
+<li>பிதா இறந்த பத்தாவது தினத்தில் மாதா எப்போது இறந்தாலும் அதற்காகப் பக்ஷிணீ ஆசௌசத்திற்கு மேல் அதிகமில்லை.</li>
+<li>தாய், தகப்பன் இறந்து பத்து நாளைக்குள் மனைவி, புத்ரன், புத்ரீ இவர்கள் இறந்தால் முந்திய ஆசௌசத்தோடு பிந்திய ஆசௌசம் அகலும். பத்தாம் நாளில் இறந்தால் முன் கூறியபடி 2 அல்லது 3 நாள் அதிகமாக ஆசௌசமுண்டு.</li>
+<li>தாய், தகப்பன், பத்னி, பர்த்தா, பிள்ளை, பெண் இவர்கள் இறந்த 10வது தினத்தில் வேறொரு க்ஞாதி மரணம் ஏற்பட்டால் முந்திய தீட்டோடு பிந்திய தீட்டும் போய்விடும்.</li>
+<li>பத்துநாள் ஆசௌசம் காத்துக்கொண்டிருக்கும் பொழுது வேறொருவனைத் தகனஞ்செய்ய நேர்ந்தால் தஹன தினம் முதல் பத்துநாள் ஆசௌசம். மறுபடியும் வேறு தகனஞ் செய்ய நேர்ந்தால் முன் ஆசௌசத்தோடு பிந்தியதும் போய்விடும்.</li>
+<li>ஒரு மரணத் தீட்டு காத்துக் கொண்டிருக்கும் போது அந்தத் தீட்டின் ஆரம்பத்திற்கு முந்தியே ஒருவர் இறந்ததாக வேறு ஒரு தீட்டு வந்தால் பிந்தி கேட்டத் தீட்டின் முடிவிலேயே ஏற்கெனவே காத்துவரும் தீட்டும் போய்விடும்.</li>
+</ol>
+
+<h3>அதிக்ராந்தாசௌசம் <small>(தீட்டு நாட்களுக்குப் பிறகு தெரியும் தீட்டு)</small></h3>
+<ol>
+<li>பத்துநாள் ஆசௌசத்தை பத்து நாட்களுக்குப் பின்பு மூன்று மாதங்களுக்குள் கேட்டால் மூன்று நாள் ஆசௌசம். ஆறுமாதங்களுக்குள் கேட்டால் பக்ஷிண்யாசௌசம், ஒரு வருடத்திற்குள் கேட்டால் ஒரு நாள் ஆசௌசம், பிறகு கேட்டால் ஸ்நானம் மாத்ரம்தான். தீட்டில்லை.</li>
+<li>மூன்று நாள் ஆசௌசத்தை மூன்று நாளுக்குமேல் பத்து நாளுக்குள் கேட்டால் ஒரு நாள் ஆசௌசம். பத்து நாட்களுக்குப் பிறகு கேட்டால் ஸ்நானம் மட்டும்.</li>
+<li>பக்ஷிணித் தீட்டை பக்ஷிணிக்குமேல் பத்து நாட்களுக்குள் கேட்டால் ஒரு காலம். அதாவது — பகலில் கேட்டால் பகல் மாத்ரம் தீட்டு. ராத்ரியில் கேட்டால் ராத்ரி மாத்ரமே தீட்டு. பிறகு கேட்டால் ஸ்நானம் மாத்ரம்.</li>
+<li>இருபத்தைந்தாவது மாதம் முதல் ஆறாவது வருஷம் முடிவு வரையில் க்ஞாதியின் பிள்ளை இறந்தால் அவன் பூணல் போடாதவனானால் மூன்று நாள் ஆசௌச முண்டென்று சொன்னதற்கு அதிக்ராந்தாசௌசம் கிடையாது.</li>
+<li>ஒரு நாள் தீட்டுக்கு அதிக்ராந்தாசௌசம் கிடையாது.</li>
+<li>மாதா பிதாக்களின் மரணத்தில் மூத்த புத்ரனுக்கும், பர்த்தாவின் மரணத்தில் பத்னிக்கும் எப்போது கேட்டாலும் பத்துநாள் ஆசௌசம் உண்டு.</li>
+<li>ஸபத்னீ மாதாவின் மரணத்தை ஒரு வருடம் சென்றபின் கேட்டால் மூன்றுநாள் ஆசௌசம், ஒரு வருஷத்திற்குள் கேட்டால் பத்து நாள் தீட்டாம்.</li>
+<li>மாதா பிதாக்களுக்கு மூத்த புத்ரனால் க்ருத்யங்கள் செய்யப்படும். பிறகு 2வது முதலான பிள்ளைகள் ஒரு வருஷத்திற்கு மேல் கேட்டால் மூன்றுநாள் ஆசௌசம்.</li>
+<li>க்ருத்யம் செய்யப்பட்டிருந்தாலும் செய்யப்படாமலிருந்தாலும் மாதாபிதாக்களின் மரணத்தை மூத்த குமாரன் எப்போது கேட்டாலும் கேட்டது முதல் பத்து நாள் தீட்டுக் காத்து, ஸபிண்டீகரணம் முதலான எல்லாவற்றையும் செய்யவேண்டியது.</li>
+<li>ஸஹோதர மரண விஷயத்தில் க்ருத்யம் செய்யப் பட்டிருந்தால் ஆறு மாதத்திற்குள் கேட்டால் மூன்று நாள் ஆசௌசம். பிறகு கேட்டால் பக்ஷிணீ ஆசௌசம். க்ருத்யம் செய்யாதபக்ஷத்தில் க்ருத்யம்செய்யும் ஸஹோதரனுக்கு எப்போதும் பத்துநாள் ஆசௌசம். மற்ற ஸஹோதரர்களுக்கு ஆறுமாதத்திற்குள் பத்து நாட்களும் ஒரு வருஷத்திற்குள் மூன்று நாட்களும் ஆசௌசமுண்டு.</li>
+<li>பத்துநாள் தீட்டை பத்தாவது நாள் ராத்ரியிலும் மூன்றுநாள் தீட்டை மூன்றாவதுநாள் ராத்ரியிலும் கேட்டால் தர்ப்பணம் செய்வதற்காக மறுநாளும் தீட்டுண்டு.</li>
+<li>அதிக்ராந்தாசௌசம் காக்கும் பொழுது அவரது பொருள்களுக்குத் தீட்டில்லை.</li>
+<li>அதிக்ராந்தாசௌசத்தில் பிறப்பு இறப்புத் தீட்டுகள் சேர்ந்தால் அதிக்ராந்தாசௌசத்தை ஸாதாரணமான தீட்டாக எண்ணி ஸஹஜ தீட்டுச் சேர்க்கையில் எந்த மாதிரியோ அதையே அனுஷ்டிக்கவேண்டியது.</li>
+</ol>
+
+<h3>ஆசௌசமில்லாதவர்கள்</h3>
+<p>உபநயனம் ஆகாதவன், ப்ரம்மச்சாரி இவர்களில் ஒருவருக்குக் கர்மா செய்தால் அந்தந்த காலத்தில் நேரும் தீட்டைத் தவிர மற்ற தீட்டுகள் கிடையாது.</p>
+
+<h3>சில பொதுவானவை</h3>
+<ol>
+<li>தீட்டு ஒருவனுக்கு உண்டு என்று தெரிந்து ஒருவன் (தீட்டில்லாதவன்) தீட்டுடையவனுடைய வீட்டில் சாப்பிட்டால் உண்டவன் அன்று பூராவும் தீட்டைக்காக்க வேண்டும். மறுநாள் தான் தீட்டுப் போகும்.</li>
+<li>தீட்டுப்போகும் நாளில் (ஸங்கவ காலம்) வந்த பின்பே சுமார் எட்டரை மணிக்குத்தான் ஸ்நானம் செய்ய வேண்டியது.</li>
+<li>பிறப்பு இறப்பு மாதவிடாய் இவைகள் ஸூர்யோதயத்திற்கு 11¼ நாழிகைக்குமுன் ஏற்பட்டால் முதல்நாள் முதல் கணக்கு. பிறகு ஏற்பட்டால் மறுநாள் முதல் கணக்கு. அருணோதய முதல் கணக்கிடுபவர்களும் சிலர் உண்டு.</li>
+<li>ப்ரேதத்தின் பின் போனாலும் க்ஷவரம் செய்து கொண்டாலும் இருமுறை ஸ்நானம் செய்யவேண்டியது.</li>
+<li>ஸன்யாஸிகள் தங்கள் முன் ஆஸ்ரம மாதா பிதாக்கள் இறந்ததாகக் கேட்டால், உடனே ஸாது ஸ்நானம் செய்யவேண்டியது. மற்றவர்கள் எவராயினும் ஸ்நானம் இல்லை.</li>
+<li>வேறு விதி :— (எண்பத்தெட்டு அடிக்குள்) (பிணம்) இருந்தால் ஹோமம் சமையல் சாப்பாடு உண்பது முதலியன கூடாது.</li>
+<li>ஸன்யாஸி இறந்து அவர் உடலிருந்தால், கிராமத்திற்குத் தீட்டு கிடையாது.</li>
+<li>நான்காவது வர்ணத்தாரின் சவம் ஊருக்குள்ளே இருந்தால், அது இருக்கும் இல்லத்திற்கு மட்டும் தான் தோஷமுண்டு.</li>
+</ol>
+<p class="doc-note"><b>குறிப்பு — முக்கிய விஞ்ஞாபனம்:</b> வைத்யநாத தீக்ஷிதீயத்தையும் ஸ்ரீ முத்துஸ்வாமி அய்யர் எழுதிய தர்ம சாஸ்த்ர சுருக்கத்தையும் தழுவியே இது வெளியாகிறது. இதில் சில அனுஷ்டானத்தில் வேறுமாதிரியாக இருக்கலாம். விஷயமறிந்த வித்வான்கள் குற்றமிருந்தால் மன்னித்துத் திருத்தவும்.</p>
+<p>தீட்டு முடிந்த மறுநாள் யக்ஞோபவீதம் மாற்றிக்கொள்ள வேண்டும்.</p>
+
+<h2 class="doc-part">ஸ்ரீவைஷ்ணவ (ஐயங்கார்) வழக்கம் — கூடுதல் விவரங்கள்</h2>
+
+<h3>கல்யாணமான பெண்ணின் பிறந்த வீட்டில் மரணம்</h3>
+<p>கல்யாணமான பெண் கணவரின் கோத்ரத்தைச் சேர்கிறாள். அவள் பிறந்த வீட்டில் ஏற்படும் தீட்டு தானாகக் கணவருக்கு வருவதில்லை; கீழே சொன்ன சில உறவுகளுக்கு மட்டும் கணவருக்கும் தீட்டு உண்டு.</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>இறந்தவர் (மனைவியின் பக்கம்)</th><th>மனைவிக்கு</th><th>கணவருக்கு</th></tr>
+<tr><td>மனைவியின் அப்பா / அம்மா</td><td>3 நாள்</td><td>3 நாள்</td></tr>
+<tr><td>சகோதரன் (உபநயனமானவன்)</td><td>3 நாள்</td><td>1 நாள்</td></tr>
+<tr><td>கல்யாணமான அக்கா / தங்கை</td><td>பக்ஷிணீ (1½ நாள்)</td><td>ஸ்நானம் மட்டும்</td></tr>
+<tr><td>பெரியப்பா / சித்தப்பா</td><td>பக்ஷிணீ</td><td>இல்லை (இறுதிச் சடங்கில் கலந்துகொண்டால் மட்டும்)</td></tr>
+<tr><td>மாமா</td><td>பக்ஷிணீ</td><td>இல்லை</td></tr>
+<tr><td>அத்தை / சித்தி</td><td>பக்ஷிணீ</td><td>இல்லை</td></tr>
+<tr><td>தாத்தா / பாட்டி (இரு பக்கமும்)</td><td>பக்ஷிணீ</td><td>இல்லை</td></tr>
+<tr><td>சகோதரனின் பிள்ளை (உபநயனமானவன்)</td><td>3 நாள்</td><td>இல்லை</td></tr>
+<tr><td>சகோதரியின் பிள்ளை (உபநயனமானவன்)</td><td>3 நாள்</td><td>இல்லை</td></tr>
+</table></div>
+<ul>
+<li><b>தீட்டின் திசை:</b> கணவர் பக்கத்தில் தீட்டு வந்தால் மனைவியும் அதே நாட்கள் காக்கவேண்டும். மனைவி பக்கத்தில் மரணம் நேர்ந்தால் மேலே சொன்ன உறவுகளுக்கு மட்டும் கணவருக்குத் தீட்டு.</li>
+<li><b>தீட்டு காலத்தில்:</b> தினசரி திருவாராதனம் நிறுத்தவேண்டும்; கோவிலுக்குச் செல்வதில்லை; ஸ்ரீசூர்ணம் இல்லாமல் வெள்ளைத் திருமண் மட்டும். ஆண்கள் ஸந்த்யாவந்தனத்தை உரத்த வேத மந்த்ரம், ப்ரபந்தம் இல்லாமல் தொடர்ந்து செய்யலாம்.</li>
+<li><b>வீட்டு நடைமுறை:</b> மனைவிக்கு மட்டும் தீட்டு (உதாரணமாக அவள் மாமா, அத்தை) கணவருக்கு இல்லை என்றால், மனைவி சமையலறையிலிருந்தும் பூஜை அறையிலிருந்தும் விலகி இருக்கும்வரை கணவர் திருவாராதனமும் சமையலும் தொடரலாம்.</li>
+</ul>
+
+<h3>கைம்பெண் (விதவை)</h3>
+<p>கல்யாணத்தில் பெண் கணவரின் கோத்ரத்தை நிரந்தரமாகச் சேர்கிறாள். கணவர் மறைந்த பிறகும் அவள் கணவரின் குலத்திலேயே இருக்கிறாள்; பிறந்த வீட்டுக் கோத்ரத்திற்குத் திரும்புவதில்லை. ஆகவே அவளுக்கான தீட்டு நாட்கள் கல்யாணமான பெண்ணுக்குரியவையே.</p>
+<p><b>பிறந்த வீட்டில் மரணம்:</b> அப்பா / அம்மா — 3 நாள்; உபநயனமான சகோதரன் — 3 நாள்; கல்யாணமான சகோதரி, பெரியப்பா / சித்தப்பா, மாமா, அத்தை / சித்தி, தாத்தா / பாட்டி — பக்ஷிணீ; உபநயனமான சகோதரன் / சகோதரியின் பிள்ளை — 3 நாள்.</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>இறந்தவர் (கணவரின் பக்கம்)</th><th>கைம்பெண்ணுக்கு</th></tr>
+<tr><td>மாமனார் / மாமியார்</td><td>10 நாள்</td></tr>
+<tr><td>கணவரின் சகோதரன்</td><td>10 நாள்</td></tr>
+<tr><td>ஓரகத்தி (கணவரின் சகோதரன் மனைவி)</td><td>10 நாள்</td></tr>
+<tr><td>கணவரின் சகோதரன் பிள்ளை (உபநயனமானவன்)</td><td>10 நாள்</td></tr>
+<tr><td>கணவரின் பெரியப்பா / சித்தப்பா</td><td>10 நாள்</td></tr>
+<tr><td>கணவரின் தாயாதிகள் (பங்காளிகள்) (ஏழு தலைமுறைக்குள்)</td><td>10 நாள்</td></tr>
+<tr><td>நாத்தனார் (கணவரின் கல்யாணமான சகோதரி)</td><td>3 நாள்</td></tr>
+<tr><td>நாத்தனாரின் கணவர்</td><td>பக்ஷிணீ, அல்லது குடும்ப வழக்கப்படி ஸ்நானம் மட்டும்</td></tr>
+<tr><td>கணவரின் மாமா</td><td>பக்ஷிணீ</td></tr>
+<tr><td>கல்யாணமான பெண்</td><td>3 நாள்</td></tr>
+<tr><td>மாப்பிள்ளை</td><td>3 நாள்</td></tr>
+</table></div>
+<ul>
+<li><b>தாயாதி (பங்காளி) வரிசை:</b> கணவரின் தந்தை வழியில் ஏழு தலைமுறைக்குள் உள்ள ஆண், கல்யாணமாகாத பெண், அல்லது ஆணின் மனைவி இறந்தால் அவளுக்கு 10 நாள். ஏழு தலைமுறைக்கு அப்பால் 3 நாள்.</li>
+<li><b>கணவர் மறைவு:</b> கணவர் மறைந்த முதல் ஒன்பது நாட்களும் அவள் ஸுமங்கலியாகவே கருதப்படுகிறாள்; 10 நாள் ஆசௌசம் காக்கிறாள்.</li>
+<li><b>மகன் / மகளுடன் வசிக்கும்போது:</b> மகனுடன் இருந்தால் கணவர் பக்கத் தீட்டு மகனுக்கும் அவளுக்கும் ஒன்றே (இருவரும் ஒரே கோத்ரம்). கல்யாணமான மகளுடன் இருந்தால், அவள் 10 நாள் காப்பாள்; மகள் (இப்போது தன் கணவர் கோத்ரம்) தன் தந்தையின் சித்தப்பா, ஒன்றுவிட்ட உறவுகளுக்குப் பக்ஷிணீ மட்டும் காப்பாள்.</li>
+<li><b>தீட்டு காலத்தில்:</b> கோவில், பண்டிகை, சமையலறை / பூஜை அறை விலகல் — மற்றவர்களுக்குப் போலவே. குடும்ப வழக்கப்படி ஸ்ரீசூர்ணம் இல்லாமல் வெள்ளைத் திருமண் மட்டும்; கடைசி நாள் காலையில் தலைக்குக் குளித்து சுத்தி.</li>
+</ul>
+<p class="doc-note">வடகலை, தென்கலை வழக்கங்களுக்கும், ஒவ்வொரு ஆசார்ய பரம்பரைக்கும் இடையே சிறு வேறுபாடுகள் இருக்கலாம். சிக்கலான நிலைகளில் உங்கள் குடும்ப வாத்தியாரிடம் கேட்டுக்கொள்ளவும்.</p>
+</template>
+<template id="doc_en"><h3>Sūtakam and Āśaucam explained</h3>
+<p>Those who descend from one common male ancestor, up to seven generations, are called dayadhis (pangalis). They are also called sapiṇḍas. The theetu among them caused by a birth is called sūtakam. The theetu caused by a death is called āśaucam. During sūtakam and āśaucam, apart from bathing and sandhyāvandanam, nothing may be done: no pañcākṣarī, sūrya namaskāram, aupāsanam, brahmayajñam, worship of the deity, giving gifts, receiving gifts, and so on.</p>
+<p>Because they are related by blood, a theetu that arises for one is shared by all the others. On the mother's side and on the father's sister's side there are also some theetus at a death. The dharma śāstras speak about this in detail. Because of differences in sampradāyam there may be small variations in one or two places; this is natural. Learn it by asking elders who know the śāstra.</p>
+<p>These days some people live far away for their livelihood, so they do not hear about a theetu and do not observe it. There is no fault if a sūtakam is not known in this way. A death theetu, however, continues for some time. If the news of such a death reaches you when a father's or mother's śrāddham falls due, you must first keep the āśaucam for the days it calls for, and only then perform the śrāddham. Otherwise the śrāddham is wasted.</p>
+
+<h3>Sūtakam (birth)</h3>
+<p>When a son is born to one of the jñātis, all the dayadhis (pangalis) keep ten days of theetu. If a śrāddham falls due in that time, it is done on the eleventh day, after the theetu has gone. When a girl is born, the jñātis have no theetu. Even for a girl, the following alone keep 10 days:</p>
+<ol>
+<li>The baby's brothers.</li>
+<li>Brothers born of the father's elder or younger wife.</li>
+<li>The wives of those brothers.</li>
+<li>The father, and the father's younger and elder brothers.</li>
+<li>The father's half-brothers (elder and younger), and the son of the father's elder brother.</li>
+<li>The grandfather (pitāmaha).</li>
+<li>The grandfather's brothers.</li>
+<li>The grandfather's half-brothers.</li>
+<li>The wives of all these: all of them keep 10 days.</li>
+</ol>
+<p>The parents of the woman who gave birth keep three days. Whether a woman gives birth in her parents' house or at her parents' expense, the parents keep three days.</p>
+
+<h3>One day of theetu at a birth</h3>
+<p>If a woman gives birth in the house of a relative such as her brother, her father's younger or elder brother, or her mother's brother, or anywhere else at their expense, they keep one day.</p>
+<p>A brahmachari (and a boy before upanayanam) and unmarried girls have no theetu at all.</p>
+<p>No one needs to keep a birth theetu after ten days.</p>
+<p>The mother keeps thirty days for a boy and forty days for a girl. After those days she wears a new mangalya thread and takes panchagavyam; only then is she fit to touch vessels and other people. This is called bhāṇḍa sparśam.</p>
+<p>A woman in her monthly period stays apart, outside the house. On the fourth day, after saṅgava kālam (after about 8.30 in the morning), she must bathe in a tank, immersing twenty-three times in one breath. A bath before sunrise or just after sunrise does not remove the theetu. If for practical reasons she bathes early in the morning, she becomes pure only by bathing once more that day after half past eight. A little theetu remains on the fourth day too, so she must not take part in rites for the gods or the ancestors. Only after the bath on the fifth day is she fit for all rites. Pañcākṣarī, sūrya namaskāram and the like are also resumed from the fifth day.</p>
+
+<h3>Ten days of āśaucam (death)</h3>
+<p>When a jñāti dies, everyone within seven generations keeps ten days of theetu. They are called sapiṇḍas. When a boy dies after the first ten days, and likewise when a girl dies before her marriage, only the following keep ten days:</p>
+<ol>
+<li>The father of the deceased</li>
+<li>The mother of the deceased</li>
+<li>The brothers of the deceased</li>
+<li>The half-brothers of the deceased</li>
+</ol>
+<p>If a dāyādi's son who had his upanayanam before age seven dies, everyone keeps ten days. If a boy dies from age seven onward, with or without upanayanam, the jñātis keep ten days.</p>
+
+<h3>Men who keep three days</h3>
+<ol>
+<li>Mātāmaha: the mother's father.</li>
+<li>Mātāmahī: the mother's mother.</li>
+<li>Mātula: the maternal uncle (māmā).</li>
+<li>Mātulānī: the māmā's wife.</li>
+<li>The father-in-law.</li>
+<li>The mother-in-law.</li>
+<li>The mother's sisters: chithi, periyammā.</li>
+<li>The father's sisters: the athais.</li>
+<li>The sister's son with upanayanam (marumān).</li>
+<li>The daughter's son with upanayanam (dauhitra).</li>
+<li>Dayadhis (pangalis) beyond seven generations.</li>
+<li>A married daughter.</li>
+<li>A married sister.</li>
+<li>Jananī: for a man adopted into another gotram, the mother who bore him in his former gotram.</li>
+<li>Janaka pitā: the adopted man's father in his former gotram.</li>
+<li>Dattaputra: one's son adopted into another gotram.</li>
+<li>A dāyādi's daughter from age seven until her marriage (otherwise a ten-day relation).</li>
+<li>Jñātis' sons from the 25th month to six years without the sacred thread.</li>
+<li>A son of jñātis beyond seven generations, whether or not he had his upanayanam, even if it was done before age seven: three days.</li>
+</ol>
+
+<h3>Three days kept by women alone</h3>
+<p>At marriage a woman enters her husband's gotram. For births and deaths among her husband's jñātis she keeps theetu exactly as her husband does, ten days or three days. The theetu of the jñātis of the gotram she was born in does not apply to her. Even so, for the following close blood relations she keeps three days. A theetu that arises for the husband comes naturally to the wife; a theetu that arises for the wife alone does not apply to the husband.</p>
+<ol>
+<li>Her own brother with upanayanam.</li>
+<li>Her brother's son with upanayanam.</li>
+<li>Her sister's son with upanayanam.</li>
+<li>Her sapatnī mātā, that is, her mother's co-wife (elder or younger): on their death women alone keep three days.</li>
+</ol>
+
+<h3>Pakṣiṇī (1½ days) for men</h3>
+<p>Pakṣiṇī means one and a half days: a period of two nights and one day, or two days and one night. The pakṣiṇī theetu ends at night only if one has not eaten during the day. If one has eaten during the day, it ends only the next morning.</p>
+<ol>
+<li>The athai's sons and daughters.</li>
+<li>The māmā's sons and daughters.</li>
+<li>The daughters and sons of the mother's sisters (chithi, periyammā).</li>
+<li>One's sister's daughter.</li>
+<li>One's brother's married daughter.</li>
+<li>The daughter of one's father's younger or elder brother.</li>
+<li>One's son's daughter (pautrī).</li>
+<li>One's daughter's daughter (dauhitrī).</li>
+<li>A daughter's son without upanayanam.</li>
+<li>A sister's son without upanayanam.</li>
+</ol>
+
+<h3>Pakṣiṇī (1½ days) for women</h3>
+<ol>
+<li>The father's own brothers (periyappā, chithappā).</li>
+<li>The mother's own sisters (chithi, periyammā).</li>
+<li>The māmā.</li>
+<li>The athai.</li>
+<li>The daughters and sons of these four.</li>
+<li>The father's father (pitāmaha).</li>
+<li>The father's mother (pitāmahī).</li>
+<li>The mother's father (mātāmaha).</li>
+<li>The mother's mother (mātāmahī).</li>
+<li>One's own sister.</li>
+<li>One's sister's daughter.</li>
+<li>One's brother's daughter (marumāḷ). On the death of these, women keep pakṣiṇī, one and a half days.</li>
+</ol>
+
+<h3>One day for men</h3>
+<ol>
+<li>The step-mother's brother, sister and daughter.</li>
+<li>The daughters and sons of those three.</li>
+<li>One's wife's brothers (maittunar).</li>
+<li>The daughter of one's mother's co-wife; the daughter of the father's half-brothers.</li>
+<li>The step-mother's mother and father.</li>
+<li>A jñāti's daughter who dies unmarried between two and six years of age.</li>
+<li>For a man who was adopted, his brothers in his former gotram.</li>
+<li>When one's wife has also died and left no children, the death of her father and mother (father-in-law, mother-in-law): one day.</li>
+<li>A dayadhi's (pangali) son between six months and two years whose chaulam has not been done: one day.</li>
+</ol>
+
+<h3>One day for women alone</h3>
+<ol>
+<li>Sapatnī mātā: the mother's co-wife, elder or younger.</li>
+<li>The sapatnī's daughter, sister and brother.</li>
+<li>The children of the sapatnī mātā's son.</li>
+<li>The children of the sapatnī's daughter.</li>
+<li>The children of the sapatnī's sister.</li>
+</ol>
+<p>Among these, theetu applies only for married women and for boys with upanayanam.</p>
+
+<h3>When two birth theetus overlap</h3>
+<ol>
+<li>While a ten-day theetu is being kept, if another ten-day theetu arises (on the 4th day or any other day), the second one ends on the same day the first one ends. This is for the jñātis only; they need not keep it until the second would have ended. The parents keep their 10 days.</li>
+<li>While a three-day theetu is being kept, if another three-day theetu arises, it ends with the first.</li>
+<li>While a three-day theetu is being kept, if a ten-day theetu arises, the ten-day theetu does not end when the three-day one ends. The longer period must be kept.</li>
+<li>While a ten-day theetu is being kept, if a three-day theetu arises, one becomes pure only when the ten-day theetu ends. The ten-day theetu does not end on the day the three-day one ends.</li>
+<li>While a ten-day or three-day theetu is being kept, if a child is born to someone, the parents keep ten days.</li>
+<li>While a ten-day theetu is being kept, if another ten-day theetu arises on the night of the tenth day, three more days must be kept for it.</li>
+<li>When a child has been born to someone and they are keeping ten days, if another birth theetu arises at any time on the tenth day, the theetu still ends on the eleventh day. These parents need not keep the extra three days mentioned above.</li>
+<li>While a ten-day theetu is being kept, if a birth had already taken place in a jñāti's house before this theetu began, also a ten-day theetu, and we learn of it four or five days later, the new theetu ends together with the old one.</li>
+<li>If twins are born on the same day, the theetu is as stated above; nothing special. If twins are born with one child on one day and the other on the next day, the dayadhis (pangalis) and the father become free on the eleventh day from the first child's birth. The father shaves on the tenth day and completes dīkṣā nivṛtti. For the mother alone, the theetu ends on the eleventh day from the second child's birth, that is, on the twelfth day.</li>
+</ol>
+
+<h3>Death theetu and birth theetu together</h3>
+<ol>
+<li>The theetu from a death is the strongest of all. If a death theetu arises during a birth theetu, the death theetu does not end with the birth theetu.</li>
+<li>If a birth theetu arises while a death theetu is being kept, it ends together with the death āśaucam.</li>
+<li>But if, while someone is keeping theetu for a child's birth, the death of a jñāti's mother or father arises, for them alone that death theetu ends with the birth theetu. This is a special point.</li>
+<li>While parents are keeping theetu for a newborn, if that child dies within ten days, there is no separate theetu for that death. Both end on the tenth day after birth; if the death is on the 10th day, 2 days more.</li>
+<li>If the child dies in the last part of the night of the tenth day, the parents keep three days more.</li>
+<li>The jñātis do not keep these extra three days.</li>
+<li>While theetu for a dayadhi's (pangali) death is being kept, if a woman gives birth, for the jñātis the birth theetu ends with that death āśaucam.</li>
+<li>For the parents alone, the birth theetu ends only on the eleventh day.</li>
+<li>If, while someone is keeping āśaucam for the death of their mother or father, a child is born to them, the birth theetu ends when the parents' death āśaucam ends.</li>
+<li>But for the mother who gave birth, the birth theetu ends only on the eleventh day.</li>
+<li>Whether the two theetus are equal (ten days each) or one is a little shorter, the birth āśaucam ends with the death āśaucam.</li>
+<li>For a jñāti keeping birth āśaucam, if that child dies within ten days, there is no extra theetu for the death. It ends with the birth theetu.</li>
+</ol>
+
+<h3>One death āśaucam within another</h3>
+<ol>
+<li>If another ten-day theetu arises during a ten-day theetu, the later one ends with the earlier one.</li>
+<li>If a ten-day theetu arises during a three-day theetu, the three-day theetu also ends only at the end of the ten-day theetu. And if a three-day theetu arises while a ten-day theetu is being kept, it too ends only at the end of the ten-day theetu.</li>
+<li>During a jñāti āśaucam, if one's mother or father dies (for the sons), one's wife dies (for the husband), one's husband dies (for the wife), or one's son or daughter dies (for the parents), ten days of āśaucam are kept from the day of that death. It does not end with the jñāti āśaucam.</li>
+<li>If another ten-day theetu arises on the night of the tenth day of a ten-day theetu, 2 extra days are kept; if it arises in the 4th yāmam of that night or at aruṇodayam (dawn), 3 extra days.</li>
+<li>If a three-day theetu arises at any time during a ten-day theetu, there is no extra āśaucam for it.</li>
+<li>If the mother dies within ten days of the father's death, a pakṣiṇī is kept beyond the father's theetu. If the father dies during the mother's ten days, ten days are kept from the day of the father's death.</li>
+<li>If the mother dies at any time on the tenth day after the father's death, nothing more than pakṣiṇī is kept for it.</li>
+<li>If one's wife, son or daughter dies within ten days of one's mother's or father's death, the later āśaucam ends with the earlier one. If the death is on the tenth day, 2 or 3 extra days are kept, as said above.</li>
+<li>If another jñāti dies on the tenth day after the death of one's mother, father, wife, husband, son or daughter, the later theetu ends with the earlier one.</li>
+<li>If, while keeping a ten-day āśaucam, one has to cremate another person, ten days of āśaucam are kept from the day of cremation. If one has to cremate yet another, the later one ends with the earlier.</li>
+<li>While a death theetu is being kept, if news comes of another person who died before this theetu began, the theetu already being kept also ends at the end of the later-heard one.</li>
+</ol>
+
+<h3>Atikrāntāśaucam <small>(theetu learned of after its days are over)</small></h3>
+<ol>
+<li>If a ten-day āśaucam is heard of after the ten days but within three months: three days. Within six months: pakṣiṇī. Within a year: one day. After that: only a bath, no theetu.</li>
+<li>If a three-day āśaucam is heard of after three days but within ten days: one day. After ten days: only a bath.</li>
+<li>If a pakṣiṇī theetu is heard of after the pakṣiṇī but within ten days: one period. That is, heard during the day, theetu for that day only; heard at night, for that night only. After that: only a bath.</li>
+<li>For the three days stated for a jñāti's son who dies between the 25th month and the end of the sixth year without the sacred thread, there is no atikrāntāśaucam.</li>
+<li>There is no atikrāntāśaucam for a one-day theetu.</li>
+<li>For the death of the mother or father, the eldest son, and for the death of the husband, the wife, keep ten days whenever they hear of it.</li>
+<li>If the step-mother's death is heard of after a year: three days. Within a year: ten days.</li>
+<li>The rites for the parents are performed by the eldest son. The second and younger sons who hear of it after a year keep three days.</li>
+<li>Whether or not the rites have been done, the eldest son, whenever he hears of his parents' death, must keep ten days from that day and perform everything including sapiṇḍīkaraṇam.</li>
+<li>For a brother's death, if the rites have been done: heard within six months, three days; after that, pakṣiṇī. If the rites have not been done, the brother who performs them always keeps ten days. The other brothers keep ten days if they hear within six months, and three days if within a year.</li>
+<li>If a ten-day theetu is heard of on the night of the tenth day, or a three-day theetu on the night of the third day, the theetu continues the next day too, for performing tarpaṇam.</li>
+<li>While atikrāntāśaucam is being kept, one's belongings carry no theetu.</li>
+<li>If birth and death theetus combine during atikrāntāśaucam, treat the atikrāntāśaucam as an ordinary theetu and follow whatever applies when ordinary theetus combine.</li>
+</ol>
+
+<h3>Those who have no āśaucam</h3>
+<p>A boy before upanayanam and a brahmachari: if one of them performs the funeral rites, they have no theetu other than what arises for that period.</p>
+
+<h3>Some general points</h3>
+<ol>
+<li>If a person without theetu knowingly eats in the house of someone who has theetu, he must keep theetu for the whole of that day. It ends only the next day.</li>
+<li>On the day the theetu ends, the bath should be taken only after saṅgava kālam, at about half past eight.</li>
+<li>If a birth, a death or a monthly period occurs more than 11¼ nāḻigai before sunrise, it is counted from the previous day; otherwise from that day. Some count from aruṇodayam (dawn).</li>
+<li>If one follows a funeral procession, or has a shave, one must bathe twice.</li>
+<li>If sanyasis hear that their parents from their former āśramam have died, they must bathe at once. For anyone else, not even a bath.</li>
+<li>Another rule: while a body lies within eighty-eight feet, homam, cooking and eating must not be done.</li>
+<li>If a sanyasi dies and his body is there, the village has no theetu.</li>
+<li>If the body of a person of the fourth varṇam lies in the village, only the house where it lies is affected.</li>
+</ol>
+<p class="doc-note"><b>Note — an important word:</b> This is published following the Vaidyanātha Dīkṣitīyam and the summary of the dharma śāstra written by Sri Muthuswamy Iyer. Some of it may be practised differently. Learned scholars are asked to forgive any errors and correct them.</p>
+<p>On the day after the theetu ends, the sacred thread (yajñopavītam) must be changed.</p>
+
+<h2 class="doc-part">Sri Vaishnava (Iyengar) practice — further details</h2>
+
+<h3>A death in a married woman's birth family</h3>
+<p>A married woman belongs to her husband's gotram. A theetu in her birth family does not pass to her husband on its own; he keeps theetu only for the relations named below.</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>Who died (wife's side)</th><th>For the wife</th><th>For the husband</th></tr>
+<tr><td>Wife's father or mother</td><td>3 days</td><td>3 days</td></tr>
+<tr><td>Her brother (upanayanam done)</td><td>3 days</td><td>1 day</td></tr>
+<tr><td>Her married sister</td><td>Pakṣiṇī (1½ days)</td><td>Bath only</td></tr>
+<tr><td>Her periyappā / chithappā</td><td>Pakṣiṇī</td><td>None (only if he attended the funeral)</td></tr>
+<tr><td>Her māmā</td><td>Pakṣiṇī</td><td>None</td></tr>
+<tr><td>Her athai / chithi</td><td>Pakṣiṇī</td><td>None</td></tr>
+<tr><td>Her grandparents (either side)</td><td>Pakṣiṇī</td><td>None</td></tr>
+<tr><td>Her brother's son (upanayanam done)</td><td>3 days</td><td>None</td></tr>
+<tr><td>Her sister's son (upanayanam done)</td><td>3 days</td><td>None</td></tr>
+</table></div>
+<ul>
+<li><b>Which way theetu flows:</b> when the husband has theetu from his side, the wife keeps the same days. When a death is on the wife's side, the husband keeps theetu only for the relations above.</li>
+<li><b>During theetu:</b> daily Thiruvaradhanam stops; no temple visits; only white Thiruman, without Srichurnam. Men continue Sandhyavandanam, without loud Vedic mantras or Prabandhams.</li>
+<li><b>At home:</b> when only the wife has theetu (for her māmā or athai, say) and the husband does not, he can continue Thiruvaradhanam and cooking as long as she keeps away from the kitchen and the puja room until her purifying bath.</li>
+</ul>
+
+<h3>A widow</h3>
+<p>At marriage a woman joins her husband's gotram permanently. After her husband's death she remains in his lineage and does not return to the gotram she was born in. Her theetu days are therefore those of a married woman.</p>
+<p><b>Deaths in her birth family:</b> father or mother — 3 days; brother with upanayanam — 3 days; married sister, periyappā / chithappā, māmā, athai / chithi, grandparents — pakṣiṇī; brother's or sister's son with upanayanam — 3 days.</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>Who died (husband's side)</th><th>For the widow</th></tr>
+<tr><td>Father-in-law / mother-in-law</td><td>10 days</td></tr>
+<tr><td>Husband's brother</td><td>10 days</td></tr>
+<tr><td>Husband's brother's wife</td><td>10 days</td></tr>
+<tr><td>Husband's brother's son (upanayanam done)</td><td>10 days</td></tr>
+<tr><td>Husband's periyappā / chithappā</td><td>10 days</td></tr>
+<tr><td>Husband's dayadhis (pangalis) within 7 generations</td><td>10 days</td></tr>
+<tr><td>Husband's married sister</td><td>3 days</td></tr>
+<tr><td>Husband's sister's husband</td><td>Pakṣiṇī, or by family custom a bath only</td></tr>
+<tr><td>Husband's māmā</td><td>Pakṣiṇī</td></tr>
+<tr><td>Married daughter</td><td>3 days</td></tr>
+<tr><td>Son-in-law</td><td>3 days</td></tr>
+</table></div>
+<ul>
+<li><b>The dayadhi (pangali) line:</b> the death of any man, unmarried girl, or wife of a man within seven generations of her husband's paternal line means ten days for her. Beyond seven generations, three days.</li>
+<li><b>At her husband's death:</b> for the first nine days she is still regarded as a sumangali, and she keeps the ten days of āśaucam.</li>
+<li><b>Living with a son or daughter:</b> living with her son, her theetu for her husband's side is the same as his, since they share one gotram. Living with a married daughter, she keeps ten days while the daughter, now of her own husband's gotram, keeps only pakṣiṇī for her father's uncles and cousins.</li>
+<li><b>During theetu:</b> temples, festivals, keeping away from the kitchen and puja room — the same as for others. By family custom, white Thiruman only, without Srichurnam; purification by a head bath on the last morning.</li>
+</ul>
+<p class="doc-note">There can be small differences between Vadakalai and Thenkalai practice, and between acharya lineages. In complicated cases, ask your family vadhyar.</p>
+</template>
+
+<script src="js/theetu.js?v=1"></script>
+</body>
+</html>
