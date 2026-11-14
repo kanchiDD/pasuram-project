@@ -140,6 +140,27 @@
     "</a>";
   }
 
+  // Alphabetical inside a group, in the reader's own script. The leading
+  // Sri and the small voicing digits (கோ₃விந்த₃) are set aside so they do
+  // not decide the order. Long works read part by part (the Ramayanam
+  // kandas, Narayaneeyam) keep the order the server gives and stand first.
+  var LOCALE = { ta: "ta", deva: "hi", te: "te", kn: "kn", ml: "ml", bn: "bn", gu: "gu", iast: "en" };
+  var SRI = /^\s*(ஸ்ரீ|श्री|శ్రీ|ಶ್ರೀ|ശ്രീ|শ্রী|શ્રી|śrī|sri|shri)\s*/i;
+  function sortKey(s) {
+    return String(s.title || s.name_en || "")
+      .replace(/[\u2070-\u209F\u00B2\u00B3\u00B9]/g, "")
+      .replace(SRI, "").trim();
+  }
+  function sortItems(arr) {
+    var coll = null;
+    try { coll = new Intl.Collator(LOCALE[getScript()] || "en", { sensitivity: "base" }); } catch (e) {}
+    arr.sort(function (a, b) {
+      if (a.by_part || b.by_part) return a.by_part && b.by_part ? 0 : (a.by_part ? -1 : 1);
+      var x = sortKey(a), y = sortKey(b);
+      return coll ? coll.compare(x, y) : (x < y ? -1 : x > y ? 1 : 0);
+    });
+  }
+
   // A stotra with sub_group_id (e.g. Desika Stotras inside Acharya Srisuktis)
   // goes into a tap-to-open box of its own, below the group's plain items.
   function renderIndex(rows) {
@@ -165,6 +186,10 @@
       }
     });
     groups.sort(function (a, b) { return a.order - b.order; });
+    groups.forEach(function (g) {
+      sortItems(g.items);
+      g.subs.forEach(function (sg) { sortItems(sg.items); });
+    });
 
     var html = '<p class="sth-intro">' + rows.length + " stotras. Tap a group, then a stotra.</p>";
     groups.forEach(function (g) {
