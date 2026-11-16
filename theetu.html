@@ -82,10 +82,22 @@
     #thRoot .doc li { margin: 2px 0; }
     #thRoot .doc .doc-note { background: #FFF8E8; border-radius: 6px; padding: 7px 10px; font-size: 12.5px !important; }
     #thRoot .doc table { margin: 6px 0; }
+    #thRoot .qa-body, #thRoot .qa-body p, #thRoot .qa-body li { font-size: 13.5px !important; line-height: 1.7; }
+    #thRoot .qa-body h3 { font-size: 13px !important; color: #6a4200; background: #F5E6C8; margin: 14px -4px 4px; padding: 5px 8px; border-radius: 5px; }
+    #thRoot .qa-body .qa-lead { margin: 2px 0 6px; color: #5a4a30; }
+    #thRoot .qa-body details.qa { margin: 6px 0 0; border: 1px solid #F0E0B8; border-radius: 7px; background: #fff; }
+    #thRoot .qa-body details.qa > summary { font-size: 13.5px !important; font-weight: 600; color: #3B2410; padding: 8px 10px; line-height: 1.5; }
+    #thRoot .qa-body details.qa[open] > summary { color: #7B3F00; border-bottom: 1px dashed #F0E0B8; }
+    #thRoot .qa-body details.qa > div { padding: 4px 10px 8px; }
+    #thRoot .qa-body p { margin: 6px 0; }
+    #thRoot .qa-body ul { margin: 4px 0; padding-left: 20px; }
+    #thRoot .qa-body li { margin: 3px 0; }
+    #thRoot .qa-body .qa-note { background: #FFF8E8; border-radius: 6px; padding: 7px 10px; font-size: 12.5px !important; margin-top: 10px; }
+    #thRoot .qa-body table { max-width: 340px; }
     #thRoot button:focus-visible, #thRoot summary:focus-visible { outline: 2px solid #C9A84C; outline-offset: 2px; }
     @media (min-width: 700px) {
       #thRoot h1 { font-size: 21px !important; } #thRoot .days { font-size: 26px !important; }
-      #thRoot .lab, #thRoot .pick-btn, #thRoot .seg button, #thRoot .doc, #thRoot .doc p, #thRoot .doc li { font-size: 14.5px !important; }
+      #thRoot .lab, #thRoot .pick-btn, #thRoot .seg button, #thRoot .doc, #thRoot .doc p, #thRoot .doc li, #thRoot .qa-body, #thRoot .qa-body p, #thRoot .qa-body li, #thRoot .qa-body details.qa > summary { font-size: 14.5px !important; }
     }
   </style>
 </head>
@@ -115,6 +127,7 @@
   <div class="result" id="res" hidden></div>
 
   <details id="tblBox"><summary id="t_tbl"></summary><div class="dbody tbl"><table id="tbl"></table></div></details>
+  <details id="qaBox"><summary id="t_qa"></summary><div class="dbody qa-body" id="qa"></div></details>
   <details id="docBox"><summary id="t_doc"></summary><div class="dbody doc" id="doc"></div></details>
 </div>
 </div>
@@ -617,7 +630,225 @@
 </ul>
 <p class="doc-note">There can be small differences between Vadakalai and Thenkalai practice, and between acharya lineages. In complicated cases, ask your family vadhyar.</p>
 </template>
+<template id="qa_ta"><p class="qa-lead">துக்கம் விசாரிக்கச் செல்லும்போதும், திரும்பி வந்த பின்பும், ஆசார்யன் பரமபதித்தாலும் பொதுவாக அனுசரிக்கப்படுபவை. குடும்ப வழக்கம், ஸம்ப்ரதாயம், மடம் / திருமாளிகைக்கேற்ப இவை சற்று மாறுபடலாம்.</p>
 
-<script src="js/theetu.js?v=2"></script>
+<h3>துக்கம் விசாரிக்கச் செல்லுதல்</h3>
+
+<details class="qa"><summary>எந்த நாட்களில் துக்கம் விசாரிக்கச் செல்லலாம்?</summary><div>
+<ul>
+<li><b>முதல் நாள்:</b> உடல் வீட்டில் இருக்கும் வரை எந்த நேரத்திலும் செல்லலாம். உடலை எடுத்துச் சென்ற பின் அன்று மீண்டும் அந்த வீட்டுக்குச் செல்வதில்லை.</li>
+<li><b>2 முதல் 10-ஆம் நாள் வரை:</b> இதுவே ஏற்ற காலம். இறந்த நாளிலிருந்து இரட்டைப்படை நாட்கள் (2, 4, 6, 8) நல்லது. 9-ஆம் நாள் பொதுவாகத் தவிர்க்கப்படுகிறது.</li>
+<li><b>10-ஆம் நாள்:</b> கிழமைக் கட்டுப்பாடு இல்லை; உறவினரும் நண்பர்களும் செல்லலாம்.</li>
+<li><b>11, 12-ஆம் நாட்கள்:</b> ஸபிண்டீகரணம், ச்ராத்தம் நடப்பதால் செல்வதில்லை. <b>13-ஆம் நாள் (சுபம்)</b> நெருங்கிய குடும்பத்தினருக்கும் உதவியவர்களுக்கும் மட்டுமே.</li>
+<li>10 நாட்களுக்குள் செல்ல முடியாவிட்டால், 13-ஆம் நாள் சடங்கு முடிந்த பின் செல்லலாம்; அல்லது தொலைபேசியில் விசாரிக்கலாம்.</li>
+</ul></div></details>
+
+<details class="qa"><summary>எந்தக் கிழமைகளில் செல்லலாம்?</summary><div>
+<p>ஞாயிறு, புதன், வியாழன் ஏற்றவை. செவ்வாய், வெள்ளி, சனி தவிர்க்கப்படுகின்றன; பல வீடுகளில் திங்களும் தவிர்க்கப்படுகிறது. முதல் நாளுக்கும் (உடல் வீட்டில் இருக்கும்போது) 10-ஆம் நாளுக்கும் கிழமைக் கட்டுப்பாடு இல்லை.</p>
+</div></details>
+
+<details class="qa"><summary>எந்த நேரத்தில் செல்லலாம்?</summary><div>
+<p>காலை 11 முதல் மதியம் 1 மணி வரை, அல்லது மாலை 4:30 முதல் 6:30 வரை. காலை சுமார் 10:30-க்கு முன் (குடும்பத்தினர் வாத்தியாருடன் தர்ப்பணம், வாஸோதகம் செய்யும் நேரம்) மற்றும் இரவு உணவுக்குப் பின் செல்வதில்லை. குளிகை நேரத்தையும் தவிர்க்கவும்.</p>
+</div></details>
+
+<details class="qa"><summary>குளிகை நேரம் ஏன் தவிர்க்கப்படுகிறது? அது எப்போது?</summary><div>
+<p>குளிகையில் செய்யும் செயல் மீண்டும் நிகழும் என்பது நம்பிக்கை. ஆகவே துக்கம் விசாரித்தல், உடலை எடுத்தல், ஈமக்கிரியைகள் குளிகையில் செய்வதில்லை. (பொன் வாங்குதல், கடன் திருப்பித் தருதல் போன்றவை குளிகையில் செய்யப்படுகின்றன.)</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>கிழமை</th><th>குளிகை</th></tr>
+<tr><td>ஞாயிறு</td><td>மாலை 3:00 – 4:30</td></tr>
+<tr><td>திங்கள்</td><td>மதியம் 1:30 – 3:00</td></tr>
+<tr><td>செவ்வாய்</td><td>மதியம் 12:00 – 1:30</td></tr>
+<tr><td>புதன்</td><td>காலை 10:30 – 12:00</td></tr>
+<tr><td>வியாழன்</td><td>காலை 9:00 – 10:30</td></tr>
+<tr><td>வெள்ளி</td><td>காலை 7:30 – 9:00</td></tr>
+<tr><td>சனி</td><td>காலை 6:00 – 7:30</td></tr>
+</table></div>
+<p class="qa-note">இவை சூரியோதயம் காலை 6 மணி என்று கொண்ட நேரங்கள். உங்கள் ஊரின் சூரியோதயத்தைப் பொறுத்துச் சில நிமிடங்கள் மாறும்; பஞ்சாங்கத்தில் பார்த்துக்கொள்ளவும்.</p>
+</div></details>
+
+<details class="qa"><summary>செல்லும் முன் என்ன கவனிக்க வேண்டும்?</summary><div>
+<ul>
+<li>வெறும் வயிற்றுடன் செல்வதில்லை; சிறிது உண்டு செல்லவும்.</li>
+<li>எளிய உடை. பளிச்சென்ற நிறம், கனமான நகை, தலையில் பூ தவிர்க்கவும்.</li>
+<li>ஸுமங்கலிகள், குறிப்பாக இறந்தவரின் மனைவி இருந்தால், புடவைத் தலைப்பில் ஒரு சிறு விரலி மஞ்சள் துண்டு முடிந்துகொண்டு செல்வது வழக்கம்.</li>
+<li>மாதவிடாய் காலத்திலும் கர்ப்பமாக இருக்கும்போதும் பெண்கள் துக்க வீட்டுக்குச் செல்வதில்லை.</li>
+</ul></div></details>
+
+<details class="qa"><summary>துக்க வீட்டில் எப்படி நடந்துகொள்ள வேண்டும்?</summary><div>
+<p>அமைதியாக ஆறுதல் கூறி, இறந்தவருக்கு மரியாதை செலுத்தவும். அந்த வீடு தீட்டில் இருப்பதால் அங்கே உணவோ தண்ணீரோ ஏற்பதில்லை.</p>
+</div></details>
+
+<h3>ஈமக்கிரியைக்குச் செல்லுதல்</h3>
+
+<details class="qa"><summary>மயானத்துக்கு யார் செல்வார்கள்?</summary><div>
+<p>வழக்கப்படி ஆண்கள் மட்டுமே இறுதி ஊர்வலத்துடன் மயானம் செல்வார்கள். பெண்கள் துக்க வீட்டிலேயே இருந்து அந்த வீட்டுப் பெண்களுக்கு ஆறுதலாகவும் உதவியாகவும் இருப்பார்கள். நகரங்களில் மின் மயானங்களுக்குச் சில பெண்கள் செல்வதுண்டு; ஆசாரமான குடும்பங்களில் இன்றும் ஆண்கள் மட்டுமே.</p>
+</div></details>
+
+<details class="qa"><summary>மயானத்தில் என்ன கவனிக்க வேண்டும்?</summary><div>
+<p>எளிய வேஷ்டி, அங்கவஸ்த்ரம்; தோல் பொருட்களைத் தவிர்க்கவும். அமைதியும் மரியாதையும் காக்கவும். கபால மோக்ஷம் வரை, அல்லது மின் மயானக் கதவு மூடி, கர்த்தா விடை தரும் வரை இருக்கவும்.</p>
+</div></details>
+
+<h3>வீடு திரும்பியதும்</h3>
+
+<details class="qa"><summary>வீட்டுக்கு வந்ததும் என்ன செய்ய வேண்டும்?</summary><div>
+<ul>
+<li><b>முதலில், வீட்டுக்குள் நுழையும் முன் வாசலுக்கு வெளியிலேயே கால்களை நன்றாக முழுதும் தண்ணீரால் அலம்ப வேண்டும்.</b> இது கட்டாயம்; அதன் பின்பே மற்றவை.</li>
+<li>குளிக்கும் முன் சமையலறை, பெருமாள் ஸந்நிதி எதற்குள்ளும் செல்லவோ, யாரையும் எதையும் தொடவோ கூடாது. வாசல் கதவைத் திறந்து வைத்து, மாற்றுத் துணி எடுத்து வைக்கும்படி வீட்டில் சொல்லிவிடவும்.</li>
+<li>ஆண், பெண் இருவரும் உடனே தலைக்குக் குளிக்க வேண்டும். அணிந்திருந்த துணிகளைத் தனியாக நனைத்துத் துவைக்கவும்; மடி வஸ்த்ரம் உடுத்தவும்.</li>
+<li>பெண்கள் புடவைத் தலைப்பில் முடிந்து சென்ற மஞ்சளை எடுத்துவிடவும்.</li>
+<li>ப்ரேதத்தின் பின் (ஊர்வலத்தில்) சென்றால் இருமுறை ஸ்நானம் செய்ய வேண்டும் என்று புத்தகம் சொல்கிறது (முழு விளக்கம் — சில பொதுவானவை).</li>
+</ul></div></details>
+
+<details class="qa"><summary>ஆண்கள் கூடுதலாக என்ன செய்ய வேண்டும்?</summary><div>
+<ul>
+<li>குளித்த பின் புதிதாகத் திருமண், ஸ்ரீசூர்ணம் இட்டுக்கொள்ளவும். மாலை சூரியாஸ்தமனத்துக்குப் பின் என்றால் ஸ்ரீசூர்ணம் மட்டும், அல்லது மறுநாள் காலை ஸந்த்யாவந்தனத்தின்போது முழுத் திருமண்.</li>
+<li>பகலில் மயானம் சென்றிருந்தால் ஆசமனம் செய்து, குடும்ப வழக்கப்படி காயத்ரீ (10 அல்லது 28 முறை) ஜபிக்கவும். பெருமாள் தீர்த்தம் / ஸ்ரீபாத தீர்த்தம் இருந்தால் ஏற்கவும்.</li>
+<li>குளித்து, மாற்றுத் துணி உடுத்தியதும் இந்தத் தொடுதீட்டு முழுவதும் நீங்கும். பின் வழக்கம்போல் உண்ணலாம்; திருவாராதனம், ஸந்த்யாவந்தனம் செய்யலாம்.</li>
+</ul></div></details>
+
+<details class="qa"><summary>பூணூல் மாற்ற வேண்டுமா?</summary><div>
+<p>நண்பர் / உறவில்லாதவர் வீட்டுக்குத் துக்கம் விசாரிக்கச் சென்றாலோ, மயானம் வரை சென்றாலோ பூணூல் மாற்ற வேண்டியதில்லை; பூணூலுடன் தலைக்குக் குளித்தாலே போதும்.</p>
+<p>மாற்ற வேண்டியவை: தனக்கு 10 நாள் தீட்டு இருந்தால் (தீட்டு முடிந்த மறுநாள் மாற்ற வேண்டும் என்று புத்தகம் சொல்கிறது); பாடையைச் சுமந்திருந்தால் அல்லது சிதையில் நேரடியாக ஈடுபட்டிருந்தால் — குளித்த பின் மாற்றுவது நல்லது என்று பெரியோர் சொல்வர். மற்றபடி பூணூல் அறுந்தாலோ நைந்தாலோ, உபாகர்மா, ச்ராத்தம், க்ரஹணம் போன்ற சமயங்களிலோ மாற்றுவது வழக்கம்.</p>
+</div></details>
+
+<h3>வழியில்</h3>
+
+<details class="qa"><summary>வழியில் சவ ஊர்வலத்தைப் பார்த்தாலோ, உடன் செல்பவர்கள் மீது பட்டாலோ?</summary><div>
+<ul>
+<li><b>பார்த்தது மட்டும்:</b> தீட்டு இல்லை; குளிக்க வேண்டியதில்லை. ஒதுங்கி வழிவிட்டு, மனதில் "நாராயண" / "கோவிந்த" என்று சொல்லவும். கோவிலுக்கோ ஸந்த்யாவந்தனத்துக்கோ செல்லும் முன் கை, கால், முகம் கழுவி ஆசமனம் செய்தால் போதும்.</li>
+<li><b>ஊர்வலத்தில் செல்பவர்கள், பாடை சுமப்பவர்கள் மீது தவறுதலாகப் பட்டால்:</b> வீட்டுக்கு வந்து குளித்து, அணிந்திருந்த துணியைத் துவைக்கப் போட்டபின் சமையலறை, ஸந்நிதிக்குச் செல்லவும். பூணூல் மாற்ற வேண்டியதில்லை.</li>
+<li><b>உடலையோ பாடையையோ தொட்டால்:</b> உடனே தலைக்குக் குளித்து, துணியைத் துவைத்து, குளித்த பின் காயத்ரீ ஜபிக்கவும்.</li>
+<li><b>மயானப் புகை மேலே பட்டால்:</b> வைதிக கர்மாக்களுக்கு முன் தலைக்குக் குளிப்பது ஆசாரமான வழக்கம்.</li>
+</ul></div></details>
+
+<h3>ஆசார்யன்</h3>
+
+<details class="qa"><summary>பஞ்சஸம்ஸ்காரம் (ஸமாச்ரயணம்) செய்து வைத்த ஆசார்யன் பரமபதித்தால் எத்தனை நாள் தீட்டு?</summary><div>
+<p><b>ஆசார்யன் ஸன்யாஸி (ஜீயர் / ஸ்வாமிகள்) என்றால் — தீட்டு இல்லை.</b> ஸன்யாஸி லௌகிக பந்தங்களைத் துறந்தவர்; சிஷ்யர்களுக்கோ மற்றவர்களுக்கோ மரணத் தீட்டு இல்லை. செய்தி கேட்டவுடன் மரியாதையுடன் ஸசேல ஸ்நானம் (உடுத்திய துணியுடன் குளித்தல்) செய்யவும். திருவாராதனம், ஸந்த்யாவந்தனம், தனியன், திவ்யப்ரபந்தம் எல்லாம் வழக்கம்போல் தொடரும்.</p>
+<p><b>ஆசார்யன் க்ருஹஸ்தர் என்றால் — 3 நாள்.</b> மந்த்ரோபதேசம் செய்த ஆசார்யனுக்கு, கோத்ரம் ஒன்றோ வேறோ, சிஷ்யர்கள் 3 நாள் தீட்டு காப்பர். சில ஸம்ப்ரதாயங்களில் இது பக்ஷிணீ (1½ நாள்), அல்லது சரம கைங்கர்யம் முடியும் வரை, பின் ஸ்நானம். 3 நாட்கள் கழிந்த பின் செய்தி வந்தால் ஸ்நானம் மட்டும்.</p>
+<p>தீட்டு நாட்களில்: திருவாராதனத்தைத் தீட்டில்லாத ஒருவரிடம் ஒப்படைக்கவும்; கோவிலுக்குச் செல்வதில்லை; வேதம், ப்ரபந்தம் உரக்கச் சொல்வதில்லை; சுப நிகழ்ச்சிகளில் கலந்துகொள்வதில்லை. ஸந்த்யாவந்தனம் தொடரும்.</p>
+</div></details>
+
+<details class="qa"><summary>ஆசார்யனின் திருவத்யயனம் அன்று என்ன செய்வது?</summary><div>
+<p>திருவத்யயனம் துக்க நாள் அல்ல; ஆசார்யன் பரமபதம் அடைந்ததைக் கொண்டாடும் நாள். திருநக்ஷத்ரம் போலவே அனுசரிக்கப்படுகிறது.</p>
+<ul>
+<li>விசேஷ திருவாராதனம். ஆசார்யன் தனியன், வாழித் திருநாமம், குருபரம்பரை, நாலாயிரம் அல்லது தேசிக ப்ரபந்தம் / ஸ்தோத்ரங்கள் ஸேவித்து, சாற்றுமுறையுடன் நிறைவு செய்யவும். ஆசார்யன் ஸ்ரீபாத தீர்த்தம் ஏற்கவும்.</li>
+<li>ததீயாராதனம்: ஸ்ரீவைஷ்ணவர்களை அழைத்துப் ப்ரஸாதம் அளித்து, தக்ஷிணை தரவும். ஆசார்யனின் மடம் / திருமாளிகை / ப்ருந்தாவனத்தில் நடக்கும் உத்ஸவத்துக்குச் ஸம்பாவனை அனுப்பலாம்.</li>
+<li>க்ருஹஸ்த ஆசார்யனுக்குத் திருவத்யயனம் நடத்தப் புத்ரர்கள் இல்லாவிட்டால், அந்தத் திதியில் ஒரு சிஷ்யர் ச்ராத்தம் போன்று அனுசரிக்கலாம். மடமோ குடும்பமோ திருவத்யயனத்தை நடத்தினால், சிஷ்யர்கள் தர்ப்பணமோ ச்ராத்தமோ செய்வதில்லை.</li>
+</ul></div></details>
+
+<p class="qa-note">வடகலை, தென்கலை வழக்கங்களிலும் ஒவ்வொரு மடம் / திருமாளிகையிலும் இவை சற்று மாறுபடலாம். உங்கள் குடும்ப வாத்தியாரிடமோ ஆசார்யனின் மடத்திலோ கேட்டு உறுதி செய்துகொள்ளவும்.</p>
+</template>
+<template id="qa_en"><p class="qa-lead">What is generally followed when visiting a bereaved family, after coming back home, and when one's Acharya attains Paramapadam. These can differ slightly by family custom, sampradayam and mutt / thirumaligai.</p>
+
+<h3>Visiting a bereaved family</h3>
+
+<details class="qa"><summary>On which days can one visit to enquire about a death?</summary><div>
+<ul>
+<li><b>Day 1:</b> any time while the body is still at home. Once the body has been taken, one does not visit that house again that day.</li>
+<li><b>Days 2 to 10:</b> the right time to visit. Even days counted from the day of death (2, 4, 6, 8) are preferred. The 9th day is generally avoided.</li>
+<li><b>10th day:</b> no weekday restriction; relatives and friends may visit.</li>
+<li><b>Days 11 and 12:</b> one does not visit, as Sapindikaranam and shraddham are being done. <b>The 13th day (subham)</b> is only for close family and those who helped.</li>
+<li>If you could not visit within the 10 days, visit after the 13th-day ceremony is over, or enquire by phone.</li>
+</ul></div></details>
+
+<details class="qa"><summary>On which weekdays can one visit?</summary><div>
+<p>Sunday, Wednesday and Thursday are suitable. Tuesday, Friday and Saturday are avoided; many families avoid Monday too. There is no weekday restriction on day 1 (while the body is at home) or on the 10th day.</p>
+</div></details>
+
+<details class="qa"><summary>At what time of day?</summary><div>
+<p>11 am to 1 pm, or 4:30 pm to 6:30 pm. One does not visit before about 10:30 am (when the family is doing tarpanam and vasodakam with the vadhyar) or after dinner at night. Avoid Kuligai time as well.</p>
+</div></details>
+
+<details class="qa"><summary>Why is Kuligai avoided, and when is it?</summary><div>
+<p>It is believed that whatever is done in Kuligai repeats itself. So condolence visits, taking out the body and funeral rites are not done in Kuligai. (Buying gold or repaying a loan is done in Kuligai.)</p>
+<div class="tbl"><table class="doc-tbl">
+<tr><th>Day</th><th>Kuligai</th></tr>
+<tr><td>Sunday</td><td>3:00 – 4:30 pm</td></tr>
+<tr><td>Monday</td><td>1:30 – 3:00 pm</td></tr>
+<tr><td>Tuesday</td><td>12:00 – 1:30 pm</td></tr>
+<tr><td>Wednesday</td><td>10:30 am – 12:00 noon</td></tr>
+<tr><td>Thursday</td><td>9:00 – 10:30 am</td></tr>
+<tr><td>Friday</td><td>7:30 – 9:00 am</td></tr>
+<tr><td>Saturday</td><td>6:00 – 7:30 am</td></tr>
+</table></div>
+<p class="qa-note">These times assume sunrise at 6 am. They shift by a few minutes with your town's sunrise; check the panchangam.</p>
+</div></details>
+
+<details class="qa"><summary>What should one take care of before going?</summary><div>
+<ul>
+<li>Do not go on an empty stomach; eat a little before leaving.</li>
+<li>Dress simply. Avoid bright colours, heavy jewellery and flowers in the hair.</li>
+<li>Sumangalis customarily tie a small piece of virali manjal (turmeric) in the corner (thalappu) of the saree, especially if the deceased's wife is alive.</li>
+<li>Ladies do not visit a bereaved house during their monthly period or when pregnant.</li>
+</ul></div></details>
+
+<details class="qa"><summary>How should one conduct oneself at the bereaved house?</summary><div>
+<p>Offer quiet condolences and pay respects to the departed. As the house is under theetu, one does not accept food or water there.</p>
+</div></details>
+
+<h3>Going for the funeral</h3>
+
+<details class="qa"><summary>Who goes to the cremation ground?</summary><div>
+<p>Traditionally only men go with the final procession to the cremation ground. Ladies stay at the bereaved house to console and help the women of the family. In cities some ladies go to electric crematoriums; orthodox families still keep it to men.</p>
+</div></details>
+
+<details class="qa"><summary>What should one take care of at the cremation ground?</summary><div>
+<p>A simple veshti and angavastram; avoid leather items. Keep silence and reverence. Stay until kapala moksham, or until the electric chamber door closes and the karta gives leave.</p>
+</div></details>
+
+<h3>After returning home</h3>
+
+<details class="qa"><summary>What should one do on reaching home?</summary><div>
+<ul>
+<li><b>First, before entering the house, wash your feet fully with water outside the door.</b> This is a must; everything else comes after.</li>
+<li>Before bathing, do not enter the kitchen or the Perumal sannidhi, and do not touch anyone or anything. Ask someone at home to keep the front door open and lay out a change of clothes.</li>
+<li>Both men and women take a head bath at once. Soak and wash the clothes worn separately; wear madi clothes.</li>
+<li>Ladies remove the manjal tied in the saree corner.</li>
+<li>The book says one who follows a dead body (in the procession) bathes twice (see the full explanation — general points).</li>
+</ul></div></details>
+
+<details class="qa"><summary>What should men do in addition?</summary><div>
+<ul>
+<li>After the bath, wear fresh Thiruman and Srichurnam. If it is after sunset, Srichurnam alone, or the full Thiruman at the next morning's Sandhyavandanam.</li>
+<li>If you went to the cremation ground during the day, do achamanam and chant Gayatri (10 or 28 times as per family custom). Take Perumal theertham / Sripada theertham if available.</li>
+<li>Once you have bathed and changed, this contact impurity is fully gone. You may then eat normally and do Thiruvaradhanam and Sandhyavandanam as usual.</li>
+</ul></div></details>
+
+<details class="qa"><summary>Should one change the poonal?</summary><div>
+<p>No change is needed for visiting a friend's / non-relative's house or for going to the cremation ground; a head bath with the poonal on is enough.</p>
+<p>Change it: when you have a 10-day theetu yourself (the book says to change it the day after the theetu ends); and if you carried the bier or directly handled the pyre — elders say it is good to change it after the bath. Otherwise the poonal is changed when it breaks or frays, and on occasions such as Upakarma, shraddham and grahanam.</p>
+</div></details>
+
+<h3>On the road</h3>
+
+<details class="qa"><summary>What if one sees a funeral procession on the road, or brushes against those in it?</summary><div>
+<ul>
+<li><b>Only seeing it:</b> no theetu; no bath needed. Step aside, let it pass, and say "Narayana" / "Govinda" in your mind. Before going to a temple or doing Sandhyavandanam, washing hands, feet and face and doing achamanam is enough.</li>
+<li><b>Accidentally brushing against people in the procession or carrying the bier:</b> at home, bathe and put the clothes worn into the wash before going into the kitchen or sannidhi. No poonal change.</li>
+<li><b>Touching the body or the bier:</b> take a head bath at once, wash the clothes, and chant Gayatri after the bath.</li>
+<li><b>Smoke from a pyre falling on you:</b> orthodox custom is to take a head bath before any vaidika karma.</li>
+</ul></div></details>
+
+<h3>Acharya</h3>
+
+<details class="qa"><summary>If the Acharya who did your Pancha Samskaram (Samashrayanam) attains Paramapadam, how many days of theetu?</summary><div>
+<p><b>If the Acharya was a sanyasi (Jeeyar / Swami) — no theetu.</b> A sanyasi has given up worldly bonds; there is no death theetu for sishyas or anyone else. On hearing the news, take a sachela snanam (bath with the clothes on) as a mark of respect. Thiruvaradhanam, Sandhyavandanam, thaniyan and Divya Prabandham all continue as usual.</p>
+<p><b>If the Acharya was a grihastha (householder) — 3 days.</b> For the Acharya who gave mantropadesam, sishyas keep 3 days of theetu, whether the gotram is the same or different. In some sampradayams it is pakshini (1½ days), or until the charama kainkaryam is over, followed by a bath. If the news comes after 3 days, a bath only.</p>
+<p>During those days: hand over Thiruvaradhanam to someone without theetu; do not go to temples; do not recite Vedam or Prabandham aloud; do not attend auspicious functions. Sandhyavandanam continues.</p>
+</div></details>
+
+<details class="qa"><summary>What is done on the Acharya's Thiruvadhyayanam?</summary><div>
+<p>Thiruvadhyayanam is not a day of mourning; it celebrates the Acharya attaining Paramapadam. It is observed like a Thirunakshatram.</p>
+<ul>
+<li>Special Thiruvaradhanam. Recite the Acharya's thaniyan, vazhi thirunamam, guruparamparai, and Nalayiram or Desika Prabandham / stotras, and close with sattrumurai. Take the Acharya's Sripada theertham.</li>
+<li>Dhadhiyaaradhanam: invite Sri Vaishnavas, offer prasadam and give dakshinai. A sambhavanai can be sent for the utsavam at the Acharya's mutt / thirumaligai / brindavanam.</li>
+<li>If a grihastha Acharya had no sons to conduct the Thiruvadhyayanam, a sishya may observe that tithi like a shraddham. When the mutt or family celebrates the Thiruvadhyayanam, sishyas do not do tarpanam or shraddham.</li>
+</ul></div></details>
+
+<p class="qa-note">These can differ slightly between Vadakalai and Thenkalai customs and between mutts / thirumaligais. Please confirm with your family vadhyar or the Acharya's mutt.</p>
+</template>
+
+<script src="js/theetu.js?v=3"></script>
 </body>
 </html>

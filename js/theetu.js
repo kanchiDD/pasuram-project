@@ -62,6 +62,8 @@ window.THEETU_RULES = [
 ["M","D","","adopt","பெற்ற அப்பா (நீங்கள் வேறு கோத்ரத்திற்கு ஸ்வீகாரம் சென்றிருந்தால்)","Birth father (you were adopted into another gotram)","3","",""],
 ["M","D","","adopt","வேறு கோத்ரத்திற்கு ஸ்வீகாரம் கொடுத்த உங்கள் பிள்ளை","Your son given in adoption to another gotram","3","",""],
 ["M","D","","adopt","பிறந்த குடும்பத்துச் சகோதரர்கள் (நீங்கள் ஸ்வீகாரம் சென்றிருந்தால்)","Brothers in your birth family (you were adopted)","1","",""],
+["MFW","D","","acharya","பஞ்சஸம்ஸ்காரம் செய்து வைத்த ஆசார்யன் — க்ருஹஸ்தர்","Acharya who did your Pancha Samskaram — grihastha (householder)","3","கோத்ரம் ஒன்றோ வேறோ, இதே. சில ஸம்ப்ரதாயங்களில் பக்ஷிணீ (1½ நாள்), அல்லது சரம கைங்கர்யம் முடியும் வரை. 3 நாட்கள் கழிந்த பின் செய்தி வந்தால் ஸ்நானம் மட்டும். இந்நாட்களில் திருவாராதனத்தைத் தீட்டில்லாதவரிடம் ஒப்படைக்கவும்; கோவில், உரக்க வேத / ப்ரபந்த பாராயணம் தவிர்க்கவும்; ஸந்த்யாவந்தனம் தொடரும்.","The same whether the gotram is the same or different. In some sampradayams it is pakshini (1½ days), or until the charama kainkaryam is over. If the news comes after 3 days, a bath only. During these days hand over Thiruvaradhanam to someone without theetu; avoid temples and reciting Vedam / Prabandham aloud; Sandhyavandanam continues."],
+["MFW","D","","acharya","பஞ்சஸம்ஸ்காரம் செய்து வைத்த ஆசார்யன் — ஸன்யாஸி (ஜீயர் / ஸ்வாமிகள்)","Acharya who did your Pancha Samskaram — sanyasi (Jeeyar / Swami)","S","தீட்டு இல்லை. செய்தி கேட்டவுடன் ஸசேல ஸ்நானம் (உடுத்திய துணியுடன் குளித்தல்). திருவாராதனம், ஸந்த்யாவந்தனம், தனியன், திவ்யப்ரபந்தம் வழக்கம்போல் தொடரும்.","No theetu. On hearing the news, a sachela snanam (bath with the clothes on). Thiruvaradhanam, Sandhyavandanam, thaniyan and Divya Prabandham continue as usual."],
 // ── DEATH · married woman ───────────────────────────────────────
 ["F","D","","own","கணவர்","Husband","10","",""],
 ["F","D","","own","கணவர் குடும்பத்தினர், அல்லது உங்கள் குழந்தைகள்","Anyone in your husband's family, or your own children","H","மேலே ‘விவாஹமான புருஷன்’ என்பதைத் தேர்ந்தெடுத்து, கணவருக்கு அவர் என்ன உறவு என்று பார்க்கவும்.","Choose “Man (married)” above and the relation to your husband."],
@@ -142,9 +144,9 @@ const T = {
    disc:"இங்குள்ள விவரங்கள் பொதுவானவை. குடும்ப வழக்கம், ஸம்ப்ரதாயத்திற்கேற்ப மாறுபடலாம். எப்போதும் உங்கள் குடும்ப வாத்தியாரிடம் கேட்டு உறுதி செய்துகொள்ளவும்.",
    ev:"1. நிகழ்வு", D:"மரணம்", B:"பிறப்பு", obs:"2. தீட்டு காப்பவர் (நீங்கள்)", nb:"3. பிறந்த குழந்தை", b:"ஆண் குழந்தை", g:"பெண் குழந்தை",
    relD:"இறந்தவர் உங்களுக்கு", relB:"குழந்தை உங்களுக்கு", choose:"— தேர்ந்தெடுக்கவும் —",
-   tbl:"முழு அட்டவணை", doc:"முழு விளக்கம் (படிக்க)",
+   tbl:"முழு அட்டவணை", qa:"துக்கம் விசாரித்தலும் அனுசரிப்புகளும் (கேள்வி – பதில்)", doc:"முழு விளக்கம் (படிக்க)",
    O:{M:"விவாஹமான புருஷன்",F:"விவாஹமான ஸ்த்ரீ",W:"கைம்பெண் (விதவை)",B:"ப்ரஹ்மசாரி (உபநயனமானவன்)",U:"உபநயனமாகாத பையன்",G:"கல்யாணமாகாத பெண் (கன்யா)",S:"ஸன்யாஸி"},
-   G:{own:"தன் குடும்பம் / தாயாதிகள் (பங்காளிகள்)",children:"உங்கள் குழந்தைகள்",hus:"கணவரின் குடும்பம்",mother:"அம்மா வழி",father:"அத்தை வழி",wife:"மனைவி வழி",kids:"சகோதரி / பெண் / பிள்ளை வழிக் குழந்தைகள்",step:"சிற்றன்னை வழி",adopt:"ஸ்வீகாரம்",birth:"பிறந்த வீடு",house:"வீட்டில் பிரஸவம்"},
+   G:{own:"தன் குடும்பம் / தாயாதிகள் (பங்காளிகள்)",children:"உங்கள் குழந்தைகள்",hus:"கணவரின் குடும்பம்",mother:"அம்மா வழி",father:"அத்தை வழி",wife:"மனைவி வழி",kids:"சகோதரி / பெண் / பிள்ளை வழிக் குழந்தைகள்",step:"சிற்றன்னை வழி",adopt:"ஸ்வீகாரம்",acharya:"ஆசார்யன்",birth:"பிறந்த வீடு",house:"வீட்டில் பிரஸவம்"},
    R:{"10":"10 நாள்","3":"3 நாள்","P":"பக்ஷிணீ (1½ நாள்)","PS":"பக்ஷிணீ (1½ நாள்)","1":"1 நாள்","0":"தீட்டு இல்லை","S":"ஸ்நானம் மட்டும்","SN":"தீட்டு இல்லை (ஸ்நானமும் இல்லை)","NONE10":"தனித் தீட்டு இல்லை","H":"கணவர் காப்பது போலவே","K":"தீட்டு இல்லை","NS":"இதற்கு வாத்தியாரிடம் கேட்கவும்","30":"30 நாள்","40":"40 நாள்","3040":"30 / 40 நாள்"},
    K:"தானே ஈமக்கடன் (கர்மா) செய்தால் மட்டும், அந்தக் காலத்தில் நேரும் தீட்டு உண்டு.",
    NS:"இந்த நிலைக்குப் பொதுவான விதி இங்கு இல்லை. உங்கள் குடும்ப வாத்தியாரிடம் கேட்கவும்.",
@@ -157,9 +159,9 @@ const T = {
    disc:"These details are general. Family custom and sampradayam can differ. Always check with your family vadhyar.",
    ev:"1. Event", D:"Death", B:"Birth", obs:"2. Who is keeping theetu (you)", nb:"3. The newborn", b:"Boy", g:"Girl",
    relD:"The person who died is your", relB:"The baby is your", choose:"— choose —",
-   tbl:"Full table", doc:"Full explanation (to read)",
+   tbl:"Full table", qa:"Condolence visits and observances (Q & A)", doc:"Full explanation (to read)",
    O:{M:"Man (married)",F:"Woman (married)",W:"Widow",B:"Brahmachari (upanayanam done)",U:"Boy before upanayanam",G:"Unmarried girl",S:"Sanyasi"},
-   G:{own:"Own family and dayadhis (pangalis)",children:"Your children",hus:"Your late husband's family",mother:"Mother's side",father:"Father's sister's side",wife:"Wife's side",kids:"Sister's, daughter's and son's children",step:"Step-mother's side",adopt:"Adoption",birth:"Your birth family",house:"Delivery in your house"},
+   G:{own:"Own family and dayadhis (pangalis)",children:"Your children",hus:"Your late husband's family",mother:"Mother's side",father:"Father's sister's side",wife:"Wife's side",kids:"Sister's, daughter's and son's children",step:"Step-mother's side",adopt:"Adoption",acharya:"Acharya",birth:"Your birth family",house:"Delivery in your house"},
    R:{"10":"10 days","3":"3 days","P":"Pakshini (1½ days)","PS":"Pakshini (1½ days)","1":"1 day","0":"No theetu","S":"A bath only","SN":"No theetu (not even a bath)","NONE10":"No separate theetu","H":"Same as your husband","K":"No theetu","NS":"Ask your vadhyar","30":"30 days","40":"40 days","3040":"30 / 40 days"},
    K:"Only if he himself performs the funeral rites does he keep theetu, for that period.",
    NS:"There is no general rule here for this case. Please ask your family vadhyar.",
@@ -172,7 +174,7 @@ const T = {
 
 const R = window.THEETU_RULES.map((r, i) => ({i, obs:r[0], ev:r[1], nb:r[2], grp:r[3], ta:r[4], en:r[5], res:r[6], nta:r[7], nen:r[8]}));
 const FIXED = window.THEETU_FIXED;
-const GORDER = ["own","children","hus","birth","mother","father","wife","kids","step","adopt","house"];
+const GORDER = ["own","children","hus","birth","mother","father","wife","kids","step","adopt","acharya","house"];
 const OBS = ["M","F","W","B","U","G","S"];
 let L = "ta", st = {ev:"", obs:"", nb:"", rel:""};
 const $ = id => document.getElementById(id);
@@ -190,9 +192,10 @@ function setLang(l) {
   $("t_title").textContent = t.title; $("t_sub").textContent = t.sub; $("t_disc").textContent = t.disc;
   $("t_ev").textContent = t.ev; $("b_D").textContent = t.D; $("b_B").textContent = t.B;
   $("t_obs").textContent = t.obs; $("t_nb").textContent = t.nb; $("b_boy").textContent = t.b; $("b_girl").textContent = t.g;
-  $("t_tbl").textContent = t.tbl; $("t_doc").textContent = t.doc;
+  $("t_tbl").textContent = t.tbl; $("t_doc").textContent = t.doc; $("t_qa").textContent = t.qa;
   obsPick.set(OBS.map(o => ({v:o, label:t.O[o]})), st.obs);
   $("doc").innerHTML = $("doc_" + L).innerHTML;
+  $("qa").innerHTML = $("qa_" + L).innerHTML;
   table(); refresh();
 }
 
@@ -291,7 +294,7 @@ function table() {
   const order = [["D","M"],["D","F"],["D","W"],["D","S"],["B","M"],["B","F"],["B","W"]];
   for (const [ev, ob] of order) {
     for (const nb of ["", "b", "g"]) {
-      const rows = R.filter(r => r.ev === ev && r.obs.includes(ob) && r.nb === nb);
+      const rows = R.filter(r => r.ev === ev && r.obs.includes(ob) && r.nb === nb).sort((x, y) => GORDER.indexOf(x.grp) - GORDER.indexOf(y.grp) || x.i - y.i);
       if (!rows.length) continue;
       h += `<tr class="grp"><td colspan="2">${esc(EV[ev] + " — " + t.O[ob] + NB[nb])}</td></tr>`;
       for (const r of rows) {
