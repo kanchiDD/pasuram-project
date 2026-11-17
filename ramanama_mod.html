@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Rama Nama – Moderation</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #FFF8E8; color: #3B2410; font-family: "Segoe UI", "Noto Sans Tamil", Arial, sans-serif; font-size: 15px; line-height: 1.5;
+    padding: 14px max(14px, env(safe-area-inset-right)) 40px max(14px, env(safe-area-inset-left)); }
+  main { max-width: 600px; margin: 0 auto; }
+  h1 { font-size: 19px; color: #7B3F00; margin: 4px 0 2px; text-align: center; }
+  .sub { text-align: center; color: #8B6A45; font-size: 13px; margin-bottom: 10px; }
+  .card { background: #FFFDF7; border: 1.5px solid #E8D5A8; border-radius: 12px; padding: 14px; margin: 12px 0; }
+  .card h2 { font-size: 16px; color: #7B3F00; margin: 0 0 8px; }
+  .who { font-size: 13px; color: #8a6a40; } .who a { color: #7B3F00; cursor: pointer; text-decoration: underline; }
+  .q { font-size: 14px; color: #3B2410; } .q b { color: #7B3F00; }
+  .meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; margin: 8px 0; }
+  .meta span:nth-child(odd) { color: #8a6a40; }
+  audio { width: 100%; margin-top: 8px; }
+  .speeds { display: flex; gap: 6px; margin-top: 8px; }
+  .speeds button { flex: 1; padding: 8px 0; font-size: 15px; font-weight: 700; border-radius: 9px; border: 2px solid #E6C98A; background: #FFFBF1; color: #7B3F00; cursor: pointer; }
+  .speeds button.on { background: #7B3F00; color: #fff; border-color: #7B3F00; }
+  .beats { font-size: 13.5px; margin-top: 8px; color: #9A5B00; } .beats a { color: #7B3F00; cursor: pointer; text-decoration: underline; margin-right: 6px; }
+  .acts { display: flex; gap: 10px; margin-top: 12px; }
+  .acts button { flex: 1; padding: 13px 0; font-size: 17px; font-weight: 700; border-radius: 12px; border: 0; color: #fff; cursor: pointer; }
+  #bApprove { background: #2f7d32; } #bReject { background: #B03A2E; }
+  .acts button:disabled { opacity: .4; }
+  select, input[type=text], input[type=email] { width: 100%; font-size: 15px; padding: 8px 10px; border: 1px solid #E6C98A; border-radius: 8px; background: #FFFBF1; margin-top: 6px; }
+  .hint { font-size: 12.5px; color: #8a6a40; margin-top: 6px; }
+  .msg { font-size: 14px; margin-top: 8px; min-height: 20px; }
+  .ok { color: #2f7d32; font-weight: 600; } .err { color: #B03A2E; font-weight: 600; }
+  .btn2 { font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 9px; border: 2px solid #7B3F00; color: #7B3F00; background: #fff; cursor: pointer; margin-top: 8px; }
+  ul.mods { list-style: none; padding: 0; margin: 8px 0 0; } ul.mods li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #E8D5A8; font-size: 14px; }
+  ul.mods li button { font-size: 12px; padding: 3px 9px; border-radius: 7px; border: 1px solid #B03A2E; color: #B03A2E; background: #fff; cursor: pointer; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ஸ்ரீ ராம நாம குரல் வங்கி</h1>
+  <div class="sub">Moderation – check that each recording is Rama Nama only</div>
+
+  <div class="card" id="cSign">
+    <div id="signTxt">Sign in with the Google account that is admin or moderator.</div>
+    <div id="gbtn" style="margin-top:12px;display:flex;justify-content:center;min-height:44px"></div>
+    <div class="msg" id="signMsg"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="who" id="who"></div>
+
+    <div class="card">
+      <h2>Waiting recordings</h2>
+      <div class="q" id="qLine"></div>
+      <div id="item" hidden>
+        <div class="meta" id="meta"></div>
+        <audio id="aud" controls preload="auto"></audio>
+        <div class="speeds" id="speeds">
+          <button data-r="1">1×</button><button data-r="2">2×</button><button data-r="2.5">2.5×</button><button data-r="3" class="on">3×</button>
+        </div>
+        <div class="beats" id="beats" hidden></div>
+        <div class="hint" id="listenHint">Approve becomes available once the recording has played to the end.</div>
+        <select id="reason">
+          <option value="">Reason if rejecting…</option>
+          <option>Not Rama Nama chanting</option>
+          <option>Other voices or talking in the recording</option>
+          <option>Only noise or silence</option>
+          <option>Recording is not clear</option>
+          <option value="other">Other (type below)</option>
+        </select>
+        <input type="text" id="reasonOther" placeholder="Type the reason" maxlength="300" hidden>
+        <div class="acts"><button id="bApprove" disabled>Approve</button><button id="bReject">Reject</button></div>
+        <div class="msg" id="actMsg"></div>
+      </div>
+      <button class="btn2" id="bRefresh">Refresh</button>
+    </div>
+
+    <div class="card" id="cMods" hidden>
+      <h2>Moderators (admin only)</h2>
+      <div class="hint">Anyone added here can sign in on this page and approve or reject. You can remove them at any time.</div>
+      <ul class="mods" id="mods"></ul>
+      <input type="email" id="newMod" placeholder="helper@gmail.com">
+      <button class="btn2" id="bAddMod">Add moderator</button>
+      <div class="msg" id="modMsg"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(() => {
+  const W = "https://ramanamaworker.kanchitrust.workers.dev";
+  const CLIENT_ID = "49899300551-sqg7tbbfkficni6q806p851s9j1pphuu.apps.googleusercontent.com";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  let token = null, role = null, queue = [], cur = null, rate = 3, audioUrl = null;
+  try { const s = JSON.parse(sessionStorage.getItem("rnTok") || "null"); if (s && s.exp > Date.now() + 60000) token = s.tok; } catch (e) {}
+
+  function onCredential(resp) {
+    token = resp.credential;
+    try {
+      const p = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      sessionStorage.setItem("rnTok", JSON.stringify({ tok: token, exp: p.exp * 1000 }));
+      localStorage.setItem("rnSigned", "1");
+    } catch (e) {}
+    boot();
+  }
+  function waitGoogle(n = 0) {
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
+      google.accounts.id.renderButton($("gbtn"), { theme: "outline", size: "large", shape: "pill" });
+      if (!token && localStorage.getItem("rnSigned") === "1") google.accounts.id.prompt();
+      return;
+    }
+    if (n < 50) setTimeout(() => waitGoogle(n + 1), 200);
+  }
+
+  async function api(path, opts = {}) {
+    const h = Object.assign({ Authorization: "Bearer " + token }, opts.headers || {});
+    const r = await fetch(W + path, Object.assign({}, opts, { headers: h }));
+    if (r.status === 401) { signOut(); throw new Error("Please sign in again."); }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) throw new Error(j.error || "Something went wrong.");
+    return j;
+  }
+  function signOut() {
+    token = null; role = null;
+    try { sessionStorage.removeItem("rnTok"); } catch (e) {}
+    $("app").hidden = true; $("cSign").hidden = false;
+  }
+
+  async function boot() {
+    if (!token) { $("cSign").hidden = false; $("app").hidden = true; return; }
+    try {
+      const w = await api("/rn/mod/whoami");
+      role = w.role;
+      $("cSign").hidden = true; $("app").hidden = false;
+      $("who").innerHTML = "Signed in as " + esc(w.email) + " (" + role + ") · <a id='aOut'>Sign out</a>";
+      $("aOut").onclick = () => { signOut(); if (window.google) google.accounts.id.disableAutoSelect(); localStorage.removeItem("rnSigned"); };
+      $("cMods").hidden = role !== "admin";
+      if (role === "admin") loadMods();
+      loadQueue();
+    } catch (e) {
+      $("cSign").hidden = false; $("app").hidden = true;
+      $("signMsg").innerHTML = "<span class='err'>" + esc(e.message) + "</span>";
+    }
+  }
+
+  async function loadQueue() {
+    $("actMsg").textContent = "";
+    try {
+      const q = await api("/rn/mod/queue");
+      queue = q.items;
+      $("qLine").innerHTML = q.total ? "<b>" + q.total + "</b> waiting" : "Nothing waiting. 🙏";
+      showItem(queue[0] || null);
+    } catch (e) { $("qLine").innerHTML = "<span class='err'>" + esc(e.message) + "</span>"; }
+  }
+
+  async function showItem(it) {
+    cur = it; $("item").hidden = !it;
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
+    if (!it) return;
+    const fmt = s => Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0");
+    $("meta").innerHTML =
+      "<span>Number</span><span><b>" + esc(it.no) + "</b>" + (it.attempts > 1 ? " (attempt " + it.attempts + ")" : "") + "</span>" +
+      "<span>Name</span><span>" + esc(it.display_name) + (it.anonymous ? " – shown as 'A devotee'" : "") + "</span>" +
+      "<span>Country</span><span>" + esc(it.country_name) + "</span>" +
+      "<span>Rama</span><span>" + it.count + " at " + it.pace + " s each · " + fmt(it.dur || 0) + "</span>" +
+      "<span>Sent</span><span>" + esc(it.submitted_at) + " UTC</span>";
+    const sb = String(it.silent_beats || "").trim().split(/\s+/).filter(Boolean).map(Number);
+    $("beats").hidden = !sb.length;
+    if (sb.length) {
+      $("beats").innerHTML = "No voice heard on beat(s): " + sb.map(b => {
+        const at = Math.max(0, 0.3 + (b - 1) * (it.pace || 1.2));
+        return "<a data-t='" + at + "'>" + b + " (" + fmt(at) + ")</a>";
+      }).join("");
+      $("beats").querySelectorAll("a").forEach(a => a.onclick = () => { $("aud").currentTime = +a.dataset.t; $("aud").play(); });
+    }
+    $("bApprove").disabled = true; $("listenHint").hidden = false;
+    $("reason").value = ""; $("reasonOther").hidden = true; $("reasonOther").value = "";
+    try {
+      const r = await fetch(W + "/rn/mod/audio?id=" + it.id, { headers: { Authorization: "Bearer " + token } });
+      if (!r.ok) throw new Error("Could not load the recording.");
+      audioUrl = URL.createObjectURL(await r.blob());
+      $("aud").src = audioUrl; $("aud").playbackRate = rate; $("aud").defaultPlaybackRate = rate;
+    } catch (e) { $("actMsg").innerHTML = "<span class='err'>" + esc(e.message) + "</span>"; }
+  }
+
+  $("aud").addEventListener("loadedmetadata", () => { $("aud").playbackRate = rate; });
+  $("aud").addEventListener("ended", () => { $("bApprove").disabled = false; $("listenHint").hidden = true; });
+  document.querySelectorAll("#speeds button").forEach(b => b.onclick = () => {
+    rate = +b.dataset.r; $("aud").playbackRate = rate; $("aud").defaultPlaybackRate = rate;
+    document.querySelectorAll("#speeds button").forEach(x => x.classList.toggle("on", x === b));
+  });
+  $("reason").onchange = () => { $("reasonOther").hidden = $("reason").value !== "other"; };
+
+  async function decide(decision) {
+    if (!cur) return;
+    let reason = "";
+    if (decision === "REJECT") {
+      reason = $("reason").value === "other" ? $("reasonOther").value.trim() : $("reason").value;
+      if (!reason) { $("actMsg").innerHTML = "<span class='err'>Choose a reason for rejecting.</span>"; return; }
+    }
+    $("bApprove").disabled = true; $("bReject").disabled = true;
+    try {
+      const j = await api("/rn/mod/decide", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cur.id, decision, reason }) });
+      const done = cur.no + (decision === "APPROVE" ? " approved" : " rejected") + (j.email === "sent" ? " · email sent" : " · email " + j.email);
+      $("aud").pause();
+      await loadQueue();
+      $("actMsg").innerHTML = "<span class='ok'>" + esc(done) + "</span>";
+    } catch (e) { $("actMsg").innerHTML = "<span class='err'>" + esc(e.message) + "</span>"; }
+    $("bReject").disabled = false;
+  }
+  $("bApprove").onclick = () => decide("APPROVE");
+  $("bReject").onclick = () => decide("REJECT");
+  $("bRefresh").onclick = loadQueue;
+
+  async function loadMods(post) {
+    try {
+      const j = await api("/rn/mod/moderators", post ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(post) } : {});
+      $("mods").innerHTML = j.items.length ? j.items.map(m => "<li><span>" + esc(m.email) + "</span><button data-e='" + esc(m.email) + "'>Remove</button></li>").join("")
+        : "<li><span>No helpers yet – only you.</span></li>";
+      $("mods").querySelectorAll("button").forEach(b => b.onclick = () => loadMods({ email: b.dataset.e, action: "remove" }));
+      $("modMsg").textContent = ""; if (post && post.action !== "remove") $("newMod").value = "";
+    } catch (e) { $("modMsg").innerHTML = "<span class='err'>" + esc(e.message) + "</span>"; }
+  }
+  $("bAddMod").onclick = () => loadMods({ email: $("newMod").value.trim(), action: "add" });
+
+  boot();
+  waitGoogle();
+})();
+</script>
+</body>
+</html>
