@@ -134,12 +134,12 @@
   let target = 18, period = 1.2;
   let ctx = null, stream = null, src = null, proc = null, mute = null, wake = null;
   let chunks = [], sr = 48000, samples = 0, recT0 = 0, firstBeat = 0, raf = 0;
-  let running = false, done = 0, lastBeatShown = -1, stopped = false;
+  let running = false, busy = false, done = 0, lastBeatShown = -1, stopped = false;
   let hop = 480, rest = new Float32Array(0), frames = [];   // dB per 10 ms frame, from recording start
 
   function pick(groupId, attr, cb) {
     document.querySelectorAll('#' + groupId + ' button').forEach(b => b.onclick = () => {
-      if (running) return;
+      if (running || busy) return;
       document.querySelectorAll('#' + groupId + ' button').forEach(x => x.classList.remove('on'));
       b.classList.add('on'); cb(b.dataset[attr]);
     });
@@ -147,6 +147,7 @@
   pick('tgts', 'n', v => { target = +v; show(0); });
   pick('paces', 'p', v => { period = +v; $('pace').value = v; $('paceV').textContent = (+v).toFixed(2).replace(/0$/, ''); });
   $('pace').oninput = () => {
+    if (running || busy) { $('pace').value = period; return; }
     period = +$('pace').value; $('paceV').textContent = period.toFixed(2).replace(/0$/, '');
     document.querySelectorAll('#paces button').forEach(x => x.classList.toggle('on', +x.dataset.p === period));
   };
@@ -186,9 +187,11 @@
     const t = ctx.currentTime;
     const c = $('circle');
     if (t < firstBeat) {
-      const left = Math.ceil(firstBeat - t);
-      c.classList.add('cd'); c.classList.remove('beat'); c.textContent = left;
-      $('pb').style.width = (100 * (1 - (firstBeat - t) % 1)) + '%';
+      const left = Math.ceil((firstBeat - t) / period);
+      const frac = 1 - ((firstBeat - t) / period - (left - 1));
+      c.classList.add('cd'); c.classList.remove('beat');
+      c.textContent = frac < 0.5 ? left : '';
+      $('pb').style.width = (100 * frac) + '%';
     } else {
       const b = Math.floor((t - firstBeat) / period);      // 0-based beat now sounding
       if (b >= target) {
@@ -240,8 +243,8 @@
     };
     src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
     try { wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
-    running = true; stopped = false;
-    firstBeat = ctx.currentTime + COUNTDOWN;
+    running = true; busy = true; stopped = false; $('pace').disabled = true;
+    firstBeat = ctx.currentTime + COUNTDOWN * period;   // 3-2-1 at the chanting pace
     $('go').textContent = 'Stop'; $('go').classList.add('stop');
     $('state').textContent = 'Get ready…';
     $('setup').style.opacity = .5;
@@ -320,7 +323,7 @@
     $('enc').textContent = (ext === 'mp3' ? 'MP3' : 'WAV (MP3 encoder missing)') + ' · ' + fmt(secs) + ' · ' + (blob.size / 1024).toFixed(0) + ' KB';
     $('cWho').textContent = ($('nm').value.trim() || 'Your name') + ' · ' + done + ' ராம';
     $('cWhere').textContent = $('ct').value.trim() || 'Country';
-    $('go').disabled = false;
+    $('go').disabled = false; busy = false; $('pace').disabled = false;
     const chk = beatCheck(done);
     if (chk.silent.length) $('state').innerHTML += ' <span class="warn">No voice heard on ' + chk.silent.length + ' beat(s).</span>';
     report(secs, blob.size, ext, complete, chk);
