@@ -17,29 +17,34 @@
   .sub { text-align: center; color: #8a6a40; font-size: 13px; margin-bottom: 12px; }
   .card { background: #fff; border: 1px solid #F0E0B8; border-radius: 12px; padding: 14px; margin: 12px 0; }
   .lbl { font-size: 13px; color: #8a6a40; margin-bottom: 6px; }
-  .targets { display: flex; gap: 8px; }
-  .targets button { flex: 1; font-size: 18px; font-weight: 700; padding: 10px 0; border-radius: 10px; border: 2px solid #E6C98A; background: #FFFBF1; color: #7B3F00; }
-  .targets button.on { background: #7B3F00; color: #fff; border-color: #7B3F00; }
+  .opts { display: flex; gap: 8px; }
+  .opts button { flex: 1; font-size: 17px; font-weight: 700; padding: 9px 0; border-radius: 10px; border: 2px solid #E6C98A; background: #FFFBF1; color: #7B3F00; line-height: 1.2; }
+  .opts button small { display: block; font-size: 11px; font-weight: 500; opacity: .8; }
+  .opts button.on { background: #7B3F00; color: #fff; border-color: #7B3F00; }
   .row { display: flex; gap: 8px; }
   .row input { flex: 1; min-width: 0; font-size: 15px; padding: 9px 10px; border: 1px solid #E6C98A; border-radius: 8px; background: #FFFBF1; }
-  .counter { text-align: center; }
-  .count { font-size: 56px; font-weight: 800; color: #7B3F00; line-height: 1.1; }
-  .count small { font-size: 26px; color: #b08850; font-weight: 600; }
-  .nama { font-size: 30px; color: #B04A00; margin: 2px 0; }
+  .stage { text-align: center; }
+  .count { font-size: 44px; font-weight: 800; color: #7B3F00; line-height: 1.1; }
+  .count small { font-size: 22px; color: #b08850; font-weight: 600; }
   .rem { color: #8a6a40; font-size: 14px; }
-  .meter { height: 10px; background: #F5E6C8; border-radius: 6px; overflow: hidden; margin: 12px 0 4px; position: relative; }
-  .meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #C9A15A; transition: width 60ms linear; }
-  .meter i.voice { background: #2E8B57; }
-  .state { font-size: 13px; color: #8a6a40; min-height: 20px; }
+  .circle {
+    width: 190px; height: 190px; margin: 14px auto 10px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #FFF1D2; border: 4px solid #E6C98A;
+    font-size: 46px; font-weight: 700; color: #B98B4A;
+    transform: scale(1); transition: background 120ms, color 120ms, border-color 120ms;
+  }
+  .circle.beat { background: #7B3F00; color: #FFE7A8; border-color: #7B3F00; }
+  .circle.cd { font-size: 64px; color: #7B3F00; }
+  .pbar { height: 8px; background: #F5E6C8; border-radius: 5px; overflow: hidden; margin: 0 20px; }
+  .pbar i { display: block; height: 100%; width: 0; background: #C9A15A; }
+  .meter { height: 6px; background: #F5E6C8; border-radius: 4px; overflow: hidden; margin: 12px 20px 2px; }
+  .meter i { display: block; height: 100%; width: 0; background: #2E8B57; transition: width 60ms linear; }
+  .state { font-size: 13px; color: #8a6a40; min-height: 20px; margin-top: 6px; }
   .big { width: 100%; font-size: 18px; font-weight: 700; padding: 14px 0; border-radius: 12px; border: 0; background: #7B3F00; color: #fff; margin-top: 10px; }
   .big.stop { background: #B03A2E; }
   .big:disabled { opacity: .45; }
-  .corr { display: flex; gap: 10px; margin-top: 10px; }
-  .corr button { flex: 1; font-size: 17px; font-weight: 700; padding: 12px 0; border-radius: 10px; border: 2px solid #E6C98A; background: #FFFBF1; color: #7B3F00; }
-  .corr button:disabled { opacity: .4; }
-  .split { display: flex; justify-content: space-around; font-size: 13px; color: #8a6a40; margin-top: 8px; }
-  .split b { color: #3B2410; }
-  .tip { font-size: 13px; color: #6a5030; background: #FFF3D6; border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+  .tip { font-size: 13px; color: #6a5030; background: #FFF3D6; border-radius: 8px; padding: 8px 10px; margin-top: 10px; text-align: left; }
   details summary { cursor: pointer; color: #7B3F00; font-weight: 600; }
   .set { margin: 10px 0 2px; font-size: 14px; }
   .set input[type=range] { width: 100%; }
@@ -48,22 +53,29 @@
   .credit .who { font-size: 17px; font-weight: 700; color: #7B3F00; }
   .credit .where { font-size: 14px; color: #8a6a40; }
   .btn2 { display: inline-block; text-decoration: none; font-size: 15px; font-weight: 600; padding: 10px 14px; border-radius: 10px; border: 2px solid #7B3F00; color: #7B3F00; background: #fff; margin: 10px 6px 0 0; }
-  textarea { width: 100%; height: 150px; font-family: ui-monospace, monospace; font-size: 12px; border: 1px solid #E6C98A; border-radius: 8px; padding: 8px; background: #FFFBF1; }
+  textarea { width: 100%; height: 140px; font-family: ui-monospace, monospace; font-size: 12px; border: 1px solid #E6C98A; border-radius: 8px; padding: 8px; background: #FFFBF1; }
   .err { color: #B03A2E; font-weight: 600; }
+  .warn { color: #9A5B00; font-weight: 600; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <main>
   <h1>ஸ்ரீ ராம நாம வங்கி</h1>
-  <div class="sub">Voice recording test · nothing is uploaded</div>
+  <div class="sub">Voice recording test · guided pace · nothing is uploaded</div>
 
   <div class="card" id="setup">
     <div class="lbl">How many ராம?</div>
-    <div class="targets">
+    <div class="opts" id="tgts">
       <button data-n="18" class="on">18</button>
       <button data-n="36">36</button>
       <button data-n="108">108</button>
+    </div>
+    <div class="lbl" style="margin-top:12px">Pace</div>
+    <div class="opts" id="paces">
+      <button data-p="1.5">Slow<small>1.5 s</small></button>
+      <button data-p="1.2" class="on">Medium<small>1.2 s</small></button>
+      <button data-p="0.9">Fast<small>0.9 s</small></button>
     </div>
     <div class="lbl" style="margin-top:12px">Name and country (only to preview the credit line)</div>
     <div class="row">
@@ -72,33 +84,24 @@
     </div>
   </div>
 
-  <div class="card counter">
+  <div class="card stage">
     <div class="count"><span id="cnt">0</span> <small>/ <span id="tgt">18</span></small></div>
-    <div class="nama">ராம</div>
     <div class="rem" id="rem">18 remaining</div>
+    <div class="circle" id="circle">ராம</div>
+    <div class="pbar"><i id="pb"></i></div>
     <div class="meter"><i id="lvl"></i></div>
-    <div class="state" id="state">Press Start, stay silent for 1 second, then chant.</div>
-    <button class="big" id="go">Start recording</button>
-    <div class="corr">
-      <button id="minus" disabled>− 1</button>
-      <button id="plus" disabled>+ 1</button>
-    </div>
-    <div class="split">
-      <span>Voice count <b id="auto">0</b></span>
-      <span>Corrections <b id="man">0</b></span>
-      <span>Time <b id="time">0:00</b></span>
-    </div>
-    <div class="tip">Chant <b>ராம</b> with a small pause after each. Use +1 if a ராம was not counted, −1 if one was counted twice. Recording stops by itself at the target.</div>
+    <div class="state" id="state">Press Start. After 3 – 2 – 1, chant one ராம each time the circle glows.</div>
+    <button class="big" id="go">Start</button>
+    <div class="tip">The circle glows once for every ராம and the bar shows when the next one comes. Recording stops by itself after the last ராம. Keep the phone about a hand's length from your mouth.</div>
   </div>
 
   <div class="card">
     <details>
-      <summary>Counting settings</summary>
-      <div class="set">Sensitivity: <b id="sensV">14</b> dB above room noise
-        <input type="range" id="sens" min="6" max="26" step="1" value="14"></div>
-      <div class="set">Pause needed between two ராம: <b id="gapV">90</b> ms
-        <input type="range" id="gap" min="40" max="300" step="10" value="90"></div>
-      <div class="set"><label><input type="checkbox" id="autostop" checked> Stop automatically at the target</label></div>
+      <summary>More settings</summary>
+      <div class="set">Exact pace: <b id="paceV">1.2</b> s per ராம
+        <input type="range" id="pace" min="0.7" max="2.0" step="0.05" value="1.2"></div>
+      <div class="set"><label><input type="checkbox" id="vib"> Vibrate on each beat (the buzz may be faintly recorded)</label></div>
+      <div class="set"><label><input type="checkbox" id="tick"> Soft tick on each beat – only with earphones, or it will be recorded</label></div>
     </details>
   </div>
 
@@ -126,108 +129,90 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const OUT_RATE = 22050, KBPS = 32;
+  const OUT_RATE = 22050, KBPS = 32, COUNTDOWN = 3, HOP_MS = 10;
 
-  let target = 18;
+  let target = 18, period = 1.2;
   let ctx = null, stream = null, src = null, proc = null, mute = null, wake = null;
-  let chunks = [], sr = 48000, recording = false, t0 = 0, timer = null, stopping = false;
+  let chunks = [], sr = 48000, samples = 0, recT0 = 0, firstBeat = 0, raf = 0;
+  let running = false, done = 0, lastBeatShown = -1, stopped = false;
+  let hop = 480, rest = new Float32Array(0), frames = [];   // dB per 10 ms frame, from recording start
 
-  // ---- detector state
-  const HOP_MS = 10;
-  let hop = 480, rest = new Float32Array(0);
-  let phase = 'idle', calib = [], floor = -60, above = 0, below = 0, peak = -100;
-  let burstStart = 0, firstBelow = 0, tHop = 0;
-  let autoCount = 0, manual = 0, plus = 0, minus = 0, bursts = [], longOnes = 0, shortOnes = 0;
-
-  const sens = () => +$('sens').value;
-  const gapMs = () => +$('gap').value;
-  const finalCount = () => Math.max(0, Math.min(target, autoCount + manual));
-
-  document.querySelectorAll('.targets button').forEach(b => b.onclick = () => {
-    if (recording) return;
-    document.querySelectorAll('.targets button').forEach(x => x.classList.remove('on'));
-    b.classList.add('on'); target = +b.dataset.n; show();
-  });
-  $('sens').oninput = () => $('sensV').textContent = $('sens').value;
-  $('gap').oninput = () => $('gapV').textContent = $('gap').value;
-
-  function show() {
-    const f = finalCount();
-    $('cnt').textContent = f; $('tgt').textContent = target;
-    $('rem').textContent = (target - f) + ' remaining';
-    $('auto').textContent = autoCount;
-    $('man').textContent = (manual > 0 ? '+' : '') + manual;
-    $('minus').disabled = !(recording || chunks.length) || f <= 0;
-    $('plus').disabled = !(recording || chunks.length) || f >= target;
+  function pick(groupId, attr, cb) {
+    document.querySelectorAll('#' + groupId + ' button').forEach(b => b.onclick = () => {
+      if (running) return;
+      document.querySelectorAll('#' + groupId + ' button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); cb(b.dataset[attr]);
+    });
   }
-  function fmt(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  pick('tgts', 'n', v => { target = +v; show(0); });
+  pick('paces', 'p', v => { period = +v; $('pace').value = v; $('paceV').textContent = (+v).toFixed(2).replace(/0$/, ''); });
+  $('pace').oninput = () => {
+    period = +$('pace').value; $('paceV').textContent = period.toFixed(2).replace(/0$/, '');
+    document.querySelectorAll('#paces button').forEach(x => x.classList.toggle('on', +x.dataset.p === period));
+  };
 
-  // ---- counting: one ராம = one burst of voice followed by a short pause
+  function show(n) {
+    $('cnt').textContent = n; $('tgt').textContent = target;
+    $('rem').textContent = (target - n) + ' remaining';
+  }
+  const fmt = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+
+  // ---- level (for the meter and the per-beat voice check)
   function feed(x) {
     let buf = x;
     if (rest.length) { buf = new Float32Array(rest.length + x.length); buf.set(rest); buf.set(x, rest.length); }
     let i = 0;
     for (; i + hop <= buf.length; i += hop) {
-      let s = 0;
-      for (let k = i; k < i + hop; k++) s += buf[k] * buf[k];
-      frame(10 * Math.log10(s / hop + 1e-12));
+      let s = 0; for (let k = i; k < i + hop; k++) s += buf[k] * buf[k];
+      const db = 10 * Math.log10(s / hop + 1e-12);
+      frames.push(db);
+      $('lvl').style.width = Math.max(0, Math.min(100, (db + 70) * 1.6)) + '%';
     }
     rest = buf.slice(i);
   }
-  function frame(db) {
-    tHop += HOP_MS;
-    const lvl = Math.max(0, Math.min(100, (db + 70) * 1.6));
-    $('lvl').style.width = lvl + '%';
-    $('lvl').className = phase === 'voice' ? 'voice' : '';
-    if (phase === 'calib') {
-      calib.push(db);
-      if (tHop >= 1000) {
-        const s = calib.slice().sort((a, b) => a - b);
-        floor = s[Math.floor(s.length * 0.3)];
-        phase = 'idle';
-        $('state').textContent = 'Listening… chant ராம';
-      }
-      return;
-    }
-    const on = Math.max(floor + sens(), -62);
-    if (phase === 'idle') {
-      if (db > on) { if (above === 0) burstStart = tHop - HOP_MS; above++; }
-      else {
-        above = 0;
-        if (db < on - 3) floor = Math.min(floor * 0.995 + db * 0.005, floor + 0.05);
-      }
-      if (above >= 4) { phase = 'voice'; peak = db; below = 0; }
-      return;
-    }
-    if (phase === 'voice') {
-      peak = Math.max(peak, db);
-      const end = Math.max(on - 6, peak - 20);
-      if (db < end) { if (below === 0) firstBelow = tHop - HOP_MS; below++; } else below = 0;
-      if (below * HOP_MS >= gapMs()) {
-        const dur = firstBelow - burstStart;
-        phase = 'idle'; above = 0;
-        if (dur >= 150) {
-          const prev = bursts.length ? bursts[bursts.length - 1].e : null;
-          bursts.push({ s: burstStart, e: firstBelow, gap: prev === null ? null : burstStart - prev });
-          if (dur > 1800) longOnes++;
-          if (finalCount() < target) autoCount++;
-          show(); checkTarget();
-        } else shortOnes++;
-      }
-    }
-  }
-  function checkTarget() {
-    if (recording && !stopping && $('autostop').checked && finalCount() >= target) {
-      stopping = true;
-      $('state').textContent = 'Target reached – stopping…';
-      setTimeout(stop, 700);
-    }
+
+  let tickCtx = null;
+  function tick() {
+    if (!$('tick').checked || !ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = 1200; g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.06);
   }
 
-  $('plus').onclick = () => { if (finalCount() < target) { manual++; plus++; show(); checkTarget(); } };
-  $('minus').onclick = () => { if (finalCount() > 0) { manual--; minus++; show(); } };
+  // ---- the guide: beats scheduled on the audio clock, so they line up with the recording
+  function loop() {
+    if (!running) return;
+    const t = ctx.currentTime;
+    const c = $('circle');
+    if (t < firstBeat) {
+      const left = Math.ceil(firstBeat - t);
+      c.classList.add('cd'); c.classList.remove('beat'); c.textContent = left;
+      $('pb').style.width = (100 * (1 - (firstBeat - t) % 1)) + '%';
+    } else {
+      const b = Math.floor((t - firstBeat) / period);      // 0-based beat now sounding
+      if (b >= target) {
+        c.classList.remove('beat'); c.textContent = 'ராம';
+        $('pb').style.width = '100%';
+        if (t >= firstBeat + target * period + 0.4) { finish(true); return; }
+      } else {
+        const frac = ((t - firstBeat) % period) / period;
+        c.classList.remove('cd'); c.textContent = 'ராம';
+        c.classList.toggle('beat', frac < 0.45);
+        c.style.transform = 'scale(' + (frac < 0.45 ? 1.08 - 0.08 * frac / 0.45 : 1) + ')';
+        $('pb').style.width = (100 * frac) + '%';
+        if (b !== lastBeatShown) {
+          lastBeatShown = b; done = b + 1; show(done);
+          if ($('vib').checked && navigator.vibrate) navigator.vibrate(25);
+          tick();
+          $('state').textContent = 'Chant with the glow…';
+        }
+      }
+    }
+    raf = requestAnimationFrame(loop);
+  }
 
-  $('go').onclick = () => recording ? stop() : start();
+  $('go').onclick = () => running ? finish(false) : start();
 
   async function start() {
     reset();
@@ -240,61 +225,78 @@
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
-    ctx = new AC();
-    await ctx.resume();
+    ctx = new AC(); await ctx.resume();
     sr = ctx.sampleRate; hop = Math.round(sr * HOP_MS / 1000);
     src = ctx.createMediaStreamSource(stream);
     proc = ctx.createScriptProcessor(2048, 1, 1);
     mute = ctx.createGain(); mute.gain.value = 0;
     proc.onaudioprocess = e => {
-      if (!recording) return;
+      if (!running) return;
+      if (samples === 0) recT0 = e.playbackTime || ctx.currentTime;
       const x = new Float32Array(e.inputBuffer.getChannelData(0));
-      chunks.push(x); feed(x);
+      chunks.push(x); samples += x.length; feed(x);
     };
     src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
     try { wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
-    recording = true; phase = 'calib'; t0 = Date.now();
-    timer = setInterval(() => $('time').textContent = fmt(Date.now() - t0), 250);
+    running = true; stopped = false;
+    firstBeat = ctx.currentTime + COUNTDOWN;
     $('go').textContent = 'Stop'; $('go').classList.add('stop');
-    $('state').textContent = 'Measuring room noise – stay silent…';
+    $('state').textContent = 'Get ready…';
     $('setup').style.opacity = .5;
-    show();
+    raf = requestAnimationFrame(loop);
   }
 
-  function stop() {
-    if (!recording) return;
-    recording = false; stopping = false;
-    clearInterval(timer);
+  function finish(complete) {
+    if (!running) return;
+    running = false; cancelAnimationFrame(raf);
     try { proc.disconnect(); src.disconnect(); mute.disconnect(); } catch (e) {}
     stream.getTracks().forEach(t => t.stop());
-    ctx.close();
+    const ctxRef = ctx; setTimeout(() => ctxRef.close(), 200);
     if (wake) { wake.release().catch(() => {}); wake = null; }
-    $('go').textContent = 'Start recording'; $('go').classList.remove('stop'); $('go').disabled = true;
-    $('lvl').style.width = '0';
+    const c = $('circle'); c.classList.remove('beat', 'cd'); c.style.transform = ''; c.textContent = 'ராம';
+    $('go').textContent = 'Start'; $('go').classList.remove('stop'); $('go').disabled = true;
+    $('lvl').style.width = '0'; $('pb').style.width = '0';
     $('setup').style.opacity = 1;
-    $('state').textContent = 'Recording stopped.';
-    show();
-    encode();
+    if (!complete) done = Math.max(0, Math.min(done, target));
+    $('state').innerHTML = complete ? 'Done – ' + target + ' ராம.' : '<span class="warn">Stopped early at ' + done + ' of ' + target + '.</span>';
+    encode(complete);
   }
 
   function reset() {
-    chunks = []; rest = new Float32Array(0);
-    phase = 'idle'; calib = []; floor = -60; above = below = 0; tHop = 0;
-    autoCount = manual = plus = minus = longOnes = shortOnes = 0; bursts = [];
-    $('result').hidden = true; $('reportBox').hidden = true; $('time').textContent = '0:00';
-    show();
+    chunks = []; samples = 0; rest = new Float32Array(0); frames = [];
+    done = 0; lastBeatShown = -1;
+    $('result').hidden = true; $('reportBox').hidden = true;
+    show(0);
   }
 
-  // ---- MP3: mono, 22.05 kHz, 32 kbps
-  async function encode() {
+  // which beats had voice in them (helps the devotee and, later, the moderator)
+  function beatCheck(n) {
+    const pre = frames.slice(0, Math.max(10, Math.round((firstBeat - recT0) * 100) - 20));
+    const s = pre.slice().sort((a, b) => a - b);
+    const floor = s.length ? s[Math.floor(s.length * 0.5)] : -70;
+    const thr = Math.max(floor + 12, -60);
+    const silent = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.round((firstBeat - recT0 + i * period) * 100), b = Math.round((firstBeat - recT0 + (i + 1) * period) * 100);
+      let v = 0, tot = 0;
+      for (let k = a; k < b && k < frames.length; k++) { tot++; if (frames[k] > thr) v++; }
+      if (!tot || v / tot < 0.2) silent.push(i + 1);
+    }
+    return { floor, silent };
+  }
+
+  // ---- MP3: mono, 22.05 kHz, 32 kbps; trimmed to the chanting
+  async function encode(complete) {
     $('result').hidden = false; $('enc').textContent = 'Making the MP3…';
-    let n = 0; chunks.forEach(c => n += c.length);
-    const all = new Float32Array(n); let o = 0; chunks.forEach(c => { all.set(c, o); o += c.length; });
+    const all = new Float32Array(samples); let o = 0; chunks.forEach(c => { all.set(c, o); o += c.length; });
+    const startS = Math.max(0, Math.round((firstBeat - recT0 - 0.3) * sr));
+    const endS = Math.min(samples, Math.round((firstBeat - recT0 + done * period + 0.4) * sr));
+    const n = Math.max(0, endS - startS);
     const ratio = sr / OUT_RATE, m = Math.floor(n / ratio);
     const pcm = new Float32Array(m); let pk = 0;
     for (let i = 0; i < m; i++) {
-      const a = Math.floor(i * ratio), b = Math.max(a + 1, Math.floor((i + 1) * ratio));
-      let s = 0; for (let k = a; k < b && k < n; k++) s += all[k];
+      const a = startS + Math.floor(i * ratio), b = Math.max(a + 1, startS + Math.floor((i + 1) * ratio));
+      let s = 0; for (let k = a; k < b; k++) s += all[k];
       const v = s / (b - a); pcm[i] = v; if (Math.abs(v) > pk) pk = Math.abs(v);
     }
     const g = pk > 0 ? Math.min(4, 0.89 / pk) : 1;
@@ -302,27 +304,24 @@
     for (let i = 0; i < m; i++) i16[i] = Math.max(-32767, Math.min(32767, pcm[i] * g * 32767));
     let blob, ext = 'mp3';
     try {
-      const enc = new lamejs.Mp3Encoder(1, OUT_RATE, KBPS);
-      const parts = [];
+      const enc = new lamejs.Mp3Encoder(1, OUT_RATE, KBPS); const parts = [];
       for (let i = 0; i < m; i += 1152) {
-        const b = enc.encodeBuffer(i16.subarray(i, i + 1152));
-        if (b.length) parts.push(b);
+        const b = enc.encodeBuffer(i16.subarray(i, i + 1152)); if (b.length) parts.push(b);
         if ((i / 1152) % 300 === 0) await new Promise(r => setTimeout(r, 0));
       }
       const f = enc.flush(); if (f.length) parts.push(f);
       blob = new Blob(parts, { type: 'audio/mpeg' });
-    } catch (e) {
-      blob = wav(i16); ext = 'wav';
-    }
+    } catch (e) { blob = wav(i16); ext = 'wav'; }
     const url = URL.createObjectURL(blob);
-    $('player').src = url;
-    $('dl').href = url; $('dl').download = 'ramanama_test.' + ext;
+    $('player').src = url; $('dl').href = url; $('dl').download = 'ramanama_test.' + ext;
     const secs = m / OUT_RATE;
-    $('enc').textContent = (ext === 'mp3' ? 'MP3' : 'WAV (MP3 encoder missing)') + ' · ' + fmt(secs * 1000) + ' · ' + (blob.size / 1024).toFixed(0) + ' KB';
-    $('cWho').textContent = ($('nm').value.trim() || 'Your name') + ' · ' + finalCount() + ' ராம';
+    $('enc').textContent = (ext === 'mp3' ? 'MP3' : 'WAV (MP3 encoder missing)') + ' · ' + fmt(secs) + ' · ' + (blob.size / 1024).toFixed(0) + ' KB';
+    $('cWho').textContent = ($('nm').value.trim() || 'Your name') + ' · ' + done + ' ராம';
     $('cWhere').textContent = $('ct').value.trim() || 'Country';
     $('go').disabled = false;
-    report(secs, blob.size, ext);
+    const chk = beatCheck(done);
+    if (chk.silent.length) $('state').innerHTML += ' <span class="warn">No voice heard on ' + chk.silent.length + ' beat(s).</span>';
+    report(secs, blob.size, ext, complete, chk);
   }
   function wav(i16) {
     const b = new ArrayBuffer(44 + i16.length * 2), v = new DataView(b);
@@ -330,42 +329,35 @@
     w(0, 'RIFF'); v.setUint32(4, 36 + i16.length * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
     v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
     v.setUint32(24, OUT_RATE, true); v.setUint32(28, OUT_RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-    w(36, 'data'); v.setUint32(40, i16.length * 2, true);
-    new Int16Array(b, 44).set(i16);
+    w(36, 'data'); v.setUint32(40, i16.length * 2, true); new Int16Array(b, 44).set(i16);
     return new Blob([b], { type: 'audio/wav' });
   }
 
-  function report(secs, bytes, ext) {
-    const durs = bursts.map(b => b.e - b.s), gaps = bursts.filter(b => b.gap !== null).map(b => b.gap);
-    const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0;
-    const L = [
-      'Rama Nama voice test',
+  function report(secs, bytes, ext, complete, chk) {
+    $('report').value = [
+      'Rama Nama voice test – guided pace',
       'Date: ' + new Date().toLocaleString(),
       'Device: ' + navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''),
-      'Target: ' + target + '   Final count: ' + finalCount(),
-      'Voice count: ' + autoCount + '   +1 taps: ' + plus + '   -1 taps: ' + minus,
+      'Target: ' + target + '   Chanted to beat: ' + done + (complete ? '   (complete)' : '   (stopped early)'),
+      'Pace: ' + period + ' s per ராம   vibrate ' + ($('vib').checked ? 'on' : 'off') + '   tick ' + ($('tick').checked ? 'on' : 'off'),
       'Recording: ' + secs.toFixed(1) + ' s   ' + ext.toUpperCase() + ' ' + (bytes / 1024).toFixed(0) + ' KB',
-      'Settings: sensitivity ' + sens() + ' dB, pause ' + gapMs() + ' ms, auto-stop ' + ($('autostop').checked ? 'on' : 'off'),
-      'Room noise: ' + floor.toFixed(1) + ' dB   sample rate ' + sr,
-      'Bursts: ' + bursts.length + '   too short (ignored): ' + shortOnes + '   over 1.8 s: ' + longOnes,
-      'Average ராம length: ' + avg(durs) + ' ms   average pause: ' + avg(gaps) + ' ms',
-      'Lengths (ms): ' + durs.join(' '),
-      'Pauses (ms): ' + gaps.join(' ')
-    ];
-    $('report').value = L.join('\n');
+      'Room noise: ' + chk.floor.toFixed(1) + ' dB   sample rate ' + sr,
+      'Beats with no voice: ' + (chk.silent.length ? chk.silent.join(' ') : 'none')
+    ].join('\n');
     $('reportBox').hidden = false;
   }
   $('copy').onclick = async () => {
-    try { await navigator.clipboard.writeText($('report').value); $('copy').textContent = 'Copied'; }
-    catch (e) { $('report').select(); document.execCommand('copy'); $('copy').textContent = 'Copied'; }
+    try { await navigator.clipboard.writeText($('report').value); }
+    catch (e) { $('report').select(); document.execCommand('copy'); }
+    $('copy').textContent = 'Copied';
   };
-  $('again').onclick = () => { reset(); $('state').textContent = 'Press Start, stay silent for 1 second, then chant.'; };
+  $('again').onclick = () => { reset(); $('state').textContent = 'Press Start. After 3 – 2 – 1, chant one ராம each time the circle glows.'; };
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     $('state').innerHTML = '<span class="err">This browser cannot record here. Open the page in Chrome over https.</span>';
     $('go').disabled = true;
   }
-  show();
+  show(0);
 })();
 </script>
 </body>
