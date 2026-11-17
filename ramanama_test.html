@@ -90,9 +90,9 @@
     <div class="circle" id="circle">ராம</div>
     <div class="pbar"><i id="pb"></i></div>
     <div class="meter"><i id="lvl"></i></div>
-    <div class="state" id="state">Press Start. After 3 – 2 – 1, chant one ராம each time the circle glows.</div>
+    <div class="state" id="state">Press Start. After 3 – 2 – 1, say ராம each time it appears in the circle.</div>
     <button class="big" id="go">Start</button>
-    <div class="tip">The circle glows once for every ராம and the bar shows when the next one comes. Recording stops by itself after the last ராம. Keep the phone about a hand's length from your mouth.</div>
+    <div class="tip">ராம appears in the glowing circle – say it then. When the circle is empty, pause. The bar shows when the next one comes. Recording stops by itself after the last ராம. Keep the phone about a hand's length from your mouth.</div>
   </div>
 
   <div class="card">
@@ -192,20 +192,22 @@
     } else {
       const b = Math.floor((t - firstBeat) / period);      // 0-based beat now sounding
       if (b >= target) {
-        c.classList.remove('beat'); c.textContent = 'ராம';
+        c.classList.remove('beat'); c.textContent = '';
         $('pb').style.width = '100%';
         if (t >= firstBeat + target * period + 0.4) { finish(true); return; }
       } else {
         const frac = ((t - firstBeat) % period) / period;
-        c.classList.remove('cd'); c.textContent = 'ராம';
-        c.classList.toggle('beat', frac < 0.45);
-        c.style.transform = 'scale(' + (frac < 0.45 ? 1.08 - 0.08 * frac / 0.45 : 1) + ')';
+        const on = frac < 0.5;                        // say ராம only while it shows
+        c.classList.remove('cd');
+        c.textContent = on ? 'ராம' : '';
+        c.classList.toggle('beat', on);
+        c.style.transform = 'scale(' + (on ? 1.08 - 0.08 * frac / 0.5 : 1) + ')';
         $('pb').style.width = (100 * frac) + '%';
         if (b !== lastBeatShown) {
           lastBeatShown = b; done = b + 1; show(done);
           if ($('vib').checked && navigator.vibrate) navigator.vibrate(25);
           tick();
-          $('state').textContent = 'Chant with the glow…';
+          $('state').textContent = 'Say ராம when it appears…';
         }
       }
     }
@@ -243,6 +245,7 @@
     $('go').textContent = 'Stop'; $('go').classList.add('stop');
     $('state').textContent = 'Get ready…';
     $('setup').style.opacity = .5;
+    document.querySelector('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
     raf = requestAnimationFrame(loop);
   }
 
@@ -271,9 +274,8 @@
 
   // which beats had voice in them (helps the devotee and, later, the moderator)
   function beatCheck(n) {
-    const pre = frames.slice(0, Math.max(10, Math.round((firstBeat - recT0) * 100) - 20));
-    const s = pre.slice().sort((a, b) => a - b);
-    const floor = s.length ? s[Math.floor(s.length * 0.5)] : -70;
+    const s = frames.slice().sort((a, b) => a - b);
+    const floor = s.length ? s[Math.floor(s.length * 0.1)] : -70;
     const thr = Math.max(floor + 12, -60);
     const silent = [];
     for (let i = 0; i < n; i++) {
@@ -351,7 +353,7 @@
     catch (e) { $('report').select(); document.execCommand('copy'); }
     $('copy').textContent = 'Copied';
   };
-  $('again').onclick = () => { reset(); $('state').textContent = 'Press Start. After 3 – 2 – 1, chant one ராம each time the circle glows.'; };
+  $('again').onclick = () => { reset(); $('state').textContent = 'Press Start. After 3 – 2 – 1, say ராம each time it appears in the circle.'; };
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     $('state').innerHTML = '<span class="err">This browser cannot record here. Open the page in Chrome over https.</span>';
