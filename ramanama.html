@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f5c242">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arulicheyal">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-152x152.png">
+  <title>Sri Rama Nama Voice Bank — Arulicheyal</title>
+  <link rel="stylesheet" href="/css/main.css?v=861">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css"/>
+  <script src="./js/layout.js" defer></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof loadLayout === "function") loadLayout();
+    });
+  </script>
+  <style>
+    #rnRoot { max-width: 620px; margin: 0 auto; padding: 16px 14px 50px; box-sizing: border-box; color: #3B2410;
+      font-family: "Noto Sans Tamil", "Noto Sans Devanagari", "Latha", "Segoe UI", Arial, sans-serif; font-size: 15px; line-height: 1.55; }
+    #rnRoot * { box-sizing: border-box; }
+    #rnRoot .top { display: flex; justify-content: flex-end; gap: 4px; margin-bottom: 6px; }
+    #rnRoot .langs button { border: 1px solid #C9A84C; background: #fff; color: #3B2410; border-radius: 999px; padding: 3px 10px;
+      font-size: 12px !important; cursor: pointer; font-family: inherit; }
+    #rnRoot .langs button.on { background: #2f7d32; border-color: #2f7d32; color: #fff; font-weight: 700; }
+    #rnRoot h1 { text-align: center; color: #7B3F00; font-size: 21px !important; margin: 4px 0 2px; line-height: 1.35; }
+    #rnRoot .tag { text-align: center; color: #8B6A45; font-size: 13.5px !important; margin-bottom: 12px; }
+    #rnRoot .card { background: #FFFDF7; border: 1.5px solid #E8D5A8; border-radius: 12px; padding: 14px; margin: 12px 0; }
+    #rnRoot .card h2 { font-size: 16.5px !important; color: #7B3F00; margin: 0 0 8px; }
+    #rnRoot .soon { color: #8B6A45; font-size: 13.5px !important; }
+    #rnRoot .lbl { font-size: 13px !important; color: #8a6a40; margin: 10px 0 4px; display: block; }
+    #rnRoot input[type=text], #rnRoot input[type=tel], #rnRoot select {
+      width: 100%; font-size: 15px !important; padding: 9px 10px; border: 1px solid #E6C98A; border-radius: 8px; background: #FFFBF1; font-family: inherit; }
+    #rnRoot .iti { width: 100%; }
+    #rnRoot .chk { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 14px !important; }
+    #rnRoot .chk input { margin-top: 4px; flex-shrink: 0; width: 18px; height: 18px; }
+    #rnRoot .opts { display: flex; gap: 8px; }
+    #rnRoot .opts button { flex: 1; font-size: 16px !important; font-weight: 700; padding: 9px 0; border-radius: 10px; border: 2px solid #E6C98A;
+      background: #FFFBF1; color: #7B3F00; line-height: 1.2; font-family: inherit; }
+    #rnRoot .opts button small { display: block; font-size: 11px !important; font-weight: 500; opacity: .8; }
+    #rnRoot .opts button.on { background: #7B3F00; color: #fff; border-color: #7B3F00; }
+    #rnRoot .big { width: 100%; font-size: 17px !important; font-weight: 700; padding: 13px 0; border-radius: 12px; border: 0;
+      background: #7B3F00; color: #fff; margin-top: 12px; font-family: inherit; cursor: pointer; }
+    #rnRoot .big.stop { background: #B03A2E; }
+    #rnRoot .big:disabled { opacity: .45; }
+    #rnRoot .btn2 { display: inline-block; font-size: 14px !important; font-weight: 600; padding: 8px 14px; border-radius: 10px;
+      border: 2px solid #7B3F00; color: #7B3F00; background: #fff; margin: 10px 6px 0 0; font-family: inherit; cursor: pointer; }
+    #rnRoot .btn2.red { border-color: #B03A2E; color: #B03A2E; }
+    #rnRoot .stage { text-align: center; }
+    #rnRoot .count { font-size: 40px !important; font-weight: 800; color: #7B3F00; line-height: 1.1; margin-top: 8px; }
+    #rnRoot .count small { font-size: 20px !important; color: #b08850; font-weight: 600; }
+    #rnRoot .rem { color: #8a6a40; font-size: 14px !important; }
+    #rnRoot .circle { width: 180px; height: 180px; margin: 12px auto 10px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; background: #FFF1D2; border: 4px solid #E6C98A; font-size: 44px !important; font-weight: 700; color: #B98B4A;
+      transition: background 120ms, color 120ms, border-color 120ms; }
+    #rnRoot .circle.beat { background: #7B3F00; color: #FFE7A8; border-color: #7B3F00; }
+    #rnRoot .circle.cd { font-size: 60px !important; color: #7B3F00; }
+    #rnRoot .pbar { height: 8px; background: #F5E6C8; border-radius: 5px; overflow: hidden; margin: 0 20px; }
+    #rnRoot .pbar i { display: block; height: 100%; width: 0; background: #C9A15A; }
+    #rnRoot .meter { height: 6px; background: #F5E6C8; border-radius: 4px; overflow: hidden; margin: 10px 20px 2px; }
+    #rnRoot .meter i { display: block; height: 100%; width: 0; background: #2E8B57; }
+    #rnRoot .note { font-size: 13px !important; color: #6a5030; background: #FFF3D6; border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+    #rnRoot .msg { font-size: 14px !important; margin-top: 8px; min-height: 20px; }
+    #rnRoot .err { color: #B03A2E; font-weight: 600; }
+    #rnRoot .ok { color: #2f7d32; font-weight: 600; }
+    #rnRoot .warn { color: #9A5B00; font-weight: 600; }
+    #rnRoot audio { width: 100%; margin-top: 8px; }
+    #rnRoot .who { font-size: 13px !important; color: #8a6a40; margin-bottom: 6px; }
+    #rnRoot .who a { color: #7B3F00; cursor: pointer; text-decoration: underline; }
+    #rnRoot .status { font-weight: 700; font-size: 15px !important; }
+    #rnRoot .stats { margin-top: 6px; font-size: 14px !important; color: #3B2410; }
+    #rnRoot .confirm { margin-top: 10px; padding: 10px; border: 1px dashed #B03A2E; border-radius: 8px; font-size: 14px !important; }
+    #rnRoot [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+
+  <div id="rnRoot">
+    <div class="top langs" id="langs">
+      <button data-l="ta">தமிழ்</button>
+      <button data-l="hi">हिन्दी</button>
+      <button data-l="en">English</button>
+    </div>
+    <h1 id="t_title"></h1>
+    <div class="tag" id="t_tag"></div>
+
+    <!-- Player, PM recording, teachings and FAQ come in the next steps -->
+    <div class="card"><h2 id="t_listenH"></h2><div class="soon" id="t_soon"></div></div>
+
+    <!-- My contribution / offer your voice -->
+    <div class="card" id="cardMe">
+      <h2 id="t_offerH"></h2>
+      <div class="who" id="who" hidden></div>
+
+      <!-- not signed in -->
+      <div id="vSignin" hidden>
+        <div id="t_signinNote"></div>
+        <div id="gbtn" style="margin-top:12px;display:flex;justify-content:center;min-height:44px"></div>
+        <div class="msg" id="signMsg"></div>
+      </div>
+
+      <!-- registration -->
+      <div id="vReg" hidden>
+        <label class="lbl" id="t_name" for="fName"></label>
+        <input type="text" id="fName" maxlength="60" autocomplete="name">
+        <label class="lbl" id="t_mobile" for="fMobile"></label>
+        <input type="tel" id="fMobile" autocomplete="tel">
+        <label class="lbl" id="t_country" for="fCountry"></label>
+        <select id="fCountry"></select>
+        <label class="chk"><input type="checkbox" id="fAnon"><span id="t_anon"></span></label>
+        <button class="big" id="bReg"></button>
+        <div class="msg" id="regMsg"></div>
+      </div>
+
+      <!-- status of my contribution -->
+      <div id="vStatus" hidden>
+        <div class="status" id="stLine"></div>
+        <div class="ok" id="stThanks" hidden></div>
+        <div id="stReason" class="warn" hidden></div>
+        <audio id="myAudio" controls preload="none" hidden></audio>
+        <div class="stats" id="stPlays" hidden></div>
+        <button class="btn2 red" id="bWithdraw" hidden></button>
+        <div class="confirm" id="wConfirm" hidden>
+          <div id="t_wSure"></div>
+          <button class="btn2 red" id="bWYes"></button><button class="btn2" id="bWNo"></button>
+        </div>
+      </div>
+
+      <!-- recorder -->
+      <div id="vRec" hidden>
+        <span class="lbl" id="t_howMany"></span>
+        <div class="opts" id="tgts">
+          <button data-n="18" class="on">18</button><button data-n="36">36</button><button data-n="108">108</button>
+        </div>
+        <span class="lbl" id="t_pace"></span>
+        <div class="opts" id="paces">
+          <button data-p="1.5"><span class="pn"></span><small>1.5 s</small></button>
+          <button data-p="1.2" class="on"><span class="pn"></span><small>1.2 s</small></button>
+          <button data-p="0.9"><span class="pn"></span><small>0.9 s</small></button>
+        </div>
+        <div class="stage" id="stage">
+          <div class="count"><span id="cnt">0</span> <small>/ <span id="tgt">18</span></small></div>
+          <div class="rem" id="rem"></div>
+          <div class="circle" id="circle"></div>
+          <div class="pbar"><i id="pb"></i></div>
+          <div class="meter"><i id="lvl"></i></div>
+          <div class="msg" id="recMsg"></div>
+          <button class="big" id="bGo"></button>
+        </div>
+        <div class="note" id="t_recNote"></div>
+
+        <div id="vReview" hidden>
+          <span class="lbl" id="t_listenMine"></span>
+          <audio id="revAudio" controls></audio>
+          <div class="msg" id="revMsg"></div>
+          <label class="chk"><input type="checkbox" id="fConsent"><span id="t_consent"></span></label>
+          <button class="big" id="bSubmit" disabled></button>
+          <button class="btn2" id="bAgain"></button>
+          <div class="msg" id="subMsg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="js/lame.min.js"></script>
+<script>
+(() => {
+  const W = "https://ramanamaworker.kanchitrust.workers.dev";
+  const CLIENT_ID = "49899300551-sqg7tbbfkficni6q806p851s9j1pphuu.apps.googleusercontent.com";
+  const CONSENT = "v1";
+  const $ = id => document.getElementById(id);
+
+  // ---------------- language ----------------
+  const T = {
+    ta: {
+      title: "ஸ்ரீ ராம நாம குரல் வங்கி", tag: "உங்கள் குரலில் ராம நாமம் – உலகெங்கும் ஒலிக்க",
+      listenH: "ராம நாமம் கேளுங்கள்", soon: "உலகெங்கும் உள்ள அடியார்களின் குரல்கள் விரைவில் இங்கே தொடர்ந்து ஒலிக்கும்.",
+      offerH: "உங்கள் குரலைச் சமர்ப்பியுங்கள்", myH: "என் பங்களிப்பு",
+      signinNote: "பங்களிக்க Google மூலம் உள்நுழையுங்கள். ஒருவருக்கு ஒரு முறை மட்டுமே.",
+      signedAs: "உள்நுழைந்தவர்: {e}", signOut: "வெளியேறு",
+      name: "பெயர் (உங்கள் குரல் ஒலிக்கும்போது காட்டப்படும்)", mobile: "கைபேசி எண்", country: "நாடு",
+      anon: "என் பெயரைக் காட்ட வேண்டாம் – 'ஒரு அடியார்' எனக் காட்டவும்", reg: "பதிவு செய்",
+      regNeed: "பெயர், கைபேசி எண், நாடு மூன்றும் தேவை.",
+      howMany: "எத்தனை ராம?", pace: "வேகம்", paces: ["மெதுவாக", "நடுத்தரம்", "வேகமாக"],
+      nama: "ராம", start: "தொடங்கு", stop: "நிறுத்து", rem: "இன்னும் {n}",
+      ready: "தொடங்கு அழுத்தியபின் 3 – 2 – 1 வரும்.",
+      recNote: "வட்டம் ஒளிர்ந்து அதில் ராம தோன்றும்போது சொல்லுங்கள்; வட்டம் காலியாக இருக்கும்போது நிறுத்துங்கள். கடைசி ராமவுக்குப் பின் தானே நின்றுவிடும். கைபேசியை வாயிலிருந்து ஒரு கை தூரத்தில் வையுங்கள்.",
+      sayNow: "ராம தோன்றும்போது சொல்லுங்கள்…", getReady: "தயாராகுங்கள்…",
+      done: "நிறைவு – {n} ராம.", early: "{d} / {n} இல் நிறுத்தப்பட்டது.",
+      noVoice: "{n} இடங்களில் குரல் கேட்கவில்லை – விரும்பினால் மீண்டும் பதிவு செய்யுங்கள்.",
+      micNo: "மைக் கிடைக்கவில்லை. Chrome-இல் மைக் அனுமதி கொடுங்கள்.", making: "தயாராகிறது…",
+      listenMine: "உங்கள் பதிவைக் கேளுங்கள்",
+      consent: "என் குரல் பதிவு, என் பெயர் (அல்லது 'ஒரு அடியார்') மற்றும் நாட்டுடன், உலகின் எந்த இடத்திலும் எந்த நேரத்திலும் ஒலிபரப்பப்படும் என்பதை ஏற்கிறேன்.",
+      submit: "சமர்ப்பி", again: "மீண்டும் பதிவு செய்", sending: "அனுப்புகிறது…",
+      thanks: "நன்றி! உங்கள் குரல் சரிபார்ப்புக்கு அனுப்பப்பட்டது ({no}).",
+      PENDING: "{no} · {n} ராம – சரிபார்ப்பில் உள்ளது. ஏற்றவுடன் மின்னஞ்சல் வரும்.",
+      APPROVED: "{no} · {n} ராம – வங்கியில் சேர்க்கப்பட்டது, உலகெங்கும் ஒலிக்கிறது.",
+      REJECTED: "{no} – சேர்க்க இயலவில்லை. தயவுசெய்து மீண்டும் பதிவு செய்யுங்கள்.",
+      WITHDRAWN: "நீங்கள் உங்கள் பதிவைத் திரும்பப் பெற்றீர்கள். விரும்பினால் மீண்டும் பதிவு செய்யலாம்.",
+      reason: "காரணம்: {r}", plays: "{p} முறை ஒலித்தது · {c} நாடுகள் · மொத்தம் {n} ராம நாமம் · இன்று {t} முறை",
+      withdraw: "என் பதிவைத் திரும்பப் பெறு", wSure: "உறுதியாக? உங்கள் பதிவு நீக்கப்படும்.", yes: "ஆம், நீக்கு", no: "வேண்டாம்",
+      errGen: "ஏதோ தவறு நடந்தது. சிறிது நேரம் கழித்து முயலுங்கள்.", signAgain: "மீண்டும் உள்நுழையுங்கள்."
+    },
+    hi: {
+      title: "श्री राम नाम स्वर बैंक", tag: "आपकी आवाज़ में राम नाम – पूरे विश्व में गूँजे",
+      listenH: "राम नाम सुनें", soon: "विश्व भर के भक्तों की आवाज़ें जल्द ही यहाँ लगातार बजेंगी।",
+      offerH: "अपनी आवाज़ अर्पित करें", myH: "मेरा योगदान",
+      signinNote: "योगदान के लिए Google से साइन इन करें। हर व्यक्ति केवल एक बार।",
+      signedAs: "साइन इन: {e}", signOut: "साइन आउट",
+      name: "नाम (आपकी आवाज़ बजते समय दिखेगा)", mobile: "मोबाइल नंबर", country: "देश",
+      anon: "मेरा नाम न दिखाएँ – 'एक भक्त' दिखाएँ", reg: "पंजीकरण करें",
+      regNeed: "नाम, मोबाइल नंबर और देश – तीनों आवश्यक हैं।",
+      howMany: "कितने राम?", pace: "गति", paces: ["धीमा", "मध्यम", "तेज़"],
+      nama: "राम", start: "शुरू करें", stop: "रोकें", rem: "शेष {n}",
+      ready: "शुरू करें दबाने पर 3 – 2 – 1 आएगा।",
+      recNote: "जब घेरा चमके और उसमें राम दिखे, तब बोलें; घेरा खाली हो तो रुकें। आख़िरी राम के बाद रिकॉर्डिंग अपने-आप रुक जाएगी। फ़ोन को मुँह से लगभग एक हाथ की दूरी पर रखें।",
+      sayNow: "राम दिखे तब बोलें…", getReady: "तैयार हो जाइए…",
+      done: "पूर्ण – {n} राम।", early: "{d} / {n} पर रोका गया।",
+      noVoice: "{n} जगह आवाज़ नहीं सुनाई दी – चाहें तो फिर से रिकॉर्ड करें।",
+      micNo: "माइक उपलब्ध नहीं। Chrome में माइक की अनुमति दें।", making: "तैयार हो रहा है…",
+      listenMine: "अपनी रिकॉर्डिंग सुनें",
+      consent: "मैं स्वीकार करता/करती हूँ कि मेरी आवाज़ की रिकॉर्डिंग, मेरे नाम (या 'एक भक्त') और देश के साथ, विश्व में कहीं भी, किसी भी समय बजाई जाएगी।",
+      submit: "अर्पित करें", again: "फिर से रिकॉर्ड करें", sending: "भेजा जा रहा है…",
+      thanks: "धन्यवाद! आपकी आवाज़ जाँच के लिए भेज दी गई ({no})।",
+      PENDING: "{no} · {n} राम – जाँच में है। स्वीकृत होते ही ईमेल आएगा।",
+      APPROVED: "{no} · {n} राम – बैंक में जुड़ गया, विश्व भर में बज रहा है।",
+      REJECTED: "{no} – जोड़ा नहीं जा सका। कृपया फिर से रिकॉर्ड करें।",
+      WITHDRAWN: "आपने अपनी रिकॉर्डिंग वापस ले ली। चाहें तो फिर से रिकॉर्ड कर सकते हैं।",
+      reason: "कारण: {r}", plays: "{p} बार बजा · {c} देश · कुल {n} राम नाम · आज {t} बार",
+      withdraw: "मेरी रिकॉर्डिंग वापस लें", wSure: "पक्का? आपकी रिकॉर्डिंग हटा दी जाएगी।", yes: "हाँ, हटाएँ", no: "नहीं",
+      errGen: "कुछ गड़बड़ हुई। थोड़ी देर बाद प्रयास करें।", signAgain: "कृपया फिर से साइन इन करें।"
+    },
+    en: {
+      title: "Sri Rama Nama Voice Bank", tag: "Rama Nama in your own voice – heard around the world",
+      listenH: "Listen to Rama Nama", soon: "Voices of devotees from around the world will soon play here continuously.",
+      offerH: "Offer your voice", myH: "My contribution",
+      signinNote: "Sign in with Google to contribute. Once per person.",
+      signedAs: "Signed in as {e}", signOut: "Sign out",
+      name: "Name (shown while your voice plays)", mobile: "Mobile number", country: "Country",
+      anon: "Don't show my name – show 'A devotee'", reg: "Register",
+      regNeed: "Name, mobile number and country are all needed.",
+      howMany: "How many Rama?", pace: "Pace", paces: ["Slow", "Medium", "Fast"],
+      nama: "Rama", start: "Start", stop: "Stop", rem: "{n} to go",
+      ready: "After you press Start, 3 – 2 – 1 will appear.",
+      recNote: "When the circle glows and Rama appears in it, say Rama; when the circle is empty, pause. Recording stops by itself after the last one. Keep the phone about a hand's length from your mouth.",
+      sayNow: "Say Rama when it appears…", getReady: "Get ready…",
+      done: "Done – {n} Rama.", early: "Stopped at {d} of {n}.",
+      noVoice: "No voice heard on {n} beat(s) – you may record again.",
+      micNo: "Microphone not available. Allow the microphone in Chrome.", making: "Preparing…",
+      listenMine: "Listen to your recording",
+      consent: "I agree that my recording will be played anywhere in the world, at any time, with my name (or 'A devotee') and country.",
+      submit: "Submit", again: "Record again", sending: "Sending…",
+      thanks: "Thank you! Your voice has been sent for checking ({no}).",
+      PENDING: "{no} · {n} Rama – being checked. You will get an email once it is accepted.",
+      APPROVED: "{no} · {n} Rama – accepted, now playing around the world.",
+      REJECTED: "{no} – could not be added. Please record again.",
+      WITHDRAWN: "You withdrew your recording. You may record again if you wish.",
+      reason: "Reason: {r}", plays: "Played {p} times · {c} countries · {n} Rama Nama in all · {t} times today",
+      withdraw: "Withdraw my recording", wSure: "Are you sure? Your recording will be deleted.", yes: "Yes, delete", no: "No",
+      errGen: "Something went wrong. Please try again in a while.", signAgain: "Please sign in again."
+    }
+  };
+  const SCRIPT_LANG = { ta: "ta", deva: "hi", iast: "en" };
+  let L = (() => {
+    try { const s = localStorage.getItem("rnLang"); if (T[s]) return s; } catch (e) {}
+    let sc = "ta"; try { sc = (localStorage.getItem("script") || "ta").toLowerCase(); } catch (e) {}
+    return SCRIPT_LANG[sc] || (sc === "ta" ? "ta" : "en");
+  })();
+  const t = (k, v = {}) => String(T[L][k] ?? T.en[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
+
+  function applyLang() {
+    document.documentElement.lang = L === "hi" ? "hi" : L;
+    document.querySelectorAll("#langs button").forEach(b => b.classList.toggle("on", b.dataset.l === L));
+    for (const k of ["title", "tag", "listenH", "soon", "signinNote", "name", "mobile", "country", "anon",
+                     "howMany", "pace", "recNote", "listenMine", "consent", "wSure"]) {
+      const el = $("t_" + k); if (el) el.textContent = t(k);
+    }
+    $("bReg").textContent = t("reg"); $("bSubmit").textContent = t("submit"); $("bAgain").textContent = t("again");
+    $("bWithdraw").textContent = t("withdraw"); $("bWYes").textContent = t("yes"); $("bWNo").textContent = t("no");
+    document.querySelectorAll("#paces .pn").forEach((s, i) => s.textContent = (T[L].paces || T.en.paces)[i]);
+    if (!running) { $("bGo").textContent = t("start"); $("circle").textContent = t("nama"); }
+    showCount(done);
+    renderState();
+  }
+  document.querySelectorAll("#langs button").forEach(b => b.onclick = () => {
+    L = b.dataset.l; try { localStorage.setItem("rnLang", L); } catch (e) {}
+    applyLang(); renderGoogleButton();
+  });
+
+  // ---------------- Google sign-in ----------------
+  let token = null, me = null;
+  try {
+    const s = JSON.parse(sessionStorage.getItem("rnTok") || "null");
+    if (s && s.exp > Date.now() + 60000) token = s.tok;
+  } catch (e) {}
+
+  function onCredential(resp) {
+    try {
+      const p = JSON.parse(atob(resp.credential.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      token = resp.credential;
+      sessionStorage.setItem("rnTok", JSON.stringify({ tok: token, exp: p.exp * 1000 }));
+      localStorage.setItem("rnSigned", "1");
+    } catch (e) { token = resp.credential; }
+    loadMe();
+  }
+  let gsiReady = false;
+  function initGoogle() {
+    if (gsiReady || !window.google || !google.accounts || !google.accounts.id) return false;
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true, cancel_on_tap_outside: true });
+    gsiReady = true;
+    return true;
+  }
+  function renderGoogleButton() {
+    if (!gsiReady) return;
+    const box = $("gbtn"); box.innerHTML = "";
+    google.accounts.id.renderButton(box, { theme: "outline", size: "large", shape: "pill", text: "signin_with", locale: L });
+  }
+  function waitGoogle(cb, tries = 0) {
+    if (initGoogle()) return cb();
+    if (tries > 50) return;
+    setTimeout(() => waitGoogle(cb, tries + 1), 200);
+  }
+
+  async function api(path, opts = {}) {
+    const h = Object.assign({}, opts.headers || {});
+    if (token) h.Authorization = "Bearer " + token;
+    const r = await fetch(W + path, Object.assign({}, opts, { headers: h }));
+    let j = {}; try { j = await r.json(); } catch (e) {}
+    if (r.status === 401) { signOut(true); throw new Error(t("signAgain")); }
+    if (!r.ok || j.ok === false) throw new Error(j.error || t("errGen"));
+    return j;
+  }
+  function signOut(expired) {
+    token = null; me = null;
+    try { sessionStorage.removeItem("rnTok"); if (!expired) localStorage.removeItem("rnSigned"); } catch (e) {}
+    if (!expired && window.google && google.accounts) google.accounts.id.disableAutoSelect();
+    renderState();
+  }
+
+  async function loadMe() {
+    if (!token) { renderState(); return; }
+    try { me = await api("/rn/me"); } catch (e) { me = null; $("signMsg").innerHTML = '<span class="err">' + e.message + "</span>"; }
+    renderState();
+  }
+
+  // ---------------- views ----------------
+  let recDone = false;   // recording finished and waiting for submit
+  function renderState() {
+    const show = id => ["vSignin", "vReg", "vStatus", "vRec"].forEach(v => $(v).hidden = !id.includes(v));
+    $("t_offerH").textContent = me && me.contribution && !me.can_record ? t("myH") : t("offerH");
+    if (!token || !me) {
+      $("who").hidden = true; show(["vSignin"]); renderGoogleButton(); return;
+    }
+    const email = (me.devotee && me.devotee.email) || (me.google && me.google.email) || "";
+    $("who").hidden = false;
+    $("who").innerHTML = t("signedAs", { e: email.replace(/</g, "") }) + ' · <a id="aOut">' + t("signOut") + "</a>";
+    $("aOut").onclick = () => signOut(false);
+    if (!me.registered) { show(["vReg"]); prefillReg(); return; }
+    const c = me.contribution;
+    const views = [];
+    if (c) { views.push("vStatus"); fillStatus(c); }
+    if (me.can_record) views.push("vRec");
+    show(views);
+  }
+
+  function fillStatus(c) {
+    $("stLine").textContent = t(c.status, { no: c.no, n: c.count });
+    $("stReason").hidden = !(c.status === "REJECTED" && c.reason);
+    if (c.reason) $("stReason").textContent = t("reason", { r: c.reason });
+    const hasAudio = c.status === "PENDING" || c.status === "APPROVED";
+    $("myAudio").hidden = !hasAudio; $("bWithdraw").hidden = !hasAudio; $("wConfirm").hidden = true;
+    if (hasAudio && !$("myAudio").dataset.loaded) loadMyAudio();
+    const p = me.plays;
+    $("stPlays").hidden = !(c.status === "APPROVED" && p);
+    if (p) $("stPlays").textContent = t("plays", { p: p.total, c: p.countries, n: p.nama, t: p.today });
+  }
+  async function loadMyAudio() {
+    try {
+      const r = await fetch(W + "/rn/my-audio", { headers: { Authorization: "Bearer " + token } });
+      if (!r.ok) return;
+      if ((r.headers.get("content-type") || "").includes("json")) { const j = await r.json(); $("myAudio").src = j.url; }
+      else $("myAudio").src = URL.createObjectURL(await r.blob());
+      $("myAudio").dataset.loaded = "1";
+    } catch (e) {}
+  }
+  $("bWithdraw").onclick = () => { $("wConfirm").hidden = false; };
+  $("bWNo").onclick = () => { $("wConfirm").hidden = true; };
+  $("bWYes").onclick = async () => {
+    try { await api("/rn/withdraw", { method: "POST" }); delete $("myAudio").dataset.loaded; $("myAudio").removeAttribute("src"); await loadMe(); }
+    catch (e) { $("stLine").innerHTML += ' <span class="err">' + e.message + "</span>"; }
+  };
+
+  // ---------------- registration ----------------
+  let iti = null;
+  function setupReg() {
+    if (iti || !window.intlTelInput) return;
+    iti = window.intlTelInput($("fMobile"), {
+      initialCountry: "in", preferredCountries: ["in", "us", "gb", "sg", "ae", "au", "ca", "my"], separateDialCode: true,
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js"
+    });
+    const list = window.intlTelInputGlobals.getCountryData()
+      .map(c => ({ iso: c.iso2.toUpperCase(), name: c.name.replace(/\s*\(.*\)\s*$/, "") }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    $("fCountry").innerHTML = list.map(c => `<option value="${c.iso}">${c.name}</option>`).join("");
+    $("fCountry").value = "IN";
+    $("fMobile").addEventListener("countrychange", () => {
+      const d = iti.getSelectedCountryData(); if (d && d.iso2 && !$("fCountry").dataset.touched) $("fCountry").value = d.iso2.toUpperCase();
+    });
+    $("fCountry").addEventListener("change", () => $("fCountry").dataset.touched = "1");
+  }
+  function prefillReg() {
+    setupReg();
+    if (!$("fName").value && me && me.google && me.google.name) $("fName").value = me.google.name;
+  }
+  $("bReg").onclick = async () => {
+    const name = $("fName").value.trim();
+    let mobile = $("fMobile").value.trim();
+    if (iti) { const n = iti.getNumber(); if (n) mobile = n; }
+    const sel = $("fCountry"); const cc = sel.value; const cn = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : "";
+    if (!name || mobile.replace(/\D/g, "").length < 6 || !cc) { $("regMsg").innerHTML = '<span class="err">' + t("regNeed") + "</span>"; return; }
+    $("bReg").disabled = true;
+    try {
+      const script = (localStorage.getItem("script") || (L === "hi" ? "deva" : L === "en" ? "iast" : "ta"));
+      await api("/rn/register", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_name: name, mobile, country_code: cc, country_name: cn, anonymous: $("fAnon").checked, ui_script: script }) });
+      $("regMsg").textContent = ""; await loadMe();
+    } catch (e) { $("regMsg").innerHTML = '<span class="err">' + e.message + "</span>"; }
+    $("bReg").disabled = false;
+  };
+
+  // ---------------- guided recording (as tested on ramanama_test.html) ----------------
+  const OUT_RATE = 22050, KBPS = 32, COUNTDOWN = 3, HOP_MS = 10;
+  let target = 18, period = 1.2;
+  let ctx = null, stream = null, src = null, proc = null, mute = null, wake = null;
+  let chunks = [], sr = 48000, samples = 0, recT0 = 0, firstBeat = 0, raf = 0;
+  let running = false, busy = false, done = 0, lastBeat = -1;
+  let hop = 480, rest = new Float32Array(0), frames = [];
+  let mp3 = null, mp3Secs = 0, silentBeats = [];
+
+  function pick(groupId, attr, cb) {
+    document.querySelectorAll("#" + groupId + " button").forEach(b => b.onclick = () => {
+      if (running || busy) return;
+      document.querySelectorAll("#" + groupId + " button").forEach(x => x.classList.remove("on"));
+      b.classList.add("on"); cb(b.dataset[attr]);
+    });
+  }
+  pick("tgts", "n", v => { target = +v; showCount(0); });
+  pick("paces", "p", v => { period = +v; });
+  function showCount(n) { $("cnt").textContent = n; $("tgt").textContent = target; $("rem").textContent = t("rem", { n: target - n }); }
+
+  function feed(x) {
+    let buf = x;
+    if (rest.length) { buf = new Float32Array(rest.length + x.length); buf.set(rest); buf.set(x, rest.length); }
+    let i = 0;
+    for (; i + hop <= buf.length; i += hop) {
+      let s = 0; for (let k = i; k < i + hop; k++) s += buf[k] * buf[k];
+      const db = 10 * Math.log10(s / hop + 1e-12);
+      frames.push(db);
+      $("lvl").style.width = Math.max(0, Math.min(100, (db + 70) * 1.6)) + "%";
+    }
+    rest = buf.slice(i);
+  }
+  function loop() {
+    if (!running) return;
+    const tm = ctx.currentTime, c = $("circle");
+    if (tm < firstBeat) {
+      const left = Math.ceil((firstBeat - tm) / period);
+      const frac = 1 - ((firstBeat - tm) / period - (left - 1));
+      c.classList.add("cd"); c.classList.remove("beat"); c.textContent = frac < 0.5 ? left : "";
+      $("pb").style.width = (100 * frac) + "%";
+    } else {
+      const b = Math.floor((tm - firstBeat) / period);
+      if (b >= target) {
+        c.classList.remove("beat"); c.textContent = ""; $("pb").style.width = "100%";
+        if (tm >= firstBeat + target * period + 0.4) { finish(true); return; }
+      } else {
+        const frac = ((tm - firstBeat) % period) / period, on = frac < 0.5;
+        c.classList.remove("cd"); c.textContent = on ? t("nama") : ""; c.classList.toggle("beat", on);
+        c.style.transform = "scale(" + (on ? 1.08 - 0.08 * frac / 0.5 : 1) + ")";
+        $("pb").style.width = (100 * frac) + "%";
+        if (b !== lastBeat) { lastBeat = b; done = b + 1; showCount(done); $("recMsg").textContent = t("sayNow"); }
+      }
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  $("bGo").onclick = () => running ? finish(false) : start();
+
+  async function start() {
+    resetRec();
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    } catch (e) { $("recMsg").innerHTML = '<span class="err">' + t("micNo") + "</span>"; return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC(); await ctx.resume();
+    sr = ctx.sampleRate; hop = Math.round(sr * HOP_MS / 1000);
+    src = ctx.createMediaStreamSource(stream);
+    proc = ctx.createScriptProcessor(2048, 1, 1);
+    mute = ctx.createGain(); mute.gain.value = 0;
+    proc.onaudioprocess = e => {
+      if (!running) return;
+      if (samples === 0) recT0 = e.playbackTime || ctx.currentTime;
+      const x = new Float32Array(e.inputBuffer.getChannelData(0));
+      chunks.push(x); samples += x.length; feed(x);
+    };
+    src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    try { wake = await navigator.wakeLock.request("screen"); } catch (e) { wake = null; }
+    running = true; busy = true;
+    firstBeat = ctx.currentTime + COUNTDOWN * period;
+    $("bGo").textContent = t("stop"); $("bGo").classList.add("stop");
+    $("recMsg").textContent = t("getReady");
+    $("stage").scrollIntoView({ behavior: "smooth", block: "start" });
+    raf = requestAnimationFrame(loop);
+  }
+  function finish(complete) {
+    if (!running) return;
+    running = false; cancelAnimationFrame(raf);
+    try { proc.disconnect(); src.disconnect(); mute.disconnect(); } catch (e) {}
+    stream.getTracks().forEach(tr => tr.stop());
+    const cref = ctx; setTimeout(() => cref.close(), 200);
+    if (wake) { wake.release().catch(() => {}); wake = null; }
+    const c = $("circle"); c.classList.remove("beat", "cd"); c.style.transform = ""; c.textContent = t("nama");
+    $("bGo").textContent = t("start"); $("bGo").classList.remove("stop"); $("bGo").disabled = true;
+    $("lvl").style.width = "0"; $("pb").style.width = "0";
+    $("recMsg").innerHTML = complete ? t("done", { n: target }) : '<span class="warn">' + t("early", { d: done, n: target }) + "</span>";
+    encode(complete);
+  }
+  function resetRec() {
+    chunks = []; samples = 0; rest = new Float32Array(0); frames = []; done = 0; lastBeat = -1;
+    mp3 = null; recDone = false; $("vReview").hidden = true; $("subMsg").textContent = ""; $("fConsent").checked = false;
+    $("bSubmit").disabled = true; showCount(0);
+  }
+  function beatCheck(n) {
+    const s = frames.slice().sort((a, b) => a - b);
+    const floor = s.length ? s[Math.floor(s.length * 0.1)] : -70, thr = Math.max(floor + 12, -60), silent = [];
+    for (let i = 0; i < n; i++) {
+      const a = Math.round((firstBeat - recT0 + i * period) * 100), b = Math.round((firstBeat - recT0 + (i + 1) * period) * 100);
+      let v = 0, tot = 0; for (let k = a; k < b && k < frames.length; k++) { tot++; if (frames[k] > thr) v++; }
+      if (!tot || v / tot < 0.2) silent.push(i + 1);
+    }
+    return silent;
+  }
+  async function encode(complete) {
+    $("vReview").hidden = false; $("revMsg").textContent = t("making");
+    const all = new Float32Array(samples); let o = 0; chunks.forEach(c => { all.set(c, o); o += c.length; });
+    const startS = Math.max(0, Math.round((firstBeat - recT0 - 0.3) * sr));
+    const endS = Math.min(samples, Math.round((firstBeat - recT0 + done * period + 0.4) * sr));
+    const n = Math.max(0, endS - startS), ratio = sr / OUT_RATE, m = Math.floor(n / ratio);
+    const pcm = new Float32Array(m); let pk = 0;
+    for (let i = 0; i < m; i++) {
+      const a = startS + Math.floor(i * ratio), b = Math.max(a + 1, startS + Math.floor((i + 1) * ratio));
+      let s = 0; for (let k = a; k < b; k++) s += all[k];
+      const v = s / (b - a); pcm[i] = v; if (Math.abs(v) > pk) pk = Math.abs(v);
+    }
+    const g = pk > 0 ? Math.min(4, 0.89 / pk) : 1, i16 = new Int16Array(m);
+    for (let i = 0; i < m; i++) i16[i] = Math.max(-32767, Math.min(32767, pcm[i] * g * 32767));
+    const enc = new lamejs.Mp3Encoder(1, OUT_RATE, KBPS), parts = [];
+    for (let i = 0; i < m; i += 1152) {
+      const b = enc.encodeBuffer(i16.subarray(i, i + 1152)); if (b.length) parts.push(b);
+      if ((i / 1152) % 300 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+    const f = enc.flush(); if (f.length) parts.push(f);
+    mp3 = new Blob(parts, { type: "audio/mpeg" }); mp3Secs = m / OUT_RATE;
+    $("revAudio").src = URL.createObjectURL(mp3);
+    silentBeats = beatCheck(done);
+    $("revMsg").innerHTML = silentBeats.length ? '<span class="warn">' + t("noVoice", { n: silentBeats.length }) + "</span>" : "";
+    recDone = complete && done === target;
+    $("bSubmit").disabled = !(recDone && $("fConsent").checked);
+    $("bGo").disabled = false; busy = false;
+    $("vReview").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("fConsent").onchange = () => { $("bSubmit").disabled = !(recDone && mp3 && $("fConsent").checked); };
+  $("bAgain").onclick = () => { resetRec(); $("recMsg").textContent = t("ready"); $("stage").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  $("bSubmit").onclick = async () => {
+    if (!mp3 || !$("fConsent").checked) return;
+    $("bSubmit").disabled = true; $("subMsg").textContent = t("sending");
+    try {
+      const q = new URLSearchParams({ count: target, pace: period, dur: mp3Secs.toFixed(1), silent: silentBeats.join(" "), consent: CONSENT });
+      const j = await api("/rn/upload?" + q.toString(), { method: "POST", headers: { "Content-Type": "audio/mpeg" }, body: mp3 });
+      resetRec(); await loadMe();
+      $("stThanks").textContent = t("thanks", { no: j.no }); $("stThanks").hidden = false;
+      $("cardMe").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      $("subMsg").innerHTML = '<span class="err">' + e.message + "</span>"; $("bSubmit").disabled = false;
+    }
+  };
+
+  // ---------------- start ----------------
+  $("recMsg").textContent = t("ready");
+  applyLang();
+  if (token) loadMe(); else renderState();
+  waitGoogle(() => {
+    renderGoogleButton();
+    if (!token && localStorage.getItem("rnSigned") === "1") google.accounts.id.prompt();
+  });
+})();
+</script>
+</body>
+</html>
