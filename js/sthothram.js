@@ -126,6 +126,42 @@
   }
   // what the parts of a long work are called
   function partWord(s) { return /Kandam/i.test(s.name_en || "") ? "sargas" : "dasakams"; }
+  // Kaisika Puranam: its two parts are not chapters but the Tenkalai and Vadakalai
+  // recitals (part 1 / part 2), shown as two tabs; the reader's sect opens first.
+  function isSectTabs(s) { return !!s.by_part && /Kaisika/i.test(s.name_en || ""); }
+  function sectPart() { return store("sect") === "V" ? 2 : 1; }
+
+  // Commentary pages (Kaisika Puranam Vyakhyanam): sloka, commentary and the plain
+  // Tamil explanation each get their own look. They are stored as line_type 'prose'
+  // with a negative sloka_no naming the style (the table allows only fixed line types).
+  var PROSE = { "-1": "vyakhyanam", "-2": "eased", "-3": "note", "-4": "avatarika", "-5": "quote" };
+  var PROSE_LABEL = { vyakhyanam: "வ்யாக்யானம்", eased: "எளிய நடை — பாராயணத்தில் சேர்க்க வேண்டாம்" };
+  function addKaiCss() {
+    if (document.getElementById("sth-kai-css")) return;
+    var lk = document.createElement("link");
+    lk.rel = "stylesheet";
+    lk.href = "https://fonts.googleapis.com/css2?family=Noto+Serif+Tamil:wght@400;600&display=swap";
+    document.head.appendChild(lk);
+    var st = document.createElement("style");
+    st.id = "sth-kai-css";
+    st.textContent =
+      ".sth-tabs{display:flex;gap:8px;margin:10px 0 4px}" +
+      ".sth-tab{flex:1;text-align:center;padding:9px 6px;border:1.5px solid #b8860b;border-radius:10px;" +
+        "text-decoration:none;color:#7a1f1f;font-weight:600;background:#fffaf0}" +
+      ".sth-tab.on{background:#7a1f1f;border-color:#7a1f1f;color:#fff}" +
+      ".sth-note,.sth-avatarika{font-size:calc(var(--sth-font,18px)*.9);line-height:1.9;margin:.55em 0;color:#2b2b2b}" +
+      ".sth-quote{font-size:calc(var(--sth-font,18px)*.92);line-height:1.8;margin:.15em 0 .15em .9em;padding-left:.7em;" +
+        "border-left:3px solid #d4b45a;color:#6b3a00}" +
+      ".sth-vyakhyanam{font-family:'Noto Serif Tamil','Noto Sans Tamil',serif;font-size:calc(var(--sth-font,18px)*.92);" +
+        "line-height:1.95;color:#1d3567;background:#f3f6fc;border-left:4px solid #3c5fa3;border-radius:8px;" +
+        "padding:.7em .9em;margin:.6em 0}" +
+      ".sth-eased{font-size:calc(var(--sth-font,18px)*.85);line-height:1.85;color:#4d4434;background:#f8f4e8;" +
+        "border-left:4px dashed #b39654;border-radius:8px;padding:.65em .9em;margin:.4em 0 1.3em}" +
+      ".sth-plabel{display:block;font-family:'Noto Sans Tamil',sans-serif;font-size:.78em;font-weight:700;" +
+        "letter-spacing:.02em;margin-bottom:.3em}" +
+      ".sth-vyakhyanam .sth-plabel{color:#3c5fa3}.sth-eased .sth-plabel{color:#8a6d2b}";
+    document.head.appendChild(st);
+  }
 
   // ── index view ────────────────────────────────────────────
   var openGroups = {};
@@ -135,49 +171,13 @@
     return '<a class="sth-item" href="#s' + s.stotra_id + '">' +
       '<span class="sth-item-title">' + esc(s.title) + "</span>" +
       '<span class="sth-item-en">' + esc(s.name_en) +
-        (s.by_part ? " · " + s.part_count + " " + partWord(s)
+        (s.by_part && !isSectTabs(s) ? " · " + s.part_count + " " + partWord(s)
                    : (s.item_count ? " · " + s.item_count + " slokas" : "")) + "</span>" +
     "</a>";
   }
 
-  // Alphabetical inside a group, in the reader's own script. The leading
-  // Sri and the small voicing digits (கோ₃விந்த₃) are set aside so they do
-  // not decide the order. Long works read part by part (the Ramayanam
-  // kandas, Narayaneeyam) keep the order the server gives and stand first.
-  var LOCALE = { ta: "ta", deva: "hi", te: "te", kn: "kn", ml: "ml", bn: "bn", gu: "gu", iast: "en" };
-  // Converted text writes Sri with ஶ (ஶ்ரீ); typed text often with ஸ (ஸ்ரீ).
-  var SRI = /^\s*(ஶ்ரீ|ஸ்ரீ|श्री|శ్రీ|ಶ್ರೀ|ശ്രീ|শ্রী|શ્રી|śrī|sri|shri)\s*/i;
-  function sortKey(s) {
-    return String(s.title || s.name_en || "").normalize("NFC")
-      .replace(/[\u2070-\u209F\u00B2\u00B3\u00B9]/g, "")
-      .replace(SRI, "").trim();
-  }
-  function sortItems(arr) {
-    var coll = null;
-    try { coll = new Intl.Collator(LOCALE[getScript()] || "en", { sensitivity: "base" }); } catch (e) {}
-    arr.sort(function (a, b) {
-      if (a.by_part || b.by_part) return a.by_part && b.by_part ? 0 : (a.by_part ? -1 : 1);
-      var x = sortKey(a), y = sortKey(b);
-      return coll ? coll.compare(x, y) : (x < y ? -1 : x > y ? 1 : 0);
-    });
-  }
-
   // A stotra with sub_group_id (e.g. Desika Stotras inside Acharya Srisuktis)
   // goes into a tap-to-open box of its own, below the group's plain items.
-  // A sub-group of long works (Srimad Valmiki Ramayanam) opens its group,
-  // like the long works themselves; other sub-groups (Desika Stotras) follow
-  // the group's own stotras.
-  function isLongSub(sg) { return sg.items.length > 0 && sg.items.every(function (r) { return r.by_part; }); }
-  function subHtml(sg) {
-    var sopen = !!openGroups["sg" + sg.id];
-    return '<div class="sth-subgroup' + (sopen ? " open" : "") + '" data-sg="' + sg.id + '">' +
-      '<button type="button" class="sth-subgroup-head" aria-expanded="' + sopen + '">' +
-        '<span>' + esc(sg.name) + '</span><span class="sth-group-n">' + sg.items.length + "</span>" +
-      "</button>" +
-      '<div class="sth-sublist">' + sg.items.map(itemHtml).join("") + "</div>" +
-    "</div>";
-  }
-
   function renderIndex(rows) {
     var groups = [], byId = {};
     rows.forEach(function (r) {
@@ -201,10 +201,6 @@
       }
     });
     groups.sort(function (a, b) { return a.order - b.order; });
-    groups.forEach(function (g) {
-      sortItems(g.items);
-      g.subs.forEach(function (sg) { sortItems(sg.items); });
-    });
 
     var html = '<p class="sth-intro">' + rows.length + " stotras. Tap a group, then a stotra.</p>";
     groups.forEach(function (g) {
@@ -215,9 +211,16 @@
           '<span>' + esc(g.name) + '</span><span class="sth-group-n">' + g.total + "</span>" +
         "</button>" +
         '<div class="sth-list">' +
-          g.subs.filter(isLongSub).map(subHtml).join("") +
           g.items.map(itemHtml).join("") +
-          g.subs.filter(function (sg) { return !isLongSub(sg); }).map(subHtml).join("") +
+          g.subs.map(function (sg) {
+            var sopen = !!openGroups["sg" + sg.id];
+            return '<div class="sth-subgroup' + (sopen ? " open" : "") + '" data-sg="' + sg.id + '">' +
+              '<button type="button" class="sth-subgroup-head" aria-expanded="' + sopen + '">' +
+                '<span>' + esc(sg.name) + '</span><span class="sth-group-n">' + sg.items.length + "</span>" +
+              "</button>" +
+              '<div class="sth-sublist">' + sg.items.map(itemHtml).join("") + "</div>" +
+            "</div>";
+          }).join("") +
         "</div></div>";
     });
     $("sthBody").innerHTML = html;
@@ -232,7 +235,7 @@
   function renderStotra(s, nav) {
     var backHref = nav ? nav.listHref : "#";
     var backLabel = nav ? nav.listLabel : "← All stotras";
-    var pager = !nav ? "" : '<div class="sth-pager">' +
+    var pager = !nav ? "" : nav.tabs ? nav.tabs : '<div class="sth-pager">' +
       (nav.prevHref ? '<a class="sth-back" href="' + nav.prevHref + '">◀ Previous</a>' : '<span></span>') +
       '<span class="sth-pos">' + esc(nav.pos) + "</span>" +
       (nav.nextHref ? '<a class="sth-back" href="' + nav.nextHref + '">Next ▶</a>' : '<span></span>') +
@@ -255,7 +258,7 @@
       '<div class="sth-body">';
 
     blocks.forEach(function (b) {
-      var card = [], num = null;
+      var card = [], num = null, lastProse = null;
       b.lines.forEach(function (l) {
         var t = esc(l.text);
         if (l.line_type === "part_title") { html += flush(); html += '<div class="sth-part">' + t + "</div>"; return; }
@@ -267,6 +270,15 @@
           html += flush(); html += '<div class="sth-speaker">' + t + "</div>"; return;
         }
         if (l.line_type === "invocation") { html += flush(); html += '<div class="sth-invoc">' + t + "</div>"; return; }
+        var pk = l.line_type === "prose" && l.sloka_no < 0 ? PROSE[String(l.sloka_no)] : null;
+        if (pk) {
+          html += flush(); addKaiCss();
+          var lab = PROSE_LABEL[pk] && pk !== lastProse
+            ? '<span class="sth-plabel">' + PROSE_LABEL[pk] + "</span>" : "";
+          html += '<div class="sth-' + pk + '">' + lab + t + "</div>";
+          lastProse = pk; return;
+        }
+        lastProse = null;
         if (l.sloka_no != null) num = l.sloka_no;
         card.push({ t: t, prose: l.line_type === "prose" });
       });
@@ -325,6 +337,18 @@
       var id = +m[1], part = +m[2];
       fetchPart(id, part, sc).then(function (s) {
         if (!s || !s.lines) throw new Error("no data");
+        if (isSectTabs(s)) {                       // Tenkalai / Vadakalai tabs instead of a pager
+          return fetchStotra(id, sc).then(function (all) {
+            addKaiCss();
+            var tabs = '<div class="sth-tabs">' + (all.parts || []).map(function (p) {
+              return '<a class="sth-tab' + (p.part_no === part ? " on" : "") + '" href="#s' + id + "p" + p.part_no + '">' +
+                esc(p.title) + "</a>";
+            }).join("") + "</div>";
+            renderStotra(s, { listHref: "#", listLabel: "← All stotras", tabs: tabs });
+            window.scrollTo(0, 0);
+            document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
+          });
+        }
         var total = s.part_count || 1;
         renderStotra(s, {
           listHref: "#s" + id, listLabel: "← All " + partWord(s),
@@ -340,6 +364,10 @@
       });
     } else if (m) {
       fetchStotra(+m[1], sc).then(function (s) {
+        if (s && s.parts && isSectTabs(s)) {      // open the reader's own sect tab
+          location.replace("#s" + s.stotra_id + "p" + sectPart());
+          return;
+        }
         if (s && s.parts) {                       // a long work: show its list of parts
           renderParts(s);
           document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
@@ -392,6 +420,12 @@
         g.classList.toggle("open", open); head.setAttribute("aria-expanded", open);
         if (open) openGroups[id] = 1; else delete openGroups[id];
         store("sthOpen", JSON.stringify(openGroups));
+        return;
+      }
+      var tab = e.target.closest(".sth-tab");
+      if (tab) {                                    // switching sect tabs: no extra back-button step
+        e.preventDefault();
+        if (!tab.classList.contains("on")) location.replace(tab.getAttribute("href"));
         return;
       }
       var pitem = e.target.closest(".sth-partitem");
