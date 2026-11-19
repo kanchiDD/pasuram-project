@@ -130,6 +130,8 @@
   // recitals (part 1 / part 2), shown as two tabs; the reader's sect opens first.
   function isSectTabs(s) { return !!s.by_part && /Kaisika/i.test(s.name_en || ""); }
   function sectPart() { return store("sect") === "V" ? 2 : 1; }
+  // Tamil commentaries are listed only when Tamil is the chosen script.
+  function isTamilOnly(s) { return /Vyakhyanam/i.test(s.name_en || ""); }
 
   // Commentary pages (Kaisika Puranam Vyakhyanam): sloka, commentary and the plain
   // Tamil explanation each get their own look. They are stored as line_type 'prose'
@@ -376,6 +378,7 @@
           return;
         }
         if (!s || !s.lines) throw new Error("no data");
+        if (isTamilOnly(s)) { loadFont("ta"); $("sthRoot").style.fontFamily = FONT.ta; }   // opened by a link in another script
         renderStotra(s); window.scrollTo(0, 0);
         document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
       }).catch(function () {
@@ -384,6 +387,7 @@
       });
     } else {
       fetchIndex(sc).then(function (rows) {
+        if (sc !== "ta") rows = rows.filter(function (r) { return !isTamilOnly(r); });
         renderIndex(rows);
         document.title = "Sthothram — Arulicheyal";
         var y = parseInt(store("sthScroll") || "0", 10);
