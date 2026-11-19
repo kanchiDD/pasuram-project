@@ -211,6 +211,14 @@
     }
     .floating-nav button:hover { background: #fff8e8; }
 
+    /* Read in: script row (same look as the Sthothram page) */
+    .vt-scripts { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; align-items:center;
+                  margin: 0 0 16px; font-family: Arial, sans-serif; }
+    .vt-read { font-size:12px; color:#8a7a5a; margin-right:2px; }
+    .vt-sc { border:1px solid #d8c48a; background:#fff; color:#4a3728; border-radius:14px;
+             padding:4px 12px; font-size:13px; cursor:pointer; font-weight:500; }
+    .vt-sc.on { border-color:#2f7d32; background:#2f7d32; color:#fff; font-weight:700; }
+
     @media (max-width: 480px) {
       .vt-acharya-name { font-size: 1.05rem; }
       .vt-item { font-size: 14px; }
@@ -229,6 +237,9 @@
 
   <!-- Add My Acharya Info -->
   <a class="vt-update-btn" href="/update-acharya.html">🪷 Add My Acharya Info</a>
+
+  <!-- Read in: script choice -->
+  <div class="vt-scripts" id="vtScripts"></div>
 
   <!-- Dropdown Index (custom, for consistent font size on mobile) -->
   <div class="vt-index-box">
@@ -258,7 +269,7 @@
 
 <div id="footer"></div>
 
-<script src="./js/vazhi-thaniyan.js?v=2" defer></script>
+<script src="./js/vazhi-thaniyan.js?v=3" defer></script>
 <script>
   window.addEventListener("DOMContentLoaded", function () {
     if (typeof loadVazhiThaniyan === "function") loadVazhiThaniyan();
