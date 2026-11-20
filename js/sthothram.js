@@ -251,8 +251,6 @@
 
     var html = '<div class="sth-nav">' +
         '<a class="sth-back" href="' + backHref + '">' + esc(backLabel) + "</a>" +
-        '<span class="sth-size"><button type="button" data-size="2" aria-label="Larger text">A+</button>' +
-        '<button type="button" data-size="-2" aria-label="Smaller text">A−</button></span>' +
       "</div>" +
       '<div class="content-heading sth-title">' + esc(s.title) + "</div>" +
       '<div class="sth-sub">' + esc(s.name_en) + (s.group_name ? " · " + esc(s.group_name) : "") + "</div>" +
@@ -304,9 +302,44 @@
       }
     });
 
-    html += "</div>" + pager +
+    html += "</div>" + (nav && nav.tabs ? "" : pager) +
       '<div class="sth-foot"><a class="sth-back" href="' + backHref + '">' + esc(backLabel) + "</a></div>";
     $("sthBody").innerHTML = html;
+    floatNav(true);
+  }
+
+  // ── floating buttons on a sloka page (same as the prabandham pages):
+  //    back to top, larger text, smaller text
+  function floatNav(on) {
+    var f = document.getElementById("sthFloat");
+    if (!f) {
+      if (!on) return;
+      var st = document.createElement("style");
+      st.textContent =
+        ".sth-float{position:fixed;right:12px;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;" +
+          "flex-direction:column;gap:6px;z-index:9999}" +
+        ".sth-float[hidden]{display:none}" +
+        ".sth-float button{width:40px;height:40px;border-radius:50%;border:2px solid #b38b2e;background:#fff;color:#4a2c00;" +
+          "font-size:16px !important;font-family:Arial,sans-serif;cursor:pointer;display:flex;align-items:center;" +
+          "justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.13);padding:0}" +
+        ".sth-float button:active{background:#f5e9cc}" +
+        ".sth-foot{padding-bottom:150px}";          /* room so the last sloka can scroll clear of the buttons */
+      document.head.appendChild(st);
+      f = document.createElement("div");
+      f.id = "sthFloat"; f.className = "sth-float";
+      f.innerHTML =
+        '<button type="button" data-act="top" title="Top" aria-label="Back to top">⬆</button>' +
+        '<button type="button" data-act="up" title="Larger text" aria-label="Larger text">A+</button>' +
+        '<button type="button" data-act="down" title="Smaller text" aria-label="Smaller text">A−</button>';
+      f.addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return;
+        var a = b.getAttribute("data-act");
+        if (a === "top") window.scrollTo({ top: 0, behavior: "smooth" });
+        else bumpSize(a === "up" ? 2 : -2);
+      });
+      document.body.appendChild(f);
+    }
+    f.hidden = !on;
   }
 
   // ── list of parts: a kanda's sargas, Narayaneeyam's dasakams ──
@@ -333,6 +366,7 @@
     $("sthRoot").style.fontFamily = FONT[sc];
     var m = /^#s(\d+)(?:p(\d+))?$/.exec(location.hash || "");
     $("sthBody").innerHTML = '<div class="sth-msg">Loading…</div>';
+    floatNav(false);
 
     if (m && m[2]) {
       // one sarga / dasakam
