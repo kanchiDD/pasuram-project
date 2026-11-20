@@ -412,7 +412,9 @@
           return;
         }
         if (!s || !s.lines) throw new Error("no data");
-        if (isTamilOnly(s)) { loadFont("ta"); $("sthRoot").style.fontFamily = FONT.ta; }   // opened by a link in another script
+        if (isTamilOnly(s) && sc !== "ta") {        // Tamil-only explanation: not shown in other scripts
+          location.replace("#"); return;           // (script switched on its page, or an old link) -> back to the list
+        }
         renderStotra(s); window.scrollTo(0, 0);
         document.title = (s.name_en || "Sthothram") + " — Arulicheyal";
       }).catch(function () {
