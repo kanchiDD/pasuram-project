@@ -131,7 +131,7 @@
   function isSectTabs(s) { return !!s.by_part && /Kaisika/i.test(s.name_en || ""); }
   function sectPart() { return store("sect") === "V" ? 2 : 1; }
   // Tamil commentaries are listed only when Tamil is the chosen script.
-  function isTamilOnly(s) { return /Vyakhyanam/i.test(s.name_en || ""); }
+  function isTamilOnly(s) { return /Vyakhyanam|Manikkamalai|Nigamanappadi/i.test(s.name_en || ""); }
 
   // Commentary pages (Kaisika Puranam Vyakhyanam): sloka, commentary and the plain
   // Tamil explanation each get their own look. They are stored as line_type 'prose'
