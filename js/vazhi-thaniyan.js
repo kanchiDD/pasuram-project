@@ -23,17 +23,18 @@ const VT_SCRIPTS = [
 ];
 const VT_VALID = ["te", "ml", "kn", "deva", "iast", "gu", "bn"];
 // Section headings: தனியன், வாழித்திருநாமம், நாள்பாட்டு, தொங்கல், திருநக்ஷத்திரம்;
-// then the two tabs (ஆசார்ய பரம்பரை, வானமாமலை மடம்) and பட்டம்
+// then the two tabs (ஆசார்ய பரம்பரை, வானமாமலை மடம்) and பட்டம்;
+// then the two Vadakalai sub-headings (ஆண்டவன் ஆஶ்ரமம் / அஹோபில மடம் வாழித் திருநாமங்கள்)
 // (made with transliterate_db.py, same sound rules as the text)
 const VT_LABELS = {
-  ta:   ["தனியன்", "வாழித்திருநாமம்", "நாள்பாட்டு", "தொங்கல்", "திருநக்ஷத்திரம்", "ஆசார்ய பரம்பரை", "வானமாமலை மடம்", "பட்டம்"],
-  te:   ["తనియన్", "వాఴిత్తిరునామం", "నాళ్బాట్టు", "తొంగల్", "తిరునక్షత్తిరం", "ఆచార్య పరంబరై", "వానమామలై మడం", "పట్టం"],
-  kn:   ["ತನಿಯನ್", "ವಾೞಿತ್ತಿರುನಾಮಂ", "ನಾಳ್ಬಾಟ್ಟು", "ತೊಂಗಲ್", "ತಿರುನಕ್ಷತ್ತಿರಂ", "ಆಚಾರ್ಯ ಪರಂಬರೈ", "ವಾನಮಾಮಲೈ ಮಡಂ", "ಪಟ್ಟಂ"],
-  ml:   ["തനിയൻ", "വാഴിത്തിരുനാമം", "നാൾബാട്ടു", "തൊംഗൽ", "തിരുനക്ഷത്തിരം", "ആചാര്യ പരംബരൈ", "വാനമാമലൈ മഡം", "പട്ടം"],
-  deva: ["तनियन्", "वाऴित्तिरुनामम्", "नाळ्बाट्टु", "तॊङ्गल्", "तिरुनक्षत्तिरम्", "आचार्य परम्बरै", "वानमामलै मडम्", "पट्टम्"],
-  iast: ["taniyan", "vāḻittirunāmam", "nāl̤bāṭṭu", "tŏṅgal", "tirunakṣattiram", "ācārya parambarai", "vānamāmalai maḍam", "paṭṭam"],
-  gu:   ["તનિયન્", "વાળ઼િત્તિરુનામમ્", "નાળ્બાટ્ટુ", "તોઙ્ગલ્", "તિરુનક્ષત્તિરમ્", "આચાર્ય પરમ્બરૈ", "વાનમામલૈ મડમ્", "પટ્ટમ્"],
-  bn:   ["তনিয়ন্", "বাষ়িত্তিরুনামম্", "নাল়্বাট্টু", "তোঙ্গল্", "তিরুনক্ষত্তিরম্", "আচার্য পরম্বরৈ", "বানমামলৈ মডম্", "পট্টম্"]
+  ta:   ["தனியன்", "வாழித்திருநாமம்", "நாள்பாட்டு", "தொங்கல்", "திருநக்ஷத்திரம்", "ஆசார்ய பரம்பரை", "வானமாமலை மடம்", "பட்டம்", "ஆண்டவன் ஆஶ்ரமம் வாழித் திருநாமங்கள்", "அஹோபில மடம் வாழித் திருநாமங்கள்"],
+  te:   ["తనియన్", "వాఴిత్తిరునామం", "నాళ్బాట్టు", "తొంగల్", "తిరునక్షత్తిరం", "ఆచార్య పరంబరై", "వానమామలై మడం", "పట్టం", "ఆండవన్ ఆశ్రమం వాఴిత్ తిరునామంగళ్", "అహోబిల మడం వాఴిత్ తిరునామంగళ్"],
+  kn:   ["ತನಿಯನ್", "ವಾೞಿತ್ತಿರುನಾಮಂ", "ನಾಳ್ಬಾಟ್ಟು", "ತೊಂಗಲ್", "ತಿರುನಕ್ಷತ್ತಿರಂ", "ಆಚಾರ್ಯ ಪರಂಬರೈ", "ವಾನಮಾಮಲೈ ಮಡಂ", "ಪಟ್ಟಂ", "ಆಂಡವನ್ ಆಶ್ರಮಂ ವಾೞಿತ್ ತಿರುನಾಮಂಗಳ್", "ಅಹೋಬಿಲ ಮಡಂ ವಾೞಿತ್ ತಿರುನಾಮಂಗಳ್"],
+  ml:   ["തനിയൻ", "വാഴിത്തിരുനാമം", "നാൾബാട്ടു", "തൊംഗൽ", "തിരുനക്ഷത്തിരം", "ആചാര്യ പരംബരൈ", "വാനമാമലൈ മഡം", "പട്ടം", "ആണ്ഡവൻ ആശ്രമം വാഴിത് തിരുനാമംഗൾ", "അഹോബില മഡം വാഴിത് തിരുനാമംഗൾ"],
+  deva: ["तनियन्", "वाऴित्तिरुनामम्", "नाळ्बाट्टु", "तॊङ्गल्", "तिरुनक्षत्तिरम्", "आचार्य परम्बरै", "वानमामलै मडम्", "पट्टम्", "आण्डवन् आश्रमम् वाऴित् तिरुनामङ्गळ्", "अहोबिल मडम् वाऴित् तिरुनामङ्गळ्"],
+  iast: ["taniyan", "vāḻittirunāmam", "nāl̤bāṭṭu", "tŏṅgal", "tirunakṣattiram", "ācārya parambarai", "vānamāmalai maḍam", "paṭṭam", "āṇḍavan āśramam vāḻit tirunāmaṅgal̤", "ahobila maḍam vāḻit tirunāmaṅgal̤"],
+  gu:   ["તનિયન્", "વાળ઼િત્તિરુનામમ્", "નાળ્બાટ્ટુ", "તોઙ્ગલ્", "તિરુનક્ષત્તિરમ્", "આચાર્ય પરમ્બરૈ", "વાનમામલૈ મડમ્", "પટ્ટમ્", "આણ્ડવન્ આશ્રમમ્ વાળ઼િત્ તિરુનામઙ્ગળ્", "અહોબિલ મડમ્ વાળ઼િત્ તિરુનામઙ્ગળ્"],
+  bn:   ["তনিয়ন্", "বাষ়িত্তিরুনামম্", "নাল়্বাট্টু", "তোঙ্গল্", "তিরুনক্ষত্তিরম্", "আচার্য পরম্বরৈ", "বানমামলৈ মডম্", "পট্টম্", "আণ্ডবন্ আশ্রমম্ বাষ়িৎ তিরুনামঙ্গল়্", "অহোবিল মডম্ বাষ়িৎ তিরুনামঙ্গল়্"]
 };
 // "Noto Sans" after each script font so the Tamil subscript digits always render.
 const VT_FONT = {
@@ -124,15 +125,44 @@ window.vtSwitchLineage = function (l) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   loadVazhiThaniyan();
 };
-// Card / dropdown title: "1. name" in the main list; "1ம் பட்டம் · name" in the mutt list
+// Card / dropdown title: "1. name" in the main list; "1ம் பட்டம் · name" in the mutt list.
+// In the Vadakalai list the numbering starts again at 1 under each sub-heading (a._n, set in vtNumber).
 function vtTitle(a, i) {
   if (vtGetLineage() && a.pattam_no) {
     const p = vtGetScript() === "ta" ? `${a.pattam_no}ம் ${vtL(7)}` : `${vtL(7)} ${a.pattam_no}`;
     return `${p} · ${a.canonical_name}`;
   }
   if (vtGetLineage()) return a.canonical_name;
-  return `${i + 1}. ${a.canonical_name}`;
+  return `${a._n || i + 1}. ${a.canonical_name}`;
 }
+
+// ── VADAKALAI SUB-GROUPS: AA = Andavan Ashramam, AM = Ahobila Madam (the worker sends
+//    them after the common list, with a.lineage set). Heading text by group:
+const VT_GROUP_LABEL = { AA: 8, AM: 9 };
+function vtGroupHead(a, prev) {
+  const g = a.lineage || "";
+  if (!VT_GROUP_LABEL[g] || (prev && (prev.lineage || "") === g)) return "";
+  return vtL(VT_GROUP_LABEL[g]);
+}
+function vtNumber() {
+  let n = 0, g = null;
+  vtData.forEach(a => {
+    const cur = a.lineage || "";
+    if (cur !== g) { n = 0; g = cur; }
+    a._n = ++n;
+  });
+}
+(function vtGroupStyle() {
+  if (document.getElementById("vt-group-css")) return;
+  const st = document.createElement("style");
+  st.id = "vt-group-css";
+  st.textContent =
+    ".vt-group-head{margin:8px 0 18px;padding:10px 12px;border-radius:10px;background:#7a4d00;color:#fff;" +
+    "font-weight:bold;font-size:1.05rem;text-align:center;line-height:1.5}" +
+    ".vt-dd-head{padding:8px 12px;font-size:13px;font-weight:bold;color:#fff;background:#7a4d00;cursor:default}" +
+    "@media (max-width:480px){.vt-group-head{font-size:.95rem}}";
+  document.head.appendChild(st);
+})();
 
 async function loadVazhiThaniyan() {
   const sc = vtGetScript();
@@ -145,6 +175,7 @@ async function loadVazhiThaniyan() {
     const res = await fetch(VT_API + (qs ? "?" + qs : ""), { cache: "no-store" });
     if (!res.ok) throw new Error("API error " + res.status);
     vtData = await res.json();
+    vtNumber();
     buildDropdown();
     renderCards();
   } catch (e) {
@@ -157,9 +188,11 @@ async function loadVazhiThaniyan() {
 // ── CUSTOM DROPDOWN (replaces native <select> for mobile font control) ──
 function buildDropdown() {
   const list = document.getElementById("vtDropdownList");
-  list.innerHTML = vtData.map((a, i) =>
-    `<div class="vt-dd-item" data-idx="${i}" onclick="vtJumpTo(${i})">${esc(vtTitle(a, i))}</div>`
-  ).join("");
+  list.innerHTML = vtData.map((a, i) => {
+    const h = vtGroupHead(a, vtData[i - 1]);
+    return (h ? `<div class="vt-dd-head">${esc(h)}</div>` : "") +
+      `<div class="vt-dd-item" data-idx="${i}" onclick="vtJumpTo(${i})">${esc(vtTitle(a, i))}</div>`;
+  }).join("");
 }
 
 window.vtToggleDropdown = function () {
@@ -199,7 +232,10 @@ function renderCards() {
     container.innerHTML = '<div class="vt-loading">No data found.</div>';
     return;
   }
-  container.innerHTML = vtData.map((a, i) => renderCard(a, i)).join("");
+  container.innerHTML = vtData.map((a, i) => {
+    const h = vtGroupHead(a, vtData[i - 1]);
+    return (h ? `<div class="vt-group-head">${esc(h)}</div>` : "") + renderCard(a, i);
+  }).join("");
 }
 
 function renderCard(a, i) {
