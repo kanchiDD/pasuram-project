@@ -27,6 +27,8 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
     }
+    if (url.pathname.includes("/recital/stotra-catalog")) return handleStotraCatalog(request, env);
+    if (url.pathname.includes("/recital/stotra-parts"))   return handleStotraParts(request, env);
     if (url.pathname.includes("/recital/catalog"))        return handleCatalog(request, env);
     if (url.pathname.includes("/recital/pasuram-lookup")) return handlePasuramLookup(request, env);
     if (url.pathname.includes("/recital/pasuram-lines"))  return handlePasuramLines(request, env);
@@ -49,6 +51,146 @@ export default {
 
 const PATHU_SECTIONS      = new Set([2, 11, 26]);
 const THIRUMOZHI_SECTIONS = new Set([4, 5]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STHOTHRAM — the list for setup, the parts of a long work, and the blocks a
+// plan renders. Same tables and same order as the Sthothram page
+// (cdnaalayiram-api /api/stotra). Text comes from the stotra tables' own
+// per-script columns, so ?script= works on both recital workers.
+//   entity_type "stotra"      entity_id = stotra_id          (whole stotra / kanda / work)
+//   entity_type "stotra_part" entity_id = stotra_id*1000+part (one sarga / dasakam)
+// ─────────────────────────────────────────────────────────────────────────────
+const STOTRA_SCRIPTS = ["ta", "deva", "te", "kn", "ml", "bn", "gu", "iast"];
+function stotraScript(url) {
+  let s = (url.searchParams.get("script") || "ta").toLowerCase();
+  if (s === "hi") s = "deva";
+  return STOTRA_SCRIPTS.includes(s) ? s : "ta";
+}
+// The live user_recital_item table only accepts section / pathu / thirumozhi /
+// pasuram / custom / koil (a CHECK constraint). Stotra items are therefore
+// stored as entity_type 'custom' with item_opt 'stotra' or 'stotra_part', and
+// turned back on every read. No other plan row uses 'custom'.
+const STOTRA_TYPES = ["stotra", "stotra_part"];
+function itemToDb(item) {
+  return STOTRA_TYPES.includes(item.entity_type)
+    ? { entity_type: "custom", item_opt: item.entity_type }
+    : { entity_type: item.entity_type, item_opt: item.item_opt || null };
+}
+function itemFromDb(row) {
+  if (row && row.entity_type === "custom" && STOTRA_TYPES.includes(row.item_opt))
+    return { ...row, entity_type: row.item_opt, item_opt: null };
+  return row;
+}
+
+function stotraSplit(entity_type, entity_id) {
+  const n = Number(entity_id);
+  return entity_type === "stotra" ? { sid: n, part: null } : { sid: Math.floor(n / 1000), part: n % 1000 };
+}
+
+async function handleStotraCatalog(request, env) {
+  try {
+    const sc = stotraScript(new URL(request.url));
+    const res = await env.db.prepare(`
+      SELECT s.stotra_id,
+             COALESCE(pg.group_id, g.group_id)           AS group_id,
+             COALESCE(pg.group_name, g.group_name)       AS group_name,
+             COALESCE(pg.display_order, g.display_order) AS group_order,
+             CASE WHEN pg.group_id IS NULL THEN NULL ELSE g.group_id      END AS sub_group_id,
+             CASE WHEN pg.group_id IS NULL THEN NULL ELSE g.group_name    END AS sub_group_name,
+             CASE WHEN pg.group_id IS NULL THEN 0    ELSE g.display_order END AS sub_group_order,
+             s.name_en,
+             COALESCE(s.title_${sc}, s.title_ta) AS title,
+             s.part_count, s.item_count, s.display_order, s.by_part
+      FROM   stotra_master s
+      LEFT JOIN stotra_group_master g  ON g.group_id  = s.group_id
+      LEFT JOIN stotra_group_master pg ON pg.group_id = g.parent_group_id
+      ORDER  BY group_order, sub_group_order, s.display_order
+    `).all();
+    return new Response(JSON.stringify({ script: sc, stotras: res.results || [] }), { headers: CORS });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+  }
+}
+
+async function handleStotraParts(request, env) {
+  try {
+    const url = new URL(request.url);
+    const sc  = stotraScript(url);
+    const id  = parseInt(url.searchParams.get("id"), 10);
+    if (!id) return new Response(JSON.stringify({ error: "id= required" }), { status: 400, headers: CORS });
+    const m = await env.db.prepare(`SELECT part_count, by_part FROM stotra_master WHERE stotra_id = ?`).bind(id).first();
+    if (!m || !m.by_part) return new Response(JSON.stringify({ parts: [] }), { headers: CORS });
+    const total = Math.max(1, Number(m.part_count) || 1);
+    const nos = Array.from({ length: total }, (_, i) => i + 1).join(",");
+    const heads = await env.db.prepare(`
+      SELECT part_no, line_type, COALESCE(text_${sc}, text_ta) AS text
+      FROM   stotra_line_master
+      WHERE  stotra_id = ? AND part_no IN (${nos}) AND block_no = 0
+      ORDER  BY part_no, line_no
+    `).bind(id).all();
+    const byNo = {};
+    for (const r of (heads.results || [])) {
+      const p = byNo[r.part_no] || (byNo[r.part_no] = { part_no: r.part_no, title: "", section: null });
+      if (r.line_type === "part_title") p.title = r.text;
+      else if (r.line_type === "heading") p.section = r.text;
+    }
+    const parts = Object.values(byNo).sort((a, b) => a.part_no - b.part_no);
+    return new Response(JSON.stringify({ script: sc, parts }), { headers: CORS });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+  }
+}
+
+// "Title" or "Title — sarga / dasakam title", in the requested script.
+async function stotraLabel(env, entity_type, entity_id, sc) {
+  const { sid, part } = stotraSplit(entity_type, entity_id);
+  const row = await env.db.prepare(`SELECT COALESCE(title_${sc}, title_ta) AS t FROM stotra_master WHERE stotra_id = ?`).bind(sid).first();
+  let label = row ? row.t : `stotra ${sid}`;
+  if (part) {
+    const pr = await env.db.prepare(
+      `SELECT COALESCE(text_${sc}, text_ta) AS t FROM stotra_line_master
+       WHERE stotra_id = ? AND part_no = ? AND block_no = 0 AND line_type = 'part_title' LIMIT 1`
+    ).bind(sid, part).first();
+    label += " — " + (pr ? pr.t : part);
+  }
+  return label;
+}
+
+// The stotra blocks of a plan, in the plan's order. Called after every
+// pasuram block is placed, so they always come last.
+async function stotraBlocks(env, items, sc) {
+  const out = [];
+  for (const it of items) {
+    if (it.entity_type !== "stotra" && it.entity_type !== "stotra_part") continue;
+    const { sid, part } = stotraSplit(it.entity_type, it.entity_id);
+    const m = await env.db.prepare(`
+      SELECT stotra_id, name_en, by_part, part_count, item_count,
+             COALESCE(title_${sc}, title_ta) AS title
+      FROM stotra_master WHERE stotra_id = ?`).bind(sid).first();
+    if (!m) continue;
+    const q = `SELECT part_no, block_no, line_no, line_type, sloka_no,
+                      COALESCE(text_${sc}, text_ta) AS text
+               FROM stotra_line_master WHERE stotra_id = ?`;
+    const r = part
+      ? await env.db.prepare(q + ` AND part_no = ? ORDER BY block_no, line_no`).bind(sid, part).all()
+      : await env.db.prepare(q + ` ORDER BY part_no, block_no, line_no`).bind(sid).all();
+    const lines = r.results || [];
+    if (!lines.length) continue;
+    const pt = part ? lines.find(l => l.line_type === "part_title") : null;
+    out.push({
+      block_type:  "stotra",
+      stotra_id:   sid,
+      part_no:     part,
+      title:       m.title,
+      name_en:     m.name_en,
+      by_part:     m.by_part ? 1 : 0,
+      part_title:  pt ? pt.text : null,
+      sequence_no: it.sequence_no,
+      lines
+    });
+  }
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CATALOG
@@ -158,11 +300,13 @@ async function handlePlan(request, env) {
         return new Response(JSON.stringify({ error: "mobile= and day= or plan_id= required" }), { status: 400, headers: CORS });
       const plan = plan_id
         ? await env.db.prepare(`
-            SELECT plan_id, plan_name, day_of_week, is_active
+            SELECT plan_id, plan_name, day_of_week, is_active,
+                   include_pothu_t, include_pothu_v, include_pothu_m, pothu_order, is_user_ordered, is_temple
             FROM user_recital_plan WHERE plan_id = ? AND mobile = ? LIMIT 1
           `).bind(Number(plan_id), mobile).first()
         : await env.db.prepare(`
-            SELECT plan_id, plan_name, day_of_week, is_active
+            SELECT plan_id, plan_name, day_of_week, is_active,
+                   include_pothu_t, include_pothu_v, include_pothu_m, pothu_order, is_user_ordered, is_temple
             FROM user_recital_plan
             WHERE mobile = ? AND day_of_week IN (?, 7) AND is_active = 1
             ORDER BY day_of_week ASC LIMIT 1
@@ -170,27 +314,89 @@ async function handlePlan(request, env) {
       if (!plan) return new Response(JSON.stringify({ plan: null, items: [] }), { headers: CORS });
       const items = await env.db.prepare(`
         SELECT item_id, sequence_no, entity_type, entity_id,
-               is_rettai, global_no_start, pathu_id, section_id
+               is_rettai, global_no_start, pathu_id, section_id, from_koil, item_opt
         FROM user_recital_item WHERE plan_id = ? ORDER BY sequence_no
       `).bind(plan.plan_id).all();
-      return new Response(JSON.stringify({ plan, items: items.results }), { headers: CORS });
+      return new Response(JSON.stringify({ plan, items: (items.results || []).map(itemFromDb) }), { headers: CORS });
     }
 
     if (request.method === "POST") {
       const body = await request.json();
-      const { mobile, day_of_week, plan_name, items } = body;
-      if (!mobile || day_of_week === undefined || !items)
-        return new Response(JSON.stringify({ error: "mobile, day_of_week, items required" }), { status: 400, headers: CORS });
-      await env.db.prepare(`
-        INSERT INTO user_recital_plan (mobile, day_of_week, plan_name, is_active, updated_at)
-        VALUES (?, ?, ?, 1, datetime('now'))
-        ON CONFLICT(mobile, day_of_week)
-        DO UPDATE SET plan_name = excluded.plan_name, is_active = 1, updated_at = datetime('now')
-      `).bind(mobile, day_of_week, plan_name || null).run();
-      const plan = await env.db.prepare(
-        `SELECT plan_id FROM user_recital_plan WHERE mobile = ? AND day_of_week = ?`
-      ).bind(mobile, day_of_week).first();
-      const plan_id = plan.plan_id;
+      const { mobile, day_of_week, plan_name, items,
+              include_pothu_t, include_pothu_v, include_pothu_m, pothu_order,
+              is_user_ordered,
+              is_temple, plan_id: bodyPlanId, ghoshti_new } = body;
+      if (!mobile || !items)
+        return new Response(JSON.stringify({ error: "mobile and items required" }), { status: 400, headers: CORS });
+
+      let plan_id;
+      if (bodyPlanId) {
+        // ── EDIT an existing plan (ghoshti) — update in place by plan_id ──
+        const owned = await env.db.prepare(
+          `SELECT plan_id FROM user_recital_plan WHERE plan_id = ? AND mobile = ?`
+        ).bind(Number(bodyPlanId), mobile).first();
+        if (!owned)
+          return new Response(JSON.stringify({ error: "Plan not found or not authorized" }), { status: 403, headers: CORS });
+        await env.db.prepare(`
+          UPDATE user_recital_plan
+          SET plan_name = ?, is_active = 1, updated_at = datetime('now'),
+              include_pothu_t = ?, include_pothu_v = ?, include_pothu_m = ?,
+              pothu_order = ?, is_user_ordered = ?, is_temple = ?
+          WHERE plan_id = ? AND mobile = ?
+        `).bind(plan_name || null,
+                include_pothu_t ?? null, include_pothu_v ?? null, include_pothu_m ?? null,
+                pothu_order ?? null,
+                is_user_ordered ?? 0, is_temple ? 1 : 0, Number(bodyPlanId), mobile).run();
+        plan_id = Number(bodyPlanId);
+
+      } else if (ghoshti_new) {
+        // ── NEW ghoshti — its OWN plan under a unique day_of_week (>= 8) ──
+        // Ghoshti isn't a weekday; slots 8,9,10… keep each ghoshti independent
+        // and never collide via the UNIQUE(mobile, day_of_week) constraint.
+        const maxRow = await env.db.prepare(
+          `SELECT MAX(day_of_week) AS m FROM user_recital_plan WHERE mobile = ? AND day_of_week >= 8`
+        ).bind(mobile).first();
+        const dow = (maxRow && maxRow.m != null) ? Number(maxRow.m) + 1 : 8;
+        await env.db.prepare(`
+          INSERT INTO user_recital_plan (mobile, day_of_week, plan_name, is_active, updated_at,
+                                         include_pothu_t, include_pothu_v, include_pothu_m,
+                                         pothu_order, is_user_ordered, is_temple)
+          VALUES (?, ?, ?, 1, datetime('now'), ?, ?, ?, ?, ?, ?)
+        `).bind(mobile, dow, plan_name || null,
+                include_pothu_t ?? null, include_pothu_v ?? null, include_pothu_m ?? null,
+                pothu_order ?? null,
+                is_user_ordered ?? 0, is_temple ? 1 : 0).run();
+        const row = await env.db.prepare(
+          `SELECT plan_id FROM user_recital_plan WHERE mobile = ? AND day_of_week = ?`
+        ).bind(mobile, dow).first();
+        plan_id = row.plan_id;
+
+      } else {
+        // ── WEEKLY recital (days 1–7) — unchanged shared-slot behavior ──
+        if (day_of_week === undefined)
+          return new Response(JSON.stringify({ error: "day_of_week required" }), { status: 400, headers: CORS });
+        await env.db.prepare(`
+          INSERT INTO user_recital_plan (mobile, day_of_week, plan_name, is_active, updated_at,
+                                         include_pothu_t, include_pothu_v, include_pothu_m,
+                                         pothu_order, is_user_ordered)
+          VALUES (?, ?, ?, 1, datetime('now'), ?, ?, ?, ?, ?)
+          ON CONFLICT(mobile, day_of_week)
+          DO UPDATE SET plan_name = excluded.plan_name, is_active = 1, updated_at = datetime('now'),
+                        include_pothu_t = excluded.include_pothu_t,
+                        include_pothu_v = excluded.include_pothu_v,
+                        include_pothu_m = excluded.include_pothu_m,
+                        pothu_order = excluded.pothu_order,
+                        is_user_ordered = excluded.is_user_ordered
+        `).bind(mobile, day_of_week, plan_name || null,
+                include_pothu_t ?? null, include_pothu_v ?? null,
+                include_pothu_m ?? null, pothu_order ?? null,
+                is_user_ordered ?? 0).run();
+        const plan = await env.db.prepare(
+          `SELECT plan_id FROM user_recital_plan WHERE mobile = ? AND day_of_week = ?`
+        ).bind(mobile, day_of_week).first();
+        plan_id = plan.plan_id;
+      }
+
       await env.db.prepare(`DELETE FROM user_recital_item WHERE plan_id = ?`).bind(plan_id).run();
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -216,15 +422,17 @@ async function handlePlan(request, env) {
         await env.db.prepare(`
           INSERT INTO user_recital_item
             (plan_id, sequence_no, entity_type, entity_id,
-             is_rettai, global_no_start, pathu_id, section_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             is_rettai, global_no_start, pathu_id, section_id, from_koil, item_opt)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           plan_id, i + 1,
-          item.entity_type, item.entity_id,
+          itemToDb(item).entity_type, item.entity_id,
           item.is_rettai ? 1 : 0,
           gns,
           item.pathu_id   || null,
-          item.section_id || null
+          item.section_id || null,
+          item.from_koil  ? 1 : 0,
+          itemToDb(item).item_opt
         ).run();
       }
       return new Response(JSON.stringify({ success: true, plan_id }), { headers: CORS });
@@ -245,15 +453,20 @@ async function handleRender(request, env) {
     if (!plan_id)
       return new Response(JSON.stringify({ error: "plan_id= required" }), { status: 400, headers: CORS });
 
-    // ── Step 1: fetch plan items, global thaniyan, sattrumurai set, section modes ──
-    const [itemRows, globalThaniyanRows, sattrumuraiRows, sectionModeRows] = await Promise.all([
-      env.db.prepare(`SELECT item_id, sequence_no, entity_type, entity_id, is_rettai, pathu_id, section_id FROM user_recital_item WHERE plan_id = ? ORDER BY sequence_no`).bind(Number(plan_id)).all(),
-      env.db.prepare(`SELECT l.line_no, l.line_text, l.line_type, l.line_role, l.line_group, l.prosody_id FROM thaniyan_line_master l WHERE l.thaniyan_ref = 'global' ORDER BY l.line_no`).all(),
+    // ── Step 1: fetch plan (for pothu flags), items, global thaniyan, sattrumurai set, section modes ──
+    const sect = url.searchParams.get("sect") || "T";
+    // Pothu thaniyan: fetch ALL global lines (T/V/B) once; which block(s)
+    // render is decided by plan flags in Step 7. Legacy plans (NULL flags)
+    // keep the old sect-based single-thaniyan behavior exactly.
+    const [planRow, itemRows, globalThaniyanAll, sattrumuraiRows, sectionModeRows] = await Promise.all([
+      env.db.prepare(`SELECT include_pothu_t, include_pothu_v, include_pothu_m, pothu_order, is_user_ordered, is_temple FROM user_recital_plan WHERE plan_id = ?`).bind(Number(plan_id)).first(),
+      env.db.prepare(`SELECT item_id, sequence_no, entity_type, entity_id, is_rettai, pathu_id, section_id, from_koil, item_opt FROM user_recital_item WHERE plan_id = ? ORDER BY sequence_no`).bind(Number(plan_id)).all(),
+      env.db.prepare(`SELECT l.line_no, l.line_text, l.line_type, l.line_role, l.line_group, l.prosody_id, l.sect FROM thaniyan_line_master l WHERE l.thaniyan_ref = 'global' ORDER BY l.line_no`).all(),
       env.db.prepare(`SELECT entity_type, entity_id FROM recital_sattrumurai`).all(),
       env.db.prepare(`SELECT section_id, thaniyan_display_mode FROM section_master`).all()
     ]);
 
-    const items = itemRows.results;
+    const items = (itemRows.results || []).map(itemFromDb);
     if (!items.length) return new Response(JSON.stringify({ blocks: [] }), { headers: CORS });
 
     const sattrumuraiSet = new Set(sattrumuraiRows.results.map(r => `${r.entity_type}:${r.entity_id}`));
@@ -400,7 +613,10 @@ async function handleRender(request, env) {
       if (item.entity_type === "pasuram")
         return env.db.prepare(`${q} WHERE p.global_no = ? ORDER BY l.line_no`).bind(item.entity_id).all().then(r => r.results);
       if (item.entity_type === "koil") {
-        const koilTitle = item.entity_id === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+        const sect = url.searchParams.get("sect") || "T";
+        // Thenkalai: use standard tag; Vadagalai: use வடகலை tag
+        const baseTitle = item.entity_id === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+        const koilTitle = sect === 'V' ? 'வடகலை ' + baseTitle : baseTitle;
         return env.db.prepare(`SELECT entity_id FROM entity_master WHERE entity_type = 'pathu' AND meta_key = 'tag' AND meta_value = ?`).bind(koilTitle).all()
           .then(tagRows => {
             const pathuIds = tagRows.results.map(r => Number(r.entity_id));
@@ -411,6 +627,39 @@ async function handleRender(request, env) {
       }
       return Promise.resolve([]);
     }));
+
+    // ── Step 5b: Munnadi Pinnadi ──
+    // An item saved with item_opt = 'mp' is recited as munnadi / pinnadi.
+    // The block still carries the same pasurams as Full, so the index,
+    // thaniyan and sattrumurai treat it as a full recital; the page draws
+    // the munnadi rows instead of the verses.
+    const munnadiRows = items.map(() => null);
+    const mpIdx = items
+      .map((it, i) => (it.item_opt === "mp" && pasuramResults[i].length && !pasuramResults[i][0]?.__special) ? i : -1)
+      .filter(i => i >= 0);
+    if (mpIdx.length) {
+      const gnos = [...new Set(mpIdx.flatMap(i => pasuramResults[i].map(r => r.global_no)))];
+      let mrows = await _inQuery(env, gnos,
+        `SELECT id AS mp_id, global_no, line_1, line_2 FROM munnadi_pinnadi_master WHERE global_no IN (__IN__)`);
+      const byG = new Map(mrows.map(r => [r.global_no, r]));
+      for (const i of mpIdx) {
+        const seen = new Set(), out = [];
+        for (const r of pasuramResults[i]) {
+          if (seen.has(r.global_no)) continue;
+          seen.add(r.global_no);
+          const m = byG.get(r.global_no);
+          out.push({
+            global_no: r.global_no, local_pasuram_no: r.local_pasuram_no,
+            double_recital: r.double_recital, pathu_id: r.pathu_id, thirumozhi_id: r.thirumozhi_id,
+            line_1: m ? m.line_1 : "", line_2: m ? m.line_2 : ""
+          });
+        }
+        // Thiruppallandu 1 and 2 are one row, as on the Munnadi Pinnadi page
+        const p1 = out.find(x => x.global_no === 1), p2 = out.find(x => x.global_no === 2);
+        if (p1 && p2) { p1.line_2 = p2.line_1; p1.merged = 1; out.splice(out.indexOf(p2), 1); }
+        munnadiRows[i] = out;
+      }
+    }
 
     // ── Step 6: sattrumurai ──
     const sattrumuraiData = await Promise.all(items.map((item, i) => {
@@ -429,8 +678,103 @@ async function handleRender(request, env) {
     const blocks = [];
     const shownSectionThaniyans = new Set();
 
-    if (globalThaniyanRows.results.length)
-      blocks.push({ block_type: "global_thaniyan", lines: globalThaniyanRows.results });
+    // ── Pothu thaniyan block(s) ──
+    // Flags set on the plan (ghoshti setup): render what's ticked — both
+    // may appear (mixed-sect gathering), Thenkalai first.
+    // Flags NULL (legacy plans + personal recital plans): old behavior —
+    // single sect-based block, byte-identical lines to before.
+    const gAll     = globalThaniyanAll.results || [];
+    const subsect  = url.searchParams.get("subsect") || "";
+    const hasFlags = planRow && (planRow.include_pothu_t != null || planRow.include_pothu_v != null);
+    const wantT    = hasFlags ? Number(planRow.include_pothu_t) === 1 : sect !== "V";
+    const wantV    = hasFlags ? Number(planRow.include_pothu_v) === 1 : sect === "V";
+    // Madam (Ahobila): ghoshti plans carry the include_pothu_m flag;
+    // legacy/personal plans derive it from the viewer's sub-sect.
+    const wantM    = hasFlags ? Number(planRow.include_pothu_m) === 1
+                              : (sect === "V" && subsect === "madam");
+    const tLines   = gAll.filter(l => l.sect === "T" || l.sect === "B");
+    const vLines   = wantT ? gAll.filter(l => l.sect === "V")
+                           : gAll.filter(l => l.sect === "V" || l.sect === "B");
+    let mLines = [];
+    if (wantM) {
+      const kes = await env.db.prepare(
+        `SELECT line_no, line_text FROM fixed_text_line_master
+         WHERE fixed_id = 8 ORDER BY line_no`
+      ).all();
+      mLines = (kes.results || []).map(r => ({
+        line_no: r.line_no, line_text: r.line_text,
+        line_type: null, line_role: null, line_group: 1, prosody_id: null
+      }));
+    }
+    // Order ruling: தென்கலை → கேஶவார்ய (Madam) → ராமாநுஜ தயாபாத்ரம்
+    //
+    // A pothu set is: [title] + [sect-specific opening thaniyan] + [common
+    // remainder shared by every sect]. When MORE THAN ONE sect is selected
+    // (mixed ghoshti), only the OPENING thaniyans stack — the common
+    // remainder is recited ONCE at the end, not once per sect.
+    //   ஸ்ரீசைலேச… → கேஶவார்ய… → ராமாநுஜ த₃யாபாத்ரம்… → (common remainder)
+    // With a single sect selected, output is byte-identical to before.
+    const _splitPothu = (rows) => {
+      // head = title + opening thaniyan (its subheads and stanza lines);
+      // tail = everything from the NEXT thaniyan's subhead onward.
+      const head = [], tail = [];
+      let seenLine = false, inTail = false;
+      for (const r of rows) {
+        if (inTail) { tail.push(r); continue; }
+        const role = r.line_role;
+        if (seenLine && (role === "subhead" || role === "title")) { inTail = true; tail.push(r); continue; }
+        if (role === "line") seenLine = true;
+        head.push(r);
+      }
+      return { head, tail };
+    };
+
+    const _selCount = (wantT && tLines.length ? 1 : 0)
+                    + (wantM && mLines.length ? 1 : 0)
+                    + (wantV && vLines.length ? 1 : 0);
+
+    // Opening order: the plan may store its own (e.g. "V,M,T" when the
+    // ghoshti wants Vadakalai first). Default stays தென்கலை → மடம் → வடகலை.
+    const _defaultOrder = ["T", "M", "V"];
+    const _rawOrder = (planRow && planRow.pothu_order) ? String(planRow.pothu_order) : "";
+    const _order = _rawOrder
+      ? _rawOrder.split(",").map(x => x.trim().toUpperCase()).filter(x => _defaultOrder.includes(x))
+      : [];
+    // Any sect missing from a stored order is appended in default order,
+    // so a partial/garbled value can never silently drop a thaniyan.
+    for (const k of _defaultOrder) if (!_order.includes(k)) _order.push(k);
+
+    const _want  = { T: wantT && tLines.length, M: wantM && mLines.length, V: wantV && vLines.length };
+    // கேஶவார்ய (Madam) may never follow the Vadakalai thaniyan — an order
+    // placing V first denotes a plain Vadakalai gathering, so drop M.
+    if (_want.M && _want.V && _order.indexOf("V") < _order.indexOf("M")) _want.M = false;
+    const _label = { T: "பொது தனியன்கள்", M: "பொது தனியன் — அஹோபிலமடம்", V: "பொது தனியன்கள் (வடகலை)" };
+
+    if (_selCount > 1) {
+      // Mixed gathering — ONE block: openings in the chosen order, then
+      // the common remainder once at the end.
+      const _split = { T: _splitPothu(tLines), M: { head: mLines, tail: [] }, V: _splitPothu(vLines) };
+      const merged = [];
+      let titleUsed = false;
+      for (const k of _order) {
+        if (!_want[k]) continue;
+        let head = _split[k].head;
+        // Only the first opening keeps the "பொது தனியன்கள்" title row.
+        if (titleUsed) head = head.filter(r => r.line_role !== "title");
+        else if (head.some(r => r.line_role === "title")) titleUsed = true;
+        merged.push(...head);
+      }
+      // Common remainder — identical across sects; take whichever is present.
+      const commonTail = (_want.T && _split.T.tail.length) ? _split.T.tail : _split.V.tail;
+      merged.push(...commonTail);
+      if (merged.length)
+        blocks.push({ block_type: "global_thaniyan", label: "பொது தனியன்கள்", lines: merged });
+    } else {
+      const _lines = { T: tLines, M: mLines, V: vLines };
+      for (const k of _order) {
+        if (_want[k]) blocks.push({ block_type: "global_thaniyan", label: _label[k], lines: _lines[k] });
+      }
+    }
 
     for (let i = 0; i < items.length; i++) {
       const item       = items[i];
@@ -471,6 +815,7 @@ async function handleRender(request, env) {
           is_rettai:       item.is_rettai ? 1 : 0,
           is_child_thiru:  isChild ? 1 : 0,
           parent_pathu_id: isChild ? item.pathu_id : null,
+          from_koil:       item.from_koil ? 1 : 0,
           sequence_no:     item.sequence_no,
           section_id:      section_id,
           section_name:    firstRow.section_name    || null,
@@ -478,7 +823,9 @@ async function handleRender(request, env) {
           display_items:   displayMap,
           prosody_scope:   prosodyScopeAll,
           prosody_master:  prosodyMasterMap,
-          pasurams:        pasuramResults[i]
+          pasurams:        pasuramResults[i],
+          is_munnadi:      munnadiRows[i] ? 1 : 0,
+          munnadi:         munnadiRows[i] || undefined
         });
       }
 
@@ -487,7 +834,17 @@ async function handleRender(request, env) {
         blocks.push({ block_type: "sattrumurai", entity_type: item.entity_type, entity_id: item.entity_id, items: sattrumuraiData[i] });
     }
 
-    return new Response(JSON.stringify({ plan_id: Number(plan_id), blocks }), { headers: CORS });
+    // Sthothram — always after every pasuram (our sampradayam's pasurams first)
+    blocks.push(...await stotraBlocks(env, items, stotraScript(url)));
+
+    return new Response(JSON.stringify({
+      plan_id: Number(plan_id), blocks,
+      include_pothu_t: planRow ? planRow.include_pothu_t : null,
+      include_pothu_v: planRow ? planRow.include_pothu_v : null,
+      include_pothu_m: planRow ? planRow.include_pothu_m : null,
+      pothu_order:     planRow ? (planRow.pothu_order || null) : null,
+      is_temple: planRow ? (planRow.is_temple ? 1 : 0) : 0
+    }), { headers: CORS });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
   }
@@ -584,13 +941,46 @@ async function handleSpinner(request, env) {
     const spinDay   = testDay !== null ? Number(testDay)
                     : paused === 1 ? (user.spinner_paused_day ?? 0) : dayNow;
 
+    // ── Anadhyayana Kalam: the spinner fully stops (it mixes pasurams not
+    //    recited then), and the day-count FREEZES — Anadhyayana days don't
+    //    advance it, so it resumes where it left off after Thai. ──
+    const MAX_DAY     = 247; // Srirangam count — one full round
+    const isoToday    = todayMidnight.toISOString().slice(0, 10);
+    const epochIso    = epoch.toISOString().slice(0, 10);
+    const anaCheckDate = url.searchParams.get("test_date") || isoToday; // admin preview via test_date
+    let isAnadhyayana = false, anaDaysElapsed = 0;
+    try {
+      const anaRow = await env.db.prepare(
+        `SELECT is_anadhyayana FROM panchangam WHERE p_date = ? LIMIT 1`
+      ).bind(anaCheckDate).first();
+      isAnadhyayana = anaRow?.is_anadhyayana === 1;
+      const cnt = await env.db.prepare(
+        `SELECT COUNT(*) AS c FROM panchangam WHERE p_date >= ? AND p_date <= ? AND is_anadhyayana = 1`
+      ).bind(epochIso, isoToday).first();
+      anaDaysElapsed = cnt?.c || 0;
+    } catch (e) { /* date not in table → treat as normal */ }
+
+    // Freeze applies to the active (non-paused, non-test) day only.
+    const effectiveSpinDay = (testDay === null && paused !== 1)
+      ? Math.max(0, dayNow - anaDaysElapsed)
+      : spinDay;
+
+    if (isAnadhyayana && testDay === null) {
+      return new Response(JSON.stringify({
+        anadhyayana: true,
+        message: "Adiyen, Divyadesam Spinner will work post Anadhyayanam, as it is a mix of many pasurams which are not recited during Anadhyayana. 🙏",
+        spin_day: effectiveSpinDay,
+        max_day:  MAX_DAY,
+        paused
+      }), { headers: CORS });
+    }
+
     // ── Fetch all divyadesams in canonical order ──
     const desams = await env.db.prepare(
       `SELECT divyadesam_id, canonical_name FROM divyadesam_master ORDER BY divyadesam_id`
     ).all();
 
     // ── For each desam, get today's pasuram ──
-    const MAX_DAY = 247; // Srirangam count — one full round
     const desamBlocks = await Promise.all(desams.results.map(async d => {
       // Get all pasurams for this desam in global_no order
       const pasurams = await env.db.prepare(
@@ -612,7 +1002,7 @@ async function handleSpinner(request, env) {
       const pList = [...pMap.entries()]; // [[global_no, lines[]], ...]
 
       // Pick today's pasuram by day modulo
-      const idx = spinDay % pList.length;
+      const idx = effectiveSpinDay % pList.length;
       const [global_no, lines] = pList[idx];
 
       return {
@@ -626,10 +1016,14 @@ async function handleSpinner(request, env) {
     const validBlocks = desamBlocks.filter(Boolean);
 
     // ── Global thaniyan ──
+    const renderSect = url.searchParams.get("sect") || "T";
     const globalThaniyan = await env.db.prepare(
       `SELECT l.line_no, l.line_text, l.line_role, l.line_group
-       FROM thaniyan_line_master l WHERE l.thaniyan_ref = 'global' ORDER BY l.line_no`
-    ).all();
+       FROM thaniyan_line_master l
+       WHERE l.thaniyan_ref = 'global'
+       AND (l.sect = ? OR l.sect = 'B')
+       ORDER BY l.line_no`
+    ).bind(renderSect).all();
 
     // ── Section thaniyans for sections appearing today ──
     // Dedup: sections sharing a thaniyan group only show once
@@ -654,7 +1048,7 @@ async function handleSpinner(request, env) {
     }));
 
     return new Response(JSON.stringify({
-      spin_day:         spinDay,
+      spin_day:         effectiveSpinDay,
       max_day:          MAX_DAY,
       paused,
       global_thaniyan:  globalThaniyan.results,
@@ -752,7 +1146,11 @@ async function handleGhoshti(request, env) {
       const host = await env.db.prepare(`SELECT name FROM user_master WHERE mobile = ? LIMIT 1`).bind(session.mobile).first();
       const renderUrl = new URL(request.url);
       renderUrl.pathname = "/recital/render";
-      renderUrl.search   = `?plan_id=${session.plan_id}`;
+      const reqSect      = url.searchParams.get("sect");
+      const reqSubsect   = url.searchParams.get("subsect");
+      renderUrl.search   = `?plan_id=${session.plan_id}`
+        + (reqSect ? `&sect=${encodeURIComponent(reqSect)}` : "")
+        + (reqSubsect ? `&subsect=${encodeURIComponent(reqSubsect)}` : "");
       const renderResponse = await handleRender(new Request(renderUrl.toString(), { method: "GET" }), env);
       const renderData     = await renderResponse.json();
       return new Response(JSON.stringify({
@@ -765,6 +1163,10 @@ async function handleGhoshti(request, env) {
         can_edit:    isCreator && !isGhoshtiDay,
         plan_id:     session.plan_id,
         blocks:      renderData.blocks,
+        include_pothu_t: renderData.include_pothu_t,
+        include_pothu_v: renderData.include_pothu_v,
+        include_pothu_m: renderData.include_pothu_m,
+        is_temple:       renderData.is_temple ? 1 : 0,
         sattrumurai_data: session.sattrumurai_data ? JSON.parse(session.sattrumurai_data) : null
       }), { headers: CORS });
     }
@@ -914,6 +1316,8 @@ async function handleResolveLabels(request, env) {
           }
         } else if (entity_type === "koil") {
           label = entity_id === 1 ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+        } else if (entity_type === "stotra" || entity_type === "stotra_part") {
+          label = await stotraLabel(env, entity_type, entity_id, stotraScript(new URL(request.url)));
         }
       } catch(e) {}
       return {
@@ -923,7 +1327,8 @@ async function handleResolveLabels(request, env) {
         is_rettai:       item.is_rettai       || 0,
         global_no_start: item.global_no_start || 0,
         pathu_id:        item.pathu_id        || null,
-        section_id:      item.section_id      || null
+        section_id:      item.section_id      || null,
+        item_opt:        item.item_opt        || null
       };
     }));
     return new Response(JSON.stringify({ labels }), { headers: CORS });
@@ -1038,7 +1443,7 @@ async function handleGhoshtiSattrumurai(request, env) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: CORS });
   }
 
-  const { ghoshti_id, pasurams, explicit, vaazhis, fixed_text_1, fixed_text_2, madal, fixed_blocks, vazhi_blocks, muktaka_lines } = body;
+  const { ghoshti_id, pasurams, explicit, vaazhis, fixed_text_1, fixed_text_2, madal, fixed_blocks, vazhi_blocks, muktaka_lines, desika_lines, adivan_lines } = body;
   if (!ghoshti_id)
     return new Response(JSON.stringify({ error: "ghoshti_id required" }), { status: 400, headers: CORS });
 
@@ -1054,6 +1459,8 @@ async function handleGhoshtiSattrumurai(request, env) {
       fixed_blocks: fixed_blocks || [],
       vazhi_blocks: vazhi_blocks || [],
       muktaka_lines: muktaka_lines || [],
+      desika_lines: desika_lines  || [],
+      adivan_lines: adivan_lines  || [],
       saved_at:     new Date().toISOString(),
     });
 

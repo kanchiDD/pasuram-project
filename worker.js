@@ -34,12 +34,20 @@ export default {
   return handleVoice(request, env);
 }
 
+if (url.pathname === "/voice/entity-tags") {
+  return handleVoiceEntityTags(request, env);
+}
+
     if (url.searchParams.get("view") === "4000") {
   return handleFullAPI(url, env);
 }
 
     if (url.pathname.includes("/api/anchor-map")) {
   return handleAnchorMap(request, env);
+}
+
+    if (url.pathname.includes("/api/koil-pathus")) {
+  return handleKoilPathus(request, env);
 }
 
     if (url.pathname.includes("/api/entity-search")) {
@@ -60,6 +68,11 @@ if (url.pathname.includes("/api/section")) {
 if (url.pathname.includes("/api/pasuram-display")) {
   return handlePasuramDisplay(request, env);
 }
+
+if (url.pathname.includes("/api/pasuram-line-editor")) {
+  return handlePasuramLineEditor(request, env);
+}
+
 if (url.pathname.includes("/api/pasuram")) {
   return handlePasuram(request, env);
 }
@@ -80,6 +93,14 @@ if (url.pathname.includes("/api/divyadesam")) {
   return handleDivyadesam(request, env);
 }
 
+if (url.pathname.includes("/api/archanai")) {
+  return handleArchanai(request, env);
+}
+
+if (url.pathname.includes("/api/stotra")) {
+  return handleStotra(request, env);
+}
+
 if (url.pathname.includes("/api/nithyanusandhanam")) {
   return handleNithyanusandhanam(request, env);
 }
@@ -94,7 +115,8 @@ if (url.pathname.includes("/api/sattrumurai/list")) {
  
   if (url.pathname.includes("/api/sattrumurai/")) {
     const id = url.pathname.split("/api/sattrumurai/")[1];
-    return handleSattrumurai(id, env);
+    const satSect = url.searchParams.get("sect") || "T";
+    return handleSattrumurai(id, env, satSect);
   }
 
   if (url.pathname.includes("/api/star-pasuram")) {
@@ -124,6 +146,11 @@ if (url.pathname.includes("/api/vedam")) {
 if (url.pathname.includes("/api/vazhi-thaniyan")) {
   return handleVazhiThaniyan(request, env);
 }
+
+if (url.pathname.includes("/api/munnadi-editor")) {
+  return handleMunnadiEditor(request, env);
+}
+
 
     return new Response("Not Found", { status: 404 });
   }
@@ -224,16 +251,18 @@ async function handleSection(request, env) {
 
     const url = new URL(request.url);
     const thousand_id = url.searchParams.get("thousand_id");
+    const sect = url.searchParams.get("sect") || "T";
 
     const result = await env.db.prepare(`
   SELECT 
     section_id as id, 
     section_name as name,
-    thaniyan_display_mode   -- 🔥 ADD THIS LINE
+    thaniyan_display_mode
     FROM section_master
     WHERE thousand_id = ?
+    AND (sect = ? OR sect = 'B')
     ORDER BY section_id
-`).bind(thousand_id).all();
+`).bind(thousand_id, sect).all();
 
     return new Response(JSON.stringify(result.results), {
       headers: {
@@ -270,6 +299,7 @@ async function handlePasuram(request, env) {
         p.pathu_id,
         p.thirumozhi_id,
         p.double_recital,   -- ✅ ADD THIS LINE
+        p.has_audio,
         /* ✅ NAMES */
         s.section_name,
 
@@ -325,7 +355,8 @@ async function handlePasuram(request, env) {
           thirumozhi_name: row.thirumozhi_name,
 
           double_recital: row.double_recital,   // ✅ ADDED
-          
+          has_audio: row.has_audio || 0,
+
           /* 🔥 FINAL FIX (SMART FALLBACK) */
           thirumozhi_heading:
             row.pathu_thirumozhi_heading || row.thirumozhi_heading || "",
@@ -368,13 +399,37 @@ async function handleThaniyan(request, env) {
 
     const url = new URL(request.url);
     const section_id = url.searchParams.get("section_id");
+    const sect = url.searchParams.get("sect") || "T";
+    const subsect = url.searchParams.get("subsect") || "";
+
+    /* 🟢 SECT SOURCE — thaniyan follows the SECTION, not the caller.
+       section_master.sect is B / T / V. For a T or V section the thaniyan
+       must use the SECTION's sect (this is what makes a cross-sect voice
+       fetch — a T user pulling a V section — return the V global + V section
+       thaniyan instead of the caller's T). A 'B' section (the shared 4000)
+       has no cross-sect case, so it keeps the caller's sect — unchanged
+       behaviour for the list/recital path.
+       Sections 52 & 53 (Ahobila Madam works) always take the Kesavarya
+       pothu when resolved to V — the Kesavarya thaniyan lives ONLY in
+       fixed_text_line_master (fixed_id 8); that path below is untouched. */
+    let effectiveSect = sect;
+    let effSubsect    = subsect;
+    try {
+      const secRow = await env.db
+        .prepare(`SELECT sect FROM section_master WHERE section_id = ?`)
+        .bind(section_id).first();
+      if (secRow && (secRow.sect === "T" || secRow.sect === "V")) effectiveSect = secRow.sect;
+    } catch (e) { /* fall back to caller sect */ }
+    if (effectiveSect === "V" && (String(section_id) === "52" || String(section_id) === "53")) {
+      effSubsect = "madam";
+    }
 
     /* 🟢 GLOBAL THANIYAN */
     const globalRes = await env.db.prepare(`
       SELECT 
         tm.thaniyan_id,
         tm.canonical_name,
-        tm.section_id,            -- 🔥 ADD
+        tm.section_id,
         tl.line_no,
         tl.line_text,
         tl.line_role,
@@ -383,16 +438,55 @@ async function handleThaniyan(request, env) {
       FROM thaniyan_master tm
       JOIN thaniyan_line_master tl
         ON tl.thaniyan_ref = 'global'
+        AND (tl.sect = ? OR tl.sect = 'B')
       WHERE tm.thaniyan_type = 'global'
+        AND (tm.thaniyan_id = 1 OR tm.thaniyan_id = 33)
+        AND (
+          (? = 'T' AND tm.thaniyan_id = 1)
+          OR
+          (? = 'V' AND tm.thaniyan_id = 33)
+        )
       ORDER BY tm.thaniyan_id, tl.line_no
-    `).all();
+    `).bind(effectiveSect, effectiveSect, effectiveSect).all();
+
+    /* 🟢 MADAM (Ahobila) — Kesavarya pothu thaniyan FIRST, then
+       Ramanuja Dayapatram (id 33). Synthetic thaniyan_id 0 so the
+       group() object (ascending integer keys) keeps it before 33. */
+    if (effectiveSect === "V" && effSubsect === "madam") {
+      const kes = await env.db.prepare(
+        `SELECT line_no, line_text FROM fixed_text_line_master
+         WHERE fixed_id = 8 ORDER BY line_no`
+      ).all();
+      // Heading line + verse lines with real line_role — the renderer only
+      // outputs rows whose line_role is title/subhead/line (a null role is skipped).
+      const kesRows = [{
+        thaniyan_id:    0,
+        canonical_name: "பொது தனியன் அஹோபிலமடம்",
+        section_id:     null,
+        line_no:        0,
+        line_text:      "பொது தனியன் — அஹோபிலமடம் (கேஶவார்ய)",
+        line_role:      "subhead",
+        line_group:     1,
+        prosody_id:     null
+      }, ...(kes.results || []).map(r => ({
+        thaniyan_id:    0,
+        canonical_name: "பொது தனியன் அஹோபிலமடம்",
+        section_id:     null,
+        line_no:        r.line_no,
+        line_text:      r.line_text,
+        line_role:      "line",
+        line_group:     1,
+        prosody_id:     null
+      }))];
+      globalRes.results = [...kesRows, ...(globalRes.results || [])];
+    }
 
     /* 🟢 SECTION THANIYAN */
     const sectionRes = await env.db.prepare(`
       SELECT 
         tm.thaniyan_id,
         tm.canonical_name,
-        tm.section_id,            -- 🔥 ADD
+        tm.section_id,
         tl.line_no,
         tl.line_text,
         tl.line_role,
@@ -401,9 +495,10 @@ async function handleThaniyan(request, env) {
       FROM thaniyan_master tm
       JOIN thaniyan_line_master tl
         ON tl.thaniyan_ref = ?
+        AND (tl.sect = ? OR tl.sect = 'B')
       WHERE tm.section_id = ?
       ORDER BY tm.thaniyan_id, tl.line_no
-    `).bind("section_" + section_id, section_id).all();
+    `).bind("section_" + section_id, effectiveSect, section_id).all();
 
     /* 🟢 PROSODY */
     const prosodyRes = await env.db.prepare(`
@@ -412,7 +507,6 @@ async function handleThaniyan(request, env) {
     `).all();
 
     const prosodyMap = {};
-
     for (const row of prosodyRes.results) {
       prosodyMap[String(row.prosody_id)] = row.canonical_name_tamil;
     }
@@ -420,39 +514,48 @@ async function handleThaniyan(request, env) {
     /* 🟢 GROUP WITH TYPE */
     function group(rows, type) {
       const grouped = {};
-
       for (const row of rows) {
-
         const key = row.thaniyan_id;
-
         if (!grouped[key]) {
           grouped[key] = {
+            thaniyan_id: row.thaniyan_id,
+            section_id:  row.section_id,
             title: row.canonical_name,
             lines: [],
-            type: type   // 🔥 ADD (critical)
+            type: type
           };
         }
-
         grouped[key].lines.push({
-          line_no: row.line_no,
+          line_no:   row.line_no,
           line_text: row.line_text,
           line_role: row.line_role,
           line_group: row.line_group,
           prosody_id: row.prosody_id
         });
       }
-
       return Object.values(grouped);
     }
 
-    /* 🟢 FINAL DATA WITH TYPE */
     const finalData = [
       ...group(globalRes.results, "global"),
       ...group(sectionRes.results, "section")
     ];
 
+    // Section-thaniyan audio is one file per section (thaniyan_{section_id}.mp3),
+    // shared across all sects. Audio availability is a pure section fact —
+    // flag every section-type group when the section has audio, sect-blind.
+    // (Global thaniyans stay 0 for now; they'll flag by thaniyan_id when their
+    //  own recordings are added later.)
+    const audioFlags = await env.db.prepare(
+      `SELECT has_audio FROM thaniyan_master WHERE section_id = ?`
+    ).bind(section_id).all();
+    const sectionHasAudio = (audioFlags.results || []).some(r => r.has_audio);
+    for (const t of finalData) {
+      t.has_audio = (t.type === "section" && sectionHasAudio) ? 1 : 0;
+    }
+
     return new Response(JSON.stringify({
-      thaniyan: finalData,
+      thaniyan:   finalData,
       prosodyMap: prosodyMap
     }), {
       headers: {
@@ -463,9 +566,9 @@ async function handleThaniyan(request, env) {
 
   } catch (err) {
     return new Response(JSON.stringify({
-      error: "DB error",
+      error:   "DB error",
       details: err.message,
-      stack: err.stack
+      stack:   err.stack
     }), {
       status: 500,
       headers: {
@@ -486,6 +589,7 @@ async function handlePasuramDisplay(request, env) {
       SELECT 
         entity_type,
         entity_id,
+        meta_key,          -- tag: adivaravu / thalam_pun / song_reference ...
         meta_value,
         sequence_no
       FROM entity_master
@@ -708,6 +812,7 @@ async function handleMadal(request, env) {
       SELECT 
         entity_type,
         entity_id,
+        meta_key,          -- tag: adivaravu / thalam_pun / song_reference ...
         meta_value,
         sequence_no
       FROM entity_master
@@ -737,6 +842,9 @@ async function handleMadal(request, env) {
     return new Response(JSON.stringify({
       type: "madal",
       madal_id: madal_id,
+      has_audio: await env.db.prepare(
+        `SELECT has_audio FROM madal_master WHERE madal_id = ?`
+      ).bind(madal_id).first().then(r => r?.has_audio || 0),
       units: units.results,
       rules: rules.results,
 
@@ -799,6 +907,7 @@ async function handleKootrirukkai(request, env) {
       SELECT 
         entity_type,
         entity_id,
+        meta_key,          -- tag: adivaravu / thalam_pun / song_reference ...
         meta_value,
         sequence_no
       FROM entity_master
@@ -826,6 +935,10 @@ async function handleKootrirukkai(request, env) {
 
     return new Response(JSON.stringify({
       type: "kootrirukkai",
+      has_audio: await env.db.prepare(
+        `SELECT has_audio FROM thiruvezhukootrarikkai_master
+         WHERE global_no = 2672 LIMIT 1`
+      ).first().then(r => r?.has_audio || 0),
       lines: res.results,
 
       /* ✅ NEW */
@@ -861,6 +974,7 @@ async function handleFullAPI(url, env) {
 
     const view = url.searchParams.get("view");
     const thousandParam = url.searchParams.get("thousand");
+    const treeSect = url.searchParams.get("sect") || "T"; // must be declared early — used in multiple queries
 
     const thRes = await env.db.prepare(`
       SELECT 
@@ -899,9 +1013,15 @@ const globalThaniyanRes = await env.db.prepare(`
   FROM thaniyan_master tm
   JOIN thaniyan_line_master tl
     ON tl.thaniyan_ref = 'global'
+    AND (tl.sect = ? OR tl.sect = 'B')
   WHERE tm.thaniyan_type = 'global'
+    AND (
+      (? = 'T' AND tm.thaniyan_id = 1)
+      OR
+      (? = 'V' AND tm.thaniyan_id = 33)
+    )
   ORDER BY tm.thaniyan_id, tl.line_no
-`).all();
+`).bind(treeSect, treeSect, treeSect).all();
 
     // 🟢 STEP 2 (PUT THIS RIGHT HERE)
 const globalThaniyan = groupThaniyan(globalThaniyanRes.results);
@@ -913,8 +1033,9 @@ const globalThaniyan = groupThaniyan(globalThaniyanRes.results);
         thousand_id,
         thaniyan_display_mode
       FROM section_master
+      WHERE (sect = ? OR sect = 'B')
       ORDER BY thousand_id, section_id
-    `).all();
+    `).bind(treeSect).all();
 
     const thousands = thRes.results || [];
     const sections = secRes.results || [];
@@ -969,6 +1090,7 @@ const sectionThaniyanRes = await env.db.prepare(`
   p.pathu_id,
   p.thirumozhi_id,
   p.double_recital,
+  p.has_audio,
 
   -- ✅ PATHU (PRIMARY)
   pm.pathu_name,
@@ -1036,6 +1158,7 @@ const displayRes = await env.db.prepare(`
   SELECT 
     entity_type,
     entity_id,
+    meta_key,          -- tag: adivaravu / thalam_pun / song_reference ...
     meta_value,
     sequence_no
   FROM entity_master
@@ -1124,7 +1247,9 @@ function groupThaniyan(rows) {
     if (!grouped[key]) {
       grouped[key] = {
         thaniyan_id: row.thaniyan_id,
+        section_id:  row.section_id,
         title: row.canonical_name,
+        has_audio: row.has_audio || 0,
         lines: []
       };
     }
@@ -1225,6 +1350,78 @@ async function handleAnchorMap(request, env) {
 
   }
 }
+// ── Koil pathu list — single source of truth for all surfaces ──────
+// Same flag-free tag query recitalworker and azhwar-recital use.
+// Deliberately NOT via handleEntitySearch: the வடகலை koil tags carry
+// search_flag=0 / meta_category='koil' so they never pollute voice
+// search, and entity-search would therefore never return them.
+// sect: T (base tag) | V (வடகலை tag) | ALL (union — combined koil).
+async function handleKoilPathus(request, env) {
+  const hdrs = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  try {
+    const url  = new URL(request.url);
+    const sub  = (url.searchParams.get("sub") || "THIRUMOZHI").toUpperCase();
+    const sect = (url.searchParams.get("sect") || "T").toUpperCase();
+
+    const base = sub === "THIRUVAIMOZHI" ? "கோயில் திருவாய்மொழி" : "கோயில் திருமொழி";
+    const groupsWanted =
+      sect === "ALL" ? ["T", "V"] : (sect === "V" ? ["V"] : ["T"]);
+
+    // Per-sect groups with names + canonical position — feeds the
+    // setup checkbox modals directly (no extra lookup needed there).
+    const groups = {};
+    for (const g of groupsWanted) {
+      const tag = g === "V" ? "வடகலை " + base : base;
+      const res = await env.db.prepare(
+        `SELECT em.entity_id AS pathu_id,
+                pm.pathu_name, pm.pathu_subunit_name, pm.thirumozhi_heading,
+                pm.section_id,
+                MIN(pm.global_no_start) AS global_no_start,
+                MAX(pm.global_no_end)   AS global_no_end,
+                (SELECT MIN(p2.pathu_id) FROM pathu_master p2
+                 WHERE p2.section_id = pm.section_id
+                   AND p2.pathu_no   = pm.pathu_no) AS parent_pathu_id
+         FROM entity_master em
+         JOIN pathu_master pm ON pm.pathu_id = em.entity_id
+         WHERE em.entity_type='pathu' AND em.meta_key='tag' AND em.meta_value=?
+         GROUP BY em.entity_id
+         ORDER BY MIN(pm.global_no_start)`
+      ).bind(tag).all();
+      groups[g] = (res.results || []).map(r => {
+        // People know koil thirumozhis by their heading (first-line name),
+        // so it leads; canonical numbering follows (mandatory reference).
+        const num = [r.pathu_name, r.pathu_subunit_name].filter(Boolean).join(" — ");
+        return {
+          pathu_id:        Number(r.pathu_id),
+          // Parent pathu group id (MIN pathu_id of the pathu_no group) —
+          // same key full-pathu selections use, so parent/child conflict
+          // rules in the setup UIs can see koil children.
+          parent_pathu_id: Number(r.parent_pathu_id),
+          label:           r.thirumozhi_heading ? `${r.thirumozhi_heading} — ${num}` : num,
+          section_id:      r.section_id,
+          global_no_start: r.global_no_start,
+          global_no_end:   r.global_no_end
+        };
+      });
+    }
+
+    const idSet = new Set();
+    for (const g of groupsWanted)
+      for (const p of groups[g]) idSet.add(p.pathu_id);
+
+    return new Response(JSON.stringify({
+      sub, sect,
+      section_id: sub === "THIRUVAIMOZHI" ? 26 : 11,
+      pathu_ids:  [...idSet].sort((a, b) => a - b),
+      groups
+    }), { headers: hdrs });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "DB error", details: err.message }),
+      { status: 500, headers: hdrs });
+  }
+}
+
 async function handleEntitySearch(request, env) {
   try {
     const url  = new URL(request.url);
@@ -1408,6 +1605,7 @@ async function handleAzhwarRecital(request, env) {
   try {
     const url      = new URL(request.url);
     const authorId = url.searchParams.get("author_id");
+    const sect     = url.searchParams.get("sect") || "T";
     const hdrs     = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
     if (!authorId) return new Response(JSON.stringify([]), { headers: hdrs });
@@ -1423,20 +1621,31 @@ async function handleAzhwarRecital(request, env) {
 
     // ── SEQUENCE ─────────────────────────────────────────────
     const seqRes = await env.db.prepare(`
-      SELECT sequence_no, entity_type, entity_id, is_dual_recital, is_optional
+      SELECT sequence_no, entity_type, entity_id, is_dual_recital, is_optional, sect, phase, recurrence
       FROM   author_birth_recital_sequence
       WHERE  recital_id = ?
       ORDER  BY sequence_no
     `).bind(master.recital_id).all();
 
-    const seqRows = seqRes.results || [];
+    const seqRowsAll = seqRes.results || [];
+
+    // Filter by sect FIRST — this is the actual gate on which sequence
+    // rows apply to this user at all. 'ALL' rows always pass through
+    // regardless of the requested sect.
+    const seqRows = seqRowsAll.filter(r => r.sect === sect || r.sect === "ALL");
 
     const pasuramIds  = [...new Set(seqRows.filter(r => r.entity_type === "pasuram")           .map(r => r.entity_id))];
     const thaniyanIds = [...new Set(seqRows.filter(r => r.entity_type === "thaniyan")          .map(r => r.entity_id))];
     const sectionIds  = [...new Set(seqRows.filter(r => r.entity_type === "section")           .map(r => r.entity_id))];
     const fixedIds    = [...new Set(seqRows.filter(r => r.entity_type === "fixed_text")        .map(r => r.entity_id))];
-    const vazhiIds    = [...new Set(seqRows.filter(r => r.entity_type === "vazhi")             .map(r => r.entity_id))];
+    // Madam viewers: Kesavarya (fixed_id 8) is injected before every
+    // Vadagalai pothu thaniyan (thaniyan_id 33) — ensure 8 is hydrated.
+    const subsectParam = url.searchParams.get("subsect") || "";
+    if (subsectParam === "madam" && !fixedIds.includes(8)) fixedIds.push(8);
+    const vazhiIds    = [...new Set(seqRows.filter(r => r.entity_type === "vazhi_thirunamam")  .map(r => r.entity_id))];
     const madalIds    = [...new Set(seqRows.filter(r => r.entity_type === "madal_sattrumurai") .map(r => r.entity_id))];
+    const pathuIds    = [...new Set(seqRows.filter(r => r.entity_type === "pathu")             .map(r => r.entity_id))];
+    const thiruIds    = [...new Set(seqRows.filter(r => r.entity_type === "thirumozhi")        .map(r => r.entity_id))];
 
     // ── PROSODY MASTER + SCOPE ───────────────────────────────
     const prosodyMasterRes = await env.db.prepare(
@@ -1462,7 +1671,7 @@ async function handleAzhwarRecital(request, env) {
     // Returns { section:[], pathu:{}, thirumozhi:{}, pasuram:{} }
     async function buildDisplayMap(sid) {
       const result = await env.db.prepare(`
-        SELECT entity_type, entity_id, meta_value, sequence_no
+        SELECT entity_type, entity_id, meta_key, meta_value, sequence_no
         FROM entity_master
         WHERE display_flag = 1 AND (
           (entity_type = 'pasuram' AND entity_id BETWEEN
@@ -1570,18 +1779,26 @@ async function handleAzhwarRecital(request, env) {
     const thaniyanMap = {};
 
     if (thaniyanIds.length) {
+      // Fixed: derive thaniyan_ref from thaniyan_master.thaniyan_type/section_id directly,
+      // not via arithmetic (thaniyan_id - 1) which broke once Vadagalai thaniyan_ids
+      // (33 = global, 34-53 = Desika sections) were added — they don't follow the old
+      // sequential 1:1 mapping with section_id.
       const tmRows = await _inQuery(env, thaniyanIds,
-        `SELECT thaniyan_id, canonical_name FROM thaniyan_master WHERE thaniyan_id IN (__IN__)`);
+        `SELECT thaniyan_id, canonical_name, thaniyan_type, section_id
+         FROM thaniyan_master WHERE thaniyan_id IN (__IN__)`);
 
       const REF_MAP = {};
       for (const t of tmRows)
-        REF_MAP[t.thaniyan_id] = t.thaniyan_id === 1 ? "global" : `section_${t.thaniyan_id - 1}`;
+        REF_MAP[t.thaniyan_id] = t.thaniyan_type === 'global'
+          ? 'global'
+          : `section_${t.section_id}`;
 
       const refs   = Object.values(REF_MAP);
-      const tlRows = await _inQuery(env, refs,
-        `SELECT thaniyan_ref, line_no, line_text, line_role, line_group, prosody_id
+      const tlRowsAll = await _inQuery(env, refs,
+        `SELECT thaniyan_ref, line_no, line_text, line_role, line_group, prosody_id, sect
          FROM thaniyan_line_master WHERE thaniyan_ref IN (__IN__)
          ORDER BY thaniyan_ref, line_no`);
+      const tlRows = tlRowsAll.filter(r => r.sect === sect || r.sect === 'B');
 
       const linesByRef = {};
       for (const l of tlRows) {
@@ -1665,7 +1882,7 @@ async function handleAzhwarRecital(request, env) {
 
         const pasuramsRes = await env.db.prepare(`
           SELECT p.global_no, p.local_pasuram_no, p.section_id,
-                 p.pathu_id, p.thirumozhi_id, p.double_recital,
+                 p.pathu_id, p.thirumozhi_id, p.double_recital, p.has_audio,
                  pm.pathu_name, pm.pathu_subunit_name,
                  COALESCE(pm.thirumozhi_heading, tm.thirumozhi_heading) AS thirumozhi_heading,
                  tm.thirumozhi_name
@@ -1719,15 +1936,117 @@ async function handleAzhwarRecital(request, env) {
       }
     }
 
+    // ── PATHU + THIRUMOZHI MAPS ──────────────────────────────
+    // First-class pathu/thirumozhi sequence items (admin data entry:
+    // one row per pathu/thirumozhi instead of individual global numbers).
+    // Content shape is IDENTICAL to a normal section so the frontend
+    // renders it through the existing section branch unchanged.
+    // Ruling: subset recitals show adivaravu only — closing_text is
+    // always "" (no "முற்றிற்று" for a pathu/thirumozhi subset).
+    async function _buildUnitContent(whereCol, unitId, sectionId, unitName) {
+      const sm = await env.db.prepare(
+        `SELECT section_id, section_name FROM section_master WHERE section_id = ?`
+      ).bind(sectionId).first();
+      if (!sm) return null;
+
+      const dispMap = await buildDisplayMap(sectionId);
+
+      const pasuramsRes = await env.db.prepare(`
+        SELECT p.global_no, p.local_pasuram_no, p.section_id,
+               p.pathu_id, p.thirumozhi_id, p.double_recital, p.has_audio,
+               pm.pathu_name, pm.pathu_subunit_name,
+               COALESCE(pm.thirumozhi_heading, tm.thirumozhi_heading) AS thirumozhi_heading,
+               tm.thirumozhi_name
+        FROM pasuram_master p
+        LEFT JOIN pathu_master pm ON p.pathu_id = pm.pathu_id
+        LEFT JOIN thirumozhi_master tm ON p.thirumozhi_id = tm.thirumozhi_id
+        WHERE p.${whereCol} = ? ORDER BY p.global_no
+      `).bind(unitId).all();
+
+      const unitPasuramIds = (pasuramsRes.results || []).map(r => r.global_no);
+      let pasurams = [];
+
+      if (unitPasuramIds.length) {
+        const unitLinesRows = await _inQuery(env, unitPasuramIds,
+          `SELECT global_no, line_no, line_text, recital_group
+           FROM pasuram_line_master WHERE global_no IN (__IN__)
+           ORDER BY global_no, line_no`);
+
+        const unitLinesMap = {};
+        for (const l of unitLinesRows) {
+          if (!unitLinesMap[l.global_no]) unitLinesMap[l.global_no] = [];
+          unitLinesMap[l.global_no].push({ text: l.line_text, group: l.recital_group });
+        }
+
+        pasurams = (pasuramsRes.results || []).map(p => ({
+          global_no:           p.global_no,
+          local_no:            p.local_pasuram_no,
+          section_id:          p.section_id,
+          pathu_id:            p.pathu_id,
+          thirumozhi_id:       p.thirumozhi_id,
+          double_recital:      p.double_recital,
+          pathu_name:          p.pathu_name          || "",
+          pathu_subunit_name:  p.pathu_subunit_name  || "",
+          thirumozhi_heading:  p.thirumozhi_heading  || "",
+          thirumozhi_name:     p.thirumozhi_name     || "",
+          lines:               unitLinesMap[p.global_no] || [],
+          prosody:             getProsodyName(p.global_no),
+          closing_text:        ""
+        }));
+      }
+
+      return {
+        section_id:   sm.section_id,
+        display_name: sm.section_name || "",
+        unit_name:    unitName || "",
+        section_type: "normal",
+        closing_text: "",
+        display:      dispMap,
+        pasurams
+      };
+    }
+
+    const pathuMap = {};
+    if (pathuIds.length) {
+      const pmRows = await _inQuery(env, pathuIds,
+        `SELECT pathu_id, section_id, pathu_name, pathu_subunit_name
+         FROM pathu_master WHERE pathu_id IN (__IN__)`);
+      for (const pm of pmRows) {
+        const unitName = [pm.pathu_name, pm.pathu_subunit_name].filter(Boolean).join(" — ");
+        const content  = await _buildUnitContent("pathu_id", pm.pathu_id, pm.section_id, unitName);
+        if (content) pathuMap[pm.pathu_id] = { pathu_id: pm.pathu_id, ...content };
+      }
+    }
+
+    const thiruMap = {};
+    if (thiruIds.length) {
+      const tmRows = await _inQuery(env, thiruIds,
+        `SELECT tm.thirumozhi_id, tm.section_id, tm.pathu_id,
+                tm.thirumozhi_name, tm.thirumozhi_heading,
+                pm.pathu_name, pm.pathu_subunit_name
+         FROM thirumozhi_master tm
+         LEFT JOIN pathu_master pm ON tm.pathu_id = pm.pathu_id
+         WHERE tm.thirumozhi_id IN (__IN__)`);
+      for (const tm of tmRows) {
+        const unitName = [
+          [tm.pathu_name, tm.pathu_subunit_name].filter(Boolean).join(" — "),
+          tm.thirumozhi_name || tm.thirumozhi_heading || ""
+        ].filter(Boolean).join(" — ");
+        const content = await _buildUnitContent("thirumozhi_id", tm.thirumozhi_id, tm.section_id, unitName);
+        if (content) thiruMap[tm.thirumozhi_id] = { thirumozhi_id: tm.thirumozhi_id, ...content };
+      }
+    }
+
     // ── FIXED TEXT MAP ───────────────────────────────────────
     const fixedMap = {};
 
     if (fixedIds.length) {
       const fmRows = await _inQuery(env, fixedIds,
         `SELECT fixed_id, name FROM fixed_text_master WHERE fixed_id IN (__IN__)`);
-      const flRows = await _inQuery(env, fixedIds,
-        `SELECT fixed_id, line_text FROM fixed_text_line_master
+      const flRowsAll = await _inQuery(env, fixedIds,
+        `SELECT fixed_id, line_text, sect FROM fixed_text_line_master
          WHERE fixed_id IN (__IN__) ORDER BY fixed_id, line_no`);
+      const flRows = flRowsAll.filter(r => r.sect === sect || r.sect === 'B');
       const fixedLinesMap = {};
       for (const l of flRows) {
         if (!fixedLinesMap[l.fixed_id]) fixedLinesMap[l.fixed_id] = [];
@@ -1832,13 +2151,23 @@ async function handleAzhwarRecital(request, env) {
           `SELECT closing_text FROM section_closing_master WHERE section_id=?`
         ).bind(sectionId).first();
 
-        // ── Koil pathu_ids — hardcoded from DB (exact match verified) ──
-        const KOIL_PATHU_IDS = {
-          "koil_thirumozhi":    [44,50,52,56,57,59,60,69,82,91,102,107,115,132,141,151],
-          "koil_thiruvaimozhi": [152,153,171,174,182,191,199,211,213,215,231,241,250,251]
-        };
+        // ── Koil pathu_ids — fetched from entity_master by sect-aware tag ──
+        // Ghoshti (this worker): fetch combined T+V tags for both sects
+        // Recital (recitalworker): fetches sect-specific tag separately
+        const koilBaseTitle = ce.custom_key === "koil_thirumozhi"
+          ? "கோயில் திருமொழி" : "கோயில் திருவாய்மொழி";
+        const koilVadagalaiTitle = "வடகலை " + koilBaseTitle;
 
-        const koilPathuArr = KOIL_PATHU_IDS[ce.custom_key] || [];
+        // Fetch both T and V tags — union for ghoshti combined display
+        const [koilTRows, koilVRows] = await Promise.all([
+          env.db.prepare(`SELECT entity_id FROM entity_master WHERE entity_type='pathu' AND meta_key='tag' AND meta_value=?`).bind(koilBaseTitle).all(),
+          env.db.prepare(`SELECT entity_id FROM entity_master WHERE entity_type='pathu' AND meta_key='tag' AND meta_value=?`).bind(koilVadagalaiTitle).all()
+        ]);
+        const koilPathuSet = new Set([
+          ...(koilTRows.results||[]).map(r=>Number(r.entity_id)),
+          ...(koilVRows.results||[]).map(r=>Number(r.entity_id))
+        ]);
+        const koilPathuArr = [...koilPathuSet].sort((a,b)=>a-b);
 
         if (koilPathuArr.length === 0) {
           customMap[ce.custom_id] = {
@@ -1851,7 +2180,7 @@ async function handleAzhwarRecital(request, env) {
         }
         const pasuramsRes = { results: await _inQuery(env, koilPathuArr,
           `SELECT p.global_no, p.local_pasuram_no, p.section_id,
-                  p.pathu_id, p.thirumozhi_id, p.double_recital,
+                  p.pathu_id, p.thirumozhi_id, p.double_recital, p.has_audio,
                   pm.pathu_name, pm.pathu_subunit_name,
                   COALESCE(pm.thirumozhi_heading, tm.thirumozhi_heading) AS thirumozhi_heading,
                   tm.thirumozhi_name
@@ -1899,17 +2228,42 @@ async function handleAzhwarRecital(request, env) {
       else if (row.entity_type === "thaniyan")          content = thaniyanMap[row.entity_id]          || null;
       else if (row.entity_type === "section")           content = sectionMap[row.entity_id]           || null;
       else if (row.entity_type === "fixed_text")        content = fixedMap[row.entity_id]             || null;
-      else if (row.entity_type === "vazhi")             content = vazhiMap[row.entity_id]             || null;
+      else if (row.entity_type === "vazhi_thirunamam")  content = vazhiMap[row.entity_id]             || null;
       else if (row.entity_type === "madal_sattrumurai") content = madalSattrumuraiMap[row.entity_id]  || null;
       else if (row.entity_type === "custom")            content = customMap[row.entity_id]            || null;
+      else if (row.entity_type === "pathu")             content = pathuMap[row.entity_id]             || null;
+      else if (row.entity_type === "thirumozhi")        content = thiruMap[row.entity_id]             || null;
       return {
         sequence_no: row.sequence_no, entity_type: row.entity_type,
         entity_id: row.entity_id, is_dual_recital: row.is_dual_recital,
-        is_optional: row.is_optional, content
+        is_optional: row.is_optional, sect: row.sect, phase: row.phase,
+        recurrence: row.recurrence, content
       };
     });
 
-    return new Response(JSON.stringify({ recital: master, sequence }), { headers: hdrs });
+    // ── MADAM (Ahobila) injection ─────────────────────────────
+    // For Madam viewers, Kesavarya (fixed_id 8) precedes EVERY
+    // occurrence of the Vadagalai pothu thaniyan (thaniyan_id 33),
+    // inheriting that occurrence's phase/recurrence/sect so the
+    // monthly/yearly and recital/sattrumurai filters keep them
+    // together. No sequence data entry needed per recital.
+    let finalSequence = sequence;
+    if (subsectParam === "madam" && fixedMap[8]) {
+      finalSequence = [];
+      for (const item of sequence) {
+        if (item.entity_type === "thaniyan" && Number(item.entity_id) === 33) {
+          finalSequence.push({
+            sequence_no: item.sequence_no, entity_type: "fixed_text",
+            entity_id: 8, is_dual_recital: 0, is_optional: 0,
+            sect: item.sect, phase: item.phase,
+            recurrence: item.recurrence, content: fixedMap[8]
+          });
+        }
+        finalSequence.push(item);
+      }
+    }
+
+    return new Response(JSON.stringify({ recital: master, sequence: finalSequence }), { headers: hdrs });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: "DB error", details: err.message, stack: err.stack }), {
@@ -1973,7 +2327,7 @@ export async function handleSattrumuraiList(request, env) {
 // =============================================================
 //  GET /api/sattrumurai/1  (or /2, /3 ...)
 // =============================================================
-export async function handleSattrumurai(id, env) {
+export async function handleSattrumurai(id, env, sect = "T") {
 
   if (!id || isNaN(Number(id))) return err("Invalid sattrumurai_id");
 
@@ -2200,21 +2554,32 @@ async function handleNithyanusandhanam(request, env) {
 
   // ── Sequence table ──────────────────────────────────────────
   if (sub === "sequence") {
+    const sect    = url.searchParams.get("sect") || "T";
+    const subsect = url.searchParams.get("subsect") || "";
+    const isMadam = sect === "V" && subsect === "madam";
+    // 'B' = shared. 'M' rows are Madam-only (Ahobila Madam extras such as
+    // the adaikkalappathu sections) — included ONLY for V + subsect=madam,
+    // and excluded for plain Vadagalai. Rows tagged 'T'/'V' behave as before.
     const res = await env.db.prepare(
       `SELECT id, seq_no, item_type, display_label, ref_type, ref_value,
               group_key, show_in_index, is_active, notes
-       FROM nithyanusandhanam_sequence ORDER BY seq_no`
-    ).all();
+       FROM nithyanusandhanam_sequence
+       WHERE (sect = ? OR sect = 'B' OR (? = 1 AND sect = 'M'))
+       ORDER BY seq_no`
+    ).bind(sect, isMadam ? 1 : 0).all();
     return new Response(JSON.stringify(res.results), { headers });
   }
 
   // ── Fixed text (eyal saathu / sattrumuran) ──────────────────
   if (sub === "fixed") {
     const id = url.searchParams.get("id");
+    const sect = url.searchParams.get("sect") || "T";
     const lines = await env.db.prepare(
       `SELECT line_no, line_text FROM fixed_text_line_master
-       WHERE fixed_id = ? ORDER BY line_no`
-    ).bind(id).all();
+       WHERE fixed_id = ?
+       AND (sect = ? OR sect = 'B')
+       ORDER BY line_no`
+    ).bind(id, sect).all();
     return new Response(JSON.stringify({ lines: lines.results }), { headers });
   }
 
@@ -2224,19 +2589,27 @@ async function handleNithyanusandhanam(request, env) {
 
   // ── Vazhi thirunamam (FAST — single JOIN query) ─────────────────────────────
   if (sub === "vazhi") {
-    const masters = await env.db.prepare(
-      `SELECT v.vazhi_id, v.entity_id,
+    const sect = url.searchParams.get("sect") || "T";
+    // Thenkalai: include 24,25 (Manavala Mamunigal), exclude 38 (Desikan)
+    // Vadagalai: include 38 (Desikan naalpattu), exclude 24,25
+    // Use explicit conditions instead of dynamic SQL (D1 safe)
+    const vazhiWhereClause = sect === 'V'
+      ? "v.vazhi_id NOT IN (24, 25)"
+      : "v.vazhi_id NOT IN (38)";
+
+    const mastersSql = `SELECT v.vazhi_id, v.entity_id,
               COALESCE(a.canonical_name, 'வாழி திருநாமம்') as name
        FROM vazhi_thirunamam_master v
        LEFT JOIN author_master a ON v.entity_id = a.author_id
-       ORDER BY v.vazhi_id`
-    ).all();
+       WHERE ${vazhiWhereClause}
+       ORDER BY v.vazhi_id`;
+    const masters = await env.db.prepare(mastersSql).all();
 
-    const allLines = await env.db.prepare(
-      `SELECT vazhi_id, line_no, line_text, vazhi_group
+    const linesSql = `SELECT vazhi_id, line_no, line_text, vazhi_group
        FROM vazhi_thirunamam_line_master
-       ORDER BY vazhi_id, vazhi_group, line_no`
-    ).all();
+       WHERE ${vazhiWhereClause.replace('v.vazhi_id', 'vazhi_id')}
+       ORDER BY vazhi_id, vazhi_group, line_no`;
+    const allLines = await env.db.prepare(linesSql).all();
 
     // Group lines by vazhi_id
     const lineMap = {};
@@ -2276,7 +2649,7 @@ async function handleNithyanusandhanam(request, env) {
         SELECT
           p.global_no, p.local_pasuram_no AS local_no,
           p.section_id, p.pathu_id, p.thirumozhi_id,
-          p.double_recital,
+          p.double_recital, p.has_audio,
           s.section_name,
           pm.pathu_name, pm.pathu_subunit_name,
           pm.thirumozhi_heading AS pathu_thirumozhi_heading,
@@ -2295,7 +2668,7 @@ async function handleNithyanusandhanam(request, env) {
     // Fetch ALL display data for all sections in parallel
     const displayPromises = NNC_SECTIONS.map(secId =>
       env.db.prepare(`
-        SELECT entity_type, entity_id, meta_value, sequence_no
+        SELECT entity_type, entity_id, meta_key, meta_value, sequence_no
         FROM entity_master
         WHERE display_flag = 1
         AND (
@@ -2518,9 +2891,13 @@ async function handleDivyadesam(request, env) {
   const res = await env.db.prepare(`
     SELECT dm.divyadesam_id,
            dm.canonical_name,
+           dm.canonical_name_hi, dm.canonical_name_te, dm.canonical_name_kn, dm.canonical_name_ml,
            dd.perumal_name,
+           dd.perumal_name_hi, dd.perumal_name_te, dd.perumal_name_kn, dd.perumal_name_ml,
            dd.thayar_name,
-           dd.archana_namavalli
+           dd.thayar_name_hi, dd.thayar_name_te, dd.thayar_name_kn, dd.thayar_name_ml,
+           dd.archana_namavalli,
+           dd.archana_namavalli_hi, dd.archana_namavalli_te, dd.archana_namavalli_kn, dd.archana_namavalli_ml
     FROM   divyadesam_master dm
     LEFT JOIN divyadesam_deity_master dd USING(divyadesam_id)
     ORDER  BY dm.divyadesam_id
@@ -2962,7 +3339,7 @@ async function ddFetchPasurams(env, globalNos) {
   const ph = globalNos.map(() => "?").join(",");
   const res = await env.db.prepare(
     `SELECT p.global_no, p.local_pasuram_no, p.section_id, p.pathu_id,
-            p.thirumozhi_id, p.double_recital,
+            p.thirumozhi_id, p.double_recital, p.has_audio,
             s.section_name,
             pm.pathu_name, pm.pathu_subunit_name,
             pm.thirumozhi_heading AS pathu_thiru_heading,
@@ -3005,7 +3382,7 @@ async function ddFetchDisplay(env, globalNos) {
   if (!globalNos.length) return {};
   const ph = globalNos.map(() => "?").join(",");
   const res = await env.db.prepare(
-    `SELECT entity_id, meta_value, sequence_no FROM entity_master
+    `SELECT entity_id, meta_key, meta_value, sequence_no FROM entity_master
      WHERE display_flag=1 AND entity_type='pasuram' AND entity_id IN (${ph})
      ORDER BY entity_id, sequence_no`
   ).bind(...globalNos).all();
@@ -3364,7 +3741,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
-  'Cache-Control':                'public, max-age=86400',
+  'Cache-Control':                'public, max-age=300',
 };
 
 export async function handleMunnadiPinnadi(request, env) {
@@ -3405,7 +3782,7 @@ export async function handleMunnadiPinnadi(request, env) {
     const sql = `
       SELECT
         m.global_no, m.line_1, m.line_2,
-        p.section_id, p.double_recital,
+        p.section_id, p.double_recital, p.has_audio,
         pt.pathu_id, pt.pathu_name, pt.pathu_subunit_name, pt.thirumozhi_heading,
         tm.thirumozhi_id, tm.thirumozhi_name, tm.thirumozhi_heading AS tm_heading
       FROM munnadi_pinnadi_master m
@@ -3845,7 +4222,7 @@ async function handleAuthRegister(request, env) {
 
   try {
     const body = await request.json();
-    const { name, mobile, prefix, googleEmail, googleId, googleName } = body;
+    const { name, mobile, prefix, sect, sub_sect, googleEmail, googleId, googleName } = body;
 
     if (!mobile || !name) {
       return new Response(JSON.stringify({ error: "mobile and name required" }), {
@@ -3854,12 +4231,37 @@ async function handleAuthRegister(request, env) {
       });
     }
 
+    // ── Duplicate-mobile guard ─────────────────────────────────
+    // Same mobile may re-register (acts as sign-in / details update)
+    // ONLY under the same sampradayam. Registering the same mobile
+    // under a different sect or sub-sect is rejected.
+    const existing = await env.db.prepare(
+      `SELECT sect, sub_sect FROM user_master WHERE mobile = ?`
+    ).bind(mobile).first();
+
+    if (existing && existing.sect) {
+      const sameSampradayam =
+        (existing.sect || null) === (sect || null) &&
+        (existing.sub_sect || null) === (sub_sect || null);
+      if (!sameSampradayam) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "This mobile number is already registered under a different sampradayam. Please sign in with your original selection."
+        }), {
+          status: 409,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+      }
+    }
+
     await env.db.prepare(`
-      INSERT INTO user_master (mobile, name, prefix, google_email, google_id, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
+      INSERT INTO user_master (mobile, name, prefix, sect, sub_sect, google_email, google_id, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(mobile) DO UPDATE SET
         name         = excluded.name,
         prefix       = excluded.prefix,
+        sect         = excluded.sect,
+        sub_sect     = excluded.sub_sect,
         google_email = excluded.google_email,
         google_id    = excluded.google_id,
         updated_at   = datetime('now')
@@ -3867,6 +4269,8 @@ async function handleAuthRegister(request, env) {
       mobile,
       name,
       prefix       || null,
+      sect         || null,
+      sub_sect     || null,
       googleEmail  || null,
       googleId     || null
     ).run();
@@ -3935,15 +4339,59 @@ async function handleVazhiThaniyan(request, env) {
 
   try {
 
+    // Sect (T = Tenkalai, V = Vadakalai) — appended to every worker call by layout.js
+    const url  = new URL(request.url);
+    const sect = url.searchParams.get("sect") === "V" ? "V" : "T";
+
+    // Lineage tab: no param = main guru parampara; lineage=VMM = Vanamamalai mutt (in pattam order)
+    const lineage = url.searchParams.get("lineage") === "VMM" ? "VMM" : "";
+
+    // Vadakalai sub-groups shown after the common list (main list only, never on the VMM tab):
+    //   plain Vadakalai -> AA = Andavan Ashramam;  Vadakalai + subsect=madam -> AM = Ahobila Madam
+    const isMadam = sect === "V" && url.searchParams.get("subsect") === "madam";
+    const extra   = (sect === "V" && !lineage) ? (isMadam ? "AM" : "AA") : "#none";
+
+    // Script (?script=te|kn|ml|deva|iast|gu|bn) — text from text_script, made offline by
+    // transliterate_db.py. Lines are keyed "parent id|line_no", acharya_master by acharya_id.
+    // Tamil (no param) reads nothing extra; a line with no conversion stays Tamil.
+    let sc = (url.searchParams.get("script") || "ta").toLowerCase();
+    if (sc === "hi") sc = "deva";
+    if (!ARCHANAI_SCRIPTS.includes(sc)) sc = "ta";
+    async function scriptLines(rows, table, idKey) {
+      if (sc === "ta" || !rows.length) return rows;
+      // One query per table: all its converted lines in this script (a few thousand rows at most)
+      const got = await env.db.prepare(
+        `SELECT src_key, text FROM text_script
+         WHERE src_table = ?1 AND src_col = 'line_text' AND script = ?2`
+      ).bind(table, sc).all();
+      const map = {};
+      for (const g of (got.results || [])) map[g.src_key] = g.text;
+      return rows.map(r => ({ ...r, line_text: map[r[idKey] + "|" + r.line_no] ?? r.line_text }));
+    }
+
+    // Tenkalai: acharya_id order.  Vadakalai: sort_v order (prapatti), rows without sort_v after them.
     const acharyas = await env.db.prepare(`
       SELECT
         acharya_id,
         canonical_name,
         tamil_month,
-        star
+        star,
+        tamil_month_v,
+        star_v,
+        sort_v,
+        pattam_no,
+        alias_name,
+        see_lineage,
+        COALESCE(lineage, '') AS lineage
       FROM acharya_master
-      ORDER BY acharya_id
-    `).all();
+      WHERE COALESCE(lineage, '') IN (?2, ?3)
+      ORDER BY
+        CASE WHEN COALESCE(lineage, '') = ?2 THEN 0 ELSE 1 END,
+        CASE WHEN COALESCE(lineage, '') <> ?2 THEN COALESCE(pattam_no, 0)
+             WHEN ?2 <> '' THEN COALESCE(pattam_no, 0)
+             WHEN ?1 = 'V' THEN COALESCE(sort_v, 1000000 + acharya_id)
+             ELSE acharya_id END
+    `).bind(sect, lineage, extra).all();
 
     const thaniyan = await env.db.prepare(`
       SELECT
@@ -3955,11 +4403,12 @@ async function handleVazhiThaniyan(request, env) {
       FROM acharya_thaniyan_master m
       JOIN acharya_thaniyan_line_master l
         ON m.thaniyan_id = l.thaniyan_id
+      WHERE m.sect IS NULL OR m.sect = ?1
       ORDER BY
         m.acharya_id,
         m.thaniyan_id,
         l.line_no
-    `).all();
+    `).bind(sect).all();
 
     const vazhi = await env.db.prepare(`
       SELECT
@@ -3971,11 +4420,12 @@ async function handleVazhiThaniyan(request, env) {
       FROM acharya_vazhi_thirunamam_master m
       JOIN acharya_vazhi_thirunamam_line_master l
         ON m.vazhi_id = l.vazhi_id
+      WHERE m.sect IS NULL OR m.sect = ?1
       ORDER BY
         m.acharya_id,
         m.vazhi_id,
         l.line_no
-    `).all();
+    `).bind(sect).all();
 
     const naalpattu = await env.db.prepare(`
       SELECT
@@ -3987,11 +4437,12 @@ async function handleVazhiThaniyan(request, env) {
       FROM acharya_naalpattu_master m
       JOIN acharya_naalpattu_line_master l
         ON m.naalpattu_id = l.naalpattu_id
+      WHERE m.sect IS NULL OR m.sect = ?1
       ORDER BY
         m.acharya_id,
         m.naalpattu_id,
         l.line_no
-    `).all();
+    `).bind(sect).all();
 
     const thongal = await env.db.prepare(`
       SELECT
@@ -4003,24 +4454,69 @@ async function handleVazhiThaniyan(request, env) {
       FROM acharya_thongal_master m
       JOIN acharya_thongal_line_master l
         ON m.thongal_id = l.thongal_id
+      WHERE m.sect IS NULL OR m.sect = ?1
       ORDER BY
         m.acharya_id,
         m.thongal_id,
         l.line_no
-    `).all();
+    `).bind(sect).all();
+
+    // Group flat rows into nested { acharya_id: { id: { title, lines[] } } }
+    function groupById(rows, idKey) {
+      const map = {};
+      rows.forEach(r => {
+        if (!map[r.acharya_id]) map[r.acharya_id] = {};
+        if (!map[r.acharya_id][r[idKey]])
+          map[r.acharya_id][r[idKey]] = { title: r.title, lines: [] };
+        map[r.acharya_id][r[idKey]].lines.push(r.line_text);
+      });
+      return map;
+    }
+
+    const thanMap    = groupById(await scriptLines(thaniyan.results  || [], "acharya_thaniyan_line_master",         "thaniyan_id"),  "thaniyan_id");
+    const vazhiMap   = groupById(await scriptLines(vazhi.results     || [], "acharya_vazhi_thirunamam_line_master", "vazhi_id"),     "vazhi_id");
+    const naalMap    = groupById(await scriptLines(naalpattu.results || [], "acharya_naalpattu_line_master",        "naalpattu_id"), "naalpattu_id");
+    const thongalMap = groupById(await scriptLines(thongal.results   || [], "acharya_thongal_line_master",          "thongal_id"),   "thongal_id");
+
+    // Names, months and stars in the chosen script
+    const nameMap = {};
+    if (sc !== "ta") {
+      const got = await env.db.prepare(
+        `SELECT src_key, src_col, text FROM text_script
+         WHERE src_table = 'acharya_master' AND script = ?1`
+      ).bind(sc).all();
+      for (const g of (got.results || [])) nameMap[g.src_key + "|" + g.src_col] = g.text;
+    }
+    const nm = (a, col) => nameMap[a.acharya_id + "|" + col] ?? a[col];
+
+    const result = (acharyas.results || []).map(a => {
+      // Vadakalai thirunakshatram where it differs (tamil_month_v / star_v), else the common one
+      const useV = sect === "V" && a.tamil_month_v;
+      return {
+        acharya_id:     a.acharya_id,
+        canonical_name: nm(a, "canonical_name"),
+        tamil_month:    useV ? nm(a, "tamil_month_v") : nm(a, "tamil_month"),
+        star:           useV ? nm(a, "star_v")        : nm(a, "star"),
+        pattam_no:      a.pattam_no,
+        alias_name:     a.alias_name ? nm(a, "alias_name") : null,
+        see_lineage:    a.see_lineage,
+        lineage:        a.lineage,
+        thaniyans:      Object.values(thanMap[a.acharya_id]    || {}),
+        vazhis:         Object.values(vazhiMap[a.acharya_id]   || {}),
+        naalpattu:      Object.values(naalMap[a.acharya_id]    || {}),
+        thongal:        Object.values(thongalMap[a.acharya_id] || {}),
+      };
+    })
+    // An acharya with nothing for this sect is left out, so the page numbering stays continuous
+    .filter(a => a.thaniyans.length || a.vazhis.length || a.naalpattu.length || a.thongal.length);
 
     return new Response(
-      JSON.stringify({
-        acharyas: acharyas.results || [],
-        thaniyan: thaniyan.results || [],
-        vazhi: vazhi.results || [],
-        naalpattu: naalpattu.results || [],
-        thongal: thongal.results || []
-      }),
+      JSON.stringify(result),
       {
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=900"
         }
       }
     );
@@ -4041,5 +4537,580 @@ async function handleVazhiThaniyan(request, env) {
       }
     );
 
+  }
+}
+
+// ── /voice/entity-tags — NEW ADDITION ──────────────────
+// Called by voiceSearch.js to fetch all searchable entity tags
+async function handleVoiceEntityTags(request, env) {
+  try {
+    const rows = await env.db.prepare(`
+      SELECT entity_type, entity_id, meta_value as tag
+      FROM entity_master
+      WHERE search_flag = 1
+      AND meta_category = 'search'
+      ORDER BY entity_type, entity_id
+    `).all();
+
+    return new Response(JSON.stringify(rows.results || []), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600"
+      }
+    });
+  } catch(err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+async function handleMunnadiEditor(request, env) {
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
+
+  try {
+
+    // ==========================
+    // LOAD
+    // GET /api/munnadi-editor?global_no=2675
+    // ==========================
+    if (request.method === "GET") {
+
+      const url = new URL(request.url);
+      const global_no = parseInt(url.searchParams.get("global_no"));
+
+      if (!global_no) {
+        return new Response(
+          JSON.stringify({ error: "global_no required" }),
+          { status: 400, headers }
+        );
+      }
+
+      const row = await env.db.prepare(`
+        SELECT
+          global_no,
+          line_1,
+          line_2
+        FROM munnadi_pinnadi_master
+        WHERE global_no = ?
+      `)
+      .bind(global_no)
+      .first();
+
+      return new Response(
+        JSON.stringify(row || {}),
+        { headers }
+      );
+    }
+
+    // ==========================
+    // SAVE
+    // POST /api/munnadi-editor
+    // ==========================
+    if (request.method === "POST") {
+
+      const body = await request.json();
+
+      const global_no = parseInt(body.global_no);
+
+      await env.db.prepare(`
+        UPDATE munnadi_pinnadi_master
+        SET
+          line_1 = ?,
+          line_2 = ?
+        WHERE global_no = ?
+      `)
+      .bind(
+        body.line_1 || "",
+        body.line_2 || "",
+        global_no
+      )
+      .run();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          global_no: global_no
+        }),
+        { headers }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers }
+    );
+
+  }
+  catch(err) {
+
+    return new Response(
+      JSON.stringify({
+        error: err.message
+      }),
+      {
+        status: 500,
+        headers
+      }
+    );
+
+  }
+
+}
+
+async function handlePasuramLineEditor(request, env) {
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
+
+  const reply = (obj, status = 200) =>
+    new Response(JSON.stringify(obj), { status, headers });
+
+  // -------------------------------------------------------------
+  // Special sections that are NOT in pasuram_line_master:
+  //   2672 Thiruvezhukootrirukkai -> thiruvezhukootrarikkai_master (one row per line)
+  //   2673 / 2674 Thirumadal      -> madal_unit_master (one row per couplet,
+  //                                  lines in line_1 .. line_8), found through
+  //                                  madal_master.canonical_position
+  // These are TEXT-ONLY: lines are updated in place by their own row id,
+  // never deleted or inserted (recital rules and the madal divyadesam map
+  // point at couplet / line positions, and text_script keys on the row id).
+  // -------------------------------------------------------------
+  const MADAL_COLS = ["line_1", "line_2", "line_3", "line_4",
+                      "line_5", "line_6", "line_7", "line_8"];
+
+  async function findSpecial(global_no) {
+
+    const k = await env.db.prepare(`
+      SELECT id, line_no, line_text
+      FROM thiruvezhukootrarikkai_master
+      WHERE global_no = ?
+      ORDER BY line_no
+    `).bind(global_no).all();
+
+    if ((k.results || []).length) {
+      return {
+        kind: "kootrirukkai",
+        title: "திருவெழுகூற்றிருக்கை",
+        lines: k.results.map(r => ({
+          ref_id: r.id,
+          col: "line_text",
+          label: `Line ${r.line_no}`,
+          line_text: r.line_text ?? ""
+        }))
+      };
+    }
+
+    const m = await env.db.prepare(`
+      SELECT madal_id, canonical_name
+      FROM madal_master
+      WHERE canonical_position = ?
+    `).bind(global_no).first();
+
+    if (m) {
+
+      const u = await env.db.prepare(`
+        SELECT id, couplet_no, unit_type,
+               line_1, line_2, line_3, line_4, line_5, line_6, line_7, line_8
+        FROM madal_unit_master
+        WHERE madal_id = ?
+        ORDER BY couplet_no, id
+      `).bind(m.madal_id).all();
+
+      const lines = [];
+
+      for (const r of (u.results || [])) {
+        MADAL_COLS.forEach((col, i) => {
+          const t = r[col];
+          if (t === null || t === undefined || String(t).trim() === "") return;
+          lines.push({
+            ref_id: r.id,
+            col,
+            label: `Couplet ${r.couplet_no}` +
+                   (r.unit_type === "pasuram" ? " (pasuram)" : "") +
+                   ` · line ${i + 1}`,
+            line_text: t
+          });
+        });
+      }
+
+      return {
+        kind: "madal",
+        madal_id: m.madal_id,
+        title: m.canonical_name,
+        lines
+      };
+    }
+
+    return null;
+  }
+
+  try {
+
+    // =====================================
+    // LOAD
+    // GET /api/pasuram-line-editor?global_no=756
+    // =====================================
+    if (request.method === "GET") {
+
+      const url = new URL(request.url);
+      const global_no = parseInt(url.searchParams.get("global_no"));
+
+      if (!global_no) {
+        return reply({ error: "global_no required" }, 400);
+      }
+
+      const result = await env.db.prepare(`
+        SELECT
+          line_no,
+          line_text,
+          recital_group
+        FROM pasuram_line_master
+        WHERE global_no = ?
+        ORDER BY line_no
+      `)
+      .bind(global_no)
+      .all();
+
+      const rows = result.results || [];
+
+      if (!rows.length) {
+        const special = await findSpecial(global_no);
+        if (special) {
+          return reply({ global_no, ...special });
+        }
+      }
+
+      return reply({
+        global_no,
+        kind: "pasuram",
+        lines: rows
+      });
+
+    }
+
+    // =====================================
+    // SAVE
+    // POST /api/pasuram-line-editor
+    // =====================================
+    if (request.method === "POST") {
+
+      const body = await request.json();
+
+      const global_no = parseInt(body.global_no);
+
+      if (!global_no) {
+        return reply({ error: "global_no required" }, 400);
+      }
+
+      // ---------- special sections: text-only, update in place ----------
+      if (body.kind === "kootrirukkai" || body.kind === "madal") {
+
+        const special = await findSpecial(global_no);
+
+        if (!special || special.kind !== body.kind) {
+          return reply({ error: "Not a special section: " + global_no }, 400);
+        }
+
+        // only rows/columns that belong to this section may be changed
+        const allowed = new Set(special.lines.map(l => l.ref_id + "|" + l.col));
+        const stmts = [];
+
+        for (const row of body.lines || []) {
+
+          const ref_id = parseInt(row.ref_id);
+          const col = String(row.col || "");
+          const text = String(row.line_text ?? "").trim();
+
+          if (!allowed.has(ref_id + "|" + col)) {
+            return reply({ error: `Line ${ref_id}/${col} is not part of ${global_no}` }, 400);
+          }
+          if (!text) {
+            return reply({ error: "A line cannot be left empty here (text edits only)." }, 400);
+          }
+
+          if (special.kind === "kootrirukkai") {
+            stmts.push(env.db.prepare(`
+              UPDATE thiruvezhukootrarikkai_master
+              SET line_text = ?
+              WHERE id = ? AND global_no = ?
+            `).bind(text, ref_id, global_no));
+          } else {
+            if (!MADAL_COLS.includes(col)) {
+              return reply({ error: "Bad column " + col }, 400);
+            }
+            stmts.push(env.db.prepare(`
+              UPDATE madal_unit_master
+              SET ${col} = ?
+              WHERE id = ? AND madal_id = ?
+            `).bind(text, ref_id, special.madal_id));
+          }
+        }
+
+        if (stmts.length) {
+          await env.db.batch(stmts);
+        }
+
+        return reply({ success: true, global_no, updated: stmts.length });
+      }
+
+      // ---------- normal pasurams ----------
+      // Safety: an old copy of the editor must never write 2672 / 2673 / 2674
+      // into pasuram_line_master.
+      const existing = await env.db.prepare(`
+        SELECT COUNT(*) AS n FROM pasuram_line_master WHERE global_no = ?
+      `).bind(global_no).first();
+
+      if (!existing || !existing.n) {
+        const special = await findSpecial(global_no);
+        if (special) {
+          return reply({ error: "This is a special section - reload the editor page (Ctrl+F5) and try again." }, 400);
+        }
+      }
+
+      // Delete all existing lines for this pasuram
+      await env.db.prepare(`
+          DELETE FROM pasuram_line_master
+          WHERE global_no = ?
+      `)
+      .bind(global_no)
+      .run();
+
+      // Insert all current lines
+      for (const row of body.lines || []) {
+
+          await env.db.prepare(`
+              INSERT INTO pasuram_line_master
+              (
+                  global_no,
+                  line_no,
+                  line_text,
+                  recital_group
+              )
+              VALUES (?, ?, ?, ?)
+          `)
+          .bind(
+              global_no,
+              parseInt(row.line_no),
+              row.line_text || "",
+              parseInt(row.recital_group) || 1
+          )
+          .run();
+
+      }
+
+      return reply({ success: true, global_no });
+
+    }
+
+    return reply({ error: "Method not allowed" }, 405);
+
+  }
+  catch (err) {
+
+    return reply({ error: err.message }, 500);
+
+  }
+
+}
+
+
+// =============================================================
+//  ARCHANAI  (archanai_master + archanai_nama_master)
+//
+//  GET /api/archanai?script=ta          -> index of all archanais
+//  GET /api/archanai?id=3&script=te     -> one archanai, its names in that script
+//
+//  script: ta | deva | te | kn | ml | bn | gu | iast   (default ta; "hi" = deva)
+//  Only the requested script is sent, so a 1008-name list stays small.
+//  A missing script value falls back to the Tamil text for that row.
+//  Read-only. Touches no other table.
+// =============================================================
+const ARCHANAI_SCRIPTS = ["ta", "deva", "te", "kn", "ml", "bn", "gu", "iast"];
+
+async function handleArchanai(request, env) {
+  const headers = {
+    "Content-Type": "application/json;charset=UTF-8",
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=300",
+  };
+  const reply = (obj, status = 200) =>
+    new Response(JSON.stringify(obj), { status, headers });
+
+  try {
+    const url = new URL(request.url);
+    let sc = (url.searchParams.get("script") || "ta").toLowerCase();
+    if (sc === "hi") sc = "deva";
+    if (!ARCHANAI_SCRIPTS.includes(sc)) sc = "ta";     // whitelisted before it is used as a column name
+
+    const id = parseInt(url.searchParams.get("id"), 10);
+
+    // ── Index ────────────────────────────────────────────────
+    if (!id) {
+      const res = await env.db.prepare(`
+        SELECT a.archanai_id, a.group_id, g.group_name,
+               g.display_order AS group_order,
+               a.name_en,
+               COALESCE(a.title_${sc}, a.title_ta) AS title,
+               a.nama_count, a.default_speed_sec, a.display_order
+        FROM   archanai_master a
+        LEFT JOIN stotra_group_master g ON g.group_id = a.group_id
+        ORDER  BY a.display_order
+      `).all();
+      return reply({ script: sc, archanai: res.results || [] });
+    }
+
+    // ── One archanai ─────────────────────────────────────────
+    const master = await env.db.prepare(`
+      SELECT a.archanai_id, a.group_id, g.group_name, a.name_en,
+             COALESCE(a.title_${sc}, a.title_ta) AS title,
+             a.nama_count, a.default_speed_sec
+      FROM   archanai_master a
+      LEFT JOIN stotra_group_master g ON g.group_id = a.group_id
+      WHERE  a.archanai_id = ?
+    `).bind(id).first();
+
+    if (!master) return reply({ error: "Unknown archanai id " + id }, 404);
+
+    const names = await env.db.prepare(`
+      SELECT nama_no,
+             COALESCE(caption_${sc}, caption_ta) AS caption,
+             COALESCE(text_${sc}, text_ta)       AS text
+      FROM   archanai_nama_master
+      WHERE  archanai_id = ?
+      ORDER  BY nama_no
+    `).bind(id).all();
+
+    return reply({ script: sc, ...master, names: names.results || [] });
+
+  } catch (err) {
+    return reply({ error: err.message }, 500);
+  }
+}
+
+
+// =============================================================
+//  STHOTHRAM  (stotra_master + stotra_line_master)
+//
+//  GET /api/stotra?script=ta          -> index of all stotras (with group)
+//  GET /api/stotra?id=12&script=te    -> one stotra, every line in that script
+//
+//  script: ta | deva | te | kn | ml | bn | gu | iast   (default ta; "hi" = deva)
+//  Lines come in reading order: part_no, block_no, line_no. A block is one
+//  box on screen; sloka_no is the number shown in that box (NULL = none).
+//  Read-only. Touches no other table.
+// =============================================================
+async function handleStotra(request, env) {
+  const headers = {
+    "Content-Type": "application/json;charset=UTF-8",
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=300",
+  };
+  const reply = (obj, status = 200) =>
+    new Response(JSON.stringify(obj), { status, headers });
+
+  try {
+    const url = new URL(request.url);
+    let sc = (url.searchParams.get("script") || "ta").toLowerCase();
+    if (sc === "hi") sc = "deva";
+    if (!ARCHANAI_SCRIPTS.includes(sc)) sc = "ta";     // same whitelist as archanai
+
+    const id = parseInt(url.searchParams.get("id"), 10);
+
+    // ── Index ────────────────────────────────────────────────
+    if (!id) {
+      const res = await env.db.prepare(`
+        SELECT s.stotra_id,
+               COALESCE(pg.group_id, g.group_id)           AS group_id,
+               COALESCE(pg.group_name, g.group_name)       AS group_name,
+               COALESCE(pg.display_order, g.display_order) AS group_order,
+               CASE WHEN pg.group_id IS NULL THEN NULL ELSE g.group_id      END AS sub_group_id,
+               CASE WHEN pg.group_id IS NULL THEN NULL ELSE g.group_name    END AS sub_group_name,
+               CASE WHEN pg.group_id IS NULL THEN 0    ELSE g.display_order END AS sub_group_order,
+               s.name_en,
+               COALESCE(s.title_${sc}, s.title_ta) AS title,
+               s.part_count, s.item_count, s.has_audio, s.source, s.display_order, s.by_part
+        FROM   stotra_master s
+        LEFT JOIN stotra_group_master g  ON g.group_id  = s.group_id
+        LEFT JOIN stotra_group_master pg ON pg.group_id = g.parent_group_id
+        ORDER  BY group_order, sub_group_order, s.display_order
+      `).all();
+      return reply({ script: sc, stotras: res.results || [] });
+    }
+
+    // ── One stotra ───────────────────────────────────────────
+    const master = await env.db.prepare(`
+      SELECT s.stotra_id, s.group_id, g.group_name, s.name_en,
+             COALESCE(s.title_${sc}, s.title_ta) AS title,
+             s.part_count, s.item_count, s.has_audio, s.source, s.by_part
+      FROM   stotra_master s
+      LEFT JOIN stotra_group_master g ON g.group_id = s.group_id
+      WHERE  s.stotra_id = ?
+    `).bind(id).first();
+
+    if (!master) return reply({ error: "Unknown stotra id " + id }, 404);
+
+    // ── A long work read one part at a time (a kanda's sargas, Narayaneeyam's dasakams) ──
+    //   ?id=N           → the list of parts: part_no, title, and a section heading where one starts
+    //   ?id=N&part=K    → the lines of part K only
+    if (master.by_part) {
+      const total = Math.max(1, Number(master.part_count) || 1);
+      const part  = parseInt(url.searchParams.get("part"), 10);
+
+      if (!part) {
+        // block 0 of each part holds its title (and a section heading). Naming the part
+        // numbers lets the index seek each one instead of walking the whole work.
+        const nos = Array.from({ length: total }, (_, i) => i + 1).join(",");
+        const heads = await env.db.prepare(`
+          SELECT part_no, line_type, COALESCE(text_${sc}, text_ta) AS text
+          FROM   stotra_line_master
+          WHERE  stotra_id = ? AND part_no IN (${nos}) AND block_no = 0
+          ORDER  BY part_no, line_no
+        `).bind(id).all();
+        const byNo = {};
+        for (const r of (heads.results || [])) {
+          const p = byNo[r.part_no] || (byNo[r.part_no] = { part_no: r.part_no, title: "", section: null });
+          if (r.line_type === "part_title") p.title = r.text;
+          else if (r.line_type === "heading") p.section = r.text;
+        }
+        const parts = Object.values(byNo).sort((a, b) => a.part_no - b.part_no);
+        return reply({ script: sc, ...master, parts });
+      }
+
+      if (part < 1 || part > total) return reply({ error: "Unknown part " + part }, 404);
+      const plines = await env.db.prepare(`
+        SELECT part_no, block_no, line_no, line_type, sloka_no,
+               COALESCE(text_${sc}, text_ta) AS text
+        FROM   stotra_line_master
+        WHERE  stotra_id = ? AND part_no = ?
+        ORDER  BY block_no, line_no
+      `).bind(id, part).all();
+      return reply({ script: sc, ...master, part_no: part, lines: plines.results || [] });
+    }
+
+    const lines = await env.db.prepare(`
+      SELECT part_no, block_no, line_no, line_type, sloka_no,
+             COALESCE(text_${sc}, text_ta) AS text
+      FROM   stotra_line_master
+      WHERE  stotra_id = ?
+      ORDER  BY part_no, block_no, line_no
+    `).bind(id).all();
+
+    return reply({ script: sc, ...master, lines: lines.results || [] });
+
+  } catch (err) {
+    return reply({ error: err.message }, 500);
   }
 }
